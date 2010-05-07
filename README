@@ -1,0 +1,54 @@
+Ribbit - libgit2 bindings in Ruby
+===================================
+
+Ribbit is a Ruby bindings to the libgit2 linkable C Git library. This is
+for testing and using the libgit2 library in a language that is awesome.
+
+INSTALLING AND RUNNING
+========================
+
+First you need to install libgit2:
+
+  $ git clone git://repo.or.cz/libgit2.git
+  $ cd libgit2
+  $ make
+  $ make install
+
+Now that is installed, you can install Ribbit:
+
+  $ git clone git://github.com/schacon/ribbit.git
+  $ cd ribbit/ext
+  $ ruby extconf.rb
+  $ make
+  $ ./test.rb
+
+That's as far as I've gotten for now.  However, it does load libgit2
+and at least run something from the library.
+
+
+TODO 
+==============
+
+I would like the Ruby bindings to keep up to date with the libgit2 
+progress.  Any functionality in libgit2 should be accessible from 
+Ruby as well.  For an API reference, examples and progress, see the 
+API document.
+
+
+CONTRIBUTING
+==============
+
+Fork schacon/ribbit on GitHub, make it awesomer, send a pull request.
+
+
+AUTHORS 
+==============
+
+Scott Chacon <schacon@gmail.com>
+
+
+LICENSE
+==============
+
+MIT.
+
