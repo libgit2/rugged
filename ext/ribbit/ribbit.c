@@ -1,18 +1,27 @@
 #include "ruby.h"
+#include <git/oid.h>
 
 static VALUE rb_cRibbit;
+static VALUE rb_cRibbitLib;
 
 static VALUE
-compare_prefix(VALUE self, VALUE string1, VALUE string2)
+hex_to_oid(VALUE self, VALUE hex)
 {
-  return git__prefixcmp(string1, string2);
+  Check_Type(hex, T_STRING);
+  git_oid *oid;
+  git_oid_mkstr(oid, RSTRING_PTR(hex));
+  return rb_str_new2(oid->id);
 }
+
+// git_oid_mkstr(&id1, hello_id);
+// must_be_true(git_oid_cmp(&id1, &id2) == 0);
 
 void
 Init_ribbit()
 {
   rb_cRibbit = rb_define_class("Ribbit", rb_cObject);
+  rb_cRibbitLib = rb_define_class_under(rb_cRibbit, "Lib", rb_cObject);
 
-  rb_define_method(rb_cRibbit, "compare_prefix", compare_prefix, 2);
+  rb_define_module_function(rb_cRibbitLib, "hex_to_oid", hex_to_oid, 1);
 }
 
