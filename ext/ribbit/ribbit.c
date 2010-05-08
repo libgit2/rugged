@@ -5,7 +5,7 @@ static VALUE rb_cRibbit;
 static VALUE rb_cRibbitLib;
 
 static VALUE
-hex_to_oid(VALUE self, VALUE hex)
+hex_to_raw(VALUE self, VALUE hex)
 {
   Check_Type(hex, T_STRING);
   git_oid oid;
@@ -14,7 +14,7 @@ hex_to_oid(VALUE self, VALUE hex)
 }
 
 static VALUE
-oid_to_hex(VALUE self, VALUE raw)
+raw_to_hex(VALUE self, VALUE raw)
 {
   Check_Type(raw, T_STRING);
   git_oid oid;
@@ -33,7 +33,7 @@ Init_ribbit()
   rb_cRibbit = rb_define_class("Ribbit", rb_cObject);
   rb_cRibbitLib = rb_define_class_under(rb_cRibbit, "Lib", rb_cObject);
 
-  rb_define_module_function(rb_cRibbitLib, "hex_to_oid", hex_to_oid, 1);
-  rb_define_module_function(rb_cRibbitLib, "oid_to_hex", oid_to_hex, 1);
+  rb_define_module_function(rb_cRibbitLib, "hex_to_raw", hex_to_raw, 1);
+  rb_define_module_function(rb_cRibbitLib, "raw_to_hex", raw_to_hex, 1);
 }
 
