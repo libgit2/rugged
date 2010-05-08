@@ -86,12 +86,6 @@ end
 # Documentation
 #
 
-begin
-  require 'sdoc_helpers'
-rescue LoadError
-  warn "sdoc support not enabled. Please gem install sdoc-helpers."
-end
-
 desc "Publish to GitHub Pages"
 task :pages => [ "man:build" ] do
   Dir['man/*.html'].each do |f|
