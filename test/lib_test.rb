@@ -1,7 +1,7 @@
 require File.dirname(__FILE__) + '/test_helper'
 require 'base64'
 
-context "Ribbit::Lib oid stuff" do
+context "Ribbit::Lib stuff" do
   setup do
   end
 

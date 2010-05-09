@@ -4,6 +4,7 @@ $TESTING = true
 require 'test/unit'
 require 'rubygems'
 require 'ribbit'
+require 'pp'
 
 ##
 # test/spec/mini 3
