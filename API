@@ -1,1 +1,13 @@
-Coming soon
+= General Library
+
+Ribbit::Lib
+  * hex_to_raw(SHA_HEX)
+  * raw_to_hex(SHA_RAW)
+
+
+= Object Database Class
+
+Ribbit::Odb
+  * new(path)
+  - exists(SHA_HEX) 
+
