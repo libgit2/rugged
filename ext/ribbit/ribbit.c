@@ -58,6 +58,51 @@ static VALUE rb_git_odb_exists(VALUE self, VALUE hex) {
 }
 
 /*
+typedef struct {
+	void *data;     // Raw, decompressed object data.
+	size_t len;     // Total number of bytes in data.
+	git_otype type; // Type of this object.
+} git_obj;
+*/
+
+static VALUE rb_git_odb_read(VALUE self, VALUE hex) {
+  git_odb *odb;
+  odb = (git_odb*)rb_iv_get(self, "odb");
+
+  git_oid oid;
+  git_oid_mkstr(&oid, RSTRING_PTR(hex));
+
+  git_obj obj;
+
+  int read = git_odb_read(&obj, odb, &oid);
+  unsigned char *data = (&obj)->data;
+
+  if(read == GIT_SUCCESS) {
+    return rb_str_new2(data);
+  }
+  return Qfalse;
+}
+// GIT_EXTERN(int) git_obj_hash(git_oid *id, git_obj *obj);
+// GIT_EXTERN(int) git_odb_write(git_oid *id, git_odb *db, git_obj *obj);
+// GIT_EXTERN(void) git_odb_close(git_odb *db);
+
+//GIT_EXTERN(const char *) git_obj_type_to_string(git_otype type);
+//GIT_EXTERN(git_otype) git_obj_string_to_type(const char *str);
+
+
+/*
+ * Ribbit Revwalking - almost none of this is implemented yet in libgit2
+ */
+
+//   GIT_EXTERN(git_revpool *) gitrp_alloc(git_odb *db);
+//   GIT_EXTERN(void) gitrp_reset(git_revpool *pool);
+//   GIT_EXTERN(void) gitrp_push(git_revpool *pool, git_commit *commit);
+//   GIT_EXTERN(void) gitrp_hide(git_revpool *pool, git_commit *commit);
+//   GIT_EXTERN(git_commit *) gitrp_next(git_revpool *pool);
+//   GIT_EXTERN(void) gitrp_free(git_revpool *pool);
+
+
+/*
  * Ribbit Init Call
  */
 
@@ -73,5 +118,6 @@ Init_ribbit()
   rb_cRibbitOdb = rb_define_class_under(rb_cRibbit, "Odb", rb_cObject);
   rb_define_method(rb_cRibbitOdb, "initialize", rb_git_odb_init, 1);
   rb_define_method(rb_cRibbitOdb, "exists", rb_git_odb_exists, 1);
+  rb_define_method(rb_cRibbitOdb, "read", rb_git_odb_read, 1);
 }
 
