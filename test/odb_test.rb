@@ -3,7 +3,8 @@ require 'base64'
 
 context "Ribbit::Odb stuff" do
   setup do
-    @odb = Ribbit::Odb.new("/tmp/test/.git/objects")
+    path = File.dirname(__FILE__) + '/fixtures/testrepo.git/objects'
+    @odb = Ribbit::Odb.new(path)
   end
 
   test "can tell if an object exists or not" do
