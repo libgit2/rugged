@@ -75,10 +75,19 @@ static VALUE rb_git_odb_read(VALUE self, VALUE hex) {
   git_obj obj;
 
   int read = git_odb_read(&obj, odb, &oid);
-  unsigned char *data = (&obj)->data;
-
   if(read == GIT_SUCCESS) {
-    return rb_str_new2(data);
+    VALUE ret_arr = rb_ary_new();
+
+    unsigned char *data = (&obj)->data;
+    rb_ary_store(ret_arr, 0, rb_str_new2(data));
+
+    rb_ary_store(ret_arr, 1, INT2FIX((int)(&obj)->len));
+
+    const char *str_type;
+    git_otype git_type = (&obj)->type;
+    str_type = git_obj_type_to_string(git_type);
+    rb_ary_store(ret_arr, 2, rb_str_new2(str_type));
+    return ret_arr;
   }
   return Qfalse;
 }
