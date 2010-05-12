@@ -91,6 +91,13 @@ static VALUE rb_git_odb_read(VALUE self, VALUE hex) {
   }
   return Qfalse;
 }
+
+static VALUE rb_git_odb_close(VALUE self) {
+  git_odb *odb;
+  odb = (git_odb*)rb_iv_get(self, "odb");
+  git_odb_close(odb);
+}
+
 // GIT_EXTERN(int) git_obj_hash(git_oid *id, git_obj *obj);
 // GIT_EXTERN(int) git_odb_write(git_oid *id, git_odb *db, git_obj *obj);
 // GIT_EXTERN(void) git_odb_close(git_odb *db);
@@ -127,6 +134,7 @@ Init_ribbit()
   rb_cRibbitOdb = rb_define_class_under(rb_cRibbit, "Odb", rb_cObject);
   rb_define_method(rb_cRibbitOdb, "initialize", rb_git_odb_init, 1);
   rb_define_method(rb_cRibbitOdb, "exists", rb_git_odb_exists, 1);
-  rb_define_method(rb_cRibbitOdb, "read", rb_git_odb_read, 1);
+  rb_define_method(rb_cRibbitOdb, "read",   rb_git_odb_read,   1);
+  rb_define_method(rb_cRibbitOdb, "close",  rb_git_odb_close,  0);
 }
 

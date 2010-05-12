@@ -25,5 +25,11 @@ context "Ribbit::Odb stuff" do
     assert !@odb.read("a496071c1b46c854b31185ea97743be6a8774471")
   end
 
+  test "can close the db" do
+    @odb.exists("8496071c1b46c854b31185ea97743be6a8774479")
+    @odb.close
+    assert !@odb.exists("8496071c1b46c854b31185ea97743be6a8774479")
+  end
+
 
 end
