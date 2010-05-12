@@ -92,15 +92,47 @@ static VALUE rb_git_odb_read(VALUE self, VALUE hex) {
   return Qfalse;
 }
 
+static VALUE rb_git_odb_obj_hash(VALUE self, VALUE content, VALUE type) {
+  git_obj obj;
+  git_oid oid;
+  (&obj)->data = RSTRING_PTR(content);
+  (&obj)->len  = RSTRING_LEN(content);
+  (&obj)->type = git_obj_string_to_type(RSTRING_PTR(type));
+  int result = git_obj_hash(&oid, &obj);
+  if(result == GIT_SUCCESS) {
+    char out[40];
+    git_oid_fmt(out, &oid);
+    return rb_str_new(out, 40);
+  }
+  return Qfalse;
+}
+
+static VALUE rb_git_odb_write(VALUE self, VALUE content, VALUE type) {
+  git_odb *odb;
+  odb = (git_odb*)rb_iv_get(self, "odb");
+
+  git_obj obj;
+  git_oid oid;
+  (&obj)->data = RSTRING_PTR(content);
+  (&obj)->len  = RSTRING_LEN(content);
+  (&obj)->type = git_obj_string_to_type(RSTRING_PTR(type));
+  git_obj_hash(&oid, &obj);
+
+  int result = git_odb_write(&oid, odb, &obj);
+  if(result == GIT_SUCCESS) {
+    char out[40];
+    git_oid_fmt(out, &oid);
+    return rb_str_new(out, 40);
+  }
+  return Qfalse;
+}
+
+
 static VALUE rb_git_odb_close(VALUE self) {
   git_odb *odb;
   odb = (git_odb*)rb_iv_get(self, "odb");
   git_odb_close(odb);
 }
-
-// GIT_EXTERN(int) git_obj_hash(git_oid *id, git_obj *obj);
-// GIT_EXTERN(int) git_odb_write(git_oid *id, git_odb *db, git_obj *obj);
-// GIT_EXTERN(void) git_odb_close(git_odb *db);
 
 //GIT_EXTERN(const char *) git_obj_type_to_string(git_otype type);
 //GIT_EXTERN(git_otype) git_obj_string_to_type(const char *str);
@@ -136,5 +168,7 @@ Init_ribbit()
   rb_define_method(rb_cRibbitOdb, "exists", rb_git_odb_exists, 1);
   rb_define_method(rb_cRibbitOdb, "read",   rb_git_odb_read,   1);
   rb_define_method(rb_cRibbitOdb, "close",  rb_git_odb_close,  0);
+  rb_define_method(rb_cRibbitOdb, "hash",   rb_git_odb_obj_hash,  2);
+  rb_define_method(rb_cRibbitOdb, "write",  rb_git_odb_write,  2);
 }
 

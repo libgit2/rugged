@@ -3,8 +3,15 @@ require 'base64'
 
 context "Ribbit::Odb stuff" do
   setup do
-    path = File.dirname(__FILE__) + '/fixtures/testrepo.git/objects'
-    @odb = Ribbit::Odb.new(path)
+    @path = File.dirname(__FILE__) + '/fixtures/testrepo.git/objects'
+    @odb = Ribbit::Odb.new(@path)
+  end
+
+  def rm_loose(sha)
+    dir = sha[0, 2]
+    rest = sha[2, 38]
+    file = File.join(@path, dir, rest)
+    `rm -f #{file}`
   end
 
   test "can tell if an object exists or not" do
@@ -31,5 +38,19 @@ context "Ribbit::Odb stuff" do
     assert !@odb.exists("8496071c1b46c854b31185ea97743be6a8774479")
   end
 
+  test "can hash data" do
+    content = "my test data\n"
+    sha = @odb.hash(content, "blob")
+    assert_equal "76b1b55ab653581d6f2c7230d34098e837197674", sha
+    assert !@odb.exists("76b1b55ab653581d6f2c7230d34098e837197674")
+  end
+
+  test "can write to the db" do
+    content = "my test data\n"
+    sha = @odb.write(content, "blob")
+    assert_equal "76b1b55ab653581d6f2c7230d34098e837197674", sha
+    assert @odb.exists("76b1b55ab653581d6f2c7230d34098e837197674")
+    rm_loose("76b1b55ab653581d6f2c7230d34098e837197674")
+  end
 
 end
