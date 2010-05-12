@@ -134,10 +134,6 @@ static VALUE rb_git_odb_close(VALUE self) {
   git_odb_close(odb);
 }
 
-//GIT_EXTERN(const char *) git_obj_type_to_string(git_otype type);
-//GIT_EXTERN(git_otype) git_obj_string_to_type(const char *str);
-
-
 /*
  * Ribbit Revwalking - almost none of this is implemented yet in libgit2
  */
