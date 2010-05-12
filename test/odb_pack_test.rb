@@ -1,7 +1,7 @@
 require File.dirname(__FILE__) + '/test_helper'
 require 'base64'
 
-context "Ribbit::Odb stuff" do
+context "Ribbit::Odb packed stuff" do
   setup do
     path = File.dirname(__FILE__) + '/fixtures/testrepo.git/objects'
     @odb = Ribbit::Odb.new(path)
