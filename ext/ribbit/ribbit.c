@@ -1,6 +1,9 @@
 #include "ruby.h"
+#include <git/common.h>
 #include <git/oid.h>
 #include <git/odb.h>
+#include <git/commit.h>
+#include <git/revwalk.h>
 
 static VALUE rb_cRibbit;
 
@@ -135,14 +138,56 @@ static VALUE rb_git_odb_close(VALUE self) {
 }
 
 /*
- * Ribbit Revwalking - almost none of this is implemented yet in libgit2
+ * Ribbit Revwalking
  */
 
-//   GIT_EXTERN(git_revpool *) gitrp_alloc(git_odb *db);
+static VALUE rb_cRibbitWalker;
+
+static VALUE rb_git_walker_init(VALUE self, VALUE path) {
+  rb_iv_set(self, "@path", path);
+
+  git_odb *odb;
+  git_odb_open(&odb, RSTRING_PTR(path));
+
+  git_revpool *pool;
+  pool = gitrp_alloc(odb);
+
+  rb_iv_set(self, "pool", (VALUE)pool);
+}
+
+static VALUE rb_git_walker_push(VALUE self, VALUE hex) {
+  git_revpool *pool;
+  pool = (git_revpool*)rb_iv_get(self, "pool");
+
+  git_oid oid;
+  git_oid_mkstr(&oid, RSTRING_PTR(hex));
+
+  git_commit *commit;
+  commit = git_commit_lookup(pool, &oid);
+
+  gitrp_push(pool, commit);
+  return Qnil;
+}
+
+static VALUE rb_git_walker_next(VALUE self) {
+  git_revpool *pool;
+  pool = (git_revpool*)rb_iv_get(self, "pool");
+
+  git_commit *commit;
+  commit = gitrp_next(pool);
+  if(commit) {
+    const git_oid *oid;
+    oid = git_commit_id(commit);
+
+    char out[40];
+    git_oid_fmt(out, oid);
+    return rb_str_new(out, 40);
+  }
+  return Qfalse;
+}
+
 //   GIT_EXTERN(void) gitrp_reset(git_revpool *pool);
-//   GIT_EXTERN(void) gitrp_push(git_revpool *pool, git_commit *commit);
 //   GIT_EXTERN(void) gitrp_hide(git_revpool *pool, git_commit *commit);
-//   GIT_EXTERN(git_commit *) gitrp_next(git_revpool *pool);
 //   GIT_EXTERN(void) gitrp_free(git_revpool *pool);
 
 
@@ -166,5 +211,12 @@ Init_ribbit()
   rb_define_method(rb_cRibbitOdb, "close",  rb_git_odb_close,  0);
   rb_define_method(rb_cRibbitOdb, "hash",   rb_git_odb_obj_hash,  2);
   rb_define_method(rb_cRibbitOdb, "write",  rb_git_odb_write,  2);
+  //rb_define_method(rb_cRibbitOdb, "get_commit",  rb_git_commit_lookup,  1);
+
+  rb_cRibbitWalker = rb_define_class_under(rb_cRibbit, "Walker", rb_cObject);
+  rb_define_method(rb_cRibbitWalker, "initialize", rb_git_walker_init, 1);
+  rb_define_method(rb_cRibbitWalker, "push", rb_git_walker_push, 1);
+  rb_define_method(rb_cRibbitWalker, "next", rb_git_walker_next, 0);
+
 }
 
