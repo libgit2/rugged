@@ -186,8 +186,26 @@ static VALUE rb_git_walker_next(VALUE self) {
   return Qfalse;
 }
 
-//   GIT_EXTERN(void) gitrp_reset(git_revpool *pool);
-//   GIT_EXTERN(void) gitrp_hide(git_revpool *pool, git_commit *commit);
+static VALUE rb_git_walker_hide(VALUE self, VALUE hex) {
+  git_revpool *pool;
+  pool = (git_revpool*)rb_iv_get(self, "pool");
+
+  git_oid oid;
+  git_oid_mkstr(&oid, RSTRING_PTR(hex));
+
+  git_commit *commit;
+  commit = git_commit_lookup(pool, &oid);
+
+  gitrp_hide(pool, commit);
+  return Qnil;
+}
+
+static VALUE rb_git_walker_reset(VALUE self) {
+  git_revpool *pool;
+  pool = (git_revpool*)rb_iv_get(self, "pool");
+  gitrp_reset(pool);
+}
+
 //   GIT_EXTERN(void) gitrp_free(git_revpool *pool);
 
 
@@ -216,7 +234,9 @@ Init_ribbit()
   rb_cRibbitWalker = rb_define_class_under(rb_cRibbit, "Walker", rb_cObject);
   rb_define_method(rb_cRibbitWalker, "initialize", rb_git_walker_init, 1);
   rb_define_method(rb_cRibbitWalker, "push", rb_git_walker_push, 1);
+  rb_define_method(rb_cRibbitWalker, "hide", rb_git_walker_hide, 1);
   rb_define_method(rb_cRibbitWalker, "next", rb_git_walker_next, 0);
+  rb_define_method(rb_cRibbitWalker, "reset", rb_git_walker_reset, 0);
 
 }
 
