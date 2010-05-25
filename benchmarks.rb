@@ -15,25 +15,35 @@ raw = Ribbit::Lib.hex_to_raw(sha)
 
 repo = File.dirname(File.expand_path(__FILE__)) + "/test/fixtures/testrepo.git"
 
+psha = "f7c7e7614af3d26a05aeb324528b6d42076c4e6d"
+sha = "78af21ad7104d6f64b46cbc87f6ca944b8f412da"
+repo = "/Users/schacon/projects/github/.git"
+
 Benchmark.bm do |x|
 
   @grit = Grit::Repo.new(repo).git
   @ribbit = Ribbit::Odb.new(repo + '/objects')
 
   x.report("Grit   object_exists? loose ") do
+    @grit = Grit::Repo.new(repo).git
     1.upto(n) { @grit.object_exists?(sha) }
   end
   x.report("Grit   object_exists? packed") do
+    @grit = Grit::Repo.new(repo).git
     1.upto(n) { @grit.object_exists?(psha) }
   end
   x.report("Ribbit object_exists? loose ") do
+    @ribbit = Ribbit::Odb.new(repo + '/objects')
     1.upto(n) { @ribbit.exists(sha) }
   end
   x.report("Ribbit object_exists? packed") do
+    @ribbit = Ribbit::Odb.new(repo + '/objects')
     1.upto(n) { @ribbit.exists(psha) }
   end
 
 end
+
+exit
 
 n = 50000
 

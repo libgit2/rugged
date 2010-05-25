@@ -41,4 +41,18 @@ context "Ribbit::Walker stuff" do
     assert_equal sha, @walker.next
   end
 
+  test "can order by topo" do
+    sha = "a4a7dce85cf63874e984719f4fdd239f5145052f"
+    @walker.sorting(2)
+    @walker.push(sha)
+    data = []
+    6.times do
+      puts n = @walker.next
+      data << n
+    end
+    pp data
+    shas = data.map {|a| a[0,5] }.join('.')
+    pp shas
+  end
+
 end

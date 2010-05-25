@@ -200,6 +200,22 @@ static VALUE rb_git_walker_hide(VALUE self, VALUE hex) {
   return Qnil;
 }
 
+//#define GIT_RPSORT_NONE         (0)
+//#define GIT_RPSORT_TOPOLOGICAL  (1 << 0)
+//#define GIT_RPSORT_TIME         (1 << 1)
+//#define GIT_RPSORT_REVERSE      (1 << 2)
+static VALUE rb_git_walker_sorting(VALUE self, VALUE ruby_sort_mode) {
+  git_revpool *pool;
+  pool = (git_revpool*)rb_iv_get(self, "pool");
+  unsigned int sort_mode = FIX2INT(ruby_sort_mode);
+  printf("topo: %d\n", GIT_RPSORT_TOPOLOGICAL);
+  printf("time: %d\n", GIT_RPSORT_TIME);
+  printf("reverse: %d\n", GIT_RPSORT_REVERSE);
+  printf("sorting: %d\n", sort_mode);
+  gitrp_sorting(pool, sort_mode);
+  return Qnil;
+}
+
 static VALUE rb_git_walker_reset(VALUE self) {
   git_revpool *pool;
   pool = (git_revpool*)rb_iv_get(self, "pool");
@@ -237,6 +253,6 @@ Init_ribbit()
   rb_define_method(rb_cRibbitWalker, "hide", rb_git_walker_hide, 1);
   rb_define_method(rb_cRibbitWalker, "next", rb_git_walker_next, 0);
   rb_define_method(rb_cRibbitWalker, "reset", rb_git_walker_reset, 0);
-
+  rb_define_method(rb_cRibbitWalker, "sorting", rb_git_walker_sorting, 1);
 }
 
