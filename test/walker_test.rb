@@ -41,18 +41,35 @@ context "Ribbit::Walker stuff" do
     assert_equal sha, @walker.next
   end
 
-  test "can order by topo" do
+  def revlist_with_sorting(sorting)
     sha = "a4a7dce85cf63874e984719f4fdd239f5145052f"
-    @walker.sorting(2)
+    @walker.sorting(sorting)
     @walker.push(sha)
     data = []
     6.times do
-      puts n = @walker.next
-      data << n
+      data << @walker.next
     end
-    pp data
-    shas = data.map {|a| a[0,5] }.join('.')
-    pp shas
+    shas = data.map {|a| a[0,5] if a }.join('.')
+  end
+
+  test "can sort order by date" do
+    time = revlist_with_sorting(Ribbit::SORT_DATE)
+    assert_equal "a4a7d.c4780.9fd73.4a202.5b5b0.84960", time
+  end
+
+  test "can sort order by topo" do
+    topo = revlist_with_sorting(Ribbit::SORT_TOPO)
+    assert_equal "a4a7d.9fd73.4a202.c4780.5b5b0.84960", topo
+  end
+
+  test "can sort order by date reversed" do
+    time = revlist_with_sorting(Ribbit::SORT_DATE | Ribbit::SORT_REVERSE)
+    assert_equal "84960.5b5b0.4a202.9fd73.c4780.a4a7d", time
+  end
+
+  test "can sort order by topo reversed" do
+    topo_rev = revlist_with_sorting(Ribbit::SORT_TOPO | Ribbit::SORT_REVERSE)
+    assert_equal "84960.5b5b0.c4780.4a202.9fd73.a4a7d", topo_rev
   end
 
 end
