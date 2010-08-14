@@ -1,13 +1,85 @@
-= General Library
+* odb.h *
 
-Ribbit::Lib
-  * hex_to_raw(SHA_HEX)
-  * raw_to_hex(SHA_RAW)
+typedef struct {
+	void *data;          /**< Raw, decompressed object data. */
+	size_t len;          /**< Total number of bytes in data. */
+	git_otype type;      /**< Type of this object. */
+} git_obj;
+
+GIT_EXTERN(int) git_odb_open(git_odb **out, const char *objects_dir);
+GIT_EXTERN(void) git_odb_close(git_odb *db);
+GIT_EXTERN(int) git_odb_read(git_obj *out, git_odb *db, const git_oid *id);
+GIT_EXTERN(int) git_odb_write(git_oid *id, git_odb *db, git_obj *obj);
+GIT_INLINE(void) git_obj_close(git_obj *obj)
+GIT_EXTERN(const char *) git_obj_type_to_string(git_otype type);
+GIT_EXTERN(git_otype) git_obj_string_to_type(const char *str);
+GIT_EXTERN(int) git_obj_hash(git_oid *id, git_obj *obj);
+GIT_EXTERN(int) git_odb_exists(git_odb *db, const git_oid *id);
 
 
-= Object Database Class
+* repository.h *
 
-Ribbit::Odb
-  * new(path)
-  - exists(SHA_HEX) 
+GIT_EXTERN(git_repository *) git_repository_alloc(git_odb *odb);
+GIT_EXTERN(git_repository_object *) git_repository_lookup(git_repository *repo, const git_oid *id, git_otype type);
+GIT_EXTERN(void) git_repository_object_free(git_repository_object *object);
+GIT_EXTERN(void) git_repository_free(git_repository *repo);
+
+
+* commit.h *
+
+GIT_EXTERN(git_commit *) git_commit_lookup(git_repository *repo, const git_oid *id);
+GIT_EXTERN(const git_oid *) git_commit_id(git_commit *commit);
+GIT_EXTERN(const char *) git_commit_message_short(git_commit *commit);
+GIT_EXTERN(const char *) git_commit_message(git_commit *commit);
+GIT_EXTERN(time_t) git_commit_time(git_commit *commit);
+GIT_EXTERN(const git_person *) git_commit_committer(git_commit *commit);
+GIT_EXTERN(const git_person *) git_commit_author(git_commit *commit);
+GIT_EXTERN(const git_tree *) git_commit_tree(git_commit *commit);
+
+* tag.h *
+
+GIT_EXTERN(git_tag *) git_tag_lookup(git_repository *repo, const git_oid *id);
+GIT_EXTERN(const git_oid *) git_tag_id(git_tag *tag);
+GIT_EXTERN(const git_repository_object *) git_tag_target(git_tag *t);
+GIT_EXTERN(git_otype) git_tag_type(git_tag *t);
+GIT_EXTERN(const char *) git_tag_name(git_tag *t);
+GIT_EXTERN(const git_person *) git_tag_tagger(git_tag *t);
+GIT_EXTERN(const char *) git_tag_message(git_tag *t);
+
+* tree.h *
+
+GIT_EXTERN(git_tree *) git_tree_lookup(git_repository *repo, const git_oid *id);
+GIT_EXTERN(const git_oid *) git_tree_id(git_tree *tree);
+GIT_EXTERN(size_t) git_tree_entrycount(git_tree *tree);
+GIT_EXTERN(const git_tree_entry *) git_tree_entry_byname(git_tree *tree, const char *filename);
+GIT_EXTERN(const git_tree_entry *) git_tree_entry_byindex(git_tree *tree, int idx);
+GIT_EXTERN(uint32_t) git_tree_entry_attributes(const git_tree_entry *entry);
+GIT_EXTERN(const char *) git_tree_entry_name(const git_tree_entry *entry);
+GIT_EXTERN(const git_oid *) git_tree_entry_id(const git_tree_entry *entry);
+
+
+* common.h *
+
+typedef struct git_person {
+	char name[64]; /**< Full name */
+	char email[64]; /**< Email address */
+	time_t time; /**< Time when this person commited the change */
+} git_person;
+
+
+* revwalk.h *
+
+#define GIT_SORT_NONE         (0)
+#define GIT_SORT_TOPOLOGICAL  (1 << 0)
+#define GIT_SORT_TIME         (1 << 1)
+#define GIT_SORT_REVERSE      (1 << 2)
+
+GIT_EXTERN(git_revwalk *) git_revwalk_alloc(git_repository *repo);
+GIT_EXTERN(void) git_revwalk_reset(git_revwalk *walker);
+GIT_EXTERN(int) git_revwalk_push(git_revwalk *walk, git_commit *commit);
+GIT_EXTERN(int) git_revwalk_hide(git_revwalk *walk, git_commit *commit);
+GIT_EXTERN(git_commit *) git_revwalk_next(git_revwalk *walk);
+GIT_EXTERN(void) git_revwalk_sorting(git_revwalk *walk, unsigned int sort_mode);
+GIT_EXTERN(void) git_revwalk_free(git_revwalk *walk);
+
 

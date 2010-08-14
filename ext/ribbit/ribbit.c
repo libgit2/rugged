@@ -1,9 +1,12 @@
 #include "ruby.h"
-#include <git/common.h>
-#include <git/oid.h>
-#include <git/odb.h>
 #include <git/commit.h>
+#include <git/common.h>
+#include <git/errors.h>
+#include <git/index.h>
+#include <git/odb.h>
+#include <git/oid.h>
 #include <git/revwalk.h>
+#include <git/zlib.h>
 
 static VALUE rb_cRibbit;
 
@@ -139,7 +142,6 @@ static VALUE rb_git_odb_close(VALUE self) {
 
 /*
  * Ribbit Revwalking
- */
 
 static VALUE rb_cRibbitWalker;
 
@@ -149,15 +151,19 @@ static VALUE rb_git_walker_init(VALUE self, VALUE path) {
   git_odb *odb;
   git_odb_open(&odb, RSTRING_PTR(path));
 
-  git_revpool *pool;
-  pool = gitrp_alloc(odb);
+  git_repository *repo;
+	git_revwalk *walk;
+	
+	repo = git_repository_alloc(odb);
+	walk = git_revwalk_alloc(repo);
 
-  rb_iv_set(self, "pool", (VALUE)pool);
+  rb_iv_set(self, "walk", (VALUE)walk);
 }
 
 static VALUE rb_git_walker_push(VALUE self, VALUE hex) {
-  git_revpool *pool;
-  pool = (git_revpool*)rb_iv_get(self, "pool");
+  git_revwalk *walk;
+  repo = (git_revwalk*)rb_iv_get(self, "walk");
+  walk = (git_revwalk*)rb_iv_get(self, "walk");
 
   git_oid oid;
   git_oid_mkstr(&oid, RSTRING_PTR(hex));
@@ -216,6 +222,7 @@ static VALUE rb_git_walker_reset(VALUE self) {
 }
 
 //   GIT_EXTERN(void) gitrp_free(git_revpool *pool);
+*/
 
 /*
  * Ribbit Init Call
@@ -239,6 +246,7 @@ Init_ribbit()
   rb_define_method(rb_cRibbitOdb, "write",  rb_git_odb_write,  2);
   //rb_define_method(rb_cRibbitOdb, "get_commit",  rb_git_commit_lookup,  1);
 
+  /*
   rb_cRibbitWalker = rb_define_class_under(rb_cRibbit, "Walker", rb_cObject);
   rb_define_method(rb_cRibbitWalker, "initialize", rb_git_walker_init, 1);
   rb_define_method(rb_cRibbitWalker, "push", rb_git_walker_push, 1);
@@ -251,5 +259,9 @@ Init_ribbit()
   rb_define_const(rb_cRibbit, "SORT_TOPO", INT2FIX(1));
   rb_define_const(rb_cRibbit, "SORT_DATE", INT2FIX(2));
   rb_define_const(rb_cRibbit, "SORT_REVERSE", INT2FIX(4));
+  */
+  
+  //rb_cRibbitCommit = rb_define_class_under(rb_cRibbit, "Commit", rb_cObject);
+  // init
 }
 
