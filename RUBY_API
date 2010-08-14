@@ -1,0 +1,98 @@
+Ribbit::Lib
+  hex_to_raw
+  raw_to_hex
+  type_to_string
+  string_to_type
+
+odb = 
+Ribbit::Odb.new(path)
+  obj  = odb.read(sha)
+  sha  = odb.write(content, type)
+  sha  = odb.hash(content, type)
+  bool = odb.exists(sha)
+         odb.close
+
+repo = 
+Ribbit::Repository.new(sha)
+  gobj = repo.lookup(sha, type[?])
+         repo.free
+
+object = 
+Ribbit::Object.new(odb, sha)
+  obj.sha
+  obj.size
+  obj.type_int
+  obj.type_str
+  obj.data
+  obj.gobject
+  obj.free
+
+gobjc =
+Ribbit::Commit.new(sha) < Ribbit::Object
+  sha  = gobjc.sha
+  str  = gobjc.message
+  str  = gobjc.message_short
+  str  = gobjc.message_body
+  prsn = gobjc.author
+  prsn = gobjc.committer
+  tree = gobjc.tree
+  sha  = gobjc.tree_sha
+  arr  = gobjc.parents [*]
+
+ent =
+Ribbit::TreeEntry.new(sha)
+  int  = ent.attributes
+  str  = ent.name
+  sha  = ent.sha
+  gobj = ent.gobject
+
+gobtr =
+Ribbit::Tree.new(sha) < Ribbit::Object
+  sha  = gobtr.sha
+  int  = gobtr.entry_count
+         gobtr.traverse(:name/:index)
+  ent  = gobtr.next
+
+gobtg =
+Ribbit::Tag.new(sha) < Ribbit::Object
+  sha  = gobtg.sha
+  gobj = gobtg.target
+  int  = gobtg.type
+  str  = gobtg.name
+  prsn = gobtg.tagger
+  str  = gobtg.message
+
+prsn =
+Ribbit::Person.new(data)
+  str  = prsn.name
+  str  = prsn.email
+  time = prsn.time
+
+walker = 
+Ribbit::Walker.new(path) 
+         walker.push(hex_sha_interesting)
+         walker.hide(hex_sha_uninteresting)
+  sha  = walker.next # false if none left
+         walker.reset
+
+
+## TODO ##
+
+ - diff-tree
+ - rev-parse
+
+ - branch (list, create, delete, safe_delete, move)
+ - notes
+
+ - index (read-tree, write-tree, update, read, write)
+ - name-rev, describe
+ - reflog (read, write)
+
+ - fetch (http, git)
+ - push (http, git, ssh)
+
+ - diff
+ - merge
+
+ - fsck
+

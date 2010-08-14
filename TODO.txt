@@ -1,0 +1,6 @@
+* get basic object stuff working again
+* commit parsing
+* tree parsing and iterating
+* tag parsing
+* revwalking
+* index parsing, walking, updating
