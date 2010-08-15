@@ -4,21 +4,18 @@ Ribbit::Lib
   type_to_string
   string_to_type
 
-odb = 
-Ribbit::Odb.new(path)
-  obj  = odb.read(sha)
-  sha  = odb.write(content, type)
-  sha  = odb.hash(content, type)
-  bool = odb.exists(sha)
-         odb.close
-
-repo = 
-Ribbit::Repository.new(sha)
+repo =
+Ribbit::Repository.new(path)
+  ctnt = repo.read(sha)
   gobj = repo.lookup(sha, type[?])
-         repo.free
+  sha  = repo.write(content, type)
+  sha  = repo.hash(content, type)
+  bool = repo.exists(sha)
+         repo.close
+
 
 object = 
-Ribbit::Object.new(odb, sha)
+Ribbit::Object.new(content, type)
   obj.sha
   obj.size
   obj.type_int
@@ -28,7 +25,7 @@ Ribbit::Object.new(odb, sha)
   obj.free
 
 gobjc =
-Ribbit::Commit.new(sha) < Ribbit::Object
+Ribbit::Commit.new(content, type) < Ribbit::Object
   sha  = gobjc.sha
   str  = gobjc.message
   str  = gobjc.message_short
@@ -40,21 +37,21 @@ Ribbit::Commit.new(sha) < Ribbit::Object
   arr  = gobjc.parents [*]
 
 ent =
-Ribbit::TreeEntry.new(sha)
+Ribbit::TreeEntry.new(mode, name, sha)
   int  = ent.attributes
   str  = ent.name
   sha  = ent.sha
   gobj = ent.gobject
 
 gobtr =
-Ribbit::Tree.new(sha) < Ribbit::Object
+Ribbit::Tree.new(content, type) < Ribbit::Object
   sha  = gobtr.sha
   int  = gobtr.entry_count
          gobtr.traverse(:name/:index)
   ent  = gobtr.next
 
 gobtg =
-Ribbit::Tag.new(sha) < Ribbit::Object
+Ribbit::Tag.new(content, type) < Ribbit::Object
   sha  = gobtg.sha
   gobj = gobtg.target
   int  = gobtg.type
@@ -70,29 +67,8 @@ Ribbit::Person.new(data)
 
 walker = 
 Ribbit::Walker.new(path) 
-         walker.push(hex_sha_interesting)
-         walker.hide(hex_sha_uninteresting)
+         walker.push(sha_interesting)
+         walker.hide(sha_uninteresting)
   sha  = walker.next # false if none left
          walker.reset
-
-
-## TODO ##
-
- - diff-tree
- - rev-parse
-
- - branch (list, create, delete, safe_delete, move)
- - notes
-
- - index (read-tree, write-tree, update, read, write)
- - name-rev, describe
- - reflog (read, write)
-
- - fetch (http, git)
- - push (http, git, ssh)
-
- - diff
- - merge
-
- - fsck
 

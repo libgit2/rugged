@@ -4,3 +4,24 @@
 * tag parsing
 * revwalking
 * index parsing, walking, updating
+
+## API TODO ##
+
+ - diff-tree
+ - rev-parse
+
+ - branch (list, create, delete, safe_delete, move)
+ - notes
+
+ - index (read-tree, write-tree, update, read, write)
+ - name-rev, describe
+ - reflog (read, write)
+
+ - fetch (http, git)
+ - push (http, git, ssh)
+
+ - diff
+ - merge
+
+ - fsck
+
