@@ -40,7 +40,7 @@ static VALUE rb_git_raw_to_hex(VALUE self, VALUE raw)
 
 static VALUE rb_cRibbitOdb;
 
-static VALUE rb_git_odb_init(VALUE self, VALUE path) {
+static VALUE rb_git_repo_init(VALUE self, VALUE path) {
   rb_iv_set(self, "@path", path);
 
   git_odb *odb;
@@ -49,7 +49,7 @@ static VALUE rb_git_odb_init(VALUE self, VALUE path) {
   rb_iv_set(self, "odb", (VALUE)odb);
 }
 
-static VALUE rb_git_odb_exists(VALUE self, VALUE hex) {
+static VALUE rb_git_repo_exists(VALUE self, VALUE hex) {
   git_odb *odb;
   odb = (git_odb*)rb_iv_get(self, "odb");
 
@@ -71,7 +71,7 @@ typedef struct {
 } git_obj;
 */
 
-static VALUE rb_git_odb_read(VALUE self, VALUE hex) {
+static VALUE rb_git_repo_read(VALUE self, VALUE hex) {
   git_odb *odb;
   odb = (git_odb*)rb_iv_get(self, "odb");
 
@@ -98,7 +98,7 @@ static VALUE rb_git_odb_read(VALUE self, VALUE hex) {
   return Qfalse;
 }
 
-static VALUE rb_git_odb_obj_hash(VALUE self, VALUE content, VALUE type) {
+static VALUE rb_git_repo_obj_hash(VALUE self, VALUE content, VALUE type) {
   git_obj obj;
   git_oid oid;
   (&obj)->data = RSTRING_PTR(content);
@@ -113,7 +113,7 @@ static VALUE rb_git_odb_obj_hash(VALUE self, VALUE content, VALUE type) {
   return Qfalse;
 }
 
-static VALUE rb_git_odb_write(VALUE self, VALUE content, VALUE type) {
+static VALUE rb_git_repo_write(VALUE self, VALUE content, VALUE type) {
   git_odb *odb;
   odb = (git_odb*)rb_iv_get(self, "odb");
 
@@ -134,7 +134,7 @@ static VALUE rb_git_odb_write(VALUE self, VALUE content, VALUE type) {
 }
 
 
-static VALUE rb_git_odb_close(VALUE self) {
+static VALUE rb_git_repo_close(VALUE self) {
   git_odb *odb;
   odb = (git_odb*)rb_iv_get(self, "odb");
   git_odb_close(odb);
@@ -237,13 +237,13 @@ Init_ribbit()
   rb_define_module_function(rb_cRibbitLib, "hex_to_raw", rb_git_hex_to_raw, 1);
   rb_define_module_function(rb_cRibbitLib, "raw_to_hex", rb_git_raw_to_hex, 1);
 
-  rb_cRibbitOdb = rb_define_class_under(rb_cRibbit, "Odb", rb_cObject);
-  rb_define_method(rb_cRibbitOdb, "initialize", rb_git_odb_init, 1);
-  rb_define_method(rb_cRibbitOdb, "exists", rb_git_odb_exists, 1);
-  rb_define_method(rb_cRibbitOdb, "read",   rb_git_odb_read,   1);
-  rb_define_method(rb_cRibbitOdb, "close",  rb_git_odb_close,  0);
-  rb_define_method(rb_cRibbitOdb, "hash",   rb_git_odb_obj_hash,  2);
-  rb_define_method(rb_cRibbitOdb, "write",  rb_git_odb_write,  2);
+  rb_cRibbitOdb = rb_define_class_under(rb_cRibbit, "Repository", rb_cObject);
+  rb_define_method(rb_cRibbitOdb, "initialize", rb_git_repo_init, 1);
+  rb_define_method(rb_cRibbitOdb, "exists", rb_git_repo_exists, 1);
+  rb_define_method(rb_cRibbitOdb, "read",   rb_git_repo_read,   1);
+  rb_define_method(rb_cRibbitOdb, "close",  rb_git_repo_close,  0);
+  rb_define_method(rb_cRibbitOdb, "hash",   rb_git_repo_obj_hash,  2);
+  rb_define_method(rb_cRibbitOdb, "write",  rb_git_repo_write,  2);
   //rb_define_method(rb_cRibbitOdb, "get_commit",  rb_git_commit_lookup,  1);
 
   /*
