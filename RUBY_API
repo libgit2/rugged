@@ -13,12 +13,12 @@ Ribbit::Lib
 
 repo =
 Ribbit::Repository.new(path)
-  ctnt = repo.read(sha)
+  ctnt, type = repo.read(sha)
   gobj = repo.lookup(sha, type[?])  # do we need the type? or provide for checking?
   sha  = repo.write(content, type)
   sha  = repo.hash(content, type)
   bool = repo.exists(sha)
-         repo.close
+  walker = repo.walker
 
 # Object is the main object class - it shouldn't be created directly,
 # but all of these methods should be useful in it's derived classes
@@ -32,7 +32,6 @@ Ribbit::Object.new(repo, sha)
          obj.data
          obj.written?
    sha = obj.write
-         obj.free
 
 # The next classes are for consuming and creating the 4 base
 # git object types.  just about every method should be able to take
@@ -70,6 +69,7 @@ Ribbit::Tree.new < Ribbit::Object
 ent =
 Ribbit::TreeEntry.new(mode, name, sha)
   int  = ent.mode
+  str  = ent.type
   str  = ent.name
   sha  = ent.sha
   gobj = ent.gobject
