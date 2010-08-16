@@ -38,7 +38,7 @@ if command? :kicker
   desc "Launch Kicker (like autotest)"
   task :kicker do
     puts "Kicking... (ctrl+c to cancel)"
-    exec "kicker -e rake test lib examples"
+    exec "kicker -e rake test lib"
   end
 end
 
