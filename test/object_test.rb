@@ -6,9 +6,19 @@ context "Ribbit::Object tests" do
     @repo = Ribbit::Repository.new(path)
   end
 
+  test "read fails if the sha does not exist" do
+    sha = "9496071c1b46c854b31185ea97743be6a8774479"
+    obj = Ribbit::Object.new(@repo, sha)
+    assert_equal obj.size, nil
+    assert_equal obj.read, false
+    assert_equal obj.size, nil
+  end
+
   test "can read the sha, data, type and size" do
     sha = "8496071c1b46c854b31185ea97743be6a8774479"
     obj = Ribbit::Object.new(@repo, sha)
+    assert_equal obj.size, nil
+    assert_equal obj.read, true
     assert_equal obj.sha, sha
     assert_equal obj.object_type, "commit"
     assert_equal obj.size, 172
