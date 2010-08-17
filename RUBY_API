@@ -30,6 +30,7 @@ Ribbit::Object.new(repo, sha)
          obj.type_int
          obj.type_str
          obj.data
+
          obj.written?
    sha = obj.write
 

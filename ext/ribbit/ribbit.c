@@ -130,11 +130,44 @@ static VALUE rb_git_repo_write(VALUE self, VALUE content, VALUE type) {
   return Qfalse;
 }
 
-
 static VALUE rb_git_repo_close(VALUE self) {
   git_odb *odb;
   odb = (git_odb*)rb_iv_get(self, "odb");
   git_odb_close(odb);
+}
+
+/*
+ * Ribbit Object
+ */ 
+
+static VALUE rb_cRibbitObject;
+
+static VALUE rb_git_object_init(VALUE self, VALUE rb_repo, VALUE hex) {
+  git_repository *repo;
+  repo = (git_repository*)rb_iv_get(rb_repo, "repo");
+  git_odb *odb;
+  odb = (git_odb*)rb_iv_get(rb_repo, "odb");
+
+  git_oid oid;
+  git_oid_mkstr(&oid, RSTRING_PTR(hex));
+
+  git_obj obj;
+
+  int read = git_odb_read(&obj, odb, &oid);
+  if(read == GIT_SUCCESS) {
+    unsigned char *data = (&obj)->data;
+    rb_iv_set(self, "@data", rb_str_new2(data));
+
+    rb_iv_set(self, "@size", INT2FIX((int)(&obj)->len));
+
+    const char *str_type;
+    git_otype git_type = (&obj)->type;
+    str_type = git_obj_type_to_string(git_type);
+    rb_iv_set(self, "@object_type", rb_str_new2(str_type));
+  }
+
+  rb_iv_set(self, "@sha", hex);
+  rb_iv_set(self, "repo", rb_repo);
 }
 
 /*
@@ -240,6 +273,15 @@ Init_ribbit()
   rb_define_method(rb_cRibbitRepo, "close",  rb_git_repo_close,  0);
   rb_define_method(rb_cRibbitRepo, "hash",   rb_git_repo_obj_hash,  2);
   rb_define_method(rb_cRibbitRepo, "write",  rb_git_repo_write,  2);
+
+  rb_cRibbitObject = rb_define_class_under(rb_cRibbit, "Object", rb_cObject);
+  rb_define_method(rb_cRibbitObject, "initialize", rb_git_object_init, 2);
+  rb_attr(rb_cRibbitObject, rb_intern("sha"), Qtrue, Qtrue, Qtrue);
+  rb_attr(rb_cRibbitObject, rb_intern("size"), Qtrue, Qtrue, Qtrue);
+  rb_attr(rb_cRibbitObject, rb_intern("object_type"), Qtrue, Qtrue, Qtrue);
+  rb_attr(rb_cRibbitObject, rb_intern("data"), Qtrue, Qtrue, Qtrue);
+ 
+  //rb_include_module(rb_cRibbitCommit, rb_cRibbitObject);
 
   rb_cRibbitWalker = rb_define_class_under(rb_cRibbit, "Walker", rb_cObject);
   rb_define_method(rb_cRibbitWalker, "initialize", rb_git_walker_init, 1);

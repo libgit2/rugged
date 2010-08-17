@@ -24,6 +24,11 @@ GIT_EXTERN(git_repository_object *) git_repository_lookup(git_repository *repo, 
 GIT_EXTERN(void) git_repository_object_free(git_repository_object *object);
 GIT_EXTERN(void) git_repository_free(git_repository *repo);
 
+typedef struct {
+	/** raw binary formatted id */
+	unsigned char id[GIT_OID_RAWSZ];
+} git_oid;
+
 
 * commit.h *
 
