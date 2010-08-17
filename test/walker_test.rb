@@ -4,7 +4,8 @@ require 'base64'
 context "Ribbit::Walker stuff" do
   setup do
     @path = File.dirname(__FILE__) + '/fixtures/testrepo.git/objects'
-    @walker = Ribbit::Walker.new(@path)
+    @repo = Ribbit::Repository.new(@path)
+    @walker = Ribbit::Walker.new(@repo)
   end
 
   test "can walk a simple revlist" do
@@ -59,7 +60,7 @@ context "Ribbit::Walker stuff" do
 
   test "can sort order by topo" do
     topo = revlist_with_sorting(Ribbit::SORT_TOPO)
-    assert_equal "a4a7d.9fd73.4a202.c4780.5b5b0.84960", topo
+    assert_equal "a4a7d.c4780.9fd73.4a202.5b5b0.84960", topo
   end
 
   test "can sort order by date reversed" do
@@ -69,7 +70,7 @@ context "Ribbit::Walker stuff" do
 
   test "can sort order by topo reversed" do
     topo_rev = revlist_with_sorting(Ribbit::SORT_TOPO | Ribbit::SORT_REVERSE)
-    assert_equal "84960.5b5b0.c4780.4a202.9fd73.a4a7d", topo_rev
+    assert_equal "84960.5b5b0.4a202.9fd73.c4780.a4a7d", topo_rev
   end
 
 end

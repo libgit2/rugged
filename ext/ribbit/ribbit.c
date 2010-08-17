@@ -6,6 +6,7 @@
 #include <git/odb.h>
 #include <git/oid.h>
 #include <git/revwalk.h>
+#include <git/repository.h>
 #include <git/zlib.h>
 
 static VALUE rb_cRibbit;
@@ -38,15 +39,19 @@ static VALUE rb_git_raw_to_hex(VALUE self, VALUE raw)
  * Ribbit Object Database
  */
 
-static VALUE rb_cRibbitOdb;
+static VALUE rb_cRibbitRepo;
 
 static VALUE rb_git_repo_init(VALUE self, VALUE path) {
   rb_iv_set(self, "@path", path);
 
   git_odb *odb;
-  git_odb_open(&odb, RSTRING_PTR(path));
+  git_repository *repo;
 
-  rb_iv_set(self, "odb", (VALUE)odb);
+  git_odb_open(&odb, RSTRING_PTR(path));
+  repo = git_repository_alloc(odb);
+
+  rb_iv_set(self, "odb",  (VALUE)odb);
+  rb_iv_set(self, "repo", (VALUE)repo);
 }
 
 static VALUE rb_git_repo_exists(VALUE self, VALUE hex) {
@@ -62,14 +67,6 @@ static VALUE rb_git_repo_exists(VALUE self, VALUE hex) {
   }
   return Qfalse;
 }
-
-/*
-typedef struct {
-	void *data;     // Raw, decompressed object data.
-	size_t len;     // Total number of bytes in data.
-	git_otype type; // Type of this object.
-} git_obj;
-*/
 
 static VALUE rb_git_repo_read(VALUE self, VALUE hex) {
   git_odb *odb;
@@ -142,45 +139,44 @@ static VALUE rb_git_repo_close(VALUE self) {
 
 /*
  * Ribbit Revwalking
+ */ 
 
 static VALUE rb_cRibbitWalker;
 
-static VALUE rb_git_walker_init(VALUE self, VALUE path) {
-  rb_iv_set(self, "@path", path);
-
-  git_odb *odb;
-  git_odb_open(&odb, RSTRING_PTR(path));
-
+static VALUE rb_git_walker_init(VALUE self, VALUE rb_repo) {
   git_repository *repo;
-	git_revwalk *walk;
-	
-	repo = git_repository_alloc(odb);
+  repo = (git_repository*)rb_iv_get(rb_repo, "repo");
+  
+	git_revwalk *walk;	
 	walk = git_revwalk_alloc(repo);
 
   rb_iv_set(self, "walk", (VALUE)walk);
+  rb_iv_set(self, "repo", (VALUE)repo);
 }
 
+
 static VALUE rb_git_walker_push(VALUE self, VALUE hex) {
+  git_repository *repo;
   git_revwalk *walk;
-  repo = (git_revwalk*)rb_iv_get(self, "walk");
+  repo = (git_repository*)rb_iv_get(self, "repo");
   walk = (git_revwalk*)rb_iv_get(self, "walk");
 
   git_oid oid;
   git_oid_mkstr(&oid, RSTRING_PTR(hex));
 
   git_commit *commit;
-  commit = git_commit_lookup(pool, &oid);
+  commit = git_commit_lookup(repo, &oid);
 
-  gitrp_push(pool, commit);
+  git_revwalk_push(walk, commit);
   return Qnil;
 }
 
 static VALUE rb_git_walker_next(VALUE self) {
-  git_revpool *pool;
-  pool = (git_revpool*)rb_iv_get(self, "pool");
+  git_revwalk *walk;
+  walk = (git_revwalk*)rb_iv_get(self, "walk");
 
   git_commit *commit;
-  commit = gitrp_next(pool);
+  commit = git_revwalk_next(walk);
   if(commit) {
     const git_oid *oid;
     oid = git_commit_id(commit);
@@ -193,36 +189,36 @@ static VALUE rb_git_walker_next(VALUE self) {
 }
 
 static VALUE rb_git_walker_hide(VALUE self, VALUE hex) {
-  git_revpool *pool;
-  pool = (git_revpool*)rb_iv_get(self, "pool");
+  git_repository *repo;
+  git_revwalk *walk;
+  repo = (git_repository*)rb_iv_get(self, "repo");
+  walk = (git_revwalk*)rb_iv_get(self, "walk");
 
   git_oid oid;
   git_oid_mkstr(&oid, RSTRING_PTR(hex));
 
   git_commit *commit;
-  commit = git_commit_lookup(pool, &oid);
+  commit = git_commit_lookup(repo, &oid);
 
-  gitrp_hide(pool, commit);
+  git_revwalk_hide(walk, commit);
   return Qnil;
 }
 
 static VALUE rb_git_walker_sorting(VALUE self, VALUE ruby_sort_mode) {
-  git_revpool *pool;
-  pool = (git_revpool*)rb_iv_get(self, "pool");
+  git_revwalk *walk;
+  walk = (git_revwalk*)rb_iv_get(self, "walk");
   unsigned int sort_mode = FIX2INT(ruby_sort_mode);
-  gitrp_sorting(pool, sort_mode);
+  git_revwalk_sorting(walk, sort_mode);
   return Qnil;
 }
 
 static VALUE rb_git_walker_reset(VALUE self) {
-  git_revpool *pool;
-  pool = (git_revpool*)rb_iv_get(self, "pool");
-  gitrp_reset(pool);
+  git_revwalk *walk;
+  walk = (git_revwalk*)rb_iv_get(self, "walk");
+  git_revwalk_reset(walk);
   return Qnil;
 }
 
-//   GIT_EXTERN(void) gitrp_free(git_revpool *pool);
-*/
 
 /*
  * Ribbit Init Call
@@ -237,21 +233,19 @@ Init_ribbit()
   rb_define_module_function(rb_cRibbitLib, "hex_to_raw", rb_git_hex_to_raw, 1);
   rb_define_module_function(rb_cRibbitLib, "raw_to_hex", rb_git_raw_to_hex, 1);
 
-  rb_cRibbitOdb = rb_define_class_under(rb_cRibbit, "Repository", rb_cObject);
-  rb_define_method(rb_cRibbitOdb, "initialize", rb_git_repo_init, 1);
-  rb_define_method(rb_cRibbitOdb, "exists", rb_git_repo_exists, 1);
-  rb_define_method(rb_cRibbitOdb, "read",   rb_git_repo_read,   1);
-  rb_define_method(rb_cRibbitOdb, "close",  rb_git_repo_close,  0);
-  rb_define_method(rb_cRibbitOdb, "hash",   rb_git_repo_obj_hash,  2);
-  rb_define_method(rb_cRibbitOdb, "write",  rb_git_repo_write,  2);
-  //rb_define_method(rb_cRibbitOdb, "get_commit",  rb_git_commit_lookup,  1);
+  rb_cRibbitRepo = rb_define_class_under(rb_cRibbit, "Repository", rb_cObject);
+  rb_define_method(rb_cRibbitRepo, "initialize", rb_git_repo_init, 1);
+  rb_define_method(rb_cRibbitRepo, "exists", rb_git_repo_exists, 1);
+  rb_define_method(rb_cRibbitRepo, "read",   rb_git_repo_read,   1);
+  rb_define_method(rb_cRibbitRepo, "close",  rb_git_repo_close,  0);
+  rb_define_method(rb_cRibbitRepo, "hash",   rb_git_repo_obj_hash,  2);
+  rb_define_method(rb_cRibbitRepo, "write",  rb_git_repo_write,  2);
 
-  /*
   rb_cRibbitWalker = rb_define_class_under(rb_cRibbit, "Walker", rb_cObject);
   rb_define_method(rb_cRibbitWalker, "initialize", rb_git_walker_init, 1);
   rb_define_method(rb_cRibbitWalker, "push", rb_git_walker_push, 1);
-  rb_define_method(rb_cRibbitWalker, "hide", rb_git_walker_hide, 1);
   rb_define_method(rb_cRibbitWalker, "next", rb_git_walker_next, 0);
+  rb_define_method(rb_cRibbitWalker, "hide", rb_git_walker_hide, 1);
   rb_define_method(rb_cRibbitWalker, "reset", rb_git_walker_reset, 0);
   rb_define_method(rb_cRibbitWalker, "sorting", rb_git_walker_sorting, 1);
 
@@ -259,9 +253,5 @@ Init_ribbit()
   rb_define_const(rb_cRibbit, "SORT_TOPO", INT2FIX(1));
   rb_define_const(rb_cRibbit, "SORT_DATE", INT2FIX(2));
   rb_define_const(rb_cRibbit, "SORT_REVERSE", INT2FIX(4));
-  */
-  
-  //rb_cRibbitCommit = rb_define_class_under(rb_cRibbit, "Commit", rb_cObject);
-  // init
 }
 
