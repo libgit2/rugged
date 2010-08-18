@@ -178,6 +178,49 @@ static VALUE rb_git_object_read(VALUE self) {
 }
 
 /*
+ * Ribbit Commit
+ */ 
+
+static VALUE rb_cRibbitCommit;
+
+static VALUE rb_git_commit_init(VALUE self, VALUE rb_repo, VALUE hex) {
+  rb_iv_set(self, "@sha", hex);
+  rb_iv_set(self, "repo", rb_repo);
+
+  rb_git_object_init(self, rb_repo, hex);
+
+  git_repository *repo;
+  repo = (git_repository*)rb_iv_get(rb_repo, "repo");
+
+  git_oid oid;
+  git_oid_mkstr(&oid, RSTRING_PTR(hex));
+
+  git_commit *commit;
+  commit = git_commit_lookup(repo, &oid);
+  rb_iv_set(self, "commit", (VALUE)commit);
+}
+
+static VALUE rb_git_commit_message(VALUE self) {
+  git_commit *commit;
+  commit = (git_commit*)rb_iv_get(self, "commit");
+
+  const char *str_type;
+  str_type = git_commit_message(commit);
+
+  return rb_str_new2(str_type);
+}
+
+static VALUE rb_git_commit_message_short(VALUE self) {
+  git_commit *commit;
+  commit = (git_commit*)rb_iv_get(self, "commit");
+
+  const char *str_type;
+  str_type = git_commit_message_short(commit);
+
+  return rb_str_new2(str_type);
+}
+
+/*
  * Ribbit Revwalking
  */ 
 
@@ -289,9 +332,11 @@ Init_ribbit()
   rb_attr(rb_cRibbitObject, rb_intern("object_type"), Qtrue, Qtrue, Qtrue);
   rb_attr(rb_cRibbitObject, rb_intern("data"), Qtrue, Qtrue, Qtrue);
  
-  //rb_cRibbitCommit = rb_define_class_under(rb_cRibbit, "Commit", rb_cObject);
-  //rb_define_method(rb_cRibbitObject, "initialize", rb_git_object_init, 2);
-  //rb_include_module(rb_cRibbitCommit, rb_cRibbitObject);
+  rb_cRibbitCommit = rb_define_class_under(rb_cRibbit, "Commit", rb_cObject);
+  rb_attr(rb_cRibbitCommit, rb_intern("sha"), Qtrue, Qtrue, Qtrue);
+  rb_define_method(rb_cRibbitCommit, "initialize", rb_git_commit_init, 2);
+  rb_define_method(rb_cRibbitCommit, "message", rb_git_commit_message, 0);
+  rb_define_method(rb_cRibbitCommit, "message_short", rb_git_commit_message_short, 0);
 
   rb_cRibbitWalker = rb_define_class_under(rb_cRibbit, "Walker", rb_cObject);
   rb_define_method(rb_cRibbitWalker, "initialize", rb_git_walker_init, 1);
