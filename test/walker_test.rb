@@ -33,12 +33,15 @@ context "Ribbit::Walker stuff" do
     assert_equal false, @walker.next
   end
 
+  # resetting a walker emtpies the walking queue
   test "can reset a walker" do
     sha = "8496071c1b46c854b31185ea97743be6a8774479"
     @walker.push(sha)
     assert_equal sha, @walker.next
     assert_equal false, @walker.next
     @walker.reset
+    assert_equal false, @walker.next
+    @walker.push(sha)
     assert_equal sha, @walker.next
   end
 
