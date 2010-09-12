@@ -12,9 +12,9 @@ context "Ribbit::Walker stuff" do
     @walker.push("9fd738e8f7967c078dceed8190330fc8648ee56a")
     data = []
     4.times do
-      data << @walker.next
+      data << @walker.next.sha
     end
-    shas = data.sort.map {|a| a[0,5] }.join('.')
+    shas = data.sort.map {|a| a[0,5]}.join('.')
     assert_equal "4a202.5b5b0.84960.9fd73", shas
     assert_equal false, @walker.next
   end
@@ -22,7 +22,7 @@ context "Ribbit::Walker stuff" do
   test "can walk a part of a revlist" do
     sha = "8496071c1b46c854b31185ea97743be6a8774479"
     @walker.push(sha)
-    assert_equal sha, @walker.next
+    assert_equal sha, @walker.next.sha
     assert_equal false, @walker.next
   end
 
@@ -37,12 +37,12 @@ context "Ribbit::Walker stuff" do
   test "can reset a walker" do
     sha = "8496071c1b46c854b31185ea97743be6a8774479"
     @walker.push(sha)
-    assert_equal sha, @walker.next
+    assert_equal sha, @walker.next.sha
     assert_equal false, @walker.next
     @walker.reset
     assert_equal false, @walker.next
     @walker.push(sha)
-    assert_equal sha, @walker.next
+    assert_equal sha, @walker.next.sha
   end
 
   def revlist_with_sorting(sorting)
@@ -53,7 +53,7 @@ context "Ribbit::Walker stuff" do
     6.times do
       data << @walker.next
     end
-    shas = data.map {|a| a[0,5] if a }.join('.')
+    shas = data.map {|a| a.sha[0,5] if a }.join('.')
   end
 
   test "can sort order by date" do

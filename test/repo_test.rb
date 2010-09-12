@@ -32,12 +32,6 @@ context "Ribbit::Repository stuff" do
     assert !@repo.read("a496071c1b46c854b31185ea97743be6a8774471")
   end
 
-  test "can close the db" do
-    @repo.exists("8496071c1b46c854b31185ea97743be6a8774479")
-    @repo.close
-    assert !@repo.exists("8496071c1b46c854b31185ea97743be6a8774479")
-  end
-
   test "can hash data" do
     content = "my test data\n"
     sha = @repo.hash(content, "blob")

@@ -9,6 +9,8 @@
 #include <git/repository.h>
 #include <git/zlib.h>
 
+static VALUE rb_git_createobject(git_repository_object *object);
+
 static VALUE rb_cRibbit;
 
 /*
@@ -59,26 +61,36 @@ static VALUE rb_git_string_to_type(VALUE self, VALUE string_type)
 
 static VALUE rb_cRibbitRepo;
 
+static VALUE rb_git_repo_allocate(VALUE klass)
+{
+	git_repository *repo = NULL;
+	return Data_Wrap_Struct(klass, NULL, NULL, repo);
+}
+
 static VALUE rb_git_repo_init(VALUE self, VALUE path)
 {
 	git_odb *odb;
 	git_repository *repo;
 
-	rb_iv_set(self, "@path", path);
-
 	git_odb_open(&odb, RSTRING_PTR(path));
 	repo = git_repository_alloc(odb);
 
-	rb_iv_set(self, "odb",  (VALUE)odb);
-	rb_iv_set(self, "repo", (VALUE)repo);
+	if (repo == NULL)
+		rb_raise(rb_eRuntimeError, "Failed to allocate new Git repository");
+
+	DATA_PTR(self) = repo;
+	return Qnil;
 }
 
 static VALUE rb_git_repo_exists(VALUE self, VALUE hex)
 {
+	git_repository *repo;
 	git_odb *odb;
 	git_oid oid;
 
-	odb = (git_odb*)rb_iv_get(self, "odb");
+	Data_Get_Struct(self, git_repository, repo);
+
+	odb = git_repository_database(repo);
 	git_oid_mkstr(&oid, RSTRING_PTR(hex));
 
 	return git_odb_exists(odb, &oid) ? Qtrue : Qfalse;
@@ -86,11 +98,14 @@ static VALUE rb_git_repo_exists(VALUE self, VALUE hex)
 
 static VALUE rb_git_repo_read(VALUE self, VALUE hex)
 {
+	git_repository *repo;
 	git_odb *odb;
 	git_oid oid;
 	git_obj obj;
 
-	odb = (git_odb*)rb_iv_get(self, "odb");
+
+	Data_Get_Struct(self, git_repository, repo);
+	odb = git_repository_database(repo);
 
 	git_oid_mkstr(&oid, RSTRING_PTR(hex));
 
@@ -132,11 +147,13 @@ static VALUE rb_git_repo_obj_hash(VALUE self, VALUE content, VALUE type)
 
 static VALUE rb_git_repo_write(VALUE self, VALUE content, VALUE type)
 {
+	git_repository *repo;
 	git_odb *odb;
 	git_obj obj;
 	git_oid oid;
 
-	odb = (git_odb*)rb_iv_get(self, "odb");
+	Data_Get_Struct(self, git_repository, repo);
+	odb = git_repository_database(repo);
 
 	(&obj)->data = RSTRING_PTR(content);
 	(&obj)->len  = RSTRING_LEN(content);
@@ -153,11 +170,25 @@ static VALUE rb_git_repo_write(VALUE self, VALUE content, VALUE type)
 	return Qfalse;
 }
 
-static VALUE rb_git_repo_close(VALUE self)
+static VALUE rb_git_repo_lookup(int argc, VALUE *argv, VALUE self)
 {
-	git_odb *odb;
-	odb = (git_odb*)rb_iv_get(self, "odb");
-	git_odb_close(odb);
+	git_repository *repo;
+	git_otype type;
+	git_repository_object *obj;
+	git_oid oid;
+
+	VALUE rb_type, rb_sha;
+
+	Data_Get_Struct(self, git_repository, repo);
+
+	rb_scan_args(argc, argv, "11", &rb_sha, &rb_type);
+
+	type = NIL_P(rb_type) ? GIT_OBJ_ANY : FIX2INT(rb_type);
+	git_oid_mkstr(&oid, RSTRING_PTR(rb_sha));
+
+	obj = git_repository_lookup(repo, &oid, type);
+
+	return obj ? rb_git_createobject(obj) : Qnil;
 }
 
 /*
@@ -165,71 +196,88 @@ static VALUE rb_git_repo_close(VALUE self)
  */ 
 
 static VALUE rb_cRibbitObject;
+static VALUE rb_cRibbitCommit;
+
+static VALUE rb_git_createobject(git_repository_object *object)
+{
+	git_otype type;
+	char sha1[40];
+	VALUE obj, klass;
+
+	type = git_repository_object_type(object);
+
+	switch (type)
+	{
+		case GIT_OBJ_COMMIT:
+			klass = rb_cRibbitCommit;
+			break;
+
+		case GIT_OBJ_TAG:
+		case GIT_OBJ_TREE:
+		case GIT_OBJ_BLOB:
+			klass = rb_cRibbitObject;
+			break;
+
+		default:
+			return Qnil;
+	}
+
+	obj = Data_Wrap_Struct(klass, NULL, NULL, object);
+
+	git_oid_fmt(sha1, git_repository_object_id(object));
+
+	rb_iv_set(obj, "@type", rb_str_new2(git_obj_type_to_string(type)));
+	rb_iv_set(obj, "@sha", rb_str_new(sha1, 40));
+
+	return obj;
+}
+
+static VALUE rb_git_object_allocate(VALUE klass)
+{
+	git_repository_object *object = NULL;
+	return Data_Wrap_Struct(klass, NULL, NULL, object);
+}
 
 static VALUE rb_git_object_init(VALUE self, VALUE rb_repo, VALUE hex)
 {
 	rb_iv_set(self, "@sha", hex);
-	rb_iv_set(self, "repo", rb_repo);
-}
-
-static VALUE rb_git_object_read(VALUE self)
-{
-	git_repository *repo;
-	git_odb *odb;
-	git_oid oid;
-	git_obj obj;
-	VALUE rb_repo, hex;
-
-	rb_repo = rb_iv_get(self, "repo");
-	hex = rb_iv_get(self, "@sha");
-
-	repo = (git_repository*)rb_iv_get(rb_repo, "repo");
-	odb = (git_odb*)rb_iv_get(rb_repo, "odb");
-
-	git_oid_mkstr(&oid, RSTRING_PTR(hex));
-
-	if (git_odb_read(&obj, odb, &oid) == GIT_SUCCESS) {
-		const char *str_type;
-		unsigned char *data;
-		git_otype git_type;
-
-		git_type = (&obj)->type;
-		data = (&obj)->data;
-
-		rb_iv_set(self, "@data", rb_str_new2(data));
-		rb_iv_set(self, "@size", INT2FIX((int)(&obj)->len));
-
-		str_type = git_obj_type_to_string(git_type);
-		rb_iv_set(self, "@object_type", rb_str_new2(str_type));
-		return Qtrue;
-	}
-
-	return Qfalse;
 }
 
 /*
  * Ribbit Commit
  */ 
 
-static VALUE rb_cRibbitCommit;
+static VALUE rb_git_commit_allocate(VALUE klass)
+{
+	git_commit *commit = NULL;
+	return Data_Wrap_Struct(klass, NULL, NULL, commit);
+}
 
-static VALUE rb_git_commit_init(VALUE self, VALUE rb_repo, VALUE hex)
+static VALUE rb_git_commit_init(int argc, VALUE *argv, VALUE self)
 {
 	git_repository *repo;
 	git_oid oid;
 	git_commit *commit;
+	VALUE rb_repo, hex;
 
-	rb_iv_set(self, "@sha", hex);
-	rb_iv_set(self, "repo", rb_repo);
-
+	rb_scan_args(argc, argv, "11", &hex, &rb_repo);
 	rb_git_object_init(self, rb_repo, hex);
 
-	repo = (git_repository*)rb_iv_get(rb_repo, "repo");
+	if (NIL_P(rb_repo)) {
 
-	git_oid_mkstr(&oid, RSTRING_PTR(hex));
+		/* TODO; create new commit object */
+	
+	} else {
+		Data_Get_Struct(rb_repo, git_repository, repo);
+		git_oid_mkstr(&oid, RSTRING_PTR(hex));
+		commit = git_commit_lookup(repo, &oid);
 
-	commit = git_commit_lookup(repo, &oid);
-	rb_iv_set(self, "commit", (VALUE)commit);
+		if (commit == NULL)
+			rb_raise(rb_eRuntimeError, "Commit not found");
+	}
+
+	DATA_PTR(self) = commit;
+	rb_iv_set(self, "@type", rb_str_new2("commit"));
 }
 
 static VALUE rb_git_commit_message(VALUE self)
@@ -237,7 +285,7 @@ static VALUE rb_git_commit_message(VALUE self)
 	git_commit *commit;
 	const char *str_type;
 
-	commit = (git_commit*)rb_iv_get(self, "commit");
+	Data_Get_Struct(self, git_commit, commit);
 	str_type = git_commit_message(commit);
 
 	return rb_str_new2(str_type);
@@ -246,13 +294,70 @@ static VALUE rb_git_commit_message(VALUE self)
 static VALUE rb_git_commit_message_short(VALUE self)
 {
 	git_commit *commit;
-	commit = (git_commit*)rb_iv_get(self, "commit");
-
 	const char *str_type;
+
+	Data_Get_Struct(self, git_commit, commit);
 	str_type = git_commit_message_short(commit);
 
 	return rb_str_new2(str_type);
 }
+
+static VALUE rb_git_person2hash(const git_person *person)
+{
+	VALUE rb_person;
+
+	if (person == NULL)
+		return Qnil;
+
+	rb_person = rb_hash_new();
+	rb_hash_aset(rb_person, rb_str_new2("name"), rb_str_new2(person->name));
+	rb_hash_aset(rb_person, rb_str_new2("email"), rb_str_new2(person->email));
+	rb_hash_aset(rb_person, rb_str_new2("time"), ULONG2NUM(person->time));
+
+	return rb_person;
+}
+
+static VALUE rb_git_commit_committer(VALUE self)
+{
+	git_commit *commit;
+	const git_person *person;
+
+	Data_Get_Struct(self, git_commit, commit);
+	person = git_commit_committer(commit);
+
+	return rb_git_person2hash(person);
+}
+
+static VALUE rb_git_commit_author(VALUE self)
+{
+	git_commit *commit;
+	const git_person *person;
+
+	Data_Get_Struct(self, git_commit, commit);
+	person = git_commit_author(commit);
+
+	return rb_git_person2hash(person);
+}
+
+static VALUE rb_git_commit_time(VALUE self)
+{
+	git_commit *commit;
+	Data_Get_Struct(self, git_commit, commit);
+
+	return ULONG2NUM(git_commit_time(commit));
+}
+
+static VALUE rb_git_commit_tree(VALUE self)
+{
+	git_commit *commit;
+	const git_tree *tree;
+	Data_Get_Struct(self, git_commit, commit);
+
+	tree = git_commit_tree(commit);
+
+	return tree ? rb_git_createobject((git_repository_object *)tree) : Qnil;
+}
+
 
 /*
  * Ribbit Revwalking
@@ -260,34 +365,50 @@ static VALUE rb_git_commit_message_short(VALUE self)
 
 static VALUE rb_cRibbitWalker;
 
+static VALUE rb_git_walker_allocate(VALUE klass)
+{
+	git_revwalk *walker = NULL;
+	return Data_Wrap_Struct(klass, NULL, NULL, walker);
+}
+
 static VALUE rb_git_walker_init(VALUE self, VALUE rb_repo)
 {
 	git_repository *repo;
-	git_revwalk *walk;	
-
-	repo = (git_repository*)rb_iv_get(rb_repo, "repo");
-	walk = git_revwalk_alloc(repo);
-
-	rb_iv_set(self, "walk", (VALUE)walk);
-	rb_iv_set(self, "repo", (VALUE)repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+	DATA_PTR(self) = git_revwalk_alloc(repo);
+	rb_iv_set(self, "repo", rb_repo);
+	return Qnil;
 }
 
 
-static VALUE rb_git_walker_push(VALUE self, VALUE hex)
+static VALUE rb_git_walker__push(VALUE self, VALUE rb_commit, int hide)
 {
-	git_repository *repo;
 	git_revwalk *walk;
-	git_oid oid;
 	git_commit *commit;
 
-	repo = (git_repository*)rb_iv_get(self, "repo");
-	walk = (git_revwalk*)rb_iv_get(self, "walk");
+	Data_Get_Struct(self, git_revwalk, walk);
 
-	git_oid_mkstr(&oid, RSTRING_PTR(hex));
+	if (TYPE(rb_commit) == T_STRING) {
+		git_repository *repo;
+		git_oid oid;
 
-	commit = git_commit_lookup(repo, &oid);
+		Data_Get_Struct(rb_iv_get(self, "repo"), git_repository, repo);
 
-	git_revwalk_push(walk, commit);
+		git_oid_mkstr(&oid, RSTRING_PTR(rb_commit));
+		commit = git_commit_lookup(repo, &oid);
+
+	} else if (TYPE(rb_commit) == T_DATA) {
+		Data_Get_Struct(rb_commit, git_commit, commit);
+	}
+
+	if (commit == NULL)
+		rb_raise(rb_eRuntimeError, "Invalid commit");
+
+	if (hide)
+		git_revwalk_hide(walk, commit);
+	else
+		git_revwalk_push(walk, commit);
+
 	return Qnil;
 }
 
@@ -296,45 +417,26 @@ static VALUE rb_git_walker_next(VALUE self)
 	git_revwalk *walk;
 	git_commit *commit;
 
-	walk = (git_revwalk*)rb_iv_get(self, "walk");
-
+	Data_Get_Struct(self, git_revwalk, walk);
 	commit = git_revwalk_next(walk);
-	if (commit) {
-		char out[40];
-		const git_oid *oid;
 
-		oid = git_commit_id(commit);
-		git_oid_fmt(out, oid);
-		return rb_str_new(out, 40);
-	}
-
-	return Qfalse;
+	return commit ? rb_git_createobject((git_repository_object*)commit) : Qfalse;
 }
 
-static VALUE rb_git_walker_hide(VALUE self, VALUE hex)
+static VALUE rb_git_walker_push(VALUE self, VALUE rb_commit)
 {
-	git_repository *repo;
-	git_revwalk *walk;
-	git_oid oid;
-	git_commit *commit;
+	return rb_git_walker__push(self, rb_commit, 0);
+}
 
-	repo = (git_repository*)rb_iv_get(self, "repo");
-	walk = (git_revwalk*)rb_iv_get(self, "walk");
-
-	git_oid_mkstr(&oid, RSTRING_PTR(hex));
-
-	commit = git_commit_lookup(repo, &oid);
-	
-	if (commit)
-		git_revwalk_hide(walk, commit);
-
-	return Qnil;
+static VALUE rb_git_walker_hide(VALUE self, VALUE rb_commit)
+{
+	return rb_git_walker__push(self, rb_commit, 1);
 }
 
 static VALUE rb_git_walker_sorting(VALUE self, VALUE ruby_sort_mode)
 {
 	git_revwalk *walk;
-	walk = (git_revwalk*)rb_iv_get(self, "walk");
+	Data_Get_Struct(self, git_revwalk, walk);
 	git_revwalk_sorting(walk, FIX2INT(ruby_sort_mode));
 	return Qnil;
 }
@@ -342,11 +444,10 @@ static VALUE rb_git_walker_sorting(VALUE self, VALUE ruby_sort_mode)
 static VALUE rb_git_walker_reset(VALUE self)
 {
 	git_revwalk *walk;
-	walk = (git_revwalk*)rb_iv_get(self, "walk");
+	Data_Get_Struct(self, git_revwalk, walk);
 	git_revwalk_reset(walk);
 	return Qnil;
 }
-
 
 /*
  * Ribbit Init Call
@@ -363,28 +464,35 @@ void Init_ribbit()
 	rb_define_module_function(rb_cRibbitLib, "string_to_type", rb_git_string_to_type, 1);
 
 	rb_cRibbitRepo = rb_define_class_under(rb_cRibbit, "Repository", rb_cObject);
+	rb_define_alloc_func(rb_cRibbitRepo, rb_git_repo_allocate);
 	rb_define_method(rb_cRibbitRepo, "initialize", rb_git_repo_init, 1);
 	rb_define_method(rb_cRibbitRepo, "exists", rb_git_repo_exists, 1);
-	rb_define_method(rb_cRibbitRepo, "read",   rb_git_repo_read,   1);
-	rb_define_method(rb_cRibbitRepo, "close",  rb_git_repo_close,  0);
 	rb_define_method(rb_cRibbitRepo, "hash",   rb_git_repo_obj_hash,  2);
+	rb_define_method(rb_cRibbitRepo, "read",   rb_git_repo_read,   1);
 	rb_define_method(rb_cRibbitRepo, "write",  rb_git_repo_write,  2);
+	rb_define_method(rb_cRibbitRepo, "lookup",  rb_git_repo_lookup,  -1);
 
 	rb_cRibbitObject = rb_define_class_under(rb_cRibbit, "Object", rb_cObject);
-	rb_define_method(rb_cRibbitObject, "initialize", rb_git_object_init, 2);
-	rb_define_method(rb_cRibbitObject, "read", rb_git_object_read, 0);
-	rb_attr(rb_cRibbitObject, rb_intern("sha"), Qtrue, Qtrue, Qtrue);
-	rb_attr(rb_cRibbitObject, rb_intern("size"), Qtrue, Qtrue, Qtrue);
-	rb_attr(rb_cRibbitObject, rb_intern("object_type"), Qtrue, Qtrue, Qtrue);
-	rb_attr(rb_cRibbitObject, rb_intern("data"), Qtrue, Qtrue, Qtrue);
+	rb_define_alloc_func(rb_cRibbitObject, rb_git_object_allocate);
+	/* Do not initialize */
+	//rb_define_method(rb_cRibbitObject, "initialize", rb_git_object_init, 2);
+	//rb_attr(rb_cRibbitObject, rb_intern("sha"), Qtrue, Qfalse, Qtrue);
+	//rb_attr(rb_cRibbitObject, rb_intern("type"), Qtrue, Qfalse, Qtrue);
 
 	rb_cRibbitCommit = rb_define_class_under(rb_cRibbit, "Commit", rb_cObject);
-	rb_attr(rb_cRibbitCommit, rb_intern("sha"), Qtrue, Qtrue, Qtrue);
-	rb_define_method(rb_cRibbitCommit, "initialize", rb_git_commit_init, 2);
+	rb_define_alloc_func(rb_cRibbitCommit, rb_git_commit_allocate);
+	rb_define_method(rb_cRibbitCommit, "initialize", rb_git_commit_init, -1);
 	rb_define_method(rb_cRibbitCommit, "message", rb_git_commit_message, 0);
 	rb_define_method(rb_cRibbitCommit, "message_short", rb_git_commit_message_short, 0);
+	rb_define_method(rb_cRibbitCommit, "time", rb_git_commit_time, 0);
+	rb_define_method(rb_cRibbitCommit, "committer", rb_git_commit_committer, 0);
+	rb_define_method(rb_cRibbitCommit, "author", rb_git_commit_author, 0);
+	rb_define_method(rb_cRibbitCommit, "tree", rb_git_commit_tree, 0);
+	rb_attr(rb_cRibbitCommit, rb_intern("sha"), Qtrue, Qfalse, Qtrue);
+	rb_attr(rb_cRibbitCommit, rb_intern("type"), Qtrue, Qfalse, Qtrue);
 
 	rb_cRibbitWalker = rb_define_class_under(rb_cRibbit, "Walker", rb_cObject);
+	rb_define_alloc_func(rb_cRibbitWalker, rb_git_walker_allocate);
 	rb_define_method(rb_cRibbitWalker, "initialize", rb_git_walker_init, 1);
 	rb_define_method(rb_cRibbitWalker, "push", rb_git_walker_push, 1);
 	rb_define_method(rb_cRibbitWalker, "next", rb_git_walker_next, 0);
