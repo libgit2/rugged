@@ -103,7 +103,6 @@ static VALUE rb_git_repo_read(VALUE self, VALUE hex)
 	git_oid oid;
 	git_obj obj;
 
-
 	Data_Get_Struct(self, git_repository, repo);
 	odb = git_repository_database(repo);
 
@@ -238,9 +237,16 @@ static VALUE rb_git_object_allocate(VALUE klass)
 	return Data_Wrap_Struct(klass, NULL, NULL, object);
 }
 
-static VALUE rb_git_object_init(VALUE self, VALUE rb_repo, VALUE hex)
+static VALUE rb_git_object_init(VALUE self, VALUE rb_repo, VALUE hex, VALUE type)
 {
 	rb_iv_set(self, "@sha", hex);
+	rb_iv_set(self, "repo", rb_repo);
+	rb_iv_set(self, "@type", type);
+}
+
+static VALUE rb_git_object_read_raw(VALUE self)
+{
+	return rb_git_repo_read(rb_iv_get(self, "repo"), rb_iv_get(self, "@sha"));
 }
 
 /*
@@ -256,19 +262,20 @@ static VALUE rb_git_commit_allocate(VALUE klass)
 static VALUE rb_git_commit_init(int argc, VALUE *argv, VALUE self)
 {
 	git_repository *repo;
-	git_oid oid;
 	git_commit *commit;
 	VALUE rb_repo, hex;
 
-	rb_scan_args(argc, argv, "11", &hex, &rb_repo);
-	rb_git_object_init(self, rb_repo, hex);
+	rb_scan_args(argc, argv, "11", &rb_repo, &hex);
+	rb_git_object_init(self, rb_repo, hex, rb_str_new2("commit"));
+	Data_Get_Struct(rb_repo, git_repository, repo);
 
-	if (NIL_P(rb_repo)) {
+	if (NIL_P(hex)) {
 
 		/* TODO; create new commit object */
 	
 	} else {
-		Data_Get_Struct(rb_repo, git_repository, repo);
+		git_oid oid;
+
 		git_oid_mkstr(&oid, RSTRING_PTR(hex));
 		commit = git_commit_lookup(repo, &oid);
 
@@ -277,7 +284,6 @@ static VALUE rb_git_commit_init(int argc, VALUE *argv, VALUE self)
 	}
 
 	DATA_PTR(self) = commit;
-	rb_iv_set(self, "@type", rb_str_new2("commit"));
 }
 
 static VALUE rb_git_commit_message(VALUE self)
@@ -474,12 +480,11 @@ void Init_ribbit()
 
 	rb_cRibbitObject = rb_define_class_under(rb_cRibbit, "Object", rb_cObject);
 	rb_define_alloc_func(rb_cRibbitObject, rb_git_object_allocate);
-	/* Do not initialize */
-	//rb_define_method(rb_cRibbitObject, "initialize", rb_git_object_init, 2);
-	//rb_attr(rb_cRibbitObject, rb_intern("sha"), Qtrue, Qfalse, Qtrue);
-	//rb_attr(rb_cRibbitObject, rb_intern("type"), Qtrue, Qfalse, Qtrue);
+	rb_define_method(rb_cRibbitObject, "read_raw", rb_git_object_read_raw, 0);
+	rb_attr(rb_cRibbitObject, rb_intern("sha"), Qtrue, Qtrue, Qtrue);
+	rb_attr(rb_cRibbitObject, rb_intern("type"), Qtrue, Qfalse, Qtrue);
 
-	rb_cRibbitCommit = rb_define_class_under(rb_cRibbit, "Commit", rb_cObject);
+	rb_cRibbitCommit = rb_define_class_under(rb_cRibbit, "Commit", rb_cRibbitObject);
 	rb_define_alloc_func(rb_cRibbitCommit, rb_git_commit_allocate);
 	rb_define_method(rb_cRibbitCommit, "initialize", rb_git_commit_init, -1);
 	rb_define_method(rb_cRibbitCommit, "message", rb_git_commit_message, 0);
@@ -488,8 +493,6 @@ void Init_ribbit()
 	rb_define_method(rb_cRibbitCommit, "committer", rb_git_commit_committer, 0);
 	rb_define_method(rb_cRibbitCommit, "author", rb_git_commit_author, 0);
 	rb_define_method(rb_cRibbitCommit, "tree", rb_git_commit_tree, 0);
-	rb_attr(rb_cRibbitCommit, rb_intern("sha"), Qtrue, Qfalse, Qtrue);
-	rb_attr(rb_cRibbitCommit, rb_intern("type"), Qtrue, Qfalse, Qtrue);
 
 	rb_cRibbitWalker = rb_define_class_under(rb_cRibbit, "Walker", rb_cObject);
 	rb_define_alloc_func(rb_cRibbitWalker, rb_git_walker_allocate);

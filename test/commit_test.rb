@@ -8,7 +8,7 @@ context "Ribbit::Commit tests" do
 
   test "can read the commit data" do
     sha = "8496071c1b46c854b31185ea97743be6a8774479"
-    obj = Ribbit::Commit.new(sha, @repo)
+    obj = Ribbit::Commit.new(@repo, sha)
 
     assert_equal obj.sha, sha
 	assert_equal obj.type, "commit"
