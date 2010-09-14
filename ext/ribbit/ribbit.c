@@ -1,5 +1,6 @@
 #include "ruby.h"
 #include <git/commit.h>
+#include <git/tag.h>
 #include <git/common.h>
 #include <git/errors.h>
 #include <git/index.h>
@@ -196,6 +197,7 @@ static VALUE rb_git_repo_lookup(int argc, VALUE *argv, VALUE self)
 
 static VALUE rb_cRibbitObject;
 static VALUE rb_cRibbitCommit;
+static VALUE rb_cRibbitTag;
 
 static VALUE rb_git_createobject(git_repository_object *object)
 {
@@ -237,11 +239,35 @@ static VALUE rb_git_object_allocate(VALUE klass)
 	return Data_Wrap_Struct(klass, NULL, NULL, object);
 }
 
-static VALUE rb_git_object_init(VALUE self, VALUE rb_repo, VALUE hex, VALUE type)
+static VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE self)
 {
+	git_repository *repo;
+	git_repository_object *object;
+	VALUE rb_repo, hex;
+
+	rb_scan_args(argc, argv, "11", &rb_repo, &hex);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
 	rb_iv_set(self, "@sha", hex);
 	rb_iv_set(self, "repo", rb_repo);
-	rb_iv_set(self, "@type", type);
+	rb_iv_set(self, "@type", rb_str_new2(git_obj_type_to_string(type)));
+
+	if (NIL_P(hex)) {
+
+		/* TODO; create new commit object */
+	
+	} else {
+		git_oid oid;
+
+		git_oid_mkstr(&oid, RSTRING_PTR(hex));
+		object = git_repository_lookup(repo, &oid, type);
+
+		if (object == NULL)
+			rb_raise(rb_eRuntimeError, "Object not found");
+	}
+
+	DATA_PTR(self) = object;
+	return Qnil;
 }
 
 static VALUE rb_git_object_read_raw(VALUE self)
@@ -261,29 +287,7 @@ static VALUE rb_git_commit_allocate(VALUE klass)
 
 static VALUE rb_git_commit_init(int argc, VALUE *argv, VALUE self)
 {
-	git_repository *repo;
-	git_commit *commit;
-	VALUE rb_repo, hex;
-
-	rb_scan_args(argc, argv, "11", &rb_repo, &hex);
-	rb_git_object_init(self, rb_repo, hex, rb_str_new2("commit"));
-	Data_Get_Struct(rb_repo, git_repository, repo);
-
-	if (NIL_P(hex)) {
-
-		/* TODO; create new commit object */
-	
-	} else {
-		git_oid oid;
-
-		git_oid_mkstr(&oid, RSTRING_PTR(hex));
-		commit = git_commit_lookup(repo, &oid);
-
-		if (commit == NULL)
-			rb_raise(rb_eRuntimeError, "Commit not found");
-	}
-
-	DATA_PTR(self) = commit;
+	return rb_git_object_init(GIT_OBJ_COMMIT, argc, argv, self);
 }
 
 static VALUE rb_git_commit_message(VALUE self)
@@ -362,6 +366,62 @@ static VALUE rb_git_commit_tree(VALUE self)
 	tree = git_commit_tree(commit);
 
 	return tree ? rb_git_createobject((git_repository_object *)tree) : Qnil;
+}
+
+
+/*
+ * Ribbit Tag
+ */
+
+static VALUE rb_git_tag_allocate(VALUE klass)
+{
+	git_tag *tag = NULL;
+	return Data_Wrap_Struct(klass, NULL, NULL, tag);
+}
+
+static VALUE rb_git_tag_init(int argc, VALUE *argv, VALUE self)
+{
+	return rb_git_object_init(GIT_OBJ_TAG, argc, argv, self);
+}
+
+static VALUE rb_git_tag_target(VALUE self)
+{
+	git_tag *tag;
+	Data_Get_Struct(self, git_tag, tag);
+
+	return rb_git_createobject((git_repository_object*)git_tag_target(tag));
+}
+
+static VALUE rb_git_tag_target_type(VALUE self)
+{
+	git_tag *tag;
+	Data_Get_Struct(self, git_tag, tag);
+
+	return rb_str_new2(git_obj_type_to_string(git_tag_type(tag)));
+}
+
+static VALUE rb_git_tag_name(VALUE self)
+{
+	git_tag *tag;
+	Data_Get_Struct(self, git_tag, tag);
+
+	return rb_str_new2(git_tag_name(tag));
+}
+
+static VALUE rb_git_tag_tagger(VALUE self)
+{
+	git_tag *tag;
+	Data_Get_Struct(self, git_tag, tag);
+
+	return rb_git_person2hash(git_tag_tagger(tag));
+}
+
+static VALUE rb_git_tag_message(VALUE self)
+{
+	git_tag *tag;
+	Data_Get_Struct(self, git_tag, tag);
+
+	return rb_str_new2(git_tag_message(tag));
 }
 
 
@@ -493,6 +553,15 @@ void Init_ribbit()
 	rb_define_method(rb_cRibbitCommit, "committer", rb_git_commit_committer, 0);
 	rb_define_method(rb_cRibbitCommit, "author", rb_git_commit_author, 0);
 	rb_define_method(rb_cRibbitCommit, "tree", rb_git_commit_tree, 0);
+
+	rb_cRibbitTag = rb_define_class_under(rb_cRibbit, "Tag", rb_cRibbitObject);
+	rb_define_alloc_func(rb_cRibbitTag, rb_git_tag_allocate);
+	rb_define_method(rb_cRibbitTag, "initialize", rb_git_tag_init, -1);
+	rb_define_method(rb_cRibbitTag, "message", rb_git_tag_message, 0);
+	rb_define_method(rb_cRibbitTag, "name", rb_git_tag_name, 0);
+	rb_define_method(rb_cRibbitTag, "target", rb_git_tag_target, 0);
+	rb_define_method(rb_cRibbitTag, "target_type", rb_git_tag_target_type, 0);
+	rb_define_method(rb_cRibbitTag, "tagger", rb_git_tag_tagger, 0);
 
 	rb_cRibbitWalker = rb_define_class_under(rb_cRibbit, "Walker", rb_cObject);
 	rb_define_alloc_func(rb_cRibbitWalker, rb_git_walker_allocate);
