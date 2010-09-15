@@ -198,6 +198,8 @@ static VALUE rb_git_repo_lookup(int argc, VALUE *argv, VALUE self)
 static VALUE rb_cRibbitObject;
 static VALUE rb_cRibbitCommit;
 static VALUE rb_cRibbitTag;
+static VALUE rb_cRibbitTree;
+static VALUE rb_cRibbitTreeEntry;
 
 static VALUE rb_git_createobject(git_repository_object *object)
 {
@@ -214,13 +216,17 @@ static VALUE rb_git_createobject(git_repository_object *object)
 			break;
 
 		case GIT_OBJ_TAG:
-		case GIT_OBJ_TREE:
-		case GIT_OBJ_BLOB:
-			klass = rb_cRibbitObject;
+			klass = rb_cRibbitTag;
 			break;
 
+		case GIT_OBJ_TREE:
+			klass = rb_cRibbitTree;
+			break;
+
+		case GIT_OBJ_BLOB:
 		default:
-			return Qnil;
+			klass = rb_cRibbitObject;
+			break;
 	}
 
 	obj = Data_Wrap_Struct(klass, NULL, NULL, object);
@@ -426,6 +432,106 @@ static VALUE rb_git_tag_message(VALUE self)
 
 
 /*
+ * Ribbit Tree
+ */
+static VALUE rb_git_treeentry_allocate(VALUE klass)
+{
+	git_tree_entry *tree_entry = NULL;
+	return Data_Wrap_Struct(klass, NULL, NULL, tree_entry);
+}
+
+static VALUE rb_git_tree_entry_init(int argc, VALUE *argv, VALUE self)
+{
+	return Qnil;
+}
+
+static VALUE rb_git_createentry(git_tree_entry *entry)
+{
+	VALUE obj;
+
+	obj = Data_Wrap_Struct(rb_cRibbitTreeEntry, NULL, NULL, entry);
+	/* TODO: attributes? */
+
+	return obj;
+}
+
+static VALUE rb_git_tree_entry_attributes(VALUE self)
+{
+	git_tree_entry *tree_entry;
+	Data_Get_Struct(self, git_tree_entry, tree_entry);
+
+	return INT2FIX(git_tree_entry_attributes(tree_entry));
+}
+
+static VALUE rb_git_tree_entry_name(VALUE self)
+{
+	git_tree_entry *tree_entry;
+	Data_Get_Struct(self, git_tree_entry, tree_entry);
+
+	return rb_str_new2(git_tree_entry_name(tree_entry));
+}
+
+static VALUE rb_git_tree_entry_sha(VALUE self)
+{
+	git_tree_entry *tree_entry;
+	char out[40];
+
+	Data_Get_Struct(self, git_tree_entry, tree_entry);
+	
+	git_oid_fmt(out, git_tree_entry_id(tree_entry));
+	return rb_str_new(out, 40);
+}
+
+static VALUE rb_git_tree_entry_2object(VALUE self)
+{
+	git_tree_entry *tree_entry;
+	Data_Get_Struct(self, git_tree_entry, tree_entry);
+
+	return rb_git_createobject(git_tree_entry_2object(tree_entry));
+}
+
+
+
+/*
+ * Ribbit Tree
+ */
+
+static VALUE rb_git_tree_allocate(VALUE klass)
+{
+	git_tree *tree = NULL;
+	return Data_Wrap_Struct(klass, NULL, NULL, tree);
+}
+
+static VALUE rb_git_tree_init(int argc, VALUE *argv, VALUE self)
+{
+	return rb_git_object_init(GIT_OBJ_TREE, argc, argv, self);
+}
+
+static VALUE rb_git_tree_entrycount(VALUE self)
+{
+	git_tree *tree;
+	Data_Get_Struct(self, git_tree, tree);
+
+	return INT2FIX(git_tree_entrycount(tree));
+}
+
+static VALUE rb_git_tree_get_entry(VALUE self, VALUE entry_id)
+{
+	git_tree *tree;
+	Data_Get_Struct(self, git_tree, tree);
+
+	if (TYPE(entry_id) == T_FIXNUM)
+		return rb_git_createentry((git_tree_entry *)git_tree_entry_byindex(tree, FIX2INT(entry_id)));
+
+	else if (TYPE(entry_id) == T_STRING)
+		return rb_git_createentry((git_tree_entry *)git_tree_entry_byname(tree, RSTRING_PTR(entry_id)));
+
+	else
+		rb_raise(rb_eTypeError, "entry_id must be either an index or a filename");
+}
+
+
+/*
  * Ribbit Revwalking
  */ 
 
@@ -562,6 +668,21 @@ void Init_ribbit()
 	rb_define_method(rb_cRibbitTag, "target", rb_git_tag_target, 0);
 	rb_define_method(rb_cRibbitTag, "target_type", rb_git_tag_target_type, 0);
 	rb_define_method(rb_cRibbitTag, "tagger", rb_git_tag_tagger, 0);
+
+
+	rb_cRibbitTreeEntry = rb_define_class_under(rb_cRibbit, "TreeEntry", rb_cObject);
+	rb_define_alloc_func(rb_cRibbitTreeEntry, rb_git_treeentry_allocate);
+	// rb_define_method(rb_cRibbitTreeEntry, "initialize", rb_git_treeentry_allocate, -1);
+	rb_define_method(rb_cRibbitTreeEntry, "name", rb_git_tree_entry_name, 0);
+	rb_define_method(rb_cRibbitTreeEntry, "attributes", rb_git_tree_entry_attributes, 0);
+	rb_define_method(rb_cRibbitTreeEntry, "sha", rb_git_tree_entry_sha, 0);
+	rb_define_method(rb_cRibbitTreeEntry, "to_object", rb_git_tree_entry_2object, 0);
+
+	rb_cRibbitTree = rb_define_class_under(rb_cRibbit, "Tree", rb_cRibbitObject);
+	rb_define_alloc_func(rb_cRibbitTree, rb_git_tree_allocate);
+	rb_define_method(rb_cRibbitTree, "initialize", rb_git_tree_init, -1);
+	rb_define_method(rb_cRibbitTree, "entry_count", rb_git_tree_entrycount, 0);
+	rb_define_method(rb_cRibbitTree, "get_entry", rb_git_tree_get_entry, 1);
 
 	rb_cRibbitWalker = rb_define_class_under(rb_cRibbit, "Walker", rb_cObject);
 	rb_define_alloc_func(rb_cRibbitWalker, rb_git_walker_allocate);

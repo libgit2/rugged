@@ -65,19 +65,20 @@ Ribbit::Tag.new < Ribbit::Object
 
 gobtr =
 Ribbit::Tree.new < Ribbit::Object
-          gobtr.add(ent)
-          gobtr.remove(name)
+          gobtr.add(ent) # TODO
+          gobtr.remove(name) # TODO
   int   = gobtr.entry_count
-          gobtr.traverse(:name/:index)
-  ent   = gobtr.next
+  ent   = gobtr.get_entry
+
+  [ent] = gobtr.entries # TODO: array with all the entries in a tree
+          gobtr.traverse(:name/:index) # TODO: what is this?
 
 ent =
-Ribbit::TreeEntry.new(mode, name, sha)
-  int  = ent.mode
-  str  = ent.type
+Ribbit::TreeEntry.new(attributes, name, sha)
+  int  = ent.attributes
   str  = ent.name
   sha  = ent.sha
-  gobj = ent.gobject
+  gobj = ent.to_object
 
 # Person information is returned as a hash table
 
