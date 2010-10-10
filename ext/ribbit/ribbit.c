@@ -1,4 +1,6 @@
 #include "ruby.h"
+#include <assert.h>
+
 #include <git/commit.h>
 #include <git/tag.h>
 #include <git/common.h>
