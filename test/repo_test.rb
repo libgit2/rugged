@@ -7,13 +7,6 @@ context "Ribbit::Repository stuff" do
     @repo = Ribbit::Repository.new(@path)
   end
 
-  def rm_loose(sha)
-    dir = sha[0, 2]
-    rest = sha[2, 38]
-    file = File.join(@path, dir, rest)
-    `rm -f #{file}`
-  end
-
   test "can tell if an object exists or not" do
     assert @repo.exists("8496071c1b46c854b31185ea97743be6a8774479")
     assert @repo.exists("1385f264afb75a56a5bec74243be9b367ba4ca08")

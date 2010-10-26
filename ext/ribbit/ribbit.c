@@ -894,7 +894,7 @@ void Init_ribbit()
 	rb_define_method(rb_cRibbitTag, "target_type", rb_git_tag_target_type_GET, 0);
 
 	rb_define_method(rb_cRibbitTag, "tagger", rb_git_tag_tagger_GET, 0);
-	rb_define_method(rb_cRibbitTag, "tagge=", rb_git_tag_tagger_SET, 3);
+	rb_define_method(rb_cRibbitTag, "tagger=", rb_git_tag_tagger_SET, 3);
 
 
 	/*

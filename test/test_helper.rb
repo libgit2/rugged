@@ -25,3 +25,11 @@ def context(*args, &block)
   (class << klass; self end).send(:define_method, :name) { name.gsub(/\W/,'_') }
   klass.class_eval &block
 end
+
+def rm_loose(sha)
+  dir = sha[0, 2]
+  rest = sha[2, 38]
+  file = File.join(@path, dir, rest)
+  `rm -f #{file}`
+end
+
