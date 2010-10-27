@@ -86,7 +86,7 @@ to simply read the current value out
       prsn  = gobjc.committer
       gobjr = gobjc.tree
       sha   = gobjc.tree_sha
-      arr   = gobjc.parents [*]
+      arr   = gobjc.parents [*] # TODO
 
     gobtg =
     Ribbit::Tag.new < Ribbit::Object
