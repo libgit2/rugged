@@ -3,7 +3,9 @@ require 'rake/testtask'
 require 'rake/rdoctask'
 require 'rake/extensiontask'
 
-Rake::ExtensionTask.new('ribbit')
+Rake::ExtensionTask.new('ribbit') do |r|
+  r.lib_dir = 'lib/ribbit'
+end
 
 #
 # Helpers
