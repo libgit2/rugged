@@ -9,7 +9,7 @@ INSTALLING AND RUNNING
 
 First you need to install libgit2:
 
-    $ git clone git://repo.or.cz/libgit2.git
+    $ git clone git://github.com/libgit2/libgit2.git
     $ cd libgit2
     $ make
     $ make install
@@ -20,7 +20,7 @@ Next, you need to install rake-compiler:
 
 Now that those are installed, you can install Ribbit:
 
-    $ git clone git://github.com/schacon/ribbit.git
+    $ git clone git://github.com/libgit2/ribbit.git
     $ cd ribbit
     $ rake compile
     $ rake test
