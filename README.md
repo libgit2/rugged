@@ -54,7 +54,7 @@ else will emanate from.
 Object is the main object class - it shouldn't be created directly,
 but all of these methods should be useful in it's derived classes
 
-# TODO: how do we prevent instantation of the Object?
+// TODO: how do we prevent instantation of the Object?
 
     object = 
     # Constructor is inherited by all the repository objects
@@ -110,7 +110,7 @@ to simply read the current value out
       sha  = ent.sha
       gobj = ent.to_object
 
-# Person information is returned as a hash table
+// * Person information is returned as a hash table
 
 Finally, there is a Walker class that currently takes a repo object. You can push 
 head SHAs onto the walker, then call next to get a list of the reachable commit 
@@ -144,8 +144,8 @@ for the topic), send a pull request.
 AUTHORS 
 ==============
 
-Scott Chacon <schacon@gmail.com>
-Vicent Marti <tanoku@gmail.com>
+* Scott Chacon <schacon@gmail.com>
+* Vicent Marti <tanoku@gmail.com>
 
 
 LICENSE
