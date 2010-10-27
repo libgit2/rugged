@@ -26,7 +26,7 @@ context "Ribbit::Commit tests" do
     assert_equal obj.tree.sha, "181037049a54a1eb5fab404658a3a250b44335d7"
   end
   
-  xtest "can write the commit data" do
+  test "can write the commit data" do
     sha = "8496071c1b46c854b31185ea97743be6a8774479"
     obj = @repo.lookup(sha)
     obj.message = 'new message'
