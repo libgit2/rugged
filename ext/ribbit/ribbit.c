@@ -402,7 +402,7 @@ static VALUE rb_git_commit_message_short_GET(VALUE self)
 	return rb_str_new2(git_commit_message_short(commit));
 }
 
-static VALUE rb_git_person2hash(const git_person *person)
+static VALUE rb_git_person2hash(git_person *person)
 {
 	VALUE rb_person;
 
@@ -410,26 +410,11 @@ static VALUE rb_git_person2hash(const git_person *person)
 		return Qnil;
 
 	rb_person = rb_hash_new();
-	rb_hash_aset(rb_person, rb_str_new2("name"), rb_str_new2(person->name));
-	rb_hash_aset(rb_person, rb_str_new2("email"), rb_str_new2(person->email));
-	rb_hash_aset(rb_person, rb_str_new2("time"), ULONG2NUM(person->time));
+	rb_hash_aset(rb_person, rb_str_new2("name"), rb_str_new2(git_person_name(person)));
+	rb_hash_aset(rb_person, rb_str_new2("email"), rb_str_new2(git_person_email(person)));
+	rb_hash_aset(rb_person, rb_str_new2("time"), ULONG2NUM(git_person_time(person)));
 
 	return rb_person;
-}
-
-static VALUE rb_git_args2person(git_person *person, VALUE rb_name, VALUE rb_email, VALUE rb_time)
-{
-	Check_Type(rb_name, T_STRING);
-	Check_Type(rb_email, T_STRING);
-	Check_Type(rb_time, T_FIXNUM);
-
-	memset(person, 0x0, sizeof(git_person));
-
-	strncpy(person->name, RSTRING_PTR(rb_name), 63);
-	strncpy(person->email, RSTRING_PTR(rb_email), 63);
-	person->time = FIX2INT(rb_time);
-
-	return Qnil;
 }
 
 static VALUE rb_git_commit_committer_GET(VALUE self)
@@ -437,17 +422,19 @@ static VALUE rb_git_commit_committer_GET(VALUE self)
 	git_commit *commit;
 	Data_Get_Struct(self, git_commit, commit);
 
-	return rb_git_person2hash(git_commit_committer(commit));
+	return rb_git_person2hash((git_person *)git_commit_committer(commit));
 }
 
 static VALUE rb_git_commit_committer_SET(VALUE self, VALUE rb_name, VALUE rb_email, VALUE rb_time)
 {
 	git_commit *commit;
-	git_person new_person;
 	Data_Get_Struct(self, git_commit, commit);
 
-	rb_git_args2person(&new_person, rb_name, rb_email, rb_time);
-	git_commit_set_committer(commit, &new_person);
+	Check_Type(rb_name, T_STRING);
+	Check_Type(rb_email, T_STRING);
+	Check_Type(rb_time, T_FIXNUM);
+
+	git_commit_set_committer(commit, RSTRING_PTR(rb_name), RSTRING_PTR(rb_email), FIX2INT(rb_time));
 	return Qnil;
 }
 
@@ -456,17 +443,19 @@ static VALUE rb_git_commit_author_GET(VALUE self)
 	git_commit *commit;
 	Data_Get_Struct(self, git_commit, commit);
 
-	return rb_git_person2hash(git_commit_author(commit));
+	return rb_git_person2hash((git_person *)git_commit_author(commit));
 }
 
 static VALUE rb_git_commit_author_SET(VALUE self, VALUE rb_name, VALUE rb_email, VALUE rb_time)
 {
 	git_commit *commit;
-	git_person new_person;
 	Data_Get_Struct(self, git_commit, commit);
 
-	rb_git_args2person(&new_person, rb_name, rb_email, rb_time);
-	git_commit_set_author(commit, &new_person);
+	Check_Type(rb_name, T_STRING);
+	Check_Type(rb_email, T_STRING);
+	Check_Type(rb_time, T_FIXNUM);
+
+	git_commit_set_author(commit, RSTRING_PTR(rb_name), RSTRING_PTR(rb_email), FIX2INT(rb_time));
 	return Qnil;
 }
 
@@ -564,21 +553,23 @@ static VALUE rb_git_tag_name_SET(VALUE self, VALUE val)
 static VALUE rb_git_tag_tagger_GET(VALUE self)
 {
 	git_tag *tag;
-	const git_person *person;
+	git_person *person;
 	Data_Get_Struct(self, git_tag, tag);
 
-	person = git_tag_tagger(tag);
+	person = (git_person *)git_tag_tagger(tag);
 	return rb_git_person2hash(person);
 }
 
 static VALUE rb_git_tag_tagger_SET(VALUE self, VALUE rb_name, VALUE rb_email, VALUE rb_time)
 {
 	git_tag *tag;
-	git_person new_person;
 	Data_Get_Struct(self, git_tag, tag);
 
-	rb_git_args2person(&new_person, rb_name, rb_email, rb_time);
-	git_tag_set_tagger(tag, &new_person);
+	Check_Type(rb_name, T_STRING);
+	Check_Type(rb_email, T_STRING);
+	Check_Type(rb_time, T_FIXNUM);
+
+	git_tag_set_tagger(tag, RSTRING_PTR(rb_name), RSTRING_PTR(rb_email), FIX2INT(rb_time));
 	return Qnil;
 }
 
