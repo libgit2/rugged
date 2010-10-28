@@ -21,8 +21,10 @@ context "Ribbit::Repository stuff" do
     assert_equal "commit", type
   end
 
-  test "returns false if an object is not there" do
-    assert !@repo.read("a496071c1b46c854b31185ea97743be6a8774471")
+  test "checks that reading fails on unexistang objects" do
+    assert_raise RuntimeError do 
+		@repo.read("a496071c1b46c854b31185ea97743be6a8774471")
+	end
   end
 
   test "can hash data" do

@@ -31,7 +31,6 @@ context "Ribbit::Commit tests" do
     obj = @repo.lookup(sha)
     obj.message = 'new message'
     obj.write
-    pp obj.sha
   end
 
 end

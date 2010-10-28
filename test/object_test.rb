@@ -26,7 +26,7 @@ context "Ribbit::Object stuff" do
   
   test "can read raw data from an object" do
     obj = @repo.lookup("8496071c1b46c854b31185ea97743be6a8774479")
-    pp obj.read_raw
+    assert obj.read_raw
   end
 
 end
