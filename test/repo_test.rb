@@ -3,7 +3,7 @@ require 'base64'
 
 context "Ribbit::Repository stuff" do
   setup do
-    @path = File.dirname(__FILE__) + '/fixtures/testrepo.git/objects'
+    @path = File.dirname(__FILE__) + '/fixtures/testrepo.git/'
     @repo = Ribbit::Repository.new(@path)
   end
 

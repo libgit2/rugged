@@ -2,7 +2,7 @@ require File.dirname(__FILE__) + '/test_helper'
 
 context "Ribbit::Tree tests" do
   setup do
-    path = File.dirname(__FILE__) + '/fixtures/testrepo.git/objects'
+    path = File.dirname(__FILE__) + '/fixtures/testrepo.git/'
     @repo = Ribbit::Repository.new(path)
     @sha = "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b"
     @tree = @repo.lookup(@sha)

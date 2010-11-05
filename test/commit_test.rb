@@ -2,7 +2,7 @@ require File.dirname(__FILE__) + '/test_helper'
 
 context "Ribbit::Commit tests" do
   setup do
-    path = File.dirname(__FILE__) + '/fixtures/testrepo.git/objects'
+    path = File.dirname(__FILE__) + '/fixtures/testrepo.git/'
     @repo = Ribbit::Repository.new(path)
   end
 

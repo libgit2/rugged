@@ -3,7 +3,7 @@ require 'base64'
 
 context "Ribbit::Walker stuff" do
   setup do
-    @path = File.dirname(__FILE__) + '/fixtures/testrepo.git/objects'
+    @path = File.dirname(__FILE__) + '/fixtures/testrepo.git/'
     @repo = Ribbit::Repository.new(@path)
     @walker = Ribbit::Walker.new(@repo)
   end

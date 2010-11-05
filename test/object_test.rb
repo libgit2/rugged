@@ -3,13 +3,14 @@ require 'base64'
 
 context "Ribbit::Object stuff" do
   setup do
-    @path = File.dirname(__FILE__) + '/fixtures/testrepo.git/objects'
+    @path = File.dirname(__FILE__) + '/fixtures/testrepo.git/'
     @repo = Ribbit::Repository.new(@path)
   end
 
   test "cannot lookup a non-existant object" do
-    obj = @repo.lookup("a496071c1b46c854b31185ea97743be6a8774479")
-    assert_equal nil, obj
+    assert_raise RuntimeError do 
+		obj = @repo.lookup("a496071c1b46c854b31185ea97743be6a8774479")
+	end
   end
 
   test "can lookup an object" do

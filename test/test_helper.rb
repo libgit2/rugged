@@ -29,7 +29,7 @@ end
 def rm_loose(sha)
   dir = sha[0, 2]
   rest = sha[2, 38]
-  file = File.join(@path, dir, rest)
+  file = File.join(@path, "objects", dir, rest)
   `rm -f #{file}`
 end
 
