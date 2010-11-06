@@ -24,6 +24,7 @@ static VALUE rb_cRibbitTree;
 static VALUE rb_cRibbitTreeEntry;
 static VALUE rb_cRibbitWalker;
 static VALUE rb_cRibbitIndex;
+static VALUE rb_cRibbitIndexEntry;
 
 
 /*
@@ -876,11 +877,163 @@ static VALUE rb_git_index_write(VALUE self)
 	return Qnil;
 }
 
-static VALUE rb_git_index_find(VALUE self, VALUE path)
+static VALUE rb_git_indexentry_new(git_index_entry *entry)
+{
+	if (entry == NULL)
+		return Qnil;
+
+	return Data_Wrap_Struct(rb_cRibbitIndexEntry, NULL, NULL, entry);
+}
+
+static VALUE rb_git_index_get(VALUE self, VALUE entry)
 {
 	git_index *index;
 	Data_Get_Struct(self, git_index, index);
-	return FIX2INT(git_index_find(index, RSTRING_PTR(path)));
+
+	if (TYPE(entry) == T_STRING)
+		entry = INT2FIX(git_index_find(index, RSTRING_PTR(entry)));
+
+	Check_Type(entry, T_FIXNUM);
+	return rb_git_indexentry_new(git_index_get(index, FIX2INT(entry)));
+}
+
+static VALUE rb_git_index_remove(VALUE self, VALUE entry)
+{
+	git_index *index;
+	int error;
+	Data_Get_Struct(self, git_index, index);
+
+	if (TYPE(entry) == T_STRING)
+		entry = INT2FIX(git_index_find(index, RSTRING_PTR(entry)));
+
+	Check_Type(entry, T_FIXNUM);
+	
+	error = git_index_remove(index, FIX2INT(entry));
+	if (error < 0)
+		rb_raise(rb_eRuntimeError, git_strerror(error));
+
+	return Qnil;
+}
+
+static VALUE rb_git_index_add(VALUE self, VALUE rb_entry)
+{
+	git_index *index;
+	git_index_entry *entry;
+	int error;
+
+	if (!rb_obj_is_kind_of(rb_entry, rb_cRibbitIndexEntry))
+		rb_raise(rb_eTypeError, "entry must be a valid Index entry");
+
+	Data_Get_Struct(self, git_index, index);
+	Data_Get_Struct(rb_entry, git_index_entry, entry);
+
+	error = git_index_add(index, entry);
+	if (error < 0)
+		rb_raise(rb_eRuntimeError, git_strerror(error));
+
+	return Qnil;
+}
+
+
+
+/*
+ * Index Entry
+ */
+
+static VALUE rb_git_indexentry_allocate(VALUE klass)
+{
+	git_index_entry *index_entry = malloc(sizeof(git_index_entry));
+	memset(index_entry, 0x0, sizeof(git_index_entry));
+	return Data_Wrap_Struct(klass, NULL, NULL, index_entry);
+}
+
+static VALUE rb_git_indexentry_init(VALUE self, VALUE path, VALUE working_dir)
+{
+	return Qnil;
+}
+
+#define RB_GIT_INDEXENTRY_GETSET(attr)\
+static VALUE rb_git_indexentry_##attr##_GET(VALUE self) \
+{\
+	git_index_entry *entry;\
+	Data_Get_Struct(self, git_index_entry, entry);\
+	return INT2FIX(entry->attr);\
+}\
+static VALUE rb_git_indexentry_##attr##_SET(VALUE self, VALUE v) \
+{\
+	git_index_entry *entry;\
+	Data_Get_Struct(self, git_index_entry, entry);\
+	Check_Type(v, T_FIXNUM);\
+	entry->attr = FIX2INT(v);\
+	return Qnil;\
+}
+
+RB_GIT_INDEXENTRY_GETSET(dev);
+RB_GIT_INDEXENTRY_GETSET(ino);
+RB_GIT_INDEXENTRY_GETSET(mode);
+RB_GIT_INDEXENTRY_GETSET(uid);
+RB_GIT_INDEXENTRY_GETSET(gid);
+RB_GIT_INDEXENTRY_GETSET(file_size);
+RB_GIT_INDEXENTRY_GETSET(flags);
+RB_GIT_INDEXENTRY_GETSET(flags_extended);
+
+static VALUE rb_git_indexentry_oid_GET(VALUE self)
+{
+	git_index_entry *entry;
+	char out[40];
+	Data_Get_Struct(self, git_index_entry, entry);
+	git_oid_fmt(out, &entry->oid);
+	return rb_str_new(out, 40);
+}
+
+static VALUE rb_git_indexentry_oid_SET(VALUE self, VALUE v) 
+{
+	git_index_entry *entry;
+	Data_Get_Struct(self, git_index_entry, entry);
+
+	Check_Type(v, T_STRING);
+	git_oid_mkraw(&entry->oid, RSTRING_PTR(v));
+	return Qnil;
+}
+
+static VALUE rb_git_indexentry_mtime_GET(VALUE self)
+{
+	git_index_entry *entry;
+	Data_Get_Struct(self, git_index_entry, entry);
+	return rb_time_new(entry->mtime.seconds, entry->mtime.nanoseconds / 1000);
+}
+
+static VALUE rb_git_indexentry_ctime_GET(VALUE self)
+{
+	git_index_entry *entry;
+	Data_Get_Struct(self, git_index_entry, entry);
+	return rb_time_new(entry->ctime.seconds, entry->ctime.nanoseconds / 1000);
+}
+
+static VALUE rb_git_indexentry_mtime_SET(VALUE self, VALUE v) 
+{
+	git_index_entry *entry;
+	Data_Get_Struct(self, git_index_entry, entry);
+
+	/* TODO: check for time */
+
+	entry->mtime.seconds = NUM2LONG(rb_funcall(v, rb_intern("to_i"), 0));
+	entry->mtime.nanoseconds = NUM2LONG(rb_funcall(v, rb_intern("usec"), 0)) * 1000;
+
+	return Qnil;
+}
+
+static VALUE rb_git_indexentry_ctime_SET(VALUE self, VALUE v) 
+{
+	git_index_entry *entry;
+	Data_Get_Struct(self, git_index_entry, entry);
+
+	/* TODO: check for time */
+
+	entry->ctime.seconds = NUM2LONG(rb_funcall(v, rb_intern("to_i"), 0));
+	entry->ctime.nanoseconds = NUM2LONG(rb_funcall(v, rb_intern("usec"), 0)) * 1000;
+
+	return Qnil;
 }
 
 /*
@@ -1013,8 +1166,48 @@ void Init_ribbit()
 	rb_define_method(rb_cRibbitWalker, "sorting", rb_git_walker_sorting, 1);
 
 	/*
-	 * Index
+	 * Index 
 	 */
+	rb_cRibbitIndex = rb_define_class_under(rb_cRibbit, "Index", rb_cObject);
+	rb_define_alloc_func(rb_cRibbitIndex, rb_git_index_allocate);
+	rb_define_method(rb_cRibbitIndex, "initialize", rb_git_index_init, 2);
+	rb_define_method(rb_cRibbitIndex, "refresh", rb_git_index_read, 0);
+	rb_define_method(rb_cRibbitIndex, "clear", rb_git_index_clear, 0);
+	rb_define_method(rb_cRibbitIndex, "write", rb_git_index_write, 0);
+	rb_define_method(rb_cRibbitIndex, "get_entry", rb_git_index_get, 1);
+	rb_define_method(rb_cRibbitIndex, "add", rb_git_index_add, 1);
+	rb_define_method(rb_cRibbitIndex, "remove", rb_git_index_remove, 1);
+
+	/*
+	 * Index Entry
+	 */
+	rb_cRibbitIndexEntry = rb_define_class_under(rb_cRibbit, "IndexEntry", rb_cObject);
+	rb_define_alloc_func(rb_cRibbitIndexEntry, rb_git_indexentry_allocate);
+	rb_define_method(rb_cRibbitIndexEntry, "initialize", rb_git_indexentry_init, 0);
+
+	rb_define_method(rb_cRibbitIndexEntry, "dev", rb_git_indexentry_dev_GET, 0);
+	rb_define_method(rb_cRibbitIndexEntry, "dev=", rb_git_indexentry_dev_SET, 1);
+
+	rb_define_method(rb_cRibbitIndexEntry, "ino", rb_git_indexentry_ino_GET, 0);
+	rb_define_method(rb_cRibbitIndexEntry, "ino=", rb_git_indexentry_ino_SET, 1);
+
+	rb_define_method(rb_cRibbitIndexEntry, "mode", rb_git_indexentry_mode_GET, 0);
+	rb_define_method(rb_cRibbitIndexEntry, "mode=", rb_git_indexentry_mode_SET, 1);
+
+	rb_define_method(rb_cRibbitIndexEntry, "uid", rb_git_indexentry_uid_GET, 0);
+	rb_define_method(rb_cRibbitIndexEntry, "uid=", rb_git_indexentry_uid_SET, 1);
+
+	rb_define_method(rb_cRibbitIndexEntry, "gid", rb_git_indexentry_gid_GET, 0);
+	rb_define_method(rb_cRibbitIndexEntry, "gid=", rb_git_indexentry_gid_SET, 1);
+
+	rb_define_method(rb_cRibbitIndexEntry, "file_size", rb_git_indexentry_file_size_GET, 0);
+	rb_define_method(rb_cRibbitIndexEntry, "file_size=", rb_git_indexentry_file_size_SET, 1);
+
+	rb_define_method(rb_cRibbitIndexEntry, "flags", rb_git_indexentry_flags_GET, 0);
+	rb_define_method(rb_cRibbitIndexEntry, "flags=", rb_git_indexentry_flags_SET, 1);
+
+	rb_define_method(rb_cRibbitIndexEntry, "flags_extended", rb_git_indexentry_flags_extended_GET, 0);
+	rb_define_method(rb_cRibbitIndexEntry, "flags_extended=", rb_git_indexentry_flags_extended_SET, 1);
 
 
 	/*
