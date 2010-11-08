@@ -44,17 +44,21 @@ Repository is the main repository object that everything
 else will emanate from.
 
     repo =
-    Ribbit::Repository.new(path)
+    Ribbit::Repository.new(path, git_dir=nil, index_path=nil)
       ctnt, type = repo.read(sha)
       gobj = repo.lookup(sha, type[?])  # optional type argument for checking
       sha  = repo.write(content, type)
       sha  = repo.hash(content, type)
       bool = repo.exists(sha)
 
+If Repository is initialized without `git_dir`, path + '.git' will be assumed
+and path will be assumed to be the working directory.  If `path` is a git 
+directory, then `git_dir` will be set to that and none of the Ribbit functions
+that need a working directory will work. If the `index_path` is not specified, 
+the `git_dir` path plus '/index' will be assumed.
+
 Object is the main object class - it shouldn't be created directly,
 but all of these methods should be useful in it's derived classes
-
-// TODO: how do we prevent instantation of the Object?
 
     object = 
     # Constructor is inherited by all the repository objects
@@ -112,7 +116,7 @@ to simply read the current value out
 
 // * Person information is returned as a hash table
 
-Finally, there is a Walker class that currently takes a repo object. You can push 
+There is also a Walker class that currently takes a repo object. You can push 
 head SHAs onto the walker, then call next to get a list of the reachable commit 
 objects, one at a time. You can also hide() commits if you are not interested in
 anything beneath them (useful for a `git log master ^origin/master` type deal).
@@ -124,6 +128,44 @@ anything beneath them (useful for a `git log master ^origin/master` type deal).
       cmt  = walker.next # false if none left
              walker.reset
 
+
+We can inspect and manipulate the Git Index as well.
+
+    # the remove and add functions immediately flush to the index file on disk
+    index =
+    Ribbit::Index.new(repo, path=nil)
+            index.refresh              # re-read the index file from disk
+      int = index.entry_count # count of index entries
+      ent = index.get_entry(i/path)
+            index.remove(i/path)
+            index.add(ientry)    # also updates existing entry if there is one
+# TODO      index.add(path)      # create ientry from file in path, update index
+# TODO      index.read_tree(gobtr, path='/')
+# TODO st = index.status # how does the index differ from the work tree and the HEAD commit
+# TODO gobtr = index.write_tree
+    
+    # >> pp stat
+    # [ ['file1', :staged],
+    #   ['file2', :modified],
+    #   ['file3', :deleted],
+    #   ['file4', :untracked],
+    #   ['file4', :unmerged],
+    # ]
+
+    ientry = 
+    Ribbit::IndexEntry.new(index, offset)
+      str = ientry.name  # TODO
+     time = ientry.ctime # TODO
+     time = ientry.mtime # TODO
+      str = ientry.sha   # TODO
+      int = ientry.dev
+      int = ientry.ino
+      int = ientry.mode
+      int = ientry.uid
+      int = ientry.gid
+      int = ientry.file_size
+      int = ientry.flags # (what flags are available?)
+      int = ientry.flags_extended # (what flags are available?)
 
 TODO
 ==============
