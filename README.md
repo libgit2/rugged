@@ -154,7 +154,7 @@ We can inspect and manipulate the Git Index as well.
 
     ientry = 
     Ribbit::IndexEntry.new(index, offset)
-      str = ientry.name  # TODO
+      str = ientry.path  # TODO
      time = ientry.ctime # TODO
      time = ientry.mtime # TODO
       str = ientry.sha   # TODO

@@ -1,4 +1,5 @@
 require 'ribbit/ribbit'
+require 'ribbit/index'
 require 'ribbit/tree'
 require 'ribbit/tree_entry'
 require 'ribbit/version'

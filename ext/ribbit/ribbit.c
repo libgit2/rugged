@@ -846,7 +846,7 @@ static VALUE rb_git_index_init(VALUE self, VALUE path, VALUE working_dir)
 	git_index *index;
 	int error;
 
-	if ((error = git_index_alloc(RSTRING_PTR(path), RSTRING_PTR(working_dir))) < 0)
+	if ((error = git_index_open(&index, RSTRING_PTR(path), RSTRING_PTR(working_dir))) < 0)
 		rb_raise(rb_eRuntimeError, git_strerror(error));
 
 	DATA_PTR(self) = index;
@@ -883,6 +883,13 @@ static VALUE rb_git_indexentry_new(git_index_entry *entry)
 		return Qnil;
 
 	return Data_Wrap_Struct(rb_cRibbitIndexEntry, NULL, NULL, entry);
+}
+
+static VALUE rb_git_index_get_entry_count(VALUE self)
+{
+	git_index *index;
+	Data_Get_Struct(self, git_index, index);
+	return INT2FIX(git_index_get_entry_count(index));
 }
 
 static VALUE rb_git_index_get(VALUE self, VALUE entry)
@@ -977,6 +984,23 @@ RB_GIT_INDEXENTRY_GETSET(file_size);
 RB_GIT_INDEXENTRY_GETSET(flags);
 RB_GIT_INDEXENTRY_GETSET(flags_extended);
 
+static VALUE rb_git_indexentry_path_GET(VALUE self)
+{
+	git_index_entry *entry;
+	Data_Get_Struct(self, git_index_entry, entry);
+	return rb_str_new2(entry->path);
+}
+
+static VALUE rb_git_indexentry_path_SET(VALUE self, VALUE val)
+{
+	git_index_entry *entry;
+	Data_Get_Struct(self, git_index_entry, entry);
+
+	Check_Type(val, T_STRING);
+	entry->path = RSTRING_PTR(val);
+	return Qnil;
+}
+
 static VALUE rb_git_indexentry_oid_GET(VALUE self)
 {
 	git_index_entry *entry;
@@ -989,10 +1013,17 @@ static VALUE rb_git_indexentry_oid_GET(VALUE self)
 static VALUE rb_git_indexentry_oid_SET(VALUE self, VALUE v) 
 {
 	git_index_entry *entry;
+  git_oid oid;
 	Data_Get_Struct(self, git_index_entry, entry);
+	int error;
 
 	Check_Type(v, T_STRING);
-	git_oid_mkraw(&entry->oid, RSTRING_PTR(v));
+
+	if ((error = git_oid_mkstr(&oid, RSTRING_PTR(v))) < 0)
+		rb_raise(rb_eTypeError, git_strerror(error));
+  else
+	  entry->oid = oid;
+
 	return Qnil;
 }
 
@@ -1171,10 +1202,12 @@ void Init_ribbit()
 	rb_cRibbitIndex = rb_define_class_under(rb_cRibbit, "Index", rb_cObject);
 	rb_define_alloc_func(rb_cRibbitIndex, rb_git_index_allocate);
 	rb_define_method(rb_cRibbitIndex, "initialize", rb_git_index_init, 2);
+	rb_define_method(rb_cRibbitIndex, "entry_count", rb_git_index_get_entry_count, 0);
 	rb_define_method(rb_cRibbitIndex, "refresh", rb_git_index_read, 0);
 	rb_define_method(rb_cRibbitIndex, "clear", rb_git_index_clear, 0);
 	rb_define_method(rb_cRibbitIndex, "write", rb_git_index_write, 0);
 	rb_define_method(rb_cRibbitIndex, "get_entry", rb_git_index_get, 1);
+	rb_define_method(rb_cRibbitIndex, "[]", rb_git_index_get, 1);
 	rb_define_method(rb_cRibbitIndex, "add", rb_git_index_add, 1);
 	rb_define_method(rb_cRibbitIndex, "remove", rb_git_index_remove, 1);
 
@@ -1184,6 +1217,18 @@ void Init_ribbit()
 	rb_cRibbitIndexEntry = rb_define_class_under(rb_cRibbit, "IndexEntry", rb_cObject);
 	rb_define_alloc_func(rb_cRibbitIndexEntry, rb_git_indexentry_allocate);
 	rb_define_method(rb_cRibbitIndexEntry, "initialize", rb_git_indexentry_init, 0);
+
+	rb_define_method(rb_cRibbitIndexEntry, "path", rb_git_indexentry_path_GET, 0);
+	rb_define_method(rb_cRibbitIndexEntry, "path=", rb_git_indexentry_path_SET, 1);
+
+	rb_define_method(rb_cRibbitIndexEntry, "sha", rb_git_indexentry_oid_GET, 0);
+	rb_define_method(rb_cRibbitIndexEntry, "sha=", rb_git_indexentry_oid_SET, 1);
+
+	rb_define_method(rb_cRibbitIndexEntry, "mtime", rb_git_indexentry_mtime_GET, 0);
+	rb_define_method(rb_cRibbitIndexEntry, "mtime=", rb_git_indexentry_mtime_SET, 1);
+
+	rb_define_method(rb_cRibbitIndexEntry, "ctime", rb_git_indexentry_ctime_GET, 0);
+	rb_define_method(rb_cRibbitIndexEntry, "ctime=", rb_git_indexentry_ctime_SET, 1);
 
 	rb_define_method(rb_cRibbitIndexEntry, "dev", rb_git_indexentry_dev_GET, 0);
 	rb_define_method(rb_cRibbitIndexEntry, "dev=", rb_git_indexentry_dev_SET, 1);
