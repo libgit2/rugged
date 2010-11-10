@@ -44,6 +44,15 @@ if command? :kicker
   end
 end
 
+desc "Update the libgit2 SHA"
+task :libgit do
+  sha = `git --git-dir=../libgit2/.git rev-parse HEAD`
+  File.open("LIBGIT2_VERSION", 'w') do |f|
+    f.puts "# git --git-dir=../libgit2/.git rev-parse HEAD"
+    f.puts sha
+  end
+end
+
 
 #
 # Ron
