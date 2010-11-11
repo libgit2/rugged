@@ -889,7 +889,7 @@ static VALUE rb_git_index_get_entry_count(VALUE self)
 {
 	git_index *index;
 	Data_Get_Struct(self, git_index, index);
-	return INT2FIX(git_index_get_entry_count(index));
+	return INT2FIX(git_index_entrycount(index));
 }
 
 static VALUE rb_git_index_get(VALUE self, VALUE entry)
@@ -1013,16 +1013,13 @@ static VALUE rb_git_indexentry_oid_GET(VALUE self)
 static VALUE rb_git_indexentry_oid_SET(VALUE self, VALUE v) 
 {
 	git_index_entry *entry;
-  git_oid oid;
-	Data_Get_Struct(self, git_index_entry, entry);
 	int error;
 
+	Data_Get_Struct(self, git_index_entry, entry);
 	Check_Type(v, T_STRING);
 
-	if ((error = git_oid_mkstr(&oid, RSTRING_PTR(v))) < 0)
+	if ((error = git_oid_mkstr(&entry->oid, RSTRING_PTR(v))) < 0)
 		rb_raise(rb_eTypeError, git_strerror(error));
-  else
-	  entry->oid = oid;
 
 	return Qnil;
 }
