@@ -1,7 +1,27 @@
 require File.dirname(__FILE__) + '/test_helper'
 require 'base64'
+require 'tempfile'
+require 'fileutils'
 
-context "Ribbit::Index stuff" do
+def new_index_entry
+    now = Time.now
+    e = Ribbit::IndexEntry.new
+    e.path = "new_path"
+    e.sha = "d385f264afb75a56a5bec74243be9b367ba4ca08"
+    e.mtime = now
+    e.ctime = now
+    e.file_size = 1000
+    e.dev = 234881027
+    e.ino = 88888
+    e.mode = 33199
+    e.uid = 502
+    e.gid = 502
+    e.flags = 5
+    e.flags_extended = 5
+    e
+end
+
+context "Ribbit::Index reading stuff" do
   setup do
     path = File.dirname(__FILE__) + '/fixtures/testrepo.git/index'
     @index = Ribbit::Index.new(path, "/tmp")
@@ -74,29 +94,37 @@ context "Ribbit::Index stuff" do
   end
 
   test "can add new entries" do
-    now = Time.now
-    e = Ribbit::IndexEntry.new
-    e.path = "new_path"
-    e.sha = "d385f264afb75a56a5bec74243be9b367ba4ca08"
-    e.mtime = now
-    e.ctime = now
-    e.file_size = 1000
-    e.dev = 234881027
-    e.ino = 88888
-    e.mode = 33199
-    e.uid = 502
-    e.gid = 502
-    e.flags = 5
-    e.flags_extended = 5
+    e = new_index_entry
     @index.add(e)
     assert_equal 3, @index.entry_count
     itr_test = @index.sort { |a, b| a.sha <=> b.sha }.map { |e| e.path }.join(':')
     assert_equal "README:new_path:new.txt", itr_test
   end
 
-  xtest "can write a new index" do
-    # @index.add(new_entry)
-    # @index.write
+
+end
+
+context "Ribbit::Index writing stuff" do
+  setup do
+    path = File.dirname(__FILE__) + '/fixtures/testrepo.git/index'
+    @tmppath = Tempfile.new('index').path
+    FileUtils.copy (path, @tmppath)
+    @index = Ribbit::Index.new(@tmppath, "/tmp")
+    @index.refresh
   end
 
+  test "can write a new index" do
+    e = new_index_entry
+    @index.add(e)
+    e.path = "else.txt"
+    @index.add(e)
+    @index.write
+
+    index2 = Ribbit::Index.new(@tmppath, "/tmp")
+    index2.refresh
+
+    itr_test = index2.sort { |a, b| a.sha <=> b.sha }.map { |e| e.path }.join(':')
+    assert_equal "README:else.txt:new_path:new.txt", itr_test
+    assert_equal 4, index2.entry_count
+  end
 end
