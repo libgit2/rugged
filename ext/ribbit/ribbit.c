@@ -1111,7 +1111,8 @@ void Init_ribbit()
 	rb_define_method(rb_cRibbitRepo, "hash",   rb_git_repo_obj_hash,  2);
 	rb_define_method(rb_cRibbitRepo, "read",   rb_git_repo_read,   1);
 	rb_define_method(rb_cRibbitRepo, "write",  rb_git_repo_write,  2);
-	rb_define_method(rb_cRibbitRepo, "lookup",  rb_git_repo_lookup,  -1);
+	rb_define_method(rb_cRibbitRepo, "lookup", rb_git_repo_lookup,  -1);
+	rb_define_method(rb_cRibbitRepo, "index",  rb_git_repo_index,  0);
 
 
 	/*
