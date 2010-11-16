@@ -113,6 +113,12 @@ context "Ribbit::Index writing stuff" do
     @index.refresh
   end
 
+  test "add raises if it gets something weird" do
+    assert_raise TypeError do
+      @index.add(21)
+    end
+  end
+
   test "can write a new index" do
     e = new_index_entry
     @index.add(e)
