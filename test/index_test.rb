@@ -24,7 +24,7 @@ end
 context "Ribbit::Index reading stuff" do
   setup do
     path = File.dirname(__FILE__) + '/fixtures/testrepo.git/index'
-    @index = Ribbit::Index.new(path, "/tmp")
+    @index = Ribbit::Index.new(path)
     @index.refresh
   end
 
@@ -108,8 +108,8 @@ context "Ribbit::Index writing stuff" do
   setup do
     path = File.dirname(__FILE__) + '/fixtures/testrepo.git/index'
     @tmppath = Tempfile.new('index').path
-    FileUtils.copy (path, @tmppath)
-    @index = Ribbit::Index.new(@tmppath, "/tmp")
+    FileUtils.copy(path, @tmppath)
+    @index = Ribbit::Index.new(@tmppath)
     @index.refresh
   end
 
@@ -120,7 +120,7 @@ context "Ribbit::Index writing stuff" do
     @index.add(e)
     @index.write
 
-    index2 = Ribbit::Index.new(@tmppath, "/tmp")
+    index2 = Ribbit::Index.new(@tmppath)
     index2.refresh
 
     itr_test = index2.sort { |a, b| a.sha <=> b.sha }.map { |e| e.path }.join(':')

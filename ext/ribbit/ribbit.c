@@ -841,12 +841,12 @@ static VALUE rb_git_index_allocate(VALUE klass)
 	return Data_Wrap_Struct(klass, NULL, NULL, index);
 }
 
-static VALUE rb_git_index_init(VALUE self, VALUE path, VALUE working_dir)
+static VALUE rb_git_index_init(VALUE self, VALUE path)
 {
 	git_index *index;
 	int error;
 
-	if ((error = git_index_open(&index, RSTRING_PTR(path), RSTRING_PTR(working_dir))) < 0)
+	if ((error = git_index_open_bare(&index, RSTRING_PTR(path))) < 0)
 		rb_raise(rb_eRuntimeError, git_strerror(error));
 
 	DATA_PTR(self) = index;
@@ -864,16 +864,26 @@ static VALUE rb_git_index_clear(VALUE self)
 static VALUE rb_git_index_read(VALUE self)
 {
 	git_index *index;
+	int error;
+
 	Data_Get_Struct(self, git_index, index);
-	git_index_read(index);
+
+	if ((error = git_index_read(index)) < 0)
+		rb_raise(rb_eRuntimeError, git_strerror(error));
+
 	return Qnil;
 }
 
 static VALUE rb_git_index_write(VALUE self)
 {
 	git_index *index;
+	int error;
+
 	Data_Get_Struct(self, git_index, index);
-	git_index_write(index);
+
+	if ((error = git_index_write(index)) < 0)
+		rb_raise(rb_eRuntimeError, git_strerror(error));
+		
 	return Qnil;
 }
 
@@ -928,13 +938,18 @@ static VALUE rb_git_index_add(VALUE self, VALUE rb_entry)
 	git_index_entry *entry;
 	int error;
 
-	if (!rb_obj_is_kind_of(rb_entry, rb_cRibbitIndexEntry))
-		rb_raise(rb_eTypeError, "entry must be a valid Index entry");
-
 	Data_Get_Struct(self, git_index, index);
-	Data_Get_Struct(rb_entry, git_index_entry, entry);
 
-	error = git_index_add(index, entry);
+	if (rb_obj_is_kind_of(rb_entry, rb_cRibbitIndexEntry)) {
+		Data_Get_Struct(rb_entry, git_index_entry, entry);
+		error = git_index_insert(index, entry);
+	} else if (TYPE(rb_entry) == T_STRING) {
+		error = git_index_add(index, RSTRING_PTR(rb_entry), 0);
+	} else {
+		rb_raise(rb_eTypeError, 
+			"index_entry must be an existing IndexEntry object or a path to a file in the repository");
+	}
+
 	if (error < 0)
 		rb_raise(rb_eRuntimeError, git_strerror(error));
 
@@ -988,6 +1003,10 @@ static VALUE rb_git_indexentry_path_GET(VALUE self)
 {
 	git_index_entry *entry;
 	Data_Get_Struct(self, git_index_entry, entry);
+
+	if (entry->path == NULL)
+		return Qnil;
+
 	return rb_str_new2(entry->path);
 }
 
@@ -997,7 +1016,11 @@ static VALUE rb_git_indexentry_path_SET(VALUE self, VALUE val)
 	Data_Get_Struct(self, git_index_entry, entry);
 
 	Check_Type(val, T_STRING);
-	entry->path = RSTRING_PTR(val);
+
+	if (entry->path != NULL)
+		free(entry->path);
+
+	entry->path = strdup(RSTRING_PTR(val));
 	return Qnil;
 }
 
@@ -1198,7 +1221,7 @@ void Init_ribbit()
 	 */
 	rb_cRibbitIndex = rb_define_class_under(rb_cRibbit, "Index", rb_cObject);
 	rb_define_alloc_func(rb_cRibbitIndex, rb_git_index_allocate);
-	rb_define_method(rb_cRibbitIndex, "initialize", rb_git_index_init, 2);
+	rb_define_method(rb_cRibbitIndex, "initialize", rb_git_index_init, 1);
 	rb_define_method(rb_cRibbitIndex, "entry_count", rb_git_index_get_entry_count, 0);
 	rb_define_method(rb_cRibbitIndex, "refresh", rb_git_index_read, 0);
 	rb_define_method(rb_cRibbitIndex, "clear", rb_git_index_clear, 0);

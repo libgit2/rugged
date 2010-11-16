@@ -139,10 +139,10 @@ We can inspect and manipulate the Git Index as well.
       ent = index.get_entry(i/path)
             index.remove(i/path)
             index.add(ientry)    # also updates existing entry if there is one
-# TODO      index.add(path)      # create ientry from file in path, update index
-# TODO      index.read_tree(gobtr, path='/')
-# TODO st = index.status # how does the index differ from the work tree and the HEAD commit
-# TODO gobtr = index.write_tree
+            index.add(path)      # create ientry from file in path, update index
+      #TODO index.read_tree(gobtr, path='/')
+      #TODO index.status # how does the index differ from the work tree and the HEAD commit
+      #TODO index.write_tree
     
     # >> pp stat
     # [ ['file1', :staged],
