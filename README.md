@@ -20,7 +20,7 @@ Next, you need to install rake-compiler:
 
 Now that those are installed, you can install Rugged:
 
-    $ git clone git://github.com/libgit2/rubbit.git
+    $ git clone git://github.com/libgit2/rugged.git
     $ cd rugged
     $ rake compile
     $ rake test
