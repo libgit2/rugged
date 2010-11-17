@@ -1,9 +1,9 @@
 require File.dirname(__FILE__) + '/test_helper'
 
-context "Ribbit::Commit tests" do
+context "Rugged::Commit tests" do
   setup do
     path = File.dirname(__FILE__) + '/fixtures/testrepo.git/'
-    @repo = Ribbit::Repository.new(path)
+    @repo = Rugged::Repository.new(path)
   end
 
   test "can read the commit data" do

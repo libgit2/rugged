@@ -14,21 +14,21 @@
 
 static VALUE rb_git_createobject(git_object *object);
 
-static VALUE rb_cRibbit;
-static VALUE rb_cRibbitLib;
-static VALUE rb_cRibbitRepo;
-static VALUE rb_cRibbitObject;
-static VALUE rb_cRibbitCommit;
-static VALUE rb_cRibbitTag;
-static VALUE rb_cRibbitTree;
-static VALUE rb_cRibbitTreeEntry;
-static VALUE rb_cRibbitWalker;
-static VALUE rb_cRibbitIndex;
-static VALUE rb_cRibbitIndexEntry;
+static VALUE rb_cRugged;
+static VALUE rb_cRuggedLib;
+static VALUE rb_cRuggedRepo;
+static VALUE rb_cRuggedObject;
+static VALUE rb_cRuggedCommit;
+static VALUE rb_cRuggedTag;
+static VALUE rb_cRuggedTree;
+static VALUE rb_cRuggedTreeEntry;
+static VALUE rb_cRuggedWalker;
+static VALUE rb_cRuggedIndex;
+static VALUE rb_cRuggedIndexEntry;
 
 
 /*
- * Ribbit Lib
+ * Rugged Lib
  */
 
 
@@ -69,7 +69,7 @@ static VALUE rb_git_string_to_type(VALUE self, VALUE string_type)
 
 
 /*
- * Ribbit Object Database
+ * Rugged Object Database
  */
 static VALUE rb_git_repo_allocate(VALUE klass)
 {
@@ -100,7 +100,7 @@ static VALUE rb_git_repo_index(VALUE self)
 	if ((index = git_repository_index(repo)) == NULL)
 		rb_raise(rb_eRuntimeError, "failed to open Index file");
 
-	return Data_Wrap_Struct(rb_cRibbitIndex, NULL, NULL, index);
+	return Data_Wrap_Struct(rb_cRuggedIndex, NULL, NULL, index);
 }
 
 static VALUE rb_git_repo_exists(VALUE self, VALUE hex)
@@ -226,7 +226,7 @@ static VALUE rb_git_repo_lookup(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- * Ribbit Object
+ * Rugged Object
  */ 
 static git_object *rb_git_get_C_object(git_repository *repo, VALUE object_value, git_otype type)
 {
@@ -242,7 +242,7 @@ static git_object *rb_git_get_C_object(git_repository *repo, VALUE object_value,
 		if (error < 0)
 			rb_raise(rb_eRuntimeError, git_strerror(error));
 
-	} else if (rb_obj_is_kind_of(object_value, rb_cRibbitObject)) {
+	} else if (rb_obj_is_kind_of(object_value, rb_cRuggedObject)) {
 		Data_Get_Struct(object_value, git_object, object);
 
 		if (type != GIT_OBJ_ANY && git_object_type(object) != type)
@@ -266,20 +266,20 @@ static VALUE rb_git_createobject(git_object *object)
 	switch (type)
 	{
 		case GIT_OBJ_COMMIT:
-			klass = rb_cRibbitCommit;
+			klass = rb_cRuggedCommit;
 			break;
 
 		case GIT_OBJ_TAG:
-			klass = rb_cRibbitTag;
+			klass = rb_cRuggedTag;
 			break;
 
 		case GIT_OBJ_TREE:
-			klass = rb_cRibbitTree;
+			klass = rb_cRuggedTree;
 			break;
 
 		case GIT_OBJ_BLOB:
 		default:
-			klass = rb_cRibbitObject;
+			klass = rb_cRuggedObject;
 			break;
 	}
 
@@ -300,7 +300,7 @@ static VALUE rb_git_object_equal(VALUE self, VALUE other)
 {
 	git_object *a, *b;
 
-	if (!rb_obj_is_kind_of(other, rb_cRibbitObject))
+	if (!rb_obj_is_kind_of(other, rb_cRuggedObject))
 		return Qfalse;
 
 	Data_Get_Struct(self, git_object, a);
@@ -385,7 +385,7 @@ static VALUE rb_git_object_write(VALUE self)
 }
 
 /*
- * Ribbit Commit
+ * Rugged Commit
  */ 
 static VALUE rb_git_commit_allocate(VALUE klass)
 {
@@ -513,7 +513,7 @@ static VALUE rb_git_commit_tree_SET(VALUE self, VALUE val)
 
 
 /*
- * Ribbit Tag
+ * Rugged Tag
  */
 static VALUE rb_git_tag_allocate(VALUE klass)
 {
@@ -614,7 +614,7 @@ static VALUE rb_git_tag_message_SET(VALUE self, VALUE val)
 
 
 /*
- * Ribbit Tree
+ * Rugged Tree
  */
 static VALUE rb_git_treeentry_allocate(VALUE klass)
 {
@@ -634,7 +634,7 @@ static VALUE rb_git_createentry(git_tree_entry *entry)
 	if (entry == NULL)
 		return Qnil;
 
-	obj = Data_Wrap_Struct(rb_cRibbitTreeEntry, NULL, NULL, entry);
+	obj = Data_Wrap_Struct(rb_cRuggedTreeEntry, NULL, NULL, entry);
 	/* TODO: attributes? */
 
 	return obj;
@@ -716,7 +716,7 @@ static VALUE rb_git_tree_entry_2object(VALUE self)
 
 
 /*
- * Ribbit Tree
+ * Rugged Tree
  */
 static VALUE rb_git_tree_allocate(VALUE klass)
 {
@@ -754,7 +754,7 @@ static VALUE rb_git_tree_get_entry(VALUE self, VALUE entry_id)
 
 
 /*
- * Ribbit Revwalking
+ * Rugged Revwalking
  */ 
 
 static VALUE rb_git_walker_allocate(VALUE klass)
@@ -892,7 +892,7 @@ static VALUE rb_git_indexentry_new(git_index_entry *entry)
 	if (entry == NULL)
 		return Qnil;
 
-	return Data_Wrap_Struct(rb_cRibbitIndexEntry, NULL, NULL, entry);
+	return Data_Wrap_Struct(rb_cRuggedIndexEntry, NULL, NULL, entry);
 }
 
 static VALUE rb_git_index_get_entry_count(VALUE self)
@@ -940,7 +940,7 @@ static VALUE rb_git_index_add(VALUE self, VALUE rb_entry)
 
 	Data_Get_Struct(self, git_index, index);
 
-	if (rb_obj_is_kind_of(rb_entry, rb_cRibbitIndexEntry)) {
+	if (rb_obj_is_kind_of(rb_entry, rb_cRuggedIndexEntry)) {
 		Data_Get_Struct(rb_entry, git_index_entry, entry);
 		error = git_index_insert(index, entry);
 	} else if (TYPE(rb_entry) == T_STRING) {
@@ -1088,207 +1088,207 @@ static VALUE rb_git_indexentry_ctime_SET(VALUE self, VALUE v)
 }
 
 /*
- * Ribbit Init Call
+ * Rugged Init Call
  */
 
-void Init_ribbit()
+void Init_rugged()
 {
-	rb_cRibbit = rb_define_class("Ribbit", rb_cObject);
-	rb_cRibbitLib = rb_define_class_under(rb_cRibbit, "Lib", rb_cObject);
+	rb_cRugged = rb_define_class("Rugged", rb_cObject);
+	rb_cRuggedLib = rb_define_class_under(rb_cRugged, "Lib", rb_cObject);
 
-	rb_define_module_function(rb_cRibbitLib, "hex_to_raw", rb_git_hex_to_raw, 1);
-	rb_define_module_function(rb_cRibbitLib, "raw_to_hex", rb_git_raw_to_hex, 1);
-	rb_define_module_function(rb_cRibbitLib, "type_to_string", rb_git_type_to_string, 1);
-	rb_define_module_function(rb_cRibbitLib, "string_to_type", rb_git_string_to_type, 1);
+	rb_define_module_function(rb_cRuggedLib, "hex_to_raw", rb_git_hex_to_raw, 1);
+	rb_define_module_function(rb_cRuggedLib, "raw_to_hex", rb_git_raw_to_hex, 1);
+	rb_define_module_function(rb_cRuggedLib, "type_to_string", rb_git_type_to_string, 1);
+	rb_define_module_function(rb_cRuggedLib, "string_to_type", rb_git_string_to_type, 1);
 
 	/*
 	 * Repository
 	 */
-	rb_cRibbitRepo = rb_define_class_under(rb_cRibbit, "Repository", rb_cObject);
-	rb_define_alloc_func(rb_cRibbitRepo, rb_git_repo_allocate);
-	rb_define_method(rb_cRibbitRepo, "initialize", rb_git_repo_init, 1);
-	rb_define_method(rb_cRibbitRepo, "exists", rb_git_repo_exists, 1);
-	rb_define_method(rb_cRibbitRepo, "hash",   rb_git_repo_obj_hash,  2);
-	rb_define_method(rb_cRibbitRepo, "read",   rb_git_repo_read,   1);
-	rb_define_method(rb_cRibbitRepo, "write",  rb_git_repo_write,  2);
-	rb_define_method(rb_cRibbitRepo, "lookup", rb_git_repo_lookup,  -1);
-	rb_define_method(rb_cRibbitRepo, "index",  rb_git_repo_index,  0);
+	rb_cRuggedRepo = rb_define_class_under(rb_cRugged, "Repository", rb_cObject);
+	rb_define_alloc_func(rb_cRuggedRepo, rb_git_repo_allocate);
+	rb_define_method(rb_cRuggedRepo, "initialize", rb_git_repo_init, 1);
+	rb_define_method(rb_cRuggedRepo, "exists", rb_git_repo_exists, 1);
+	rb_define_method(rb_cRuggedRepo, "hash",   rb_git_repo_obj_hash,  2);
+	rb_define_method(rb_cRuggedRepo, "read",   rb_git_repo_read,   1);
+	rb_define_method(rb_cRuggedRepo, "write",  rb_git_repo_write,  2);
+	rb_define_method(rb_cRuggedRepo, "lookup", rb_git_repo_lookup,  -1);
+	rb_define_method(rb_cRuggedRepo, "index",  rb_git_repo_index,  0);
 
 
 	/*
 	 * Object
 	 */
-	rb_cRibbitObject = rb_define_class_under(rb_cRibbit, "Object", rb_cObject);
-	rb_define_alloc_func(rb_cRibbitObject, rb_git_object_allocate);
-	rb_define_method(rb_cRibbitObject, "read_raw", rb_git_object_read_raw, 0);
-	rb_define_method(rb_cRibbitObject, "write", rb_git_object_write, 0);
-	rb_define_method(rb_cRibbitObject, "==", rb_git_object_equal, 1);
-	rb_define_method(rb_cRibbitObject, "sha", rb_git_object_sha_GET, 0);
-	rb_define_method(rb_cRibbitObject, "type", rb_git_object_type_GET, 0);
+	rb_cRuggedObject = rb_define_class_under(rb_cRugged, "Object", rb_cObject);
+	rb_define_alloc_func(rb_cRuggedObject, rb_git_object_allocate);
+	rb_define_method(rb_cRuggedObject, "read_raw", rb_git_object_read_raw, 0);
+	rb_define_method(rb_cRuggedObject, "write", rb_git_object_write, 0);
+	rb_define_method(rb_cRuggedObject, "==", rb_git_object_equal, 1);
+	rb_define_method(rb_cRuggedObject, "sha", rb_git_object_sha_GET, 0);
+	rb_define_method(rb_cRuggedObject, "type", rb_git_object_type_GET, 0);
 
 
 	/*
 	 * Commit
 	 */
-	rb_cRibbitCommit = rb_define_class_under(rb_cRibbit, "Commit", rb_cRibbitObject);
-	rb_define_alloc_func(rb_cRibbitCommit, rb_git_commit_allocate);
-	rb_define_method(rb_cRibbitCommit, "initialize", rb_git_commit_init, -1);
+	rb_cRuggedCommit = rb_define_class_under(rb_cRugged, "Commit", rb_cRuggedObject);
+	rb_define_alloc_func(rb_cRuggedCommit, rb_git_commit_allocate);
+	rb_define_method(rb_cRuggedCommit, "initialize", rb_git_commit_init, -1);
 
-	rb_define_method(rb_cRibbitCommit, "message", rb_git_commit_message_GET, 0);
-	rb_define_method(rb_cRibbitCommit, "message=", rb_git_commit_message_SET, 1);
-
-	/* Read only */
-	rb_define_method(rb_cRibbitCommit, "message_short", rb_git_commit_message_short_GET, 0); 
+	rb_define_method(rb_cRuggedCommit, "message", rb_git_commit_message_GET, 0);
+	rb_define_method(rb_cRuggedCommit, "message=", rb_git_commit_message_SET, 1);
 
 	/* Read only */
-	rb_define_method(rb_cRibbitCommit, "time", rb_git_commit_time_GET, 0); /* READ ONLY */
+	rb_define_method(rb_cRuggedCommit, "message_short", rb_git_commit_message_short_GET, 0); 
 
-	rb_define_method(rb_cRibbitCommit, "committer", rb_git_commit_committer_GET, 0);
-	rb_define_method(rb_cRibbitCommit, "committer=", rb_git_commit_committer_SET, 3);
+	/* Read only */
+	rb_define_method(rb_cRuggedCommit, "time", rb_git_commit_time_GET, 0); /* READ ONLY */
 
-	rb_define_method(rb_cRibbitCommit, "author", rb_git_commit_author_GET, 0);
-	rb_define_method(rb_cRibbitCommit, "author=", rb_git_commit_author_SET, 3);
+	rb_define_method(rb_cRuggedCommit, "committer", rb_git_commit_committer_GET, 0);
+	rb_define_method(rb_cRuggedCommit, "committer=", rb_git_commit_committer_SET, 3);
 
-	rb_define_method(rb_cRibbitCommit, "tree", rb_git_commit_tree_GET, 0);
-	rb_define_method(rb_cRibbitCommit, "tree=", rb_git_commit_tree_SET, 1);
+	rb_define_method(rb_cRuggedCommit, "author", rb_git_commit_author_GET, 0);
+	rb_define_method(rb_cRuggedCommit, "author=", rb_git_commit_author_SET, 3);
+
+	rb_define_method(rb_cRuggedCommit, "tree", rb_git_commit_tree_GET, 0);
+	rb_define_method(rb_cRuggedCommit, "tree=", rb_git_commit_tree_SET, 1);
 
 
 	/*
 	 * Tag
 	 */
-	rb_cRibbitTag = rb_define_class_under(rb_cRibbit, "Tag", rb_cRibbitObject);
-	rb_define_alloc_func(rb_cRibbitTag, rb_git_tag_allocate);
-	rb_define_method(rb_cRibbitTag, "initialize", rb_git_tag_init, -1);
+	rb_cRuggedTag = rb_define_class_under(rb_cRugged, "Tag", rb_cRuggedObject);
+	rb_define_alloc_func(rb_cRuggedTag, rb_git_tag_allocate);
+	rb_define_method(rb_cRuggedTag, "initialize", rb_git_tag_init, -1);
 
-	rb_define_method(rb_cRibbitTag, "message", rb_git_tag_message_GET, 0);
-	rb_define_method(rb_cRibbitTag, "message=", rb_git_tag_message_SET, 1);
+	rb_define_method(rb_cRuggedTag, "message", rb_git_tag_message_GET, 0);
+	rb_define_method(rb_cRuggedTag, "message=", rb_git_tag_message_SET, 1);
 
-	rb_define_method(rb_cRibbitTag, "name", rb_git_tag_name_GET, 0);
-	rb_define_method(rb_cRibbitTag, "name=", rb_git_tag_name_SET, 1);
+	rb_define_method(rb_cRuggedTag, "name", rb_git_tag_name_GET, 0);
+	rb_define_method(rb_cRuggedTag, "name=", rb_git_tag_name_SET, 1);
 
-	rb_define_method(rb_cRibbitTag, "target", rb_git_tag_target_GET, 0);
-	rb_define_method(rb_cRibbitTag, "target=", rb_git_tag_target_SET, 1);
+	rb_define_method(rb_cRuggedTag, "target", rb_git_tag_target_GET, 0);
+	rb_define_method(rb_cRuggedTag, "target=", rb_git_tag_target_SET, 1);
 
 	/* Read only */
-	rb_define_method(rb_cRibbitTag, "target_type", rb_git_tag_target_type_GET, 0);
+	rb_define_method(rb_cRuggedTag, "target_type", rb_git_tag_target_type_GET, 0);
 
-	rb_define_method(rb_cRibbitTag, "tagger", rb_git_tag_tagger_GET, 0);
-	rb_define_method(rb_cRibbitTag, "tagger=", rb_git_tag_tagger_SET, 3);
+	rb_define_method(rb_cRuggedTag, "tagger", rb_git_tag_tagger_GET, 0);
+	rb_define_method(rb_cRuggedTag, "tagger=", rb_git_tag_tagger_SET, 3);
 
 
 	/*
 	 * Tree entry 
 	 */
-	rb_cRibbitTreeEntry = rb_define_class_under(rb_cRibbit, "TreeEntry", rb_cObject);
-	rb_define_alloc_func(rb_cRibbitTreeEntry, rb_git_treeentry_allocate);
-	// rb_define_method(rb_cRibbitTreeEntry, "initialize", rb_git_treeentry_allocate, -1);
-	rb_define_method(rb_cRibbitTreeEntry, "to_object", rb_git_tree_entry_2object, 0);
+	rb_cRuggedTreeEntry = rb_define_class_under(rb_cRugged, "TreeEntry", rb_cObject);
+	rb_define_alloc_func(rb_cRuggedTreeEntry, rb_git_treeentry_allocate);
+	// rb_define_method(rb_cRuggedTreeEntry, "initialize", rb_git_treeentry_allocate, -1);
+	rb_define_method(rb_cRuggedTreeEntry, "to_object", rb_git_tree_entry_2object, 0);
 
-	rb_define_method(rb_cRibbitTreeEntry, "name", rb_git_tree_entry_name_GET, 0);
-	rb_define_method(rb_cRibbitTreeEntry, "name=", rb_git_tree_entry_name_SET, 1);
+	rb_define_method(rb_cRuggedTreeEntry, "name", rb_git_tree_entry_name_GET, 0);
+	rb_define_method(rb_cRuggedTreeEntry, "name=", rb_git_tree_entry_name_SET, 1);
 
-	rb_define_method(rb_cRibbitTreeEntry, "attributes", rb_git_tree_entry_attributes_GET, 0);
-	rb_define_method(rb_cRibbitTreeEntry, "attributes=", rb_git_tree_entry_attributes_SET, 1);
+	rb_define_method(rb_cRuggedTreeEntry, "attributes", rb_git_tree_entry_attributes_GET, 0);
+	rb_define_method(rb_cRuggedTreeEntry, "attributes=", rb_git_tree_entry_attributes_SET, 1);
 
-	rb_define_method(rb_cRibbitTreeEntry, "sha", rb_git_tree_entry_sha_GET, 0);
-	rb_define_method(rb_cRibbitTreeEntry, "sha=", rb_git_tree_entry_sha_SET, 1);
+	rb_define_method(rb_cRuggedTreeEntry, "sha", rb_git_tree_entry_sha_GET, 0);
+	rb_define_method(rb_cRuggedTreeEntry, "sha=", rb_git_tree_entry_sha_SET, 1);
 
 
 	/*
 	 * Tree
 	 */
-	rb_cRibbitTree = rb_define_class_under(rb_cRibbit, "Tree", rb_cRibbitObject);
-	rb_define_alloc_func(rb_cRibbitTree, rb_git_tree_allocate);
-	rb_define_method(rb_cRibbitTree, "initialize", rb_git_tree_init, -1);
-	rb_define_method(rb_cRibbitTree, "entry_count", rb_git_tree_entrycount, 0);
-	rb_define_method(rb_cRibbitTree, "get_entry", rb_git_tree_get_entry, 1);
-	rb_define_method(rb_cRibbitTree, "[]", rb_git_tree_get_entry, 1);
+	rb_cRuggedTree = rb_define_class_under(rb_cRugged, "Tree", rb_cRuggedObject);
+	rb_define_alloc_func(rb_cRuggedTree, rb_git_tree_allocate);
+	rb_define_method(rb_cRuggedTree, "initialize", rb_git_tree_init, -1);
+	rb_define_method(rb_cRuggedTree, "entry_count", rb_git_tree_entrycount, 0);
+	rb_define_method(rb_cRuggedTree, "get_entry", rb_git_tree_get_entry, 1);
+	rb_define_method(rb_cRuggedTree, "[]", rb_git_tree_get_entry, 1);
 
 
 	/*
 	 * Walker
 	 */
-	rb_cRibbitWalker = rb_define_class_under(rb_cRibbit, "Walker", rb_cObject);
-	rb_define_alloc_func(rb_cRibbitWalker, rb_git_walker_allocate);
-	rb_define_method(rb_cRibbitWalker, "initialize", rb_git_walker_init, 1);
-	rb_define_method(rb_cRibbitWalker, "push", rb_git_walker_push, 1);
-	rb_define_method(rb_cRibbitWalker, "next", rb_git_walker_next, 0);
-	rb_define_method(rb_cRibbitWalker, "hide", rb_git_walker_hide, 1);
-	rb_define_method(rb_cRibbitWalker, "reset", rb_git_walker_reset, 0);
-	rb_define_method(rb_cRibbitWalker, "sorting", rb_git_walker_sorting, 1);
+	rb_cRuggedWalker = rb_define_class_under(rb_cRugged, "Walker", rb_cObject);
+	rb_define_alloc_func(rb_cRuggedWalker, rb_git_walker_allocate);
+	rb_define_method(rb_cRuggedWalker, "initialize", rb_git_walker_init, 1);
+	rb_define_method(rb_cRuggedWalker, "push", rb_git_walker_push, 1);
+	rb_define_method(rb_cRuggedWalker, "next", rb_git_walker_next, 0);
+	rb_define_method(rb_cRuggedWalker, "hide", rb_git_walker_hide, 1);
+	rb_define_method(rb_cRuggedWalker, "reset", rb_git_walker_reset, 0);
+	rb_define_method(rb_cRuggedWalker, "sorting", rb_git_walker_sorting, 1);
 
 	/*
 	 * Index 
 	 */
-	rb_cRibbitIndex = rb_define_class_under(rb_cRibbit, "Index", rb_cObject);
-	rb_define_alloc_func(rb_cRibbitIndex, rb_git_index_allocate);
-	rb_define_method(rb_cRibbitIndex, "initialize", rb_git_index_init, 1);
-	rb_define_method(rb_cRibbitIndex, "entry_count", rb_git_index_get_entry_count, 0);
-	rb_define_method(rb_cRibbitIndex, "refresh", rb_git_index_read, 0);
-	rb_define_method(rb_cRibbitIndex, "clear", rb_git_index_clear, 0);
-	rb_define_method(rb_cRibbitIndex, "write", rb_git_index_write, 0);
-	rb_define_method(rb_cRibbitIndex, "get_entry", rb_git_index_get, 1);
-	rb_define_method(rb_cRibbitIndex, "[]", rb_git_index_get, 1);
-	rb_define_method(rb_cRibbitIndex, "add", rb_git_index_add, 1);
-	rb_define_method(rb_cRibbitIndex, "remove", rb_git_index_remove, 1);
+	rb_cRuggedIndex = rb_define_class_under(rb_cRugged, "Index", rb_cObject);
+	rb_define_alloc_func(rb_cRuggedIndex, rb_git_index_allocate);
+	rb_define_method(rb_cRuggedIndex, "initialize", rb_git_index_init, 1);
+	rb_define_method(rb_cRuggedIndex, "entry_count", rb_git_index_get_entry_count, 0);
+	rb_define_method(rb_cRuggedIndex, "refresh", rb_git_index_read, 0);
+	rb_define_method(rb_cRuggedIndex, "clear", rb_git_index_clear, 0);
+	rb_define_method(rb_cRuggedIndex, "write", rb_git_index_write, 0);
+	rb_define_method(rb_cRuggedIndex, "get_entry", rb_git_index_get, 1);
+	rb_define_method(rb_cRuggedIndex, "[]", rb_git_index_get, 1);
+	rb_define_method(rb_cRuggedIndex, "add", rb_git_index_add, 1);
+	rb_define_method(rb_cRuggedIndex, "remove", rb_git_index_remove, 1);
 
 	/*
 	 * Index Entry
 	 */
-	rb_cRibbitIndexEntry = rb_define_class_under(rb_cRibbit, "IndexEntry", rb_cObject);
-	rb_define_alloc_func(rb_cRibbitIndexEntry, rb_git_indexentry_allocate);
-	rb_define_method(rb_cRibbitIndexEntry, "initialize", rb_git_indexentry_init, 0);
+	rb_cRuggedIndexEntry = rb_define_class_under(rb_cRugged, "IndexEntry", rb_cObject);
+	rb_define_alloc_func(rb_cRuggedIndexEntry, rb_git_indexentry_allocate);
+	rb_define_method(rb_cRuggedIndexEntry, "initialize", rb_git_indexentry_init, 0);
 
-	rb_define_method(rb_cRibbitIndexEntry, "path", rb_git_indexentry_path_GET, 0);
-	rb_define_method(rb_cRibbitIndexEntry, "path=", rb_git_indexentry_path_SET, 1);
+	rb_define_method(rb_cRuggedIndexEntry, "path", rb_git_indexentry_path_GET, 0);
+	rb_define_method(rb_cRuggedIndexEntry, "path=", rb_git_indexentry_path_SET, 1);
 
-	rb_define_method(rb_cRibbitIndexEntry, "sha", rb_git_indexentry_oid_GET, 0);
-	rb_define_method(rb_cRibbitIndexEntry, "sha=", rb_git_indexentry_oid_SET, 1);
+	rb_define_method(rb_cRuggedIndexEntry, "sha", rb_git_indexentry_oid_GET, 0);
+	rb_define_method(rb_cRuggedIndexEntry, "sha=", rb_git_indexentry_oid_SET, 1);
 
-	rb_define_method(rb_cRibbitIndexEntry, "mtime", rb_git_indexentry_mtime_GET, 0);
-	rb_define_method(rb_cRibbitIndexEntry, "mtime=", rb_git_indexentry_mtime_SET, 1);
+	rb_define_method(rb_cRuggedIndexEntry, "mtime", rb_git_indexentry_mtime_GET, 0);
+	rb_define_method(rb_cRuggedIndexEntry, "mtime=", rb_git_indexentry_mtime_SET, 1);
 
-	rb_define_method(rb_cRibbitIndexEntry, "ctime", rb_git_indexentry_ctime_GET, 0);
-	rb_define_method(rb_cRibbitIndexEntry, "ctime=", rb_git_indexentry_ctime_SET, 1);
+	rb_define_method(rb_cRuggedIndexEntry, "ctime", rb_git_indexentry_ctime_GET, 0);
+	rb_define_method(rb_cRuggedIndexEntry, "ctime=", rb_git_indexentry_ctime_SET, 1);
 
-	rb_define_method(rb_cRibbitIndexEntry, "dev", rb_git_indexentry_dev_GET, 0);
-	rb_define_method(rb_cRibbitIndexEntry, "dev=", rb_git_indexentry_dev_SET, 1);
+	rb_define_method(rb_cRuggedIndexEntry, "dev", rb_git_indexentry_dev_GET, 0);
+	rb_define_method(rb_cRuggedIndexEntry, "dev=", rb_git_indexentry_dev_SET, 1);
 
-	rb_define_method(rb_cRibbitIndexEntry, "ino", rb_git_indexentry_ino_GET, 0);
-	rb_define_method(rb_cRibbitIndexEntry, "ino=", rb_git_indexentry_ino_SET, 1);
+	rb_define_method(rb_cRuggedIndexEntry, "ino", rb_git_indexentry_ino_GET, 0);
+	rb_define_method(rb_cRuggedIndexEntry, "ino=", rb_git_indexentry_ino_SET, 1);
 
-	rb_define_method(rb_cRibbitIndexEntry, "mode", rb_git_indexentry_mode_GET, 0);
-	rb_define_method(rb_cRibbitIndexEntry, "mode=", rb_git_indexentry_mode_SET, 1);
+	rb_define_method(rb_cRuggedIndexEntry, "mode", rb_git_indexentry_mode_GET, 0);
+	rb_define_method(rb_cRuggedIndexEntry, "mode=", rb_git_indexentry_mode_SET, 1);
 
-	rb_define_method(rb_cRibbitIndexEntry, "uid", rb_git_indexentry_uid_GET, 0);
-	rb_define_method(rb_cRibbitIndexEntry, "uid=", rb_git_indexentry_uid_SET, 1);
+	rb_define_method(rb_cRuggedIndexEntry, "uid", rb_git_indexentry_uid_GET, 0);
+	rb_define_method(rb_cRuggedIndexEntry, "uid=", rb_git_indexentry_uid_SET, 1);
 
-	rb_define_method(rb_cRibbitIndexEntry, "gid", rb_git_indexentry_gid_GET, 0);
-	rb_define_method(rb_cRibbitIndexEntry, "gid=", rb_git_indexentry_gid_SET, 1);
+	rb_define_method(rb_cRuggedIndexEntry, "gid", rb_git_indexentry_gid_GET, 0);
+	rb_define_method(rb_cRuggedIndexEntry, "gid=", rb_git_indexentry_gid_SET, 1);
 
-	rb_define_method(rb_cRibbitIndexEntry, "file_size", rb_git_indexentry_file_size_GET, 0);
-	rb_define_method(rb_cRibbitIndexEntry, "file_size=", rb_git_indexentry_file_size_SET, 1);
+	rb_define_method(rb_cRuggedIndexEntry, "file_size", rb_git_indexentry_file_size_GET, 0);
+	rb_define_method(rb_cRuggedIndexEntry, "file_size=", rb_git_indexentry_file_size_SET, 1);
 
-	rb_define_method(rb_cRibbitIndexEntry, "flags", rb_git_indexentry_flags_GET, 0);
-	rb_define_method(rb_cRibbitIndexEntry, "flags=", rb_git_indexentry_flags_SET, 1);
+	rb_define_method(rb_cRuggedIndexEntry, "flags", rb_git_indexentry_flags_GET, 0);
+	rb_define_method(rb_cRuggedIndexEntry, "flags=", rb_git_indexentry_flags_SET, 1);
 
-	rb_define_method(rb_cRibbitIndexEntry, "flags_extended", rb_git_indexentry_flags_extended_GET, 0);
-	rb_define_method(rb_cRibbitIndexEntry, "flags_extended=", rb_git_indexentry_flags_extended_SET, 1);
+	rb_define_method(rb_cRuggedIndexEntry, "flags_extended", rb_git_indexentry_flags_extended_GET, 0);
+	rb_define_method(rb_cRuggedIndexEntry, "flags_extended=", rb_git_indexentry_flags_extended_SET, 1);
 
 
 	/*
 	 * Constants
 	 */
-	rb_define_const(rb_cRibbit, "SORT_NONE", INT2FIX(0));
-	rb_define_const(rb_cRibbit, "SORT_TOPO", INT2FIX(1));
-	rb_define_const(rb_cRibbit, "SORT_DATE", INT2FIX(2));
-	rb_define_const(rb_cRibbit, "SORT_REVERSE", INT2FIX(4));
+	rb_define_const(rb_cRugged, "SORT_NONE", INT2FIX(0));
+	rb_define_const(rb_cRugged, "SORT_TOPO", INT2FIX(1));
+	rb_define_const(rb_cRugged, "SORT_DATE", INT2FIX(2));
+	rb_define_const(rb_cRugged, "SORT_REVERSE", INT2FIX(4));
 
-	rb_define_const(rb_cRibbit, "OBJ_ANY", INT2FIX(GIT_OBJ_ANY));
-	rb_define_const(rb_cRibbit, "OBJ_BAD", INT2FIX(GIT_OBJ_BAD));
-	rb_define_const(rb_cRibbit, "OBJ_COMMIT", INT2FIX(GIT_OBJ_COMMIT));
-	rb_define_const(rb_cRibbit, "OBJ_TREE", INT2FIX(GIT_OBJ_TREE));
-	rb_define_const(rb_cRibbit, "OBJ_BLOB", INT2FIX(GIT_OBJ_BLOB));
-	rb_define_const(rb_cRibbit, "OBJ_TAG", INT2FIX(GIT_OBJ_TAG));
+	rb_define_const(rb_cRugged, "OBJ_ANY", INT2FIX(GIT_OBJ_ANY));
+	rb_define_const(rb_cRugged, "OBJ_BAD", INT2FIX(GIT_OBJ_BAD));
+	rb_define_const(rb_cRugged, "OBJ_COMMIT", INT2FIX(GIT_OBJ_COMMIT));
+	rb_define_const(rb_cRugged, "OBJ_TREE", INT2FIX(GIT_OBJ_TREE));
+	rb_define_const(rb_cRugged, "OBJ_BLOB", INT2FIX(GIT_OBJ_BLOB));
+	rb_define_const(rb_cRugged, "OBJ_TAG", INT2FIX(GIT_OBJ_TAG));
 }
 

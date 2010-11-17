@@ -1,9 +1,9 @@
 require File.dirname(__FILE__) + '/test_helper'
 
-context "Ribbit::Tag tests" do
+context "Rugged::Tag tests" do
   setup do
     @path = File.dirname(__FILE__) + '/fixtures/testrepo.git/'
-    @repo = Ribbit::Repository.new(@path)
+    @repo = Rugged::Repository.new(@path)
   end
 
   test "can read the tag data" do

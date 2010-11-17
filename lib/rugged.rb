@@ -1,0 +1,5 @@
+require 'rugged/rugged'
+require 'rugged/index'
+require 'rugged/tree'
+require 'rugged/tree_entry'
+require 'rugged/version'

@@ -3,8 +3,8 @@ require 'rake/testtask'
 require 'rake/rdoctask'
 require 'rake/extensiontask'
 
-Rake::ExtensionTask.new('ribbit') do |r|
-  r.lib_dir = 'lib/ribbit'
+Rake::ExtensionTask.new('rugged') do |r|
+  r.lib_dir = 'lib/rugged'
 end
 
 #
@@ -66,7 +66,7 @@ if command? :ronn
 
   desc "Build the manual"
   task "man:build" do
-    sh "ronn -br5 --organization=SCHACON --manual='Ribbit Manual' man/*.ron"
+    sh "ronn -br5 --organization=SCHACON --manual='Rugged Manual' man/*.ron"
   end
 end
 
@@ -77,13 +77,13 @@ end
 
 begin
   require 'mg'
-  MG.new("ribbit.gemspec")
+  MG.new("rugged.gemspec")
 
   desc "Push a new version to Gemcutter and publish docs."
   task :publish => "gem:publish" do
     require File.dirname(__FILE__) + '/lib/mustache/version'
 
-    system "git tag v#{Ribbit::Version}"
+    system "git tag v#{Rugged::Version}"
     sh "git push origin master --tags"
     sh "git clean -fd"
     exec "rake pages"

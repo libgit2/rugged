@@ -3,7 +3,7 @@ $LOAD_PATH.unshift dir + '/../lib'
 $TESTING = true
 require 'test/unit'
 require 'rubygems'
-require 'ribbit'
+require 'rugged'
 require 'pp'
 
 ##

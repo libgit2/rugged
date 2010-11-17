@@ -1,4 +1,4 @@
-## Ribbit TODO ##
+## Rugged TODO ##
 
 * get basic object stuff working again
 * commit parsing

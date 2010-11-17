@@ -1,10 +1,10 @@
 require File.dirname(__FILE__) + '/test_helper'
 require 'base64'
 
-context "Ribbit::Repository packed stuff" do
+context "Rugged::Repository packed stuff" do
   setup do
     path = File.dirname(__FILE__) + '/fixtures/testrepo.git/'
-    @repo = Ribbit::Repository.new(path)
+    @repo = Rugged::Repository.new(path)
   end
 
   test "can tell if a packed object exists" do

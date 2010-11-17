@@ -1,4 +1,4 @@
-class Ribbit
+class Rugged
   class Index
     include Enumerable
 

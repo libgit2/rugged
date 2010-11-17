@@ -1,9 +1,9 @@
 require 'mkmf'
 
-dir_config("ribbit")
+dir_config("rugged")
 
 have_library("git2")
 have_library('z')
 
-create_makefile("ribbit")
+create_makefile("rugged")
 

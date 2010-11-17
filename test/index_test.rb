@@ -5,7 +5,7 @@ require 'fileutils'
 
 def new_index_entry
     now = Time.now
-    e = Ribbit::IndexEntry.new
+    e = Rugged::IndexEntry.new
     e.path = "new_path"
     e.sha = "d385f264afb75a56a5bec74243be9b367ba4ca08"
     e.mtime = now
@@ -21,10 +21,10 @@ def new_index_entry
     e
 end
 
-context "Ribbit::Index reading stuff" do
+context "Rugged::Index reading stuff" do
   setup do
     path = File.dirname(__FILE__) + '/fixtures/testrepo.git/index'
-    @index = Ribbit::Index.new(path)
+    @index = Rugged::Index.new(path)
     @index.refresh
   end
 
@@ -104,12 +104,12 @@ context "Ribbit::Index reading stuff" do
 
 end
 
-context "Ribbit::Index writing stuff" do
+context "Rugged::Index writing stuff" do
   setup do
     path = File.dirname(__FILE__) + '/fixtures/testrepo.git/index'
     @tmppath = Tempfile.new('index').path
     FileUtils.copy(path, @tmppath)
-    @index = Ribbit::Index.new(@tmppath)
+    @index = Rugged::Index.new(@tmppath)
     @index.refresh
   end
 
@@ -126,7 +126,7 @@ context "Ribbit::Index writing stuff" do
     @index.add(e)
     @index.write
 
-    index2 = Ribbit::Index.new(@tmppath)
+    index2 = Rugged::Index.new(@tmppath)
     index2.refresh
 
     itr_test = index2.sort { |a, b| a.sha <=> b.sha }.map { |e| e.path }.join(':')
@@ -135,14 +135,14 @@ context "Ribbit::Index writing stuff" do
   end
 end
 
-context "Ribbit::Index with working directory" do
+context "Rugged::Index with working directory" do
   setup do
     @tmppath = Tempfile.new('index').path + '_dir'
     FileUtils.mkdir(@tmppath)
     Dir.chdir(@tmppath) do
       `git init`
     end
-    @repo = Ribbit::Repository.new(@tmppath + '/.git')
+    @repo = Rugged::Repository.new(@tmppath + '/.git')
     @index = @repo.index
   end
 
@@ -153,7 +153,7 @@ context "Ribbit::Index with working directory" do
     @index.add('test.txt')
 	@index.write
 
-    index2 = Ribbit::Index.new(@tmppath + '/.git/index')
+    index2 = Rugged::Index.new(@tmppath + '/.git/index')
     index2.refresh
 
 	assert_equal index2.get_entry(0).path, 'test.txt'

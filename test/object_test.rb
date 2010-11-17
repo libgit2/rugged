@@ -1,10 +1,10 @@
 require File.dirname(__FILE__) + '/test_helper'
 require 'base64'
 
-context "Ribbit::Object stuff" do
+context "Rugged::Object stuff" do
   setup do
     @path = File.dirname(__FILE__) + '/fixtures/testrepo.git/'
-    @repo = Ribbit::Repository.new(@path)
+    @repo = Rugged::Repository.new(@path)
   end
 
   test "cannot lookup a non-existant object" do

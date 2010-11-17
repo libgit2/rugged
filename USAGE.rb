@@ -1,5 +1,5 @@
 #
-# Some example proposed usages of Ribbit
+# Some example proposed usages of Rugged
 #  so we can make sure the API design is OK
 #
 
@@ -7,7 +7,7 @@
 # low level reading and writing
 #
 
-repo = Ribbit::Repository.new(path_to_repo)
+repo = Rugged::Repository.new(path_to_repo)
 if repo.exists(blob_sha)
   # reading
   blob_data, type = repo.read(blob_sha)
@@ -92,8 +92,8 @@ bsha = blob.write
 tree.add(entry.sha(bsha))
 tsha = tree.write
 
-new_commit = Ribbit::Commit.new
-person = Ribbit::Person.new("Scott", "scott@github.com", Time.now)
+new_commit = Rugged::Commit.new
+person = Rugged::Person.new("Scott", "scott@github.com", Time.now)
 commit.author(person)
 commit.message("updated file.txt")
 commit.parents([head_sha])
