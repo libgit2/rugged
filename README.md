@@ -35,6 +35,8 @@ a raw sha (20 bytes) into a readable hex sha (40 char).
     raw = Ribbit::Lib.hex_to_raw(hex_sha)
     hex = Ribbit::Lib.raw_to_hex(20_byte_raw_sha)
 
+=== Repository Access
+
 There is a Repository class that you can instantiate with a path.
 This lets you check for objects, read raw object data, write raw object data and
 get a hash (SHA1 checksum) of what contents would be without writing them out.
@@ -57,6 +59,8 @@ directory, then `git_dir` will be set to that and none of the Ribbit functions
 that need a working directory will work. If the `index_path` is not specified, 
 the `git_dir` path plus '/index' will be assumed.
 
+=== Object Access
+
 Object is the main object class - it shouldn't be created directly,
 but all of these methods should be useful in it's derived classes
 
@@ -74,6 +78,7 @@ but all of these methods should be useful in it's derived classes
 
       str = obj.read_raw	# read the raw data of the object
       sha = obj.write		# write the object to a repository
+
 
 The next classes are for consuming and creating the 4 base
 git object types.  just about every method should be able to take
@@ -116,6 +121,8 @@ to simply read the current value out
 
 // * Person information is returned as a hash table
 
+=== Commit Walker
+
 There is also a Walker class that currently takes a repo object. You can push 
 head SHAs onto the walker, then call next to get a list of the reachable commit 
 objects, one at a time. You can also hide() commits if you are not interested in
@@ -129,11 +136,13 @@ anything beneath them (useful for a `git log master ^origin/master` type deal).
              walker.reset
 
 
+=== Index/Staging Area
+
 We can inspect and manipulate the Git Index as well.
 
     # the remove and add functions immediately flush to the index file on disk
     index =
-    Ribbit::Index.new(repo, path=nil)
+    Ribbit::Index.new(repo, path=nil)  # TODO: take a repo or a path
             index.refresh              # re-read the index file from disk
       int = index.entry_count # count of index entries
       ent = index.get_entry(i/path)
@@ -141,23 +150,14 @@ We can inspect and manipulate the Git Index as well.
             index.add(ientry)    # also updates existing entry if there is one
             index.add(path)      # create ientry from file in path, update index
       #TODO index.read_tree(gobtr, path='/')
-      #TODO index.status # how does the index differ from the work tree and the HEAD commit
       #TODO index.write_tree
     
-    # >> pp stat
-    # [ ['file1', :staged],
-    #   ['file2', :modified],
-    #   ['file3', :deleted],
-    #   ['file4', :untracked],
-    #   ['file4', :unmerged],
-    # ]
-
     ientry = 
     Ribbit::IndexEntry.new(index, offset)
-      str = ientry.path  # TODO
-     time = ientry.ctime # TODO
-     time = ientry.mtime # TODO
-      str = ientry.sha   # TODO
+      str = ientry.path
+     time = ientry.ctime
+     time = ientry.mtime
+      str = ientry.sha
       int = ientry.dev
       int = ientry.ino
       int = ientry.mode
@@ -166,6 +166,73 @@ We can inspect and manipulate the Git Index as well.
       int = ientry.file_size
       int = ientry.flags # (what flags are available?)
       int = ientry.flags_extended # (what flags are available?)
+
+=== Index Status # TODO
+
+      #TODO index.status # how does the index differ from the work tree and the last commit
+
+    # >> pp stat
+    # [ ['file1', :staged],
+    #   ['file2', :modified],
+    #   ['file3', :deleted],
+    #   ['file4', :untracked],
+    #   ['file4', :unmerged],
+    # ]
+
+=== Ref Management # TODO
+
+The RefList class allows you to list, create and delete packed and loose refs.
+
+    list =
+    Ribbit::RefList.new(repo)
+     ref   = list.head         # can retrieve and set HEAD with this - returns ref obj or commit obj if detatched
+     array = list.list([type]) # type is 'heads', 'tags', 'remotes', 'notes', et
+             list.add(oref)
+             list.pack
+             list.unpack
+
+    oref =
+    Ribbit::Ref.new(ref, sha)
+             br.name # master
+             br.ref  # refs/heads/master
+             br.type # heads
+             br.object
+             br.sha
+             br.delete
+             br.save
+
+=== Config Management # TODO
+
+    conf =
+    Ribbit::Config.new(repo)
+      hash = conf.list([section])
+       val = conf.get(key, [scope])
+      bool = conf.set(key, value, [scope]) # scope is 'local'(default), 'global', 'system'
+
+
+=== Client Transport # TODO
+
+    client =
+    Ribbit::Client.new(repo)
+    summry = client.fetch(url, [refs])
+    summry = client.push(url, refs)
+      refs = client.refs(url)  # ls-remote
+
+=== Remote Management # TODO
+
+    remlist =
+    Ribbit::RemoteList.new(repo)
+    array = remlist.list
+      rem = remlist.add(alias, url)
+
+    rem =
+    Ribbit::Remote.new(repo)
+    summry = rem.fetch([refs])
+    summry = rem.push(refs)
+    summry = rem.remove(refs)
+      bool = rem.delete
+     heads = rem.heads
+
 
 TODO
 ==============
