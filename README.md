@@ -48,19 +48,17 @@ Repository is the main repository object that everything
 else will emanate from.
 
     repo =
-    Rugged::Repository.new(path, git_dir=nil, index_path=nil)
+    Rugged::Repository.new(path)
       ctnt, type = repo.read(sha)
       gobj = repo.lookup(sha, type[?])  # optional type argument for checking
       sha  = repo.write(content, type)
       sha  = repo.hash(content, type)
       bool = repo.exists(sha)
+      index = repo.index
 
-If Repository is initialized without `git_dir`, path + '.git' will be assumed
-and path will be assumed to be the working directory.  If `path` is a git 
-directory, then `git_dir` will be set to that and none of the Rugged functions
-that need a working directory will work. If the `index_path` is not specified, 
-the `git_dir` path plus '/index' will be assumed.
-
+The 'path' argument must point to an actual git repository folder. The library
+will automatically guess if it's a bare repository or a '.git' folder inside a
+working repository, and locate the working path accordingly.
 
 Object Access
 -----------------
@@ -146,11 +144,13 @@ anything beneath them (useful for a `git log master ^origin/master` type deal).
 Index/Staging Area
 -------------------
 
-We can inspect and manipulate the Git Index as well.
+We can inspect and manipulate the Git Index as well. To work with the index inside
+of an existing repository, instantiate it by using the `Repository.index` method instead
+of manually opening the Index by its path.
 
-    # the remove and add functions immediately flush to the index file on disk
+    # TODO: the remove and add functions immediately flush to the index file on disk
     index =
-    Rugged::Index.new(repo, path=nil)  # TODO: take a repo or a path
+    Rugged::Index.new(path)
             index.refresh              # re-read the index file from disk
       int = index.entry_count # count of index entries
       ent = index.get_entry(i/path)
