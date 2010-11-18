@@ -27,7 +27,6 @@
 
 VALUE rb_cRugged;
 VALUE rb_cRuggedLib;
-VALUE rb_cRuggedObject;
 
 static VALUE rb_git_hex_to_raw(VALUE self, VALUE hex)
 {
