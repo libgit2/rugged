@@ -263,8 +263,8 @@ static VALUE rb_git_indexentry_mtime_SET(VALUE self, VALUE v)
 
 	/* TODO: check for time */
 
-	entry->mtime.seconds = NUM2LONG(rb_funcall(v, rb_intern("to_i"), 0));
-	entry->mtime.nanoseconds = NUM2LONG(rb_funcall(v, rb_intern("usec"), 0)) * 1000;
+	entry->mtime.seconds = NUM2INT(rb_funcall(v, rb_intern("to_i"), 0));
+	entry->mtime.nanoseconds = NUM2INT(rb_funcall(v, rb_intern("usec"), 0)) * 1000;
 
 	return Qnil;
 }
@@ -276,8 +276,8 @@ static VALUE rb_git_indexentry_ctime_SET(VALUE self, VALUE v)
 
 	/* TODO: check for time */
 
-	entry->ctime.seconds = NUM2LONG(rb_funcall(v, rb_intern("to_i"), 0));
-	entry->ctime.nanoseconds = NUM2LONG(rb_funcall(v, rb_intern("usec"), 0)) * 1000;
+	entry->ctime.seconds = NUM2INT(rb_funcall(v, rb_intern("to_i"), 0));
+	entry->ctime.nanoseconds = NUM2INT(rb_funcall(v, rb_intern("usec"), 0)) * 1000;
 
 	return Qnil;
 }
