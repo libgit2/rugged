@@ -53,7 +53,8 @@ static VALUE rb_git_type_to_string(VALUE self, VALUE type)
 	const char *str;
 
 	Check_Type(type, T_FIXNUM);
-	str = git_obj_type_to_string(type);
+	git_otype t = (git_otype)FIX2INT(type);
+	str = git_obj_type_to_string(t);
 	return str ? rb_str_new2(str) : Qfalse;
 }
 
