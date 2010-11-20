@@ -124,8 +124,8 @@ static VALUE rb_git_tree_entry_2object(VALUE self)
 
 	Data_Get_Struct(self, git_tree_entry, tree_entry);
 
-	if ((error = git_tree_entry_2object(&object, tree_entry)) < 0)
-		rb_raise(rb_eRuntimeError, git_strerror(error));
+	error = git_tree_entry_2object(&object, tree_entry);
+	rugged_exception_check(error);
 
 	return rugged_object2rb(object);
 }

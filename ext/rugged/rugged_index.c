@@ -43,8 +43,8 @@ static VALUE rb_git_index_init(VALUE self, VALUE path)
 	git_index *index;
 	int error;
 
-	if ((error = git_index_open_bare(&index, RSTRING_PTR(path))) < 0)
-		rb_raise(rb_eRuntimeError, git_strerror(error));
+	error = git_index_open_bare(&index, RSTRING_PTR(path));
+	rugged_exception_check(error);
 
 	DATA_PTR(self) = index;
 	return Qnil;
@@ -65,8 +65,8 @@ static VALUE rb_git_index_read(VALUE self)
 
 	Data_Get_Struct(self, git_index, index);
 
-	if ((error = git_index_read(index)) < 0)
-		rb_raise(rb_eRuntimeError, git_strerror(error));
+	error = git_index_read(index);
+	rugged_exception_check(error);
 
 	return Qnil;
 }
@@ -78,8 +78,8 @@ static VALUE rb_git_index_write(VALUE self)
 
 	Data_Get_Struct(self, git_index, index);
 
-	if ((error = git_index_write(index)) < 0)
-		rb_raise(rb_eRuntimeError, git_strerror(error));
+	error = git_index_write(index);
+	rugged_exception_check(error);
 		
 	return Qnil;
 }
@@ -123,8 +123,7 @@ static VALUE rb_git_index_remove(VALUE self, VALUE entry)
 	Check_Type(entry, T_FIXNUM);
 	
 	error = git_index_remove(index, FIX2INT(entry));
-	if (error < 0)
-		rb_raise(rb_eRuntimeError, git_strerror(error));
+	rugged_exception_check(error);
 
 	return Qnil;
 }
@@ -147,8 +146,7 @@ static VALUE rb_git_index_add(VALUE self, VALUE rb_entry)
 			"index_entry must be an existing IndexEntry object or a path to a file in the repository");
 	}
 
-	if (error < 0)
-		rb_raise(rb_eRuntimeError, git_strerror(error));
+	rugged_exception_check(error);
 
 	return Qnil;
 }
@@ -238,8 +236,8 @@ static VALUE rb_git_indexentry_oid_SET(VALUE self, VALUE v)
 	Data_Get_Struct(self, git_index_entry, entry);
 	Check_Type(v, T_STRING);
 
-	if ((error = git_oid_mkstr(&entry->oid, RSTRING_PTR(v))) < 0)
-		rb_raise(rb_eTypeError, git_strerror(error));
+	error = git_oid_mkstr(&entry->oid, RSTRING_PTR(v));
+	rugged_exception_check(error);
 
 	return Qnil;
 }

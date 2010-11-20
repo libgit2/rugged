@@ -63,6 +63,12 @@ static VALUE rb_git_string_to_type(VALUE self, VALUE string_type)
 	return INT2FIX(git_obj_string_to_type(RSTRING_PTR(string_type)));
 }
 
+void rugged_exception_check(int errorcode)
+{
+	if (errorcode < 0)
+		rb_raise(rb_eRuntimeError, "Rugged exception: %s", git_strerror(errorcode));
+}
+
 
 void Init_rugged()
 {

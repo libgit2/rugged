@@ -43,8 +43,8 @@ static VALUE rb_git_walker_init(VALUE self, VALUE rb_repo)
 
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
-	if ((error = git_revwalk_new(&walk, repo)) < 0)
-		rb_raise(rb_eRuntimeError, git_strerror(error));
+	error = git_revwalk_new(&walk, repo);
+	rugged_exception_check(error);
 
 	DATA_PTR(self) = walk;
 	return Qnil;

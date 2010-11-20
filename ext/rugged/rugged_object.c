@@ -42,15 +42,13 @@ git_object *rugged_rb2object(git_repository *repo, VALUE object_value, git_otype
 
 		git_oid_mkstr(&oid, RSTRING_PTR(object_value));
 		error = git_repository_lookup(&object, repo, &oid, type);
-
-		if (error < 0)
-			rb_raise(rb_eRuntimeError, git_strerror(error));
+		rugged_exception_check(error);
 
 	} else if (rb_obj_is_kind_of(object_value, rb_cRuggedObject)) {
 		Data_Get_Struct(object_value, git_object, object);
 
 		if (type != GIT_OBJ_ANY && git_object_type(object) != type)
-			rb_raise(rb_eRuntimeError, "Object is not of the required type");
+			rb_raise(rb_eTypeError, "Object is not of the required type");
 	} else {
 		rb_raise(rb_eTypeError, "Invalid GIT object; an object reference must be a SHA1 id or an object itself");
 	}
@@ -144,18 +142,13 @@ static VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE sel
 
 	if (NIL_P(hex)) {
 		error = git_repository_newobject(&object, repo, type);
-
-		if (error < 0)
-			rb_raise(rb_eRuntimeError, git_strerror(error));
-
+		rugged_exception_check(error);
 	} else {
 		git_oid oid;
 
 		git_oid_mkstr(&oid, RSTRING_PTR(hex));
 		error = git_repository_lookup(&object, repo, &oid, type);
-
-		if (error < 0)
-			rb_raise(rb_eRuntimeError, git_strerror(error));
+		rugged_exception_check(error);
 	}
 
 	DATA_PTR(self) = object;
@@ -179,8 +172,8 @@ static VALUE rb_git_object_write(VALUE self)
 
 	Data_Get_Struct(self, git_object, object);
 
-	if ((error = git_object_write(object)) < 0)
-		rb_raise(rb_eRuntimeError, git_strerror(error));
+	error = git_object_write(object);
+	rugged_exception_check(error);
 
 	git_oid_fmt(new_hex, git_object_id(object));
 	sha = rb_str_new(new_hex, 40);

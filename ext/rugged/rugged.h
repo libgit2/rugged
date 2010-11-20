@@ -26,11 +26,13 @@
 #ifndef __H_RUGGED_BINDINGS__
 #define __H_RUGGED_BINDINGS__
 
-#include "ruby.h"
+#include <ruby.h>
+
 #include <assert.h>
 
 #include <git/commit.h>
 #include <git/tag.h>
+#include <git/blob.h>
 #include <git/common.h>
 #include <git/errors.h>
 #include <git/index.h>
@@ -50,6 +52,8 @@ void Init_rugged_tag();
 void Init_rugged_index();
 void Init_rugged_repo();
 void Init_rugged_revwalk();
+
+void rugged_exception_check(int errorcode);
 
 VALUE rugged_object2rb(git_object *object);
 VALUE rugged_raw_read(git_repository *repo, const git_oid *oid);

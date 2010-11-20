@@ -42,8 +42,8 @@ VALUE rugged_raw_read(git_repository *repo, const git_oid *oid)
 
 	odb = git_repository_database(repo);
 
-	if ((error = git_odb_read(&obj, odb, oid)) < 0)
-		rb_raise(rb_eRuntimeError, git_strerror(error)); 
+	error = git_odb_read(&obj, odb, oid);
+	rugged_exception_check(error);
 
 	ret_arr = rb_ary_new();
 	data = obj.data;
@@ -68,8 +68,7 @@ static VALUE rb_git_repo_init(VALUE self, VALUE path)
 	int error;
 
 	error = git_repository_open(&repo, RSTRING_PTR(path));
-	if (error < 0)
-		rb_raise(rb_eRuntimeError, git_strerror(error));
+	rugged_exception_check(error);
 
 	DATA_PTR(self) = repo;
 	return Qnil;
@@ -110,8 +109,8 @@ static VALUE rb_git_repo_read(VALUE self, VALUE hex)
 
 	Data_Get_Struct(self, git_repository, repo);
 
-	if ((error = git_oid_mkstr(&oid, RSTRING_PTR(hex))) < 0)
-		rb_raise(rb_eTypeError, git_strerror(error));
+	error = git_oid_mkstr(&oid, RSTRING_PTR(hex));
+	rugged_exception_check(error);
 
 	return rugged_raw_read(repo, &oid);
 }
@@ -128,8 +127,7 @@ static VALUE rb_git_repo_obj_hash(VALUE self, VALUE content, VALUE type)
 	(&obj)->type = git_obj_string_to_type(RSTRING_PTR(type));
 
 	error = git_obj_hash(&oid, &obj);
-	if (error < 0)
-		rb_repo(rb_eRuntimeError, git_strerror(error));
+	rugged_exception_check(error);
 
 	git_oid_fmt(out, &oid);
 	return rb_str_new(out, 40);
@@ -153,8 +151,8 @@ static VALUE rb_git_repo_write(VALUE self, VALUE content, VALUE type)
 
 	git_obj_hash(&oid, &obj);
 
-	if ((error = git_odb_write(&oid, odb, &obj)) < 0)
-		rb_raise(rb_eRuntimeError, git_strerror(error));
+	error = git_odb_write(&oid, odb, &obj);
+	rugged_exception_check(error);
 
 	git_oid_fmt(out, &oid);
 	return rb_str_new(out, 40);
@@ -177,8 +175,8 @@ static VALUE rb_git_repo_lookup(int argc, VALUE *argv, VALUE self)
 	type = NIL_P(rb_type) ? GIT_OBJ_ANY : FIX2INT(rb_type);
 	git_oid_mkstr(&oid, RSTRING_PTR(rb_sha));
 
-	if ((error = git_repository_lookup(&obj, repo, &oid, type)) < 0)
-		rb_raise(rb_eRuntimeError, git_strerror(error));
+	error = git_repository_lookup(&obj, repo, &oid, type);
+	rugged_exception_check(error);
 
 	return obj ? rugged_object2rb(obj) : Qnil;
 }
@@ -186,9 +184,6 @@ static VALUE rb_git_repo_lookup(int argc, VALUE *argv, VALUE self)
 
 void Init_rugged_repo()
 {
-	/*
-	 * Repository
-	 */
 	rb_cRuggedRepo = rb_define_class_under(rb_cRugged, "Repository", rb_cObject);
 	rb_define_alloc_func(rb_cRuggedRepo, rb_git_repo_allocate);
 	rb_define_method(rb_cRuggedRepo, "initialize", rb_git_repo_init, 1);
