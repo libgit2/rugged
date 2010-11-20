@@ -81,8 +81,8 @@ context "Rugged::Index reading stuff" do
 
     assert_equal 'new_path', e.path
     assert_equal '12ea3153a78002a988bb92f4123e7e831fd1138a', e.sha
-    assert_equal now, e.mtime
-    assert_equal now, e.ctime
+    assert_equal now.to_i, e.mtime.to_i
+    assert_equal now.to_i, e.ctime.to_i
     assert_equal 1000, e.file_size
     assert_equal 234881027, e.dev 
     assert_equal 88888, e.ino 
