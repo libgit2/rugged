@@ -84,6 +84,7 @@ void Init_rugged()
 	Init_rugged_commit();
 	Init_rugged_tree();
 	Init_rugged_tag();
+	Init_rugged_blob();
 
 	Init_rugged_index();
 	Init_rugged_repo();

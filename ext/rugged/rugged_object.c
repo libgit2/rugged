@@ -80,6 +80,9 @@ VALUE rugged_object2rb(git_object *object)
 			break;
 
 		case GIT_OBJ_BLOB:
+			klass = rb_cRuggedBlob;
+			break;
+
 		default:
 			klass = rb_cRuggedObject;
 			break;

@@ -49,6 +49,7 @@ void Init_rugged_object();
 void Init_rugged_commit();
 void Init_rugged_tree();
 void Init_rugged_tag();
+void Init_rugged_blob();
 void Init_rugged_index();
 void Init_rugged_repo();
 void Init_rugged_revwalk();
