@@ -25,7 +25,7 @@
 
 #include "rugged.h"
 
-extern VALUE rb_cRugged;
+extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedObject;
 VALUE rb_cRuggedTag;
 
@@ -45,7 +45,7 @@ static VALUE rb_git_tag_target_GET(VALUE self)
 	git_tag *tag;
 	Data_Get_Struct(self, git_tag, tag);
 
-	return rugged_object2rb((git_object*)git_tag_target(tag));
+	return rugged_object_c2rb((git_object*)git_tag_target(tag));
 }
 
 static VALUE rb_git_tag_target_SET(VALUE self, VALUE val)
@@ -54,7 +54,7 @@ static VALUE rb_git_tag_target_SET(VALUE self, VALUE val)
 	git_object *target;
 	Data_Get_Struct(self, git_tag, tag);
 
-	target = rugged_rb2object(git_object_owner((git_object *)tag), val, GIT_OBJ_ANY);
+	target = rugged_object_rb2c(git_object_owner((git_object *)tag), val, GIT_OBJ_ANY);
 	git_tag_set_target(tag, target);
 	return Qnil;
 }
@@ -92,19 +92,18 @@ static VALUE rb_git_tag_tagger_GET(VALUE self)
 	Data_Get_Struct(self, git_tag, tag);
 
 	person = (git_person *)git_tag_tagger(tag);
-	return rugged_person2hash(person);
+	return rugged_person_c2rb(person);
 }
 
-static VALUE rb_git_tag_tagger_SET(VALUE self, VALUE rb_name, VALUE rb_email, VALUE rb_time)
+static VALUE rb_git_tag_tagger_SET(VALUE self, VALUE rb_person)
 {
+	const char *name, *email;
+	time_t time;
 	git_tag *tag;
 	Data_Get_Struct(self, git_tag, tag);
 
-	Check_Type(rb_name, T_STRING);
-	Check_Type(rb_email, T_STRING);
-	Check_Type(rb_time, T_FIXNUM);
-
-	git_tag_set_tagger(tag, RSTRING_PTR(rb_name), RSTRING_PTR(rb_email), FIX2INT(rb_time));
+	rugged_person_rb2c(rb_person, &name, &email, &time);
+	git_tag_set_tagger(tag, name, email, time);
 	return Qnil;
 }
 
@@ -129,7 +128,7 @@ static VALUE rb_git_tag_message_SET(VALUE self, VALUE val)
 
 void Init_rugged_tag()
 {
-	rb_cRuggedTag = rb_define_class_under(rb_cRugged, "Tag", rb_cRuggedObject);
+	rb_cRuggedTag = rb_define_class_under(rb_mRugged, "Tag", rb_cRuggedObject);
 	rb_define_alloc_func(rb_cRuggedTag, rb_git_tag_allocate);
 	rb_define_method(rb_cRuggedTag, "initialize", rb_git_tag_init, -1);
 
@@ -146,5 +145,5 @@ void Init_rugged_tag()
 	rb_define_method(rb_cRuggedTag, "target_type", rb_git_tag_target_type_GET, 0);
 
 	rb_define_method(rb_cRuggedTag, "tagger", rb_git_tag_tagger_GET, 0);
-	rb_define_method(rb_cRuggedTag, "tagger=", rb_git_tag_tagger_SET, 3);
+	rb_define_method(rb_cRuggedTag, "tagger=", rb_git_tag_tagger_SET, 1);
 }

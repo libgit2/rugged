@@ -25,8 +25,8 @@
 
 #include "rugged.h"
 
-VALUE rb_cRugged;
-VALUE rb_cRuggedLib;
+VALUE rb_mRugged;
+VALUE rb_cRuggedPerson;
 
 static VALUE rb_git_hex_to_raw(VALUE self, VALUE hex)
 {
@@ -73,13 +73,12 @@ void rugged_exception_check(int errorcode)
 
 void Init_rugged()
 {
-	rb_cRugged = rb_define_class("Rugged", rb_cObject);
-	rb_cRuggedLib = rb_define_class_under(rb_cRugged, "Lib", rb_cObject);
+	rb_mRugged = rb_define_module("Rugged");
 
-	rb_define_module_function(rb_cRuggedLib, "hex_to_raw", rb_git_hex_to_raw, 1);
-	rb_define_module_function(rb_cRuggedLib, "raw_to_hex", rb_git_raw_to_hex, 1);
-	rb_define_module_function(rb_cRuggedLib, "type_to_string", rb_git_type_to_string, 1);
-	rb_define_module_function(rb_cRuggedLib, "string_to_type", rb_git_string_to_type, 1);
+	rb_define_module_function(rb_mRugged, "hex_to_raw", rb_git_hex_to_raw, 1);
+	rb_define_module_function(rb_mRugged, "raw_to_hex", rb_git_raw_to_hex, 1);
+	rb_define_module_function(rb_mRugged, "type_to_string", rb_git_type_to_string, 1);
+	rb_define_module_function(rb_mRugged, "string_to_type", rb_git_string_to_type, 1);
 
 	Init_rugged_object();
 	Init_rugged_commit();
@@ -91,17 +90,19 @@ void Init_rugged()
 	Init_rugged_repo();
 	Init_rugged_revwalk();
 
-	/* Constants */
-	rb_define_const(rb_cRugged, "SORT_NONE", INT2FIX(0));
-	rb_define_const(rb_cRugged, "SORT_TOPO", INT2FIX(1));
-	rb_define_const(rb_cRugged, "SORT_DATE", INT2FIX(2));
-	rb_define_const(rb_cRugged, "SORT_REVERSE", INT2FIX(4));
+	rb_cRuggedPerson = rb_define_class_under(rb_mRugged, "Person", rb_cObject);
 
-	rb_define_const(rb_cRugged, "OBJ_ANY", INT2FIX(GIT_OBJ_ANY));
-	rb_define_const(rb_cRugged, "OBJ_BAD", INT2FIX(GIT_OBJ_BAD));
-	rb_define_const(rb_cRugged, "OBJ_COMMIT", INT2FIX(GIT_OBJ_COMMIT));
-	rb_define_const(rb_cRugged, "OBJ_TREE", INT2FIX(GIT_OBJ_TREE));
-	rb_define_const(rb_cRugged, "OBJ_BLOB", INT2FIX(GIT_OBJ_BLOB));
-	rb_define_const(rb_cRugged, "OBJ_TAG", INT2FIX(GIT_OBJ_TAG));
+	/* Constants */
+	rb_define_const(rb_mRugged, "SORT_NONE", INT2FIX(0));
+	rb_define_const(rb_mRugged, "SORT_TOPO", INT2FIX(1));
+	rb_define_const(rb_mRugged, "SORT_DATE", INT2FIX(2));
+	rb_define_const(rb_mRugged, "SORT_REVERSE", INT2FIX(4));
+
+	rb_define_const(rb_mRugged, "OBJ_ANY", INT2FIX(GIT_OBJ_ANY));
+	rb_define_const(rb_mRugged, "OBJ_BAD", INT2FIX(GIT_OBJ_BAD));
+	rb_define_const(rb_mRugged, "OBJ_COMMIT", INT2FIX(GIT_OBJ_COMMIT));
+	rb_define_const(rb_mRugged, "OBJ_TREE", INT2FIX(GIT_OBJ_TREE));
+	rb_define_const(rb_mRugged, "OBJ_BLOB", INT2FIX(GIT_OBJ_BLOB));
+	rb_define_const(rb_mRugged, "OBJ_TAG", INT2FIX(GIT_OBJ_TAG));
 }
 

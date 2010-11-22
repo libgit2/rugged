@@ -25,7 +25,7 @@
 
 #include "rugged.h"
 
-extern VALUE rb_cRugged;
+extern VALUE rb_mRugged;
 VALUE rb_cRuggedIndex;
 VALUE rb_cRuggedIndexEntry;
 
@@ -289,7 +289,7 @@ void Init_rugged_index()
 	/*
 	 * Index 
 	 */
-	rb_cRuggedIndex = rb_define_class_under(rb_cRugged, "Index", rb_cObject);
+	rb_cRuggedIndex = rb_define_class_under(rb_mRugged, "Index", rb_cObject);
 	rb_define_alloc_func(rb_cRuggedIndex, rb_git_index_allocate);
 	rb_define_method(rb_cRuggedIndex, "initialize", rb_git_index_init, 1);
 	rb_define_method(rb_cRuggedIndex, "entry_count", rb_git_index_get_entry_count, 0);
@@ -304,7 +304,7 @@ void Init_rugged_index()
 	/*
 	 * Index Entry
 	 */
-	rb_cRuggedIndexEntry = rb_define_class_under(rb_cRugged, "IndexEntry", rb_cObject);
+	rb_cRuggedIndexEntry = rb_define_class_under(rb_mRugged, "IndexEntry", rb_cObject);
 	rb_define_alloc_func(rb_cRuggedIndexEntry, rb_git_indexentry_allocate);
 	rb_define_method(rb_cRuggedIndexEntry, "initialize", rb_git_indexentry_init, 0);
 

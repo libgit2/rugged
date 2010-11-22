@@ -58,10 +58,12 @@ void rugged_exception_check(int errorcode);
 
 VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE self);
 
-VALUE rugged_object2rb(git_object *object);
 VALUE rugged_raw_read(git_repository *repo, const git_oid *oid);
-VALUE rugged_person2hash(git_person *person);
 
-git_object *rugged_rb2object(git_repository *repo, VALUE object_value, git_otype type);
+VALUE rugged_person_c2rb(git_person *person);
+VALUE rugged_object_c2rb(git_object *object);
+
+void rugged_person_rb2c(VALUE rb_person, const char **name_out, const char **email_out, unsigned long *time_out);
+git_object *rugged_object_rb2c(git_repository *repo, VALUE object_value, git_otype type);
 
 #endif

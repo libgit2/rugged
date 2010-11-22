@@ -1,3 +1,3 @@
-class Rugged
+module Rugged
   Version = VERSION = '0.0.1'
 end

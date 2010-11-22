@@ -25,7 +25,7 @@
 
 #include "rugged.h"
 
-extern VALUE rb_cRugged;
+extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedObject;
 VALUE rb_cRuggedTree;
 VALUE rb_cRuggedTreeEntry;
@@ -127,7 +127,7 @@ static VALUE rb_git_tree_entry_2object(VALUE self)
 	error = git_tree_entry_2object(&object, tree_entry);
 	rugged_exception_check(error);
 
-	return rugged_object2rb(object);
+	return rugged_object_c2rb(object);
 }
 
 
@@ -175,7 +175,7 @@ void Init_rugged_tree()
 	/*
 	 * Tree entry 
 	 */
-	rb_cRuggedTreeEntry = rb_define_class_under(rb_cRugged, "TreeEntry", rb_cObject);
+	rb_cRuggedTreeEntry = rb_define_class_under(rb_mRugged, "TreeEntry", rb_cObject);
 	rb_define_alloc_func(rb_cRuggedTreeEntry, rb_git_treeentry_allocate);
 	// rb_define_method(rb_cRuggedTreeEntry, "initialize", rb_git_treeentry_allocate, -1);
 	rb_define_method(rb_cRuggedTreeEntry, "to_object", rb_git_tree_entry_2object, 0);
@@ -193,7 +193,7 @@ void Init_rugged_tree()
 	/*
 	 * Tree
 	 */
-	rb_cRuggedTree = rb_define_class_under(rb_cRugged, "Tree", rb_cRuggedObject);
+	rb_cRuggedTree = rb_define_class_under(rb_mRugged, "Tree", rb_cRuggedObject);
 	rb_define_alloc_func(rb_cRuggedTree, rb_git_tree_allocate);
 	rb_define_method(rb_cRuggedTree, "initialize", rb_git_tree_init, -1);
 	rb_define_method(rb_cRuggedTree, "entry_count", rb_git_tree_entrycount, 0);

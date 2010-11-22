@@ -1,4 +1,4 @@
-class Rugged
+module Rugged
   class Index
     include Enumerable
 

@@ -1,4 +1,4 @@
-class Rugged
+module Rugged
   class Tree
     include Enumerable
 

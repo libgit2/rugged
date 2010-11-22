@@ -25,7 +25,7 @@
 
 #include "rugged.h"
 
-extern VALUE rb_cRugged;
+extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedTag;
 extern VALUE rb_cRuggedTree;
 extern VALUE rb_cRuggedCommit;
@@ -33,7 +33,7 @@ extern VALUE rb_cRuggedBlob;
 
 VALUE rb_cRuggedObject;
 
-git_object *rugged_rb2object(git_repository *repo, VALUE object_value, git_otype type)
+git_object *rugged_object_rb2c(git_repository *repo, VALUE object_value, git_otype type)
 {
 	git_object *object = NULL;
 
@@ -58,7 +58,7 @@ git_object *rugged_rb2object(git_repository *repo, VALUE object_value, git_otype
 	return object;
 }
 
-VALUE rugged_object2rb(git_object *object)
+VALUE rugged_object_c2rb(git_object *object)
 {
 	git_otype type;
 	char sha1[40];
@@ -188,7 +188,7 @@ static VALUE rb_git_object_write(VALUE self)
 
 void Init_rugged_object()
 {
-	rb_cRuggedObject = rb_define_class_under(rb_cRugged, "Object", rb_cObject);
+	rb_cRuggedObject = rb_define_class_under(rb_mRugged, "Object", rb_cObject);
 	rb_define_alloc_func(rb_cRuggedObject, rb_git_object_allocate);
 	rb_define_method(rb_cRuggedObject, "read_raw", rb_git_object_read_raw, 0);
 	rb_define_method(rb_cRuggedObject, "write", rb_git_object_write, 0);

@@ -25,23 +25,42 @@
 
 #include "rugged.h"
 
-extern VALUE rb_cRugged;
+extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedObject;
+extern VALUE rb_cRuggedPerson;
 VALUE rb_cRuggedCommit;
 
-VALUE rugged_person2hash(git_person *person)
+VALUE rugged_person_c2rb(git_person *person)
 {
-	VALUE rb_person;
+	VALUE arguments[3];
 
 	if (person == NULL)
 		return Qnil;
 
-	rb_person = rb_hash_new();
-	rb_hash_aset(rb_person, rb_str_new2("name"), rb_str_new2(git_person_name(person)));
-	rb_hash_aset(rb_person, rb_str_new2("email"), rb_str_new2(git_person_email(person)));
-	rb_hash_aset(rb_person, rb_str_new2("time"), ULONG2NUM(git_person_time(person)));
+	arguments[0] = rb_str_new2(git_person_name(person));
+	arguments[1] = rb_str_new2(git_person_email(person));
+	arguments[2] = ULONG2NUM(git_person_time(person));
 
-	return rb_person;
+	return rb_class_new_instance(3, arguments, rb_cRuggedPerson);
+}
+
+void rugged_person_rb2c(VALUE rb_person, const char **name_out, const char **email_out, unsigned long *time_out)
+{
+	VALUE rb_name, rb_email, rb_time;
+
+	if (!rb_obj_is_kind_of(rb_person, rb_cRuggedPerson))
+		rb_raise(rb_eTypeError, "expected Rugged::Person object");
+
+	rb_name = rb_iv_get(rb_person, "@name");
+	rb_email = rb_iv_get(rb_person, "@email");
+	rb_time = rb_iv_get(rb_person, "@time");
+
+	Check_Type(rb_name, T_STRING);
+	Check_Type(rb_email, T_STRING);
+
+	*name_out = RSTRING_PTR(rb_name);
+	*email_out = RSTRING_PTR(rb_email);
+	*time_out = rb_num2ulong(rb_time);
 }
 
 static VALUE rb_git_commit_allocate(VALUE klass)
@@ -86,19 +105,18 @@ static VALUE rb_git_commit_committer_GET(VALUE self)
 	git_commit *commit;
 	Data_Get_Struct(self, git_commit, commit);
 
-	return rugged_person2hash((git_person *)git_commit_committer(commit));
+	return rugged_person_c2rb((git_person *)git_commit_committer(commit));
 }
 
-static VALUE rb_git_commit_committer_SET(VALUE self, VALUE rb_name, VALUE rb_email, VALUE rb_time)
+static VALUE rb_git_commit_committer_SET(VALUE self, VALUE rb_person)
 {
+	const char *name, *email;
+	time_t time;
 	git_commit *commit;
 	Data_Get_Struct(self, git_commit, commit);
 
-	Check_Type(rb_name, T_STRING);
-	Check_Type(rb_email, T_STRING);
-	Check_Type(rb_time, T_FIXNUM);
-
-	git_commit_set_committer(commit, RSTRING_PTR(rb_name), RSTRING_PTR(rb_email), FIX2INT(rb_time));
+	rugged_person_rb2c(rb_person, &name, &email, &time);
+	git_commit_set_committer(commit, name, email, time);
 	return Qnil;
 }
 
@@ -107,19 +125,18 @@ static VALUE rb_git_commit_author_GET(VALUE self)
 	git_commit *commit;
 	Data_Get_Struct(self, git_commit, commit);
 
-	return rugged_person2hash((git_person *)git_commit_author(commit));
+	return rugged_person_c2rb((git_person *)git_commit_author(commit));
 }
 
-static VALUE rb_git_commit_author_SET(VALUE self, VALUE rb_name, VALUE rb_email, VALUE rb_time)
+static VALUE rb_git_commit_author_SET(VALUE self, VALUE rb_person)
 {
+	const char *name, *email;
+	time_t time;
 	git_commit *commit;
 	Data_Get_Struct(self, git_commit, commit);
 
-	Check_Type(rb_name, T_STRING);
-	Check_Type(rb_email, T_STRING);
-	Check_Type(rb_time, T_FIXNUM);
-
-	git_commit_set_author(commit, RSTRING_PTR(rb_name), RSTRING_PTR(rb_email), FIX2INT(rb_time));
+	rugged_person_rb2c(rb_person, &name, &email, &time);
+	git_commit_set_author(commit, name, email, time);
 	return Qnil;
 }
 
@@ -139,7 +156,7 @@ static VALUE rb_git_commit_tree_GET(VALUE self)
 	Data_Get_Struct(self, git_commit, commit);
 
 	tree = git_commit_tree(commit);
-	return tree ? rugged_object2rb((git_object *)tree) : Qnil;
+	return tree ? rugged_object_c2rb((git_object *)tree) : Qnil;
 }
 
 static VALUE rb_git_commit_tree_SET(VALUE self, VALUE val)
@@ -148,14 +165,14 @@ static VALUE rb_git_commit_tree_SET(VALUE self, VALUE val)
 	git_tree *tree;
 	Data_Get_Struct(self, git_commit, commit);
 
-	tree = (git_tree *)rugged_rb2object(git_object_owner((git_object *)commit), val, GIT_OBJ_TREE);
+	tree = (git_tree *)rugged_object_rb2c(git_object_owner((git_object *)commit), val, GIT_OBJ_TREE);
 	git_commit_set_tree(commit, tree);
 	return Qnil;
 }
 
 void Init_rugged_commit()
 {
-	rb_cRuggedCommit = rb_define_class_under(rb_cRugged, "Commit", rb_cRuggedObject);
+	rb_cRuggedCommit = rb_define_class_under(rb_mRugged, "Commit", rb_cRuggedObject);
 	rb_define_alloc_func(rb_cRuggedCommit, rb_git_commit_allocate);
 	rb_define_method(rb_cRuggedCommit, "initialize", rb_git_commit_init, -1);
 
@@ -169,10 +186,10 @@ void Init_rugged_commit()
 	rb_define_method(rb_cRuggedCommit, "time", rb_git_commit_time_GET, 0); /* READ ONLY */
 
 	rb_define_method(rb_cRuggedCommit, "committer", rb_git_commit_committer_GET, 0);
-	rb_define_method(rb_cRuggedCommit, "committer=", rb_git_commit_committer_SET, 3);
+	rb_define_method(rb_cRuggedCommit, "committer=", rb_git_commit_committer_SET, 1);
 
 	rb_define_method(rb_cRuggedCommit, "author", rb_git_commit_author_GET, 0);
-	rb_define_method(rb_cRuggedCommit, "author=", rb_git_commit_author_SET, 3);
+	rb_define_method(rb_cRuggedCommit, "author=", rb_git_commit_author_SET, 1);
 
 	rb_define_method(rb_cRuggedCommit, "tree", rb_git_commit_tree_GET, 0);
 	rb_define_method(rb_cRuggedCommit, "tree=", rb_git_commit_tree_SET, 1);

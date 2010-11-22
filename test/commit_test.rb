@@ -16,13 +16,13 @@ context "Rugged::Commit tests" do
     assert_equal obj.message_short, "testing"
     assert_equal obj.time.to_i, 1273360386
     c = obj.committer
-    assert_equal c['name'], "Scott Chacon"
-    assert_equal c['time'].to_i, 1273360386
-    assert_equal c['email'], "schacon@gmail.com"
+    assert_equal c.name, "Scott Chacon"
+    assert_equal c.time.to_i, 1273360386
+    assert_equal c.email, "schacon@gmail.com"
     c = obj.author
-    assert_equal c['name'], "Scott Chacon"
-    assert_equal c['time'].to_i, 1273360386
-    assert_equal c['email'], "schacon@gmail.com"
+    assert_equal c.name, "Scott Chacon"
+    assert_equal c.time.to_i, 1273360386
+    assert_equal c.email, "schacon@gmail.com"
     assert_equal obj.tree.sha, "181037049a54a1eb5fab404658a3a250b44335d7"
   end
   
@@ -37,11 +37,12 @@ context "Rugged::Commit tests" do
     tsha = "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b"
     tree = @repo.lookup(tsha)
 
-    obj = Rugged::Commit.new
-    a = {'name' => 'Scott', 'time' => Time.now, 'email' => 'schacon@gmail.com'}
+    obj = Rugged::Commit.new(@repo)
+    person = Rugged::Person.new('Scott', 'schacon@gmail.com', Time.now)
+
     obj.message = 'new message'
-    obj.author = a
-    obj.committer = a
+    obj.author = person
+    obj.committer = person
     obj.tree = tree
     obj.write
 

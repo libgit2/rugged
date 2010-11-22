@@ -25,7 +25,7 @@ context "Rugged::Blob tests" do
   end
 
   test "can write new blob data" do
-    blob = Rugged::Blob.new
+    blob = Rugged::Blob.new(@repo)
     blob.content = "a new blob content"
     blob.write
   end

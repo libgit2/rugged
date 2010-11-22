@@ -25,7 +25,7 @@
 
 #include "rugged.h"
 
-extern VALUE rb_cRugged;
+extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedIndex;
 VALUE rb_cRuggedRepo;
 
@@ -178,13 +178,13 @@ static VALUE rb_git_repo_lookup(int argc, VALUE *argv, VALUE self)
 	error = git_repository_lookup(&obj, repo, &oid, type);
 	rugged_exception_check(error);
 
-	return obj ? rugged_object2rb(obj) : Qnil;
+	return obj ? rugged_object_c2rb(obj) : Qnil;
 }
 
 
 void Init_rugged_repo()
 {
-	rb_cRuggedRepo = rb_define_class_under(rb_cRugged, "Repository", rb_cObject);
+	rb_cRuggedRepo = rb_define_class_under(rb_mRugged, "Repository", rb_cObject);
 	rb_define_alloc_func(rb_cRuggedRepo, rb_git_repo_allocate);
 	rb_define_method(rb_cRuggedRepo, "initialize", rb_git_repo_init, 1);
 	rb_define_method(rb_cRuggedRepo, "exists", rb_git_repo_exists, 1);

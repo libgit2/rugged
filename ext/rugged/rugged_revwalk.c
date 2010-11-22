@@ -25,7 +25,7 @@
 
 #include "rugged.h"
 
-extern VALUE rb_cRugged;
+extern VALUE rb_mRugged;
 VALUE rb_cRuggedWalker;
 
 
@@ -59,7 +59,7 @@ static VALUE rb_git_walker_next(VALUE self)
 	Data_Get_Struct(self, git_revwalk, walk);
 	commit = git_revwalk_next(walk);
 
-	return commit ? rugged_object2rb((git_object*)commit) : Qfalse;
+	return commit ? rugged_object_c2rb((git_object*)commit) : Qfalse;
 }
 
 static VALUE rb_git_walker_push(VALUE self, VALUE rb_commit)
@@ -68,7 +68,7 @@ static VALUE rb_git_walker_push(VALUE self, VALUE rb_commit)
 	git_commit *commit;
 
 	Data_Get_Struct(self, git_revwalk, walk);
-	commit = (git_commit *)rugged_rb2object(git_revwalk_repository(walk), rb_commit, GIT_OBJ_COMMIT);
+	commit = (git_commit *)rugged_object_rb2c(git_revwalk_repository(walk), rb_commit, GIT_OBJ_COMMIT);
 	git_revwalk_push(walk, commit);
 
 	return Qnil;
@@ -80,7 +80,7 @@ static VALUE rb_git_walker_hide(VALUE self, VALUE rb_commit)
 	git_commit *commit;
 
 	Data_Get_Struct(self, git_revwalk, walk);
-	commit = (git_commit *)rugged_rb2object(git_revwalk_repository(walk), rb_commit, GIT_OBJ_COMMIT);
+	commit = (git_commit *)rugged_object_rb2c(git_revwalk_repository(walk), rb_commit, GIT_OBJ_COMMIT);
 	git_revwalk_hide(walk, commit);
 
 	return Qnil;
@@ -104,7 +104,7 @@ static VALUE rb_git_walker_reset(VALUE self)
 
 void Init_rugged_revwalk()
 {
-	rb_cRuggedWalker = rb_define_class_under(rb_cRugged, "Walker", rb_cObject);
+	rb_cRuggedWalker = rb_define_class_under(rb_mRugged, "Walker", rb_cObject);
 	rb_define_alloc_func(rb_cRuggedWalker, rb_git_walker_allocate);
 	rb_define_method(rb_cRuggedWalker, "initialize", rb_git_walker_init, 1);
 	rb_define_method(rb_cRuggedWalker, "push", rb_git_walker_push, 1);

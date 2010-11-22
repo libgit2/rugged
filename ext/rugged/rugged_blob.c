@@ -25,7 +25,7 @@
 
 #include "rugged.h"
 
-extern VALUE rb_cRugged;
+extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedObject;
 VALUE rb_cRuggedBlob;
 
@@ -75,7 +75,7 @@ static VALUE rb_git_blob_rawsize(VALUE self)
 
 void Init_rugged_blob()
 {
-	rb_cRuggedBlob = rb_define_class_under(rb_cRugged, "Blob", rb_cRuggedObject);
+	rb_cRuggedBlob = rb_define_class_under(rb_mRugged, "Blob", rb_cRuggedObject);
 	rb_define_alloc_func(rb_cRuggedBlob, rb_git_blob_allocate);
 	rb_define_method(rb_cRuggedBlob, "initialize", rb_git_blob_init, -1);
 
