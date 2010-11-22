@@ -134,7 +134,7 @@ static VALUE rb_git_object_type_GET(VALUE self)
 	return rb_str_new2(git_obj_type_to_string(git_object_type(object)));
 }
 
-static VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE self)
+VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE self)
 {
 	git_repository *repo;
 	git_object *object;

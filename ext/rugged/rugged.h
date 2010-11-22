@@ -56,6 +56,8 @@ void Init_rugged_revwalk();
 
 void rugged_exception_check(int errorcode);
 
+VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE self);
+
 VALUE rugged_object2rb(git_object *object);
 VALUE rugged_raw_read(git_repository *repo, const git_oid *oid);
 VALUE rugged_person2hash(git_person *person);
