@@ -33,4 +33,20 @@ context "Rugged::Commit tests" do
     obj.write
   end
 
+  test "can write new commit data" do
+    tsha = "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b"
+    tree = @repo.lookup(tsha)
+
+    obj = Rugged::Commit.new
+    a = {'name' => 'Scott', 'time' => Time.now, 'email' => 'schacon@gmail.com'}
+    obj.message = 'new message'
+    obj.author = a
+    obj.committer = a
+    obj.tree = tree
+    obj.write
+
+    pp obj
+    pp obj.sha
+  end
+
 end

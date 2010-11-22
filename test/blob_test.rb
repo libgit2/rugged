@@ -24,7 +24,7 @@ context "Rugged::Blob tests" do
     FileUtils.rm File.join(@path, "objects/2d/d916ea1ff086d61fbc1c286079305ffad4e92e")
   end
 
-  xtest "can write new blob data" do
+  test "can write new blob data" do
     blob = Rugged::Blob.new
     blob.content = "a new blob content"
     blob.write
