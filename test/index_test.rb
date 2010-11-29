@@ -70,7 +70,7 @@ context "Rugged::Index reading stuff" do
     e.stage = 3
     assert_equal e.flags, 12288
 
-    e.flags = e.flags | 0x8000
+    e.flags = e.flags | Rugged::IndexEntry::FLAGS_VALID
     assert_equal e.valid?, true
   end
 

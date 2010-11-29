@@ -393,7 +393,7 @@ void Init_rugged_index()
 	rb_define_method(rb_cRuggedIndexEntry, "stage", rb_git_indexentry_stage_GET, 0);
 	rb_define_method(rb_cRuggedIndexEntry, "stage=", rb_git_indexentry_stage_SET, 1);
 
-  rb_define_const(rb_cRuggedIndexEntry, "FLAGS_STAGE", INT2FIX(GIT_IDXENTRY_STAGEMASK));
-  rb_define_const(rb_cRuggedIndexEntry, "FLAGS_STAGE_SHIFT", INT2FIX(GIT_IDXENTRY_STAGESHIFT));
-  rb_define_const(rb_cRuggedIndexEntry, "FLAGS_VALID", INT2FIX(GIT_IDXENTRY_VALID));
+  rb_const_set(rb_cRuggedIndexEntry, rb_intern("FLAGS_STAGE"), INT2FIX(GIT_IDXENTRY_STAGEMASK));
+  rb_const_set(rb_cRuggedIndexEntry, rb_intern("FLAGS_STAGE_SHIFT"), INT2FIX(GIT_IDXENTRY_STAGESHIFT));
+  rb_const_set(rb_cRuggedIndexEntry, rb_intern("FLAGS_VALID"), INT2FIX(GIT_IDXENTRY_VALID));
 }

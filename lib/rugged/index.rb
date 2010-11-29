@@ -11,6 +11,7 @@ module Rugged
   end
     
   class IndexEntry
+
     def valid?
       (flags & FLAGS_VALID) != 0
     end
