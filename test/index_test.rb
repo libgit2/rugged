@@ -16,8 +16,7 @@ def new_index_entry
     e.mode = 33199
     e.uid = 502
     e.gid = 502
-    e.flags = 5
-    e.flags_extended = 5
+    e.stage = 3
     e
 end
 
@@ -50,7 +49,8 @@ context "Rugged::Index reading stuff" do
     assert_equal 501, e.uid
     assert_equal 0, e.gid
     assert_equal 6, e.flags
-    assert_equal 0, e.flags_extended
+    assert_equal false, e.valid?
+    assert_equal 0, e.stage
 
     e = @index.get_entry(1)
     assert_equal 'new.txt', e.path
@@ -60,6 +60,18 @@ context "Rugged::Index reading stuff" do
   test "can iterate over the entries" do
     itr_test = @index.sort { |a, b| a.sha <=> b.sha }.map { |e| e.path }.join(':')
     assert_equal "README:new.txt", itr_test
+  end
+
+  test "setting flags is sane" do
+    e = new_index_entry
+    e.flags = 0
+    assert_equal e.flags, 0
+
+    e.stage = 3
+    assert_equal e.flags, 12288
+
+    e.flags = e.flags | 0x8000
+    assert_equal e.valid?, true
   end
 
   test "can update entries" do
@@ -76,8 +88,7 @@ context "Rugged::Index reading stuff" do
     e.mode = 33199
     e.uid = 502
     e.gid = 502
-    e.flags = 5
-    e.flags_extended = 5
+    e.flags = 234
 
     assert_equal 'new_path', e.path
     assert_equal '12ea3153a78002a988bb92f4123e7e831fd1138a', e.sha
@@ -89,8 +100,7 @@ context "Rugged::Index reading stuff" do
     assert_equal 33199, e.mode
     assert_equal 502, e.uid
     assert_equal 502, e.gid
-    assert_equal 5, e.flags
-    assert_equal 5, e.flags_extended
+    assert_equal 234, e.flags
   end
 
   test "can add new entries" do

@@ -8,6 +8,12 @@ module Rugged
         yield self[i]
       end
     end
-
   end
+    
+  class IndexEntry
+    def valid?
+      (flags & FLAGS_VALID) != 0
+    end
+  end
+
 end

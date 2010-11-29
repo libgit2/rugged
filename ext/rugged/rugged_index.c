@@ -191,8 +191,57 @@ RB_GIT_INDEXENTRY_GETSET(mode);
 RB_GIT_INDEXENTRY_GETSET(uid);
 RB_GIT_INDEXENTRY_GETSET(gid);
 RB_GIT_INDEXENTRY_GETSET(file_size);
-RB_GIT_INDEXENTRY_GETSET(flags);
-RB_GIT_INDEXENTRY_GETSET(flags_extended);
+
+static VALUE rb_git_indexentry_flags_GET(VALUE self)
+{
+	uint32_t flags;
+	git_index_entry *entry;
+	Data_Get_Struct(self, git_index_entry, entry);
+	flags = (entry->flags & 0xFFFF) | (entry->flags_extended << 16);
+
+	return INT2FIX(flags);
+}
+
+static VALUE rb_git_indexentry_flags_SET(VALUE self, VALUE v)
+{
+	uint32_t flags;
+	git_index_entry *entry;
+	Data_Get_Struct(self, git_index_entry, entry);
+	Check_Type(v, T_FIXNUM);
+
+	flags = FIX2INT(v);
+	entry->flags = (unsigned short)(flags & 0xFFFF);
+  entry->flags_extended = (unsigned short)((flags >> 16) & 0xFFFF);
+
+	return Qnil;
+}
+
+static VALUE rb_git_indexentry_stage_GET(VALUE self)
+{
+	uint32_t stage;
+	git_index_entry *entry;
+	Data_Get_Struct(self, git_index_entry, entry);
+
+	stage = (entry->flags & GIT_IDXENTRY_STAGEMASK) >> GIT_IDXENTRY_STAGESHIFT;
+	return INT2FIX(stage);
+}
+
+static VALUE rb_git_indexentry_stage_SET(VALUE self, VALUE v)
+{
+  int stage;
+	git_index_entry *entry;
+	Data_Get_Struct(self, git_index_entry, entry);
+	Check_Type(v, T_FIXNUM);
+
+	stage = FIX2INT(v);
+  if (stage < 0 || stage > 3)
+    rb_raise(rb_eRuntimeError, "Invalid Index stage (must range from 0 to 3)");
+
+	entry->flags &= ~GIT_IDXENTRY_STAGEMASK;
+  entry->flags |= (stage << GIT_IDXENTRY_STAGESHIFT);
+
+	return Qnil;
+}
 
 static VALUE rb_git_indexentry_path_GET(VALUE self)
 {
@@ -341,7 +390,10 @@ void Init_rugged_index()
 	rb_define_method(rb_cRuggedIndexEntry, "flags", rb_git_indexentry_flags_GET, 0);
 	rb_define_method(rb_cRuggedIndexEntry, "flags=", rb_git_indexentry_flags_SET, 1);
 
-	rb_define_method(rb_cRuggedIndexEntry, "flags_extended", rb_git_indexentry_flags_extended_GET, 0);
-	rb_define_method(rb_cRuggedIndexEntry, "flags_extended=", rb_git_indexentry_flags_extended_SET, 1);
+	rb_define_method(rb_cRuggedIndexEntry, "stage", rb_git_indexentry_stage_GET, 0);
+	rb_define_method(rb_cRuggedIndexEntry, "stage=", rb_git_indexentry_stage_SET, 1);
 
+  rb_define_const(rb_cRuggedIndexEntry, "FLAGS_STAGE", INT2FIX(GIT_IDXENTRY_STAGEMASK));
+  rb_define_const(rb_cRuggedIndexEntry, "FLAGS_STAGE_SHIFT", INT2FIX(GIT_IDXENTRY_STAGESHIFT));
+  rb_define_const(rb_cRuggedIndexEntry, "FLAGS_VALID", INT2FIX(GIT_IDXENTRY_VALID));
 }
