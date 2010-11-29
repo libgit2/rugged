@@ -10,4 +10,18 @@ module Rugged
     end
 
   end
+
+  class IndexEntry
+    def assume_valid
+      flags & 0x01 == 0x01
+    end
+
+    def update_needed
+      flags & 0x02 == 0x02
+    end
+
+    def stage
+      (flags & 0x0c) >> 2
+    end
+  end
 end

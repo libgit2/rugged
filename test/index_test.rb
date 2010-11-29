@@ -51,6 +51,9 @@ context "Rugged::Index reading stuff" do
     assert_equal 0, e.gid
     assert_equal 6, e.flags
     assert_equal 0, e.flags_extended
+    assert_equal false, e.assume_valid
+    assert_equal true, e.update_needed
+    assert_equal 1, e.stage
 
     e = @index.get_entry(1)
     assert_equal 'new.txt', e.path
@@ -91,6 +94,9 @@ context "Rugged::Index reading stuff" do
     assert_equal 502, e.gid
     assert_equal 5, e.flags
     assert_equal 5, e.flags_extended
+    assert_equal true, e.assume_valid
+    assert_equal false, e.update_needed
+    assert_equal 1, e.stage
   end
 
   test "can add new entries" do
