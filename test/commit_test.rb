@@ -45,9 +45,6 @@ context "Rugged::Commit tests" do
     obj.committer = person
     obj.tree = tree
     obj.write
-
-    pp obj
-    pp obj.sha
   end
 
 end
