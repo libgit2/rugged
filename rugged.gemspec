@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
   s.email             = "schacon@gmail.com"
   s.authors           = [ "Scott Chacon", "Vicent Marti" ]
   s.files             = %w( README.md Rakefile LICENSE )
-  s.files            += Dir.glob("lib/**/*")
+  s.files            += Dir.glob("lib/**/*.rb")
   s.files            += Dir.glob("man/**/*")
   s.files            += Dir.glob("test/**/*")
   s.extensions        = ['ext/rugged/extconf.rb']
