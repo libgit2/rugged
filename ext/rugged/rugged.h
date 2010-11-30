@@ -41,6 +41,7 @@
 #include <git/revwalk.h>
 #include <git/repository.h>
 #include <git/zlib.h>
+#include <stdint.h>
 
 /*
  * Initialization functions 
