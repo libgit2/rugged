@@ -49,7 +49,7 @@ VALUE rugged_raw_read(git_repository *repo, const git_oid *oid)
 	data = obj.data;
 	str_type = git_obj_type_to_string(obj.type);
 
-	rb_ary_store(ret_arr, 0, rb_str_new2(data));
+	rb_ary_store(ret_arr, 0, rb_str_new(data, obj.len));
 	rb_ary_store(ret_arr, 1, INT2FIX((int)obj.len));
 	rb_ary_store(ret_arr, 2, rb_str_new2(str_type));
 
