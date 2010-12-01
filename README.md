@@ -98,7 +98,7 @@ to simply read the current value out
       prsn  = gobjc.committer
       gobjr = gobjc.tree
       sha   = gobjc.tree_sha
-      arr   = gobjc.parents [*] # TODO
+      arr   = gobjc.parents [*] # TODO: write
 
     gobtg =
     Rugged::Tag.new < Rugged::Object

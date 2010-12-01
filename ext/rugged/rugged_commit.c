@@ -170,6 +170,22 @@ static VALUE rb_git_commit_tree_SET(VALUE self, VALUE val)
 	return Qnil;
 }
 
+static VALUE rb_git_commit_parents_GET(VALUE self)
+{
+	git_commit *commit;
+	git_commit *parent;
+	unsigned int n;
+	VALUE ret_arr;
+	Data_Get_Struct(self, git_commit, commit);
+
+	ret_arr = rb_ary_new();
+	for (n = 0; (parent = git_commit_parent(commit, n)) != NULL; n++) {
+		rb_ary_store(ret_arr, n, rugged_object_c2rb((git_object *)parent));
+	}
+
+	return ret_arr;
+}
+
 void Init_rugged_commit()
 {
 	rb_cRuggedCommit = rb_define_class_under(rb_mRugged, "Commit", rb_cRuggedObject);
@@ -193,5 +209,8 @@ void Init_rugged_commit()
 
 	rb_define_method(rb_cRuggedCommit, "tree", rb_git_commit_tree_GET, 0);
 	rb_define_method(rb_cRuggedCommit, "tree=", rb_git_commit_tree_SET, 1);
+
+	/* Read only, at least for now */
+	rb_define_method(rb_cRuggedCommit, "parents", rb_git_commit_parents_GET, 0);
 }
 
