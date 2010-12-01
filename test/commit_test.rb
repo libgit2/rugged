@@ -24,6 +24,15 @@ context "Rugged::Commit tests" do
     assert_equal c.time.to_i, 1273360386
     assert_equal c.email, "schacon@gmail.com"
     assert_equal obj.tree.sha, "181037049a54a1eb5fab404658a3a250b44335d7"
+    assert_equal [], obj.parents
+  end
+  
+  test "can have multiple parents" do
+    sha = "a4a7dce85cf63874e984719f4fdd239f5145052f"
+    obj = @repo.lookup(sha)
+    parents = obj.parents.map {|c| c.sha }
+    assert parents.include?("9fd738e8f7967c078dceed8190330fc8648ee56a")
+    assert parents.include?("c47800c7266a2be04c571c04d5a6614691ea99bd")
   end
   
   test "can write the commit data" do
