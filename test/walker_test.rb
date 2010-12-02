@@ -45,7 +45,7 @@ context "Rugged::Walker stuff" do
     assert_equal sha, @walker.next.sha
   end
 
-  def revlist_with_sorting(sorting)
+  def do_sort(sorting)
     sha = "a4a7dce85cf63874e984719f4fdd239f5145052f"
     @walker.sorting(sorting)
     @walker.push(sha)
@@ -53,7 +53,18 @@ context "Rugged::Walker stuff" do
     6.times do
       data << @walker.next
     end
+    data
+  end
+
+  def revlist_with_sorting(sorting)
+    data = do_sort sorting
     shas = data.map {|a| a.sha[0,5] if a }.join('.')
+  end
+
+  def is_toposorted(list)
+    list.all? do |commit|
+      commit.parents.all? { |parent| list.index(commit) < list.index(parent) }
+    end
   end
 
   test "can sort order by date" do
@@ -62,8 +73,8 @@ context "Rugged::Walker stuff" do
   end
 
   test "can sort order by topo" do
-    topo = revlist_with_sorting(Rugged::SORT_TOPO)
-    assert_equal "a4a7d.c4780.9fd73.4a202.5b5b0.84960", topo
+    sort_list = do_sort(Rugged::SORT_TOPO)
+    assert_equal is_toposorted(sort_list), true
   end
 
   test "can sort order by date reversed" do
@@ -72,8 +83,8 @@ context "Rugged::Walker stuff" do
   end
 
   test "can sort order by topo reversed" do
-    topo_rev = revlist_with_sorting(Rugged::SORT_TOPO | Rugged::SORT_REVERSE)
-    assert_equal "84960.5b5b0.4a202.9fd73.c4780.a4a7d", topo_rev
+    sort_list = do_sort(Rugged::SORT_TOPO | Rugged::SORT_REVERSE).reverse
+    assert_equal is_toposorted(sort_list), true
   end
 
 end
