@@ -62,12 +62,50 @@ static VALUE rb_git_repo_allocate(VALUE klass)
 	return Data_Wrap_Struct(klass, NULL, NULL, repo);
 }
 
-static VALUE rb_git_repo_init(VALUE self, VALUE path)
+static VALUE rb_git_repo_init(int argc, VALUE *argv, VALUE self)
 {
 	git_repository *repo;
-	int error;
+	int error = 0;
 
-	error = git_repository_open(&repo, RSTRING_PTR(path));
+	VALUE rb_dir, rb_obj_dir, rb_index_file, rb_work_tree;
+
+	if (rb_scan_args(argc, argv, "13", 
+				&rb_dir, 
+				&rb_obj_dir, 
+				&rb_index_file, 
+				&rb_work_tree) > 1) {
+
+		const char *git_obj_dir = NULL;
+		const char *git_index_file = NULL;
+		const char *git_work_tree = NULL;
+
+		Check_Type(rb_dir, T_STRING);
+
+		if (!NIL_P(rb_obj_dir)) {
+			Check_Type(rb_obj_dir, T_STRING);
+			git_obj_dir = RSTRING_PTR(rb_obj_dir);
+		}
+
+		if (!NIL_P(rb_index_file)) {
+			Check_Type(rb_index_file, T_STRING);
+			git_index_file = RSTRING_PTR(rb_index_file);
+		}
+
+		if (!NIL_P(rb_work_tree)) {
+			Check_Type(rb_work_tree, T_STRING);
+			git_work_tree = RSTRING_PTR(rb_work_tree);
+		}
+
+		error = git_repository_open2(&repo,
+				RSTRING_PTR(rb_dir),
+				git_obj_dir,
+				git_index_file,
+				git_work_tree);
+	} else {
+		Check_Type(rb_dir, T_STRING);
+		error = git_repository_open(&repo, RSTRING_PTR(rb_dir));
+	}
+
 	rugged_exception_check(error);
 
 	DATA_PTR(self) = repo;
@@ -186,7 +224,7 @@ void Init_rugged_repo()
 {
 	rb_cRuggedRepo = rb_define_class_under(rb_mRugged, "Repository", rb_cObject);
 	rb_define_alloc_func(rb_cRuggedRepo, rb_git_repo_allocate);
-	rb_define_method(rb_cRuggedRepo, "initialize", rb_git_repo_init, 1);
+	rb_define_method(rb_cRuggedRepo, "initialize", rb_git_repo_init, -1);
 	rb_define_method(rb_cRuggedRepo, "exists", rb_git_repo_exists, 1);
 	rb_define_method(rb_cRuggedRepo, "hash",   rb_git_repo_obj_hash,  2);
 	rb_define_method(rb_cRuggedRepo, "read",   rb_git_repo_read,   1);
