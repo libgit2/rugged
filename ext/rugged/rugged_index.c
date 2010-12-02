@@ -194,7 +194,7 @@ RB_GIT_INDEXENTRY_GETSET(file_size);
 
 static VALUE rb_git_indexentry_flags_GET(VALUE self)
 {
-	uint32_t flags;
+	unsigned int flags;
 	git_index_entry *entry;
 	Data_Get_Struct(self, git_index_entry, entry);
 	flags = (entry->flags & 0xFFFF) | (entry->flags_extended << 16);
@@ -204,7 +204,7 @@ static VALUE rb_git_indexentry_flags_GET(VALUE self)
 
 static VALUE rb_git_indexentry_flags_SET(VALUE self, VALUE v)
 {
-	uint32_t flags;
+	unsigned int flags;
 	git_index_entry *entry;
 	Data_Get_Struct(self, git_index_entry, entry);
 	Check_Type(v, T_FIXNUM);
@@ -218,7 +218,7 @@ static VALUE rb_git_indexentry_flags_SET(VALUE self, VALUE v)
 
 static VALUE rb_git_indexentry_stage_GET(VALUE self)
 {
-	uint32_t stage;
+	unsigned int stage;
 	git_index_entry *entry;
 	Data_Get_Struct(self, git_index_entry, entry);
 
@@ -228,17 +228,17 @@ static VALUE rb_git_indexentry_stage_GET(VALUE self)
 
 static VALUE rb_git_indexentry_stage_SET(VALUE self, VALUE v)
 {
-  int stage;
+	int stage;
 	git_index_entry *entry;
 	Data_Get_Struct(self, git_index_entry, entry);
 	Check_Type(v, T_FIXNUM);
 
 	stage = FIX2INT(v);
-  if (stage < 0 || stage > 3)
-    rb_raise(rb_eRuntimeError, "Invalid Index stage (must range from 0 to 3)");
+	if (stage < 0 || stage > 3)
+		rb_raise(rb_eRuntimeError, "Invalid Index stage (must range from 0 to 3)");
 
 	entry->flags &= ~GIT_IDXENTRY_STAGEMASK;
-  entry->flags |= (stage << GIT_IDXENTRY_STAGESHIFT);
+	entry->flags |= (stage << GIT_IDXENTRY_STAGESHIFT);
 
 	return Qnil;
 }
