@@ -131,7 +131,7 @@ static VALUE rb_git_object_type_GET(VALUE self)
 	git_object *object;
 	Data_Get_Struct(self, git_object, object);
 
-	return rb_str_new2(git_obj_type_to_string(git_object_type(object)));
+	return rb_str_new2(git_otype_tostring(git_object_type(object)));
 }
 
 VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE self)

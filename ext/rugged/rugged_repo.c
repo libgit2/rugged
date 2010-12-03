@@ -47,11 +47,13 @@ VALUE rugged_raw_read(git_repository *repo, const git_oid *oid)
 
 	ret_arr = rb_ary_new();
 	data = obj.data;
-	str_type = git_obj_type_to_string(obj.type);
+	str_type = git_otype_tostring(obj.type);
 
 	rb_ary_store(ret_arr, 0, rb_str_new(data, obj.len));
 	rb_ary_store(ret_arr, 1, INT2FIX((int)obj.len));
 	rb_ary_store(ret_arr, 2, rb_str_new2(str_type));
+
+	git_rawobj_close(&obj);
 
 	return ret_arr;
 }
@@ -160,11 +162,11 @@ static VALUE rb_git_repo_obj_hash(VALUE self, VALUE content, VALUE type)
 	int error;
 	git_oid oid;
 
-	(&obj)->data = RSTRING_PTR(content);
-	(&obj)->len  = RSTRING_LEN(content);
-	(&obj)->type = git_obj_string_to_type(RSTRING_PTR(type));
+	obj.data = RSTRING_PTR(content);
+	obj.len  = RSTRING_LEN(content);
+	obj.type = git_otype_fromstring(RSTRING_PTR(type));
 
-	error = git_obj_hash(&oid, &obj);
+	error = git_rawobj_hash(&oid, &obj);
 	rugged_exception_check(error);
 
 	git_oid_fmt(out, &oid);
@@ -183,11 +185,9 @@ static VALUE rb_git_repo_write(VALUE self, VALUE content, VALUE type)
 	Data_Get_Struct(self, git_repository, repo);
 	odb = git_repository_database(repo);
 
-	(&obj)->data = RSTRING_PTR(content);
-	(&obj)->len  = RSTRING_LEN(content);
-	(&obj)->type = git_obj_string_to_type(RSTRING_PTR(type));
-
-	git_obj_hash(&oid, &obj);
+	obj.data = RSTRING_PTR(content);
+	obj.len  = RSTRING_LEN(content);
+	obj.type = git_otype_fromstring(RSTRING_PTR(type));
 
 	error = git_odb_write(&oid, odb, &obj);
 	rugged_exception_check(error);

@@ -64,7 +64,7 @@ static VALUE rb_git_tag_target_type_GET(VALUE self)
 	git_tag *tag;
 	Data_Get_Struct(self, git_tag, tag);
 
-	return rb_str_new2(git_obj_type_to_string(git_tag_type(tag)));
+	return rb_str_new2(git_otype_tostring(git_tag_type(tag)));
 }
 
 static VALUE rb_git_tag_name_GET(VALUE self)
