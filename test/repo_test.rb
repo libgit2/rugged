@@ -15,10 +15,10 @@ context "Rugged::Repository stuff" do
   end
 
   test "can read an object from the db" do
-    data, len, type = @repo.read("8496071c1b46c854b31185ea97743be6a8774479")
-    assert_match 'tree 181037049a54a1eb5fab404658a3a250b44335d7', data
-    assert_equal 172, len
-    assert_equal "commit", type
+    rawobj = @repo.read("8496071c1b46c854b31185ea97743be6a8774479")
+    assert_match 'tree 181037049a54a1eb5fab404658a3a250b44335d7', rawobj.data
+    assert_equal 172, rawobj.len
+    assert_equal Rugged::OBJ_COMMIT, rawobj.type
   end
 
   test "checks that reading fails on unexistang objects" do

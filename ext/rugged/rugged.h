@@ -29,18 +29,8 @@
 #include <ruby.h>
 
 #include <assert.h>
-
-#include <git/commit.h>
-#include <git/tag.h>
-#include <git/blob.h>
-#include <git/common.h>
-#include <git/errors.h>
-#include <git/index.h>
-#include <git/odb.h>
-#include <git/oid.h>
-#include <git/revwalk.h>
-#include <git/repository.h>
-#include <git/zlib.h>
+#include <git.h>
+#include <git/odb_backend.h>
 
 /*
  * Initialization functions 
@@ -65,5 +55,10 @@ VALUE rugged_object_c2rb(git_object *object);
 
 void rugged_person_rb2c(VALUE rb_person, const char **name_out, const char **email_out, unsigned long *time_out);
 git_object *rugged_object_rb2c(git_repository *repo, VALUE object_value, git_otype type);
+
+typedef struct rugged_backend {
+	git_odb_backend parent;
+	VALUE self;
+} rugged_backend;
 
 #endif

@@ -36,7 +36,7 @@ context "Rugged::Blob tests" do
                "\xAE\xCB\xE9d!|\xB9\xA6\x96\x024],U\xEE\x99\xA2\xEE\xD4\x92"
     sha = @repo.write(@content, 'tree')
     blob = @repo.lookup(sha)
-    assert_equal @content, blob.read_raw.first
+    assert_equal @content, blob.read_raw.data
   end
 
 end

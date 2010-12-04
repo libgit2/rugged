@@ -54,14 +54,14 @@ static VALUE rb_git_type_to_string(VALUE self, VALUE type)
 
 	Check_Type(type, T_FIXNUM);
 	git_otype t = (git_otype)FIX2INT(type);
-	str = git_otype_tostring(t);
+	str = git_object_type2string(t);
 	return str ? rb_str_new2(str) : Qfalse;
 }
 
 static VALUE rb_git_string_to_type(VALUE self, VALUE string_type)
 {
 	Check_Type(string_type, T_STRING);
-	return INT2FIX(git_otype_fromstring(RSTRING_PTR(string_type)));
+	return INT2FIX(git_object_string2type(RSTRING_PTR(string_type)));
 }
 
 void rugged_exception_check(int errorcode)
@@ -89,6 +89,8 @@ void Init_rugged()
 	Init_rugged_index();
 	Init_rugged_repo();
 	Init_rugged_revwalk();
+
+	Init_rugged_backend();
 
 	rb_cRuggedPerson = rb_define_class_under(rb_mRugged, "Person", rb_cObject);
 
