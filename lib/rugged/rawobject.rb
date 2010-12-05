@@ -2,11 +2,7 @@ module Rugged
   class RawObject
     attr_reader :type, :len, :data
 
-    def initialize(d, l, t)
-      @data = d
-      @len = l
-      type = t
-
+    def type=(t)
       if t.is_a? String
         @type = Rugged::string_to_type(t)
       elsif t.is_a? Integer
@@ -14,6 +10,12 @@ module Rugged
       else
         raise "Invalid object type"
       end
+    end
+
+    def initialize(t, d, l = nil)
+      self.type=(t)
+      @data = d
+      @len = l || d.length 
     end
   end
 end

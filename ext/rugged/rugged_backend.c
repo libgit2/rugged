@@ -61,8 +61,7 @@ int rugged_backend__write(git_oid *id, git_odb_backend *_backend, git_rawobj *ob
 {
 	ID method;
 	rugged_backend *back;
-	VALUE rb_oid, rb_obj;
-	VALUE rb_obj_args[3];
+	VALUE rb_oid;
 
 	back = (rugged_backend *)_backend;
 	method = rb_intern("write");
@@ -70,12 +69,7 @@ int rugged_backend__write(git_oid *id, git_odb_backend *_backend, git_rawobj *ob
 	if (!rb_respond_to(back->self, method))
 		return GIT_ERROR;
 
-	rb_obj_args[0] = rb_str_new(obj->data, obj->len);
-	rb_obj_args[1] = INT2FIX(obj->len);
-	rb_obj_args[2] = INT2FIX(obj->type);
-	rb_obj = rb_class_new_instance(3, rb_obj_args, rb_cRuggedRawObject);
-
-	rb_oid = rb_funcall(back->self, method, 1, rb_obj);
+	rb_oid = rb_funcall(back->self, method, 1, rugged_rawobject_new(obj));
 
 	if (NIL_P(rb_oid))
 		return GIT_ERROR;
@@ -91,7 +85,6 @@ int rugged_backend__generic_read(int header_only, git_rawobj *obj, git_odb_backe
 	VALUE read_obj;
 	rugged_backend *back;
 	char oid_out[40];
-	VALUE rb_data, rb_len, rb_type;
 
 	back = (rugged_backend *)_backend;
 	method = rb_intern(header_only ? "read_header" : "header");
@@ -109,26 +102,10 @@ int rugged_backend__generic_read(int header_only, git_rawobj *obj, git_odb_backe
 	if (!rb_obj_is_instance_of(read_obj, rb_cRuggedRawObject))
 		rb_raise(rb_eTypeError, "'read' interface must return a Rugged::RawObject");
 
-	rb_data = rb_iv_get(read_obj, "@data");
-	rb_len = rb_iv_get(read_obj, "@len");
-	rb_type = rb_iv_get(read_obj, "@type");
+	rugged_rawobject_get(obj, read_obj);
 
-	Check_Type(rb_type, T_FIXNUM);
-	Check_Type(rb_len, T_FIXNUM);
-
-	obj->type = (git_otype)FIX2INT(rb_type);
-	obj->len = FIX2INT(rb_data);
-	obj->data = NULL;
-
-	if (!header_only) {
-		Check_Type(rb_data, T_STRING);
-
-		obj->data = malloc(obj->len);
-		if (obj->data == NULL)
-			rb_raise(rb_eNoMemError, "out of memory");
-
-		memcpy(obj->data, RSTRING_PTR(rb_data), obj->len);
-	}
+	if (header_only && obj->data != NULL)
+		git_rawobj_close(obj);
 
 	return GIT_SUCCESS;
 }

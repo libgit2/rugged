@@ -5,6 +5,9 @@ context "Rugged::Repository stuff" do
   setup do
     @path = File.dirname(__FILE__) + '/fixtures/testrepo.git/'
     @repo = Rugged::Repository.new(@path)
+
+    content = "my test data\n"
+    @obj = Rugged::RawObject.new('blob', content)
   end
 
   test "can tell if an object exists or not" do
@@ -21,22 +24,20 @@ context "Rugged::Repository stuff" do
     assert_equal Rugged::OBJ_COMMIT, rawobj.type
   end
 
-  test "checks that reading fails on unexistang objects" do
+  test "checks that reading fails on unexisting objects" do
     assert_raise RuntimeError do 
-		@repo.read("a496071c1b46c854b31185ea97743be6a8774471")
-	end
+      @repo.read("a496071c1b46c854b31185ea97743be6a8774471")
+    end
   end
 
   test "can hash data" do
-    content = "my test data\n"
-    sha = Rugged::Repository::hash(content, "blob")
+    sha = Rugged::Repository::hash(@obj)
     assert_equal "76b1b55ab653581d6f2c7230d34098e837197674", sha
     assert !@repo.exists("76b1b55ab653581d6f2c7230d34098e837197674")
   end
 
   test "can write to the db" do
-    content = "my test data\n"
-    sha = @repo.write(content, "blob")
+    sha = @repo.write(@obj)
     assert_equal "76b1b55ab653581d6f2c7230d34098e837197674", sha
     assert @repo.exists("76b1b55ab653581d6f2c7230d34098e837197674")
     rm_loose("76b1b55ab653581d6f2c7230d34098e837197674")

@@ -53,9 +53,12 @@ VALUE rugged_raw_read(git_repository *repo, const git_oid *oid);
 VALUE rugged_person_new(git_person *person);
 VALUE rugged_object_new(VALUE repository, git_object *object);
 VALUE rugged_index_new(VALUE owner, git_index *index);
+VALUE rugged_rawobject_new(const git_rawobj *obj);
 
 void rugged_person_get(VALUE rb_person, const char **name_out, const char **email_out, unsigned long *time_out);
 git_object *rugged_object_get(git_repository *repo, VALUE object_value, git_otype type);
+void rugged_rawobject_get(git_rawobj *obj, VALUE rb_obj);
+
 
 typedef struct {
 	git_odb_backend parent;
