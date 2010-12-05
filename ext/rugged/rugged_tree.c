@@ -30,104 +30,117 @@ extern VALUE rb_cRuggedObject;
 VALUE rb_cRuggedTree;
 VALUE rb_cRuggedTreeEntry;
 
+typedef struct {
+	git_tree_entry *entry;
+	VALUE tree;
+} rugged_tree_entry;
+
 /*
  * Tree entry
  */
-static VALUE rb_git_treeentry_allocate(VALUE klass)
+
+void rb_git_tree_entry__free(rugged_tree_entry *entry)
 {
-	git_tree_entry *tree_entry = NULL;
-	return Data_Wrap_Struct(klass, NULL, NULL, tree_entry);
+	free(entry);
 }
 
-static VALUE rb_git_tree_entry_init(int argc, VALUE *argv, VALUE self)
+void rb_git_tree_entry__mark(rugged_tree_entry *entry)
 {
-	return Qnil;
+	rb_gc_mark(entry->tree);
 }
 
-static VALUE rb_git_createentry(git_tree_entry *entry)
+static VALUE rb_git_createentry(VALUE tree, git_tree_entry *c_entry)
 {
+	rugged_tree_entry *entry;
 	VALUE obj;
 
-	if (entry == NULL)
+	if (c_entry == NULL)
 		return Qnil;
 
-	obj = Data_Wrap_Struct(rb_cRuggedTreeEntry, NULL, NULL, entry);
-	/* TODO: attributes? */
+	entry = malloc(sizeof(rugged_tree_entry));
+	if (entry == NULL)
+		rb_raise(rb_eNoMemError, "out of memory");
 
-	return obj;
+	entry->entry = c_entry;
+	entry->tree = tree;
+
+	return Data_Wrap_Struct(rb_cRuggedTreeEntry, 
+			rb_git_tree_entry__mark, rb_git_tree_entry__free, entry);
 }
 
 static VALUE rb_git_tree_entry_attributes_GET(VALUE self)
 {
-	git_tree_entry *tree_entry;
-	Data_Get_Struct(self, git_tree_entry, tree_entry);
+	rugged_tree_entry *tree_entry;
+	Data_Get_Struct(self, rugged_tree_entry, tree_entry);
 
-	return INT2FIX(git_tree_entry_attributes(tree_entry));
+	return INT2FIX(git_tree_entry_attributes(tree_entry->entry));
 }
 
 static VALUE rb_git_tree_entry_attributes_SET(VALUE self, VALUE val)
 {
-	git_tree_entry *tree_entry;
-	Data_Get_Struct(self, git_tree_entry, tree_entry);
+	rugged_tree_entry *tree_entry;
+	Data_Get_Struct(self, rugged_tree_entry, tree_entry);
 
 	Check_Type(val, T_FIXNUM);
-	git_tree_entry_set_attributes(tree_entry, FIX2INT(val));
+	git_tree_entry_set_attributes(tree_entry->entry, FIX2INT(val));
 	return Qnil;
 }
 
 static VALUE rb_git_tree_entry_name_GET(VALUE self)
 {
-	git_tree_entry *tree_entry;
-	Data_Get_Struct(self, git_tree_entry, tree_entry);
+	rugged_tree_entry *tree_entry;
+	Data_Get_Struct(self, rugged_tree_entry, tree_entry);
 
-	return rb_str_new2(git_tree_entry_name(tree_entry));
+	return rb_str_new2(git_tree_entry_name(tree_entry->entry));
 }
 
 static VALUE rb_git_tree_entry_name_SET(VALUE self, VALUE val)
 {
-	git_tree_entry *tree_entry;
-	Data_Get_Struct(self, git_tree_entry, tree_entry);
+	rugged_tree_entry *tree_entry;
+	Data_Get_Struct(self, rugged_tree_entry, tree_entry);
 
 	Check_Type(val, T_STRING);
-	git_tree_entry_set_name(tree_entry, RSTRING_PTR(val));
+	git_tree_entry_set_name(tree_entry->entry, RSTRING_PTR(val));
 	return Qnil;
 }
 
 static VALUE rb_git_tree_entry_sha_GET(VALUE self)
 {
-	git_tree_entry *tree_entry;
+	rugged_tree_entry *tree_entry;
 	char out[40];
-	Data_Get_Struct(self, git_tree_entry, tree_entry);
+	Data_Get_Struct(self, rugged_tree_entry, tree_entry);
 
-	git_oid_fmt(out, git_tree_entry_id(tree_entry));
+	git_oid_fmt(out, git_tree_entry_id(tree_entry->entry));
 	return rb_str_new(out, 40);
 }
 
 static VALUE rb_git_tree_entry_sha_SET(VALUE self, VALUE val)
 {
-	git_tree_entry *tree_entry;
+	rugged_tree_entry *tree_entry;
 	git_oid id;
-	Data_Get_Struct(self, git_tree_entry, tree_entry);
+	Data_Get_Struct(self, rugged_tree_entry, tree_entry);
 
 	Check_Type(val, T_STRING);
 	if (git_oid_mkstr(&id, RSTRING_PTR(val)) < 0)
 		rb_raise(rb_eTypeError, "Invalid SHA1 value");
-	git_tree_entry_set_id(tree_entry, &id);
+	git_tree_entry_set_id(tree_entry->entry, &id);
 	return Qnil;
 }
 
 static VALUE rb_git_tree_entry_2object(VALUE self)
 {
-	git_tree_entry *tree_entry;
+	rugged_tree_entry *tree_entry;
+	rugged_object *owner_tree;
 	git_object *object;
 	int error;
 
-	Data_Get_Struct(self, git_tree_entry, tree_entry);
+	Data_Get_Struct(self, rugged_tree_entry, tree_entry);
+	Data_Get_Struct(tree_entry->tree, rugged_object, owner_tree);
 
-	error = git_tree_entry_2object(&object, tree_entry);
+	error = git_tree_entry_2object(&object, tree_entry->entry);
 	rugged_exception_check(error);
 
-	return rugged_object_c2rb(object);
+	return rugged_object_new(owner_tree->owner, object);
 }
 
 
@@ -135,12 +148,6 @@ static VALUE rb_git_tree_entry_2object(VALUE self)
 /*
  * Rugged Tree
  */
-static VALUE rb_git_tree_allocate(VALUE klass)
-{
-	git_tree *tree = NULL;
-	return Data_Wrap_Struct(klass, NULL, NULL, tree);
-}
-
 static VALUE rb_git_tree_init(int argc, VALUE *argv, VALUE self)
 {
 	return rb_git_object_init(GIT_OBJ_TREE, argc, argv, self);
@@ -149,7 +156,7 @@ static VALUE rb_git_tree_init(int argc, VALUE *argv, VALUE self)
 static VALUE rb_git_tree_entrycount(VALUE self)
 {
 	git_tree *tree;
-	Data_Get_Struct(self, git_tree, tree);
+	RUGGED_OBJ_UNWRAP(self, git_tree, tree);
 
 	return INT2FIX(git_tree_entrycount(tree));
 }
@@ -157,13 +164,13 @@ static VALUE rb_git_tree_entrycount(VALUE self)
 static VALUE rb_git_tree_get_entry(VALUE self, VALUE entry_id)
 {
 	git_tree *tree;
-	Data_Get_Struct(self, git_tree, tree);
+	RUGGED_OBJ_UNWRAP(self, git_tree, tree);
 
 	if (TYPE(entry_id) == T_FIXNUM)
-		return rb_git_createentry((git_tree_entry *)git_tree_entry_byindex(tree, FIX2INT(entry_id)));
+		return rb_git_createentry(self, git_tree_entry_byindex(tree, FIX2INT(entry_id)));
 
 	else if (TYPE(entry_id) == T_STRING)
-		return rb_git_createentry((git_tree_entry *)git_tree_entry_byname(tree, RSTRING_PTR(entry_id)));
+		return rb_git_createentry(self, git_tree_entry_byname(tree, RSTRING_PTR(entry_id)));
 
 	else
 		rb_raise(rb_eTypeError, "entry_id must be either an index or a filename");
@@ -176,8 +183,6 @@ void Init_rugged_tree()
 	 * Tree entry 
 	 */
 	rb_cRuggedTreeEntry = rb_define_class_under(rb_mRugged, "TreeEntry", rb_cObject);
-	rb_define_alloc_func(rb_cRuggedTreeEntry, rb_git_treeentry_allocate);
-	// rb_define_method(rb_cRuggedTreeEntry, "initialize", rb_git_treeentry_allocate, -1);
 	rb_define_method(rb_cRuggedTreeEntry, "to_object", rb_git_tree_entry_2object, 0);
 
 	rb_define_method(rb_cRuggedTreeEntry, "name", rb_git_tree_entry_name_GET, 0);
@@ -194,7 +199,6 @@ void Init_rugged_tree()
 	 * Tree
 	 */
 	rb_cRuggedTree = rb_define_class_under(rb_mRugged, "Tree", rb_cRuggedObject);
-	rb_define_alloc_func(rb_cRuggedTree, rb_git_tree_allocate);
 	rb_define_method(rb_cRuggedTree, "initialize", rb_git_tree_init, -1);
 	rb_define_method(rb_cRuggedTree, "entry_count", rb_git_tree_entrycount, 0);
 	rb_define_method(rb_cRuggedTree, "get_entry", rb_git_tree_get_entry, 1);

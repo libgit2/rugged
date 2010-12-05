@@ -29,7 +29,7 @@ context "Rugged::Repository stuff" do
 
   test "can hash data" do
     content = "my test data\n"
-    sha = @repo.hash(content, "blob")
+    sha = Rugged::Repository::hash(content, "blob")
     assert_equal "76b1b55ab653581d6f2c7230d34098e837197674", sha
     assert !@repo.exists("76b1b55ab653581d6f2c7230d34098e837197674")
   end

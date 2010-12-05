@@ -28,6 +28,7 @@
 extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedIndex;
 extern VALUE rb_cRuggedBackend;
+
 VALUE rb_cRuggedRepo;
 VALUE rb_cRuggedRawObject;
 
@@ -53,17 +54,39 @@ VALUE rugged_raw_read(git_repository *repo, const git_oid *oid)
 	return rb_class_new_instance(3, ret_args, rb_cRuggedRawObject);
 }
 
+void rb_git_repo__free(rugged_repository *repo)
+{
+	git_repository_free(repo->repo);
+	free(repo);
+}
+
+void rb_git_repo__mark(rugged_repository *repo)
+{
+	int i;
+
+	for (i = 0; i < rb_ary_length(repo->backends); ++i)
+		rb_gc_mark(rb_ary_entry(repo->backends, i));
+}
+
 static VALUE rb_git_repo_allocate(VALUE klass)
 {
-	git_repository *repo = NULL;
-	return Data_Wrap_Struct(klass, NULL, NULL, repo);
+	rugged_repository *repo;
+
+	repo = malloc(sizeof(rugged_repository));
+	if (repo == NULL)
+		rb_raise(rb_eNoMemError, "out of memory");
+
+	repo->repo = NULL;
+	repo->backends = rb_ary_new();
+
+	return Data_Wrap_Struct(klass, rb_git_repo__mark, rb_git_repo__free, repo);
 }
 
 static VALUE rb_git_repo_init(int argc, VALUE *argv, VALUE self)
 {
+	rugged_repository *r_repo;
 	git_repository *repo;
 	int error = 0;
-
 	VALUE rb_dir, rb_obj_dir, rb_index_file, rb_work_tree;
 
 	if (rb_scan_args(argc, argv, "13", 
@@ -104,18 +127,21 @@ static VALUE rb_git_repo_init(int argc, VALUE *argv, VALUE self)
 	}
 
 	rugged_exception_check(error);
+	assert(repo);
 
-	DATA_PTR(self) = repo;
+	Data_Get_Struct(self, rugged_repository, r_repo);
+	r_repo->repo = repo;
+
 	return Qnil;
 }
 
 static VALUE rb_git_repo_add_backend(VALUE self, VALUE rb_backend)
 {
-	git_repository *repo;
+	rugged_repository *repo;
 	rugged_backend *backend;
 	int error;
 
-	Data_Get_Struct(self, git_repository, repo);
+	Data_Get_Struct(self, rugged_repository, repo);
 
 	if (!rb_obj_is_kind_of(rb_backend, rb_cRuggedBackend))
 		raise(rb_eTypeError, "expecting a subclass of Rugged::Backend");
@@ -125,34 +151,35 @@ static VALUE rb_git_repo_add_backend(VALUE self, VALUE rb_backend)
 
 	Data_Get_Struct(rb_backend, rugged_backend, backend);
 
-	error = git_odb_add_backend(git_repository_database(repo), (git_odb_backend *)backend);
+	error = git_odb_add_backend(git_repository_database(repo->repo), (git_odb_backend *)backend);
 	rugged_exception_check(error);
+
+	rb_ary_push(repo->backends, rb_backend);
 
 	return Qnil;
 }
 
 static VALUE rb_git_repo_index(VALUE self)
 {
-	git_repository *repo;
+	rugged_repository *repo;
 	git_index *index;
+	Data_Get_Struct(self, rugged_repository, repo);
 
-	Data_Get_Struct(self, git_repository, repo);
-
-	if ((index = git_repository_index(repo)) == NULL)
+	if ((index = git_repository_index(repo->repo)) == NULL)
 		rb_raise(rb_eRuntimeError, "failed to open Index file");
 
-	return Data_Wrap_Struct(rb_cRuggedIndex, NULL, NULL, index);
+	return rugged_index_new(self, index);
 }
 
 static VALUE rb_git_repo_exists(VALUE self, VALUE hex)
 {
-	git_repository *repo;
+	rugged_repository *repo;
 	git_odb *odb;
 	git_oid oid;
 
-	Data_Get_Struct(self, git_repository, repo);
+	Data_Get_Struct(self, rugged_repository, repo);
 
-	odb = git_repository_database(repo);
+	odb = git_repository_database(repo->repo);
 	git_oid_mkstr(&oid, RSTRING_PTR(hex));
 
 	return git_odb_exists(odb, &oid) ? Qtrue : Qfalse;
@@ -160,18 +187,19 @@ static VALUE rb_git_repo_exists(VALUE self, VALUE hex)
 
 static VALUE rb_git_repo_read(VALUE self, VALUE hex)
 {
-	git_repository *repo;
+	rugged_repository *repo;
 	git_oid oid;
 	int error;
 
-	Data_Get_Struct(self, git_repository, repo);
+	Data_Get_Struct(self, rugged_repository, repo);
 
 	error = git_oid_mkstr(&oid, RSTRING_PTR(hex));
 	rugged_exception_check(error);
 
-	return rugged_raw_read(repo, &oid);
+	return rugged_raw_read(repo->repo, &oid);
 }
 
+/* TODO: RuggedRawObject */
 static VALUE rb_git_repo_obj_hash(VALUE self, VALUE content, VALUE type)
 {
 	git_rawobj obj;
@@ -190,17 +218,18 @@ static VALUE rb_git_repo_obj_hash(VALUE self, VALUE content, VALUE type)
 	return rb_str_new(out, 40);
 }
 
+/* TODO: RuggedRawObject */
 static VALUE rb_git_repo_write(VALUE self, VALUE content, VALUE type)
 {
-	git_repository *repo;
+	rugged_repository *repo;
 	git_odb *odb;
 	git_rawobj obj;
 	git_oid oid;
 	int error;
 	char out[40];
 
-	Data_Get_Struct(self, git_repository, repo);
-	odb = git_repository_database(repo);
+	Data_Get_Struct(self, rugged_repository, repo);
+	odb = git_repository_database(repo->repo);
 
 	obj.data = RSTRING_PTR(content);
 	obj.len  = RSTRING_LEN(content);
@@ -215,7 +244,7 @@ static VALUE rb_git_repo_write(VALUE self, VALUE content, VALUE type)
 
 static VALUE rb_git_repo_lookup(int argc, VALUE *argv, VALUE self)
 {
-	git_repository *repo;
+	rugged_repository *repo;
 	git_otype type;
 	git_object *obj;
 	git_oid oid;
@@ -223,17 +252,17 @@ static VALUE rb_git_repo_lookup(int argc, VALUE *argv, VALUE self)
 
 	VALUE rb_type, rb_sha;
 
-	Data_Get_Struct(self, git_repository, repo);
+	Data_Get_Struct(self, rugged_repository, repo);
 
 	rb_scan_args(argc, argv, "11", &rb_sha, &rb_type);
 
 	type = NIL_P(rb_type) ? GIT_OBJ_ANY : FIX2INT(rb_type);
 	git_oid_mkstr(&oid, RSTRING_PTR(rb_sha));
 
-	error = git_repository_lookup(&obj, repo, &oid, type);
+	error = git_repository_lookup(&obj, repo->repo, &oid, type);
 	rugged_exception_check(error);
 
-	return obj ? rugged_object_c2rb(obj) : Qnil;
+	return obj ? rugged_object_new(self, obj) : Qnil;
 }
 
 
@@ -243,12 +272,13 @@ void Init_rugged_repo()
 	rb_define_alloc_func(rb_cRuggedRepo, rb_git_repo_allocate);
 	rb_define_method(rb_cRuggedRepo, "initialize", rb_git_repo_init, -1);
 	rb_define_method(rb_cRuggedRepo, "exists", rb_git_repo_exists, 1);
-	rb_define_method(rb_cRuggedRepo, "hash",   rb_git_repo_obj_hash,  2);
 	rb_define_method(rb_cRuggedRepo, "read",   rb_git_repo_read,   1);
 	rb_define_method(rb_cRuggedRepo, "write",  rb_git_repo_write,  2);
 	rb_define_method(rb_cRuggedRepo, "lookup", rb_git_repo_lookup,  -1);
 	rb_define_method(rb_cRuggedRepo, "index",  rb_git_repo_index,  0);
 	rb_define_method(rb_cRuggedRepo, "add_backend",  rb_git_repo_add_backend,  1);
+
+	rb_define_singleton_method(rb_cRuggedRepo, "hash",   rb_git_repo_obj_hash,  2);
 
 	rb_cRuggedRawObject = rb_define_class_under(rb_mRugged, "RawObject", rb_cObject);
 }

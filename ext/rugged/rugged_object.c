@@ -33,7 +33,7 @@ extern VALUE rb_cRuggedBlob;
 
 VALUE rb_cRuggedObject;
 
-git_object *rugged_object_rb2c(git_repository *repo, VALUE object_value, git_otype type)
+git_object *rugged_object_get(git_repository *repo, VALUE object_value, git_otype type)
 {
 	git_object *object = NULL;
 
@@ -46,7 +46,7 @@ git_object *rugged_object_rb2c(git_repository *repo, VALUE object_value, git_oty
 		rugged_exception_check(error);
 
 	} else if (rb_obj_is_kind_of(object_value, rb_cRuggedObject)) {
-		Data_Get_Struct(object_value, git_object, object);
+		RUGGED_OBJ_UNWRAP(object_value, git_object, object);
 
 		if (type != GIT_OBJ_ANY && git_object_type(object) != type)
 			rb_raise(rb_eTypeError, "Object is not of the required type");
@@ -58,11 +58,32 @@ git_object *rugged_object_rb2c(git_repository *repo, VALUE object_value, git_oty
 	return object;
 }
 
-VALUE rugged_object_c2rb(git_object *object)
+void rb_git_object__free(rugged_object *o)
 {
+	/* 
+	 * FIXME:
+	 * Manually remove the object from the repository cache?
+	 *
+	 * If we don't this manually, the object will get removed
+	 * when the owner repository is free'd.
+	 */
+
+	// git_object_free(o->object);
+	free(o);
+}
+
+void rb_git_object__mark(rugged_object *o)
+{
+	/* The Repository doesn't go away as long
+	 * as we still have objects lying around */
+	rb_gc_mark(o->owner);
+}
+
+VALUE rugged_object_new(VALUE rb_repo, git_object *object)
+{
+	rugged_object *r_object;
 	git_otype type;
-	char sha1[40];
-	VALUE obj, klass;
+	VALUE klass;
 
 	type = git_object_type(object);
 
@@ -89,18 +110,59 @@ VALUE rugged_object_c2rb(git_object *object)
 			break;
 	}
 
-	obj = Data_Wrap_Struct(klass, NULL, NULL, object);
+	r_object = malloc(sizeof(rugged_object));
+	if (r_object == NULL)
+		rb_raise(rb_eNoMemError, "out of memory");
 
-	git_oid_fmt(sha1, git_object_id(object));
+	r_object->object = object;
+	r_object->owner = rb_repo;
 
-	return obj;
+	return Data_Wrap_Struct(klass, rb_git_object__mark, rb_git_object__free, r_object);
 }
 
 static VALUE rb_git_object_allocate(VALUE klass)
 {
-	git_object *object = NULL;
-	return Data_Wrap_Struct(klass, NULL, NULL, object);
+	rugged_object *object;
+
+	object = malloc(sizeof(rugged_object));
+	if (object == NULL)
+		rb_raise(rb_eNoMemError, "out of memory");
+
+	object->object = NULL;
+	object->owner = Qnil;
+
+	return Data_Wrap_Struct(klass, rb_git_object__mark, rb_git_object__free, object);
 }
+
+VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE self)
+{
+	git_object *object;
+	rugged_object *r_obj;
+	rugged_repository *repo;
+	VALUE rb_repo, hex;
+	int error;
+
+	rb_scan_args(argc, argv, "11", &rb_repo, &hex);
+	Data_Get_Struct(rb_repo, rugged_repository, repo);
+
+	if (NIL_P(hex)) {
+		error = git_repository_newobject(&object, repo->repo, type);
+		rugged_exception_check(error);
+	} else {
+		git_oid oid;
+
+		git_oid_mkstr(&oid, RSTRING_PTR(hex));
+		error = git_repository_lookup(&object, repo->repo, &oid, type);
+		rugged_exception_check(error);
+	}
+
+	Data_Get_Struct(self, rugged_object, r_obj);
+	r_obj->object = object;
+	r_obj->owner = rb_repo;
+
+	return Qnil;
+}
+
 
 static VALUE rb_git_object_equal(VALUE self, VALUE other)
 {
@@ -109,8 +171,8 @@ static VALUE rb_git_object_equal(VALUE self, VALUE other)
 	if (!rb_obj_is_kind_of(other, rb_cRuggedObject))
 		return Qfalse;
 
-	Data_Get_Struct(self, git_object, a);
-	Data_Get_Struct(other, git_object, b);
+	RUGGED_OBJ_UNWRAP(self, git_object, a);
+	RUGGED_OBJ_UNWRAP(other, git_object, b);
 
 	return git_oid_cmp(git_object_id(a), git_object_id(b)) == 0 ? Qtrue : Qfalse;
 }
@@ -120,7 +182,7 @@ static VALUE rb_git_object_sha_GET(VALUE self)
 	git_object *object;
 	char hex[40];
 
-	Data_Get_Struct(self, git_object, object);
+	RUGGED_OBJ_UNWRAP(self, git_object, object);
 
 	git_oid_fmt(hex, git_object_id(object));
 	return rb_str_new(hex, 40);
@@ -129,40 +191,15 @@ static VALUE rb_git_object_sha_GET(VALUE self)
 static VALUE rb_git_object_type_GET(VALUE self)
 {
 	git_object *object;
-	Data_Get_Struct(self, git_object, object);
+	RUGGED_OBJ_UNWRAP(self, git_object, object);
 
 	return rb_str_new2(git_object_type2string(git_object_type(object)));
-}
-
-VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE self)
-{
-	git_repository *repo;
-	git_object *object;
-	VALUE rb_repo, hex;
-	int error;
-
-	rb_scan_args(argc, argv, "11", &rb_repo, &hex);
-	Data_Get_Struct(rb_repo, git_repository, repo);
-
-	if (NIL_P(hex)) {
-		error = git_repository_newobject(&object, repo, type);
-		rugged_exception_check(error);
-	} else {
-		git_oid oid;
-
-		git_oid_mkstr(&oid, RSTRING_PTR(hex));
-		error = git_repository_lookup(&object, repo, &oid, type);
-		rugged_exception_check(error);
-	}
-
-	DATA_PTR(self) = object;
-	return Qnil;
 }
 
 static VALUE rb_git_object_read_raw(VALUE self)
 {
 	git_object *object;
-	Data_Get_Struct(self, git_object, object);
+	RUGGED_OBJ_UNWRAP(self, git_object, object);
 
 	return rugged_raw_read(git_object_owner(object), git_object_id(object));
 }
@@ -174,7 +211,7 @@ static VALUE rb_git_object_write(VALUE self)
 	VALUE sha;
 	int error;
 
-	Data_Get_Struct(self, git_object, object);
+	RUGGED_OBJ_UNWRAP(self, git_object, object);
 
 	error = git_object_write(object);
 	rugged_exception_check(error);

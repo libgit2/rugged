@@ -29,12 +29,6 @@ extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedObject;
 VALUE rb_cRuggedBlob;
 
-static VALUE rb_git_blob_allocate(VALUE klass)
-{
-	git_blob *blob = NULL;
-	return Data_Wrap_Struct(klass, NULL, NULL, blob);
-}
-
 static VALUE rb_git_blob_init(int argc, VALUE *argv, VALUE self)
 {
 	return rb_git_object_init(GIT_OBJ_BLOB, argc, argv, self);
@@ -43,7 +37,7 @@ static VALUE rb_git_blob_init(int argc, VALUE *argv, VALUE self)
 static VALUE rb_git_blob_content_SET(VALUE self, VALUE rb_contents)
 {
 	git_blob *blob;
-	Data_Get_Struct(self, git_blob, blob);
+	RUGGED_OBJ_UNWRAP(self, git_blob, blob);
 
 	Check_Type(rb_contents, T_STRING);
 	git_blob_set_rawcontent(blob, RSTRING_PTR(rb_contents), RSTRING_LEN(rb_contents));
@@ -56,7 +50,7 @@ static VALUE rb_git_blob_content_GET(VALUE self)
 	git_blob *blob;
 	int size;
 
-	Data_Get_Struct(self, git_blob, blob);
+	RUGGED_OBJ_UNWRAP(self, git_blob, blob);
 	
 	size = git_blob_rawsize(blob);
 	if (size == 0)
@@ -68,7 +62,7 @@ static VALUE rb_git_blob_content_GET(VALUE self)
 static VALUE rb_git_blob_rawsize(VALUE self)
 {
 	git_blob *blob;
-	Data_Get_Struct(self, git_blob, blob);
+	RUGGED_OBJ_UNWRAP(self, git_blob, blob);
 
 	return INT2FIX(git_blob_rawsize(blob));
 }
@@ -76,7 +70,6 @@ static VALUE rb_git_blob_rawsize(VALUE self)
 void Init_rugged_blob()
 {
 	rb_cRuggedBlob = rb_define_class_under(rb_mRugged, "Blob", rb_cRuggedObject);
-	rb_define_alloc_func(rb_cRuggedBlob, rb_git_blob_allocate);
 	rb_define_method(rb_cRuggedBlob, "initialize", rb_git_blob_init, -1);
 
 	rb_define_method(rb_cRuggedBlob, "size", rb_git_blob_rawsize, 0);

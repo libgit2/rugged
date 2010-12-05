@@ -32,40 +32,77 @@ VALUE rb_cRuggedIndexEntry;
 /*
  * Index
  */
+
+void rb_git_index__mark(rugged_index *index)
+{
+	if (index->owner != Qnil)
+		rb_gc_mark(index->owner);
+}
+
+void rb_git_index__free(rugged_index *index)
+{
+	if (index->owner == Qnil)
+		git_index_free(index->index);
+}
+
+VALUE rugged_index_new(VALUE owner, git_index *gindex)
+{
+	rugged_index *index = NULL;
+
+	index = malloc(sizeof(rugged_index));
+	if (index == NULL)
+		rb_raise(rb_eNoMemError, "out of memory");
+
+	index->index = gindex;
+	index->owner = owner;
+
+	return Data_Wrap_Struct(rb_cRuggedIndex, rb_git_index__mark, rb_git_index__free, index);
+}
+
 static VALUE rb_git_index_allocate(VALUE klass)
 {
-	git_index *index = NULL;
-	return Data_Wrap_Struct(klass, NULL, NULL, index);
+	rugged_index *index = NULL;
+
+	index = malloc(sizeof(rugged_index));
+	if (index == NULL)
+		rb_raise(rb_eNoMemError, "out of memory");
+
+	index->index = NULL;
+	index->owner = Qnil;
+
+	return Data_Wrap_Struct(klass, rb_git_index__mark, rb_git_index__free, index);
 }
 
 static VALUE rb_git_index_init(VALUE self, VALUE path)
 {
-	git_index *index;
+	rugged_index *index;
 	int error;
 
-	error = git_index_open_bare(&index, RSTRING_PTR(path));
+	Data_Get_Struct(self, rugged_index, index);
+
+	Check_Type(path, T_STRING);
+	error = git_index_open_bare(&index->index, RSTRING_PTR(path));
 	rugged_exception_check(error);
 
-	DATA_PTR(self) = index;
 	return Qnil;
 }
 
 static VALUE rb_git_index_clear(VALUE self)
 {
-	git_index *index;
-	Data_Get_Struct(self, git_index, index);
-	git_index_clear(index);
+	rugged_index *index;
+	Data_Get_Struct(self, rugged_index, index);
+	git_index_clear(index->index);
 	return Qnil;
 }
 
 static VALUE rb_git_index_read(VALUE self)
 {
-	git_index *index;
+	rugged_index *index;
 	int error;
 
-	Data_Get_Struct(self, git_index, index);
+	Data_Get_Struct(self, rugged_index, index);
 
-	error = git_index_read(index);
+	error = git_index_read(index->index);
 	rugged_exception_check(error);
 
 	return Qnil;
@@ -73,12 +110,12 @@ static VALUE rb_git_index_read(VALUE self)
 
 static VALUE rb_git_index_write(VALUE self)
 {
-	git_index *index;
+	rugged_index *index;
 	int error;
 
-	Data_Get_Struct(self, git_index, index);
+	Data_Get_Struct(self, rugged_index, index);
 
-	error = git_index_write(index);
+	error = git_index_write(index->index);
 	rugged_exception_check(error);
 		
 	return Qnil;
@@ -94,35 +131,35 @@ static VALUE rb_git_indexentry_new(git_index_entry *entry)
 
 static VALUE rb_git_index_get_entry_count(VALUE self)
 {
-	git_index *index;
-	Data_Get_Struct(self, git_index, index);
-	return INT2FIX(git_index_entrycount(index));
+	rugged_index *index;
+	Data_Get_Struct(self, rugged_index, index);
+	return INT2FIX(git_index_entrycount(index->index));
 }
 
 static VALUE rb_git_index_get(VALUE self, VALUE entry)
 {
-	git_index *index;
-	Data_Get_Struct(self, git_index, index);
+	rugged_index *index;
+	Data_Get_Struct(self, rugged_index, index);
 
 	if (TYPE(entry) == T_STRING)
-		entry = INT2FIX(git_index_find(index, RSTRING_PTR(entry)));
+		entry = INT2FIX(git_index_find(index->index, RSTRING_PTR(entry)));
 
 	Check_Type(entry, T_FIXNUM);
-	return rb_git_indexentry_new(git_index_get(index, FIX2INT(entry)));
+	return rb_git_indexentry_new(git_index_get(index->index, FIX2INT(entry)));
 }
 
 static VALUE rb_git_index_remove(VALUE self, VALUE entry)
 {
-	git_index *index;
+	rugged_index *index;
 	int error;
-	Data_Get_Struct(self, git_index, index);
+	Data_Get_Struct(self, rugged_index, index);
 
 	if (TYPE(entry) == T_STRING)
-		entry = INT2FIX(git_index_find(index, RSTRING_PTR(entry)));
+		entry = INT2FIX(git_index_find(index->index, RSTRING_PTR(entry)));
 
 	Check_Type(entry, T_FIXNUM);
 	
-	error = git_index_remove(index, FIX2INT(entry));
+	error = git_index_remove(index->index, FIX2INT(entry));
 	rugged_exception_check(error);
 
 	return Qnil;
@@ -130,17 +167,17 @@ static VALUE rb_git_index_remove(VALUE self, VALUE entry)
 
 static VALUE rb_git_index_add(VALUE self, VALUE rb_entry)
 {
-	git_index *index;
+	rugged_index *index;
 	git_index_entry *entry;
 	int error;
 
-	Data_Get_Struct(self, git_index, index);
+	Data_Get_Struct(self, rugged_index, index);
 
 	if (rb_obj_is_kind_of(rb_entry, rb_cRuggedIndexEntry)) {
 		Data_Get_Struct(rb_entry, git_index_entry, entry);
-		error = git_index_insert(index, entry);
+		error = git_index_insert(index->index, entry);
 	} else if (TYPE(rb_entry) == T_STRING) {
-		error = git_index_add(index, RSTRING_PTR(rb_entry), 0);
+		error = git_index_add(index->index, RSTRING_PTR(rb_entry), 0);
 	} else {
 		rb_raise(rb_eTypeError, 
 			"index_entry must be an existing IndexEntry object or a path to a file in the repository");
@@ -157,11 +194,17 @@ static VALUE rb_git_index_add(VALUE self, VALUE rb_entry)
  * Index Entry
  */
 
+void rb_git_indexentry__free(git_index_entry *entry)
+{
+	free(entry->path);
+	free(entry);
+}
+
 static VALUE rb_git_indexentry_allocate(VALUE klass)
 {
 	git_index_entry *index_entry = malloc(sizeof(git_index_entry));
 	memset(index_entry, 0x0, sizeof(git_index_entry));
-	return Data_Wrap_Struct(klass, NULL, NULL, index_entry);
+	return Data_Wrap_Struct(klass, NULL, rb_git_indexentry__free, index_entry);
 }
 
 static VALUE rb_git_indexentry_init(VALUE self, VALUE path, VALUE working_dir)
@@ -393,7 +436,7 @@ void Init_rugged_index()
 	rb_define_method(rb_cRuggedIndexEntry, "stage", rb_git_indexentry_stage_GET, 0);
 	rb_define_method(rb_cRuggedIndexEntry, "stage=", rb_git_indexentry_stage_SET, 1);
 
-  rb_const_set(rb_cRuggedIndexEntry, rb_intern("FLAGS_STAGE"), INT2FIX(GIT_IDXENTRY_STAGEMASK));
-  rb_const_set(rb_cRuggedIndexEntry, rb_intern("FLAGS_STAGE_SHIFT"), INT2FIX(GIT_IDXENTRY_STAGESHIFT));
-  rb_const_set(rb_cRuggedIndexEntry, rb_intern("FLAGS_VALID"), INT2FIX(GIT_IDXENTRY_VALID));
+	rb_const_set(rb_cRuggedIndexEntry, rb_intern("FLAGS_STAGE"), INT2FIX(GIT_IDXENTRY_STAGEMASK));
+	rb_const_set(rb_cRuggedIndexEntry, rb_intern("FLAGS_STAGE_SHIFT"), INT2FIX(GIT_IDXENTRY_STAGESHIFT));
+	rb_const_set(rb_cRuggedIndexEntry, rb_intern("FLAGS_VALID"), INT2FIX(GIT_IDXENTRY_VALID));
 }

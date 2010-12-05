@@ -125,7 +125,7 @@ int rugged_backend__generic_read(int header_only, git_rawobj *obj, git_odb_backe
 
 		obj->data = malloc(obj->len);
 		if (obj->data == NULL)
-			rb_raise(rb_eRuntimeError, "out of memory");
+			rb_raise(rb_eNoMemError, "out of memory");
 
 		memcpy(obj->data, RSTRING_PTR(rb_data), obj->len);
 	}
@@ -150,10 +150,6 @@ void rugged_backend__free(git_odb_backend *backend)
 
 void rugged_backend__gcfree(void *data)
 {
-	/* 
-	 * TODO: make sure that the ODB which owns us
-	 * marks us as alive!!!!!!
-	 */
 	free(data);
 }
 
@@ -176,7 +172,7 @@ static VALUE rb_git_backend_allocate(VALUE klass)
 
 	backend = calloc(1, sizeof(rugged_backend));
 	if (backend == NULL)
-		rb_raise(rb_eRuntimeError, "out of memory");
+		rb_raise(rb_eNoMemError, "out of memory");
 
 	backend->parent.read = &rugged_backend__read;
 	backend->parent.read_header = &rugged_backend__read_header;

@@ -29,12 +29,6 @@ extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedObject;
 VALUE rb_cRuggedTag;
 
-static VALUE rb_git_tag_allocate(VALUE klass)
-{
-	git_tag *tag = NULL;
-	return Data_Wrap_Struct(klass, NULL, NULL, tag);
-}
-
 static VALUE rb_git_tag_init(int argc, VALUE *argv, VALUE self)
 {
 	return rb_git_object_init(GIT_OBJ_TAG, argc, argv, self);
@@ -43,18 +37,21 @@ static VALUE rb_git_tag_init(int argc, VALUE *argv, VALUE self)
 static VALUE rb_git_tag_target_GET(VALUE self)
 {
 	git_tag *tag;
-	Data_Get_Struct(self, git_tag, tag);
+	VALUE owner;
 
-	return rugged_object_c2rb((git_object*)git_tag_target(tag));
+	RUGGED_OBJ_UNWRAP(self, git_tag, tag);
+	RUGGED_OBJ_OWNER(self, owner);
+
+	return rugged_object_new(owner, (git_object*)git_tag_target(tag));
 }
 
 static VALUE rb_git_tag_target_SET(VALUE self, VALUE val)
 {
 	git_tag *tag;
 	git_object *target;
-	Data_Get_Struct(self, git_tag, tag);
+	RUGGED_OBJ_UNWRAP(self, git_tag, tag);
 
-	target = rugged_object_rb2c(git_object_owner((git_object *)tag), val, GIT_OBJ_ANY);
+	target = rugged_object_get(git_object_owner((git_object *)tag), val, GIT_OBJ_ANY);
 	git_tag_set_target(tag, target);
 	return Qnil;
 }
@@ -62,7 +59,7 @@ static VALUE rb_git_tag_target_SET(VALUE self, VALUE val)
 static VALUE rb_git_tag_target_type_GET(VALUE self)
 {
 	git_tag *tag;
-	Data_Get_Struct(self, git_tag, tag);
+	RUGGED_OBJ_UNWRAP(self, git_tag, tag);
 
 	return rb_str_new2(git_object_type2string(git_tag_type(tag)));
 }
@@ -70,7 +67,7 @@ static VALUE rb_git_tag_target_type_GET(VALUE self)
 static VALUE rb_git_tag_name_GET(VALUE self)
 {
 	git_tag *tag;
-	Data_Get_Struct(self, git_tag, tag);
+	RUGGED_OBJ_UNWRAP(self, git_tag, tag);
 
 	return rb_str_new2(git_tag_name(tag));
 }
@@ -78,7 +75,7 @@ static VALUE rb_git_tag_name_GET(VALUE self)
 static VALUE rb_git_tag_name_SET(VALUE self, VALUE val)
 {
 	git_tag *tag;
-	Data_Get_Struct(self, git_tag, tag);
+	RUGGED_OBJ_UNWRAP(self, git_tag, tag);
 
 	Check_Type(val, T_STRING);
 	git_tag_set_name(tag, RSTRING_PTR(val));
@@ -89,10 +86,10 @@ static VALUE rb_git_tag_tagger_GET(VALUE self)
 {
 	git_tag *tag;
 	git_person *person;
-	Data_Get_Struct(self, git_tag, tag);
+	RUGGED_OBJ_UNWRAP(self, git_tag, tag);
 
 	person = (git_person *)git_tag_tagger(tag);
-	return rugged_person_c2rb(person);
+	return rugged_person_new(person);
 }
 
 static VALUE rb_git_tag_tagger_SET(VALUE self, VALUE rb_person)
@@ -100,9 +97,9 @@ static VALUE rb_git_tag_tagger_SET(VALUE self, VALUE rb_person)
 	const char *name, *email;
 	time_t time;
 	git_tag *tag;
-	Data_Get_Struct(self, git_tag, tag);
+	RUGGED_OBJ_UNWRAP(self, git_tag, tag);
 
-	rugged_person_rb2c(rb_person, &name, &email, &time);
+	rugged_person_get(rb_person, &name, &email, &time);
 	git_tag_set_tagger(tag, name, email, time);
 	return Qnil;
 }
@@ -110,7 +107,7 @@ static VALUE rb_git_tag_tagger_SET(VALUE self, VALUE rb_person)
 static VALUE rb_git_tag_message_GET(VALUE self)
 {
 	git_tag *tag;
-	Data_Get_Struct(self, git_tag, tag);
+	RUGGED_OBJ_UNWRAP(self, git_tag, tag);
 
 	return rb_str_new2(git_tag_message(tag));
 }
@@ -118,7 +115,7 @@ static VALUE rb_git_tag_message_GET(VALUE self)
 static VALUE rb_git_tag_message_SET(VALUE self, VALUE val)
 {
 	git_tag *tag;
-	Data_Get_Struct(self, git_tag, tag);
+	RUGGED_OBJ_UNWRAP(self, git_tag, tag);
 
 	Check_Type(val, T_STRING);
 	git_tag_set_message(tag, RSTRING_PTR(val));
@@ -129,7 +126,6 @@ static VALUE rb_git_tag_message_SET(VALUE self, VALUE val)
 void Init_rugged_tag()
 {
 	rb_cRuggedTag = rb_define_class_under(rb_mRugged, "Tag", rb_cRuggedObject);
-	rb_define_alloc_func(rb_cRuggedTag, rb_git_tag_allocate);
 	rb_define_method(rb_cRuggedTag, "initialize", rb_git_tag_init, -1);
 
 	rb_define_method(rb_cRuggedTag, "message", rb_git_tag_message_GET, 0);

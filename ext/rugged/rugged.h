@@ -50,15 +50,50 @@ VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE self);
 
 VALUE rugged_raw_read(git_repository *repo, const git_oid *oid);
 
-VALUE rugged_person_c2rb(git_person *person);
-VALUE rugged_object_c2rb(git_object *object);
+VALUE rugged_person_new(git_person *person);
+VALUE rugged_object_new(VALUE repository, git_object *object);
+VALUE rugged_index_new(VALUE owner, git_index *index);
 
-void rugged_person_rb2c(VALUE rb_person, const char **name_out, const char **email_out, unsigned long *time_out);
-git_object *rugged_object_rb2c(git_repository *repo, VALUE object_value, git_otype type);
+void rugged_person_get(VALUE rb_person, const char **name_out, const char **email_out, unsigned long *time_out);
+git_object *rugged_object_get(git_repository *repo, VALUE object_value, git_otype type);
 
-typedef struct rugged_backend {
+typedef struct {
 	git_odb_backend parent;
 	VALUE self;
 } rugged_backend;
+
+typedef struct {
+	git_object	*object;
+	VALUE owner;
+} rugged_object;
+
+typedef struct {
+	git_repository *repo;
+	VALUE backends;
+} rugged_repository;
+
+typedef struct {
+	git_index *index;
+	VALUE owner;
+} rugged_index;
+
+typedef struct {
+	git_revwalk *walk;
+	VALUE owner;
+} rugged_walker;
+
+
+#define RUGGED_OBJ_UNWRAP(_rb, _type, _c) {\
+	rugged_object *_rugged_obj; \
+	Data_Get_Struct(_rb, rugged_object, _rugged_obj); \
+	_c = (_type *)(_rugged_obj->object); \
+}
+
+#define RUGGED_OBJ_OWNER(_rb, _val) {\
+	rugged_object *_rugged_obj;\
+	Data_Get_Struct(_rb, rugged_object, _rugged_obj);\
+	_val = (_rugged_obj->owner);\
+}
+
 
 #endif
