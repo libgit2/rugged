@@ -97,7 +97,7 @@ void rb_git_repo__mark(rugged_repository *repo)
 {
 	int i;
 
-	for (i = 0; i < rb_ary_length(repo->backends); ++i)
+	for (i = 0; i < rb_ary_size(repo->backends); ++i)
 		rb_gc_mark(rb_ary_entry(repo->backends, i));
 }
 
