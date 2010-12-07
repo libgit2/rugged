@@ -45,6 +45,12 @@ context "Rugged::Walker stuff" do
     assert_equal sha, @walker.next.sha
   end
 
+  test "can enumerable" do
+    @walker.push("9fd738e8f7967c078dceed8190330fc8648ee56a")
+    enum = @walker.sort { |a, b| a.sha <=> b.sha }.map { |a| a.sha[0, 4] }.join('.')
+    assert_equal "4a20.5b5b.8496.9fd7", enum
+  end
+
   def do_sort(sorting)
     sha = "a4a7dce85cf63874e984719f4fdd239f5145052f"
     @walker.sorting(sorting)
