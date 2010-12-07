@@ -29,8 +29,8 @@
 #include <ruby.h>
 
 #include <assert.h>
-#include <git.h>
-#include <git/odb_backend.h>
+#include <git2.h>
+#include <git2/odb_backend.h>
 
 /*
  * Initialization functions 

@@ -24,7 +24,6 @@
  */
 
 #include "rugged.h"
-#include <git/odb_backend.h>
 
 extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedRawObject;
