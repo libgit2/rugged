@@ -86,7 +86,7 @@ int rugged_backend__generic_read(int header_only, git_rawobj *obj, git_odb_backe
 	char oid_out[40];
 
 	back = (rugged_backend *)_backend;
-	method = rb_intern(header_only ? "read_header" : "header");
+	method = rb_intern(header_only ? "read_header" : "read");
 
 	if (!rb_respond_to(back->self, method))
 		return GIT_ENOTFOUND;
