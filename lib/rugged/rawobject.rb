@@ -17,5 +17,9 @@ module Rugged
       @data = d
       @len = l || d.length 
     end
+
+    def hash
+      Repository::hash(self)
+    end
   end
 end

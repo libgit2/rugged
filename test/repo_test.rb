@@ -43,4 +43,11 @@ context "Rugged::Repository stuff" do
     rm_loose("76b1b55ab653581d6f2c7230d34098e837197674")
   end
 
+  test "can use the builtin walk method" do
+    sha = "a4a7dce85cf63874e984719f4fdd239f5145052f"
+    list = []
+    @repo.walk(sha) { |c| list << c }
+    assert list.map {|c| c.sha[0,5] }.join('.'), "a4a7d.c4780.9fd73.4a202.5b5b0.84960"
+  end
+
 end
