@@ -50,4 +50,9 @@ context "Rugged::Repository stuff" do
     assert list.map {|c| c.sha[0,5] }.join('.'), "a4a7d.c4780.9fd73.4a202.5b5b0.84960"
   end
 
+  test "garbage collection methods don't crash" do
+    Rugged::Repository.new(@path)
+    ObjectSpace.garbage_collect
+  end
+
 end
