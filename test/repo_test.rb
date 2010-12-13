@@ -10,6 +10,16 @@ context "Rugged::Repository stuff" do
     @obj = Rugged::RawObject.new('blob', content)
   end
 
+  test "fails to open unexisting repositories" do
+    assert_raise RuntimeError do
+      repo = Rugged::Repository.new("fakepath/123/")
+    end
+
+    assert_raise RuntimeError do
+      repo = Rugged::Repository.new("/home/")
+    end
+  end
+
   test "can tell if an object exists or not" do
     assert @repo.exists("8496071c1b46c854b31185ea97743be6a8774479")
     assert @repo.exists("1385f264afb75a56a5bec74243be9b367ba4ca08")
