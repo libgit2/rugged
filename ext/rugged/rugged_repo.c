@@ -177,10 +177,10 @@ static VALUE rb_git_repo_add_backend(VALUE self, VALUE rb_backend)
 	Data_Get_Struct(self, rugged_repository, repo);
 
 	if (!rb_obj_is_kind_of(rb_backend, rb_cRuggedBackend))
-		raise(rb_eTypeError, "expecting a subclass of Rugged::Backend");
+		rb_raise(rb_eTypeError, "expecting a subclass of Rugged::Backend");
 
 	if (rb_obj_is_instance_of(rb_backend, rb_cRuggedBackend))
-		raise(rb_eTypeError, "create a subclass of Rugged::Backend to define your custom backend");
+		rb_raise(rb_eTypeError, "create a subclass of Rugged::Backend to define your custom backend");
 
 	Data_Get_Struct(rb_backend, rugged_backend, backend);
 
