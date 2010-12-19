@@ -85,22 +85,17 @@ static VALUE rb_git_tag_name_SET(VALUE self, VALUE val)
 static VALUE rb_git_tag_tagger_GET(VALUE self)
 {
 	git_tag *tag;
-	git_person *person;
 	RUGGED_OBJ_UNWRAP(self, git_tag, tag);
 
-	person = (git_person *)git_tag_tagger(tag);
-	return rugged_person_new(person);
+	return rugged_signature_new(git_tag_tagger(tag));
 }
 
-static VALUE rb_git_tag_tagger_SET(VALUE self, VALUE rb_person)
+static VALUE rb_git_tag_tagger_SET(VALUE self, VALUE rb_sig)
 {
-	const char *name, *email;
-	time_t time;
 	git_tag *tag;
 	RUGGED_OBJ_UNWRAP(self, git_tag, tag);
 
-	rugged_person_get(rb_person, &name, &email, &time);
-	git_tag_set_tagger(tag, name, email, time);
+	git_tag_set_tagger(tag, rugged_signature_get(rb_sig));
 	return Qnil;
 }
 

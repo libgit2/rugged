@@ -26,7 +26,6 @@
 #include "rugged.h"
 
 VALUE rb_mRugged;
-VALUE rb_cRuggedPerson;
 
 static VALUE rb_git_hex_to_raw(VALUE self, VALUE hex)
 {
@@ -80,6 +79,8 @@ void Init_rugged()
 	rb_define_module_function(rb_mRugged, "type_to_string", rb_git_type_to_string, 1);
 	rb_define_module_function(rb_mRugged, "string_to_type", rb_git_string_to_type, 1);
 
+	Init_rugged_signature();
+
 	Init_rugged_object();
 	Init_rugged_commit();
 	Init_rugged_tree();
@@ -91,8 +92,6 @@ void Init_rugged()
 	Init_rugged_revwalk();
 
 	Init_rugged_backend();
-
-	rb_cRuggedPerson = rb_define_class_under(rb_mRugged, "Person", rb_cObject);
 
 	/* Constants */
 	rb_define_const(rb_mRugged, "SORT_NONE", INT2FIX(0));

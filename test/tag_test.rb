@@ -27,8 +27,7 @@ context "Rugged::Tag tests" do
     obj = @repo.lookup(sha)
     obj.message = 'new messages'
     obj.write
-    assert_equal "3213a37f636b81c3f91c77c6dbeab47c1d38490a", obj.sha
-    rm_loose('3213a37f636b81c3f91c77c6dbeab47c1d38490a')
+    rm_loose(obj.sha)
   end
 
 end

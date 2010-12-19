@@ -47,7 +47,7 @@ context "Rugged::Commit tests" do
     tree = @repo.lookup(tsha)
 
     obj = Rugged::Commit.new(@repo)
-    person = Rugged::Person.new('Scott', 'schacon@gmail.com', Time.now)
+    person = Rugged::Signature.new('Scott', 'schacon@gmail.com', Time.now)
 
     obj.message = 'new message'
     obj.author = person

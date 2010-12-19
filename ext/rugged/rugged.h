@@ -43,6 +43,7 @@ void Init_rugged_blob();
 void Init_rugged_index();
 void Init_rugged_repo();
 void Init_rugged_revwalk();
+void Init_rugged_signature();
 
 void rugged_exception_check(int errorcode);
 
@@ -50,12 +51,12 @@ VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE self);
 
 VALUE rugged_raw_read(git_repository *repo, const git_oid *oid);
 
-VALUE rugged_person_new(git_person *person);
+VALUE rugged_signature_new(const git_signature *sig);
 VALUE rugged_object_new(VALUE repository, git_object *object);
 VALUE rugged_index_new(VALUE owner, git_index *index);
 VALUE rugged_rawobject_new(const git_rawobj *obj);
 
-void rugged_person_get(VALUE rb_person, const char **name_out, const char **email_out, unsigned long *time_out);
+git_signature *rugged_signature_get(VALUE rb_person);
 git_object *rugged_object_get(git_repository *repo, VALUE object_value, git_otype type);
 void rugged_rawobject_get(git_rawobj *obj, VALUE rb_obj);
 

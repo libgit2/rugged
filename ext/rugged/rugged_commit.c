@@ -27,42 +27,11 @@
 
 extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedObject;
-extern VALUE rb_cRuggedPerson;
 VALUE rb_cRuggedCommit;
 
-VALUE rugged_person_new(git_person *person)
-{
-	VALUE arguments[3];
-
-	if (person == NULL)
-		return Qnil;
-
-	arguments[0] = rb_str_new2(git_person_name(person));
-	arguments[1] = rb_str_new2(git_person_email(person));
-	arguments[2] = ULONG2NUM(git_person_time(person));
-
-	return rb_class_new_instance(3, arguments, rb_cRuggedPerson);
-}
-
-void rugged_person_get(VALUE rb_person, const char **name_out, const char **email_out, unsigned long *time_out)
-{
-	VALUE rb_name, rb_email, rb_time;
-
-	if (!rb_obj_is_kind_of(rb_person, rb_cRuggedPerson))
-		rb_raise(rb_eTypeError, "expected Rugged::Person object");
-
-	rb_name = rb_iv_get(rb_person, "@name");
-	rb_email = rb_iv_get(rb_person, "@email");
-	rb_time = rb_iv_get(rb_person, "@time");
-
-	Check_Type(rb_name, T_STRING);
-	Check_Type(rb_email, T_STRING);
-
-	*name_out = RSTRING_PTR(rb_name);
-	*email_out = RSTRING_PTR(rb_email);
-	*time_out = rb_num2ulong(rb_time);
-}
-
+/*
+ * Commit code
+ */
 static VALUE rb_git_commit_init(int argc, VALUE *argv, VALUE self)
 {
 	return rb_git_object_init(GIT_OBJ_COMMIT, argc, argv, self);
@@ -99,18 +68,15 @@ static VALUE rb_git_commit_committer_GET(VALUE self)
 	git_commit *commit;
 	RUGGED_OBJ_UNWRAP(self, git_commit, commit);
 
-	return rugged_person_new((git_person *)git_commit_committer(commit));
+	return rugged_signature_new(git_commit_committer(commit));
 }
 
-static VALUE rb_git_commit_committer_SET(VALUE self, VALUE rb_person)
+static VALUE rb_git_commit_committer_SET(VALUE self, VALUE rb_sig)
 {
-	const char *name, *email;
-	time_t time;
 	git_commit *commit;
 	RUGGED_OBJ_UNWRAP(self, git_commit, commit);
 
-	rugged_person_get(rb_person, &name, &email, &time);
-	git_commit_set_committer(commit, name, email, time);
+	git_commit_set_committer(commit, rugged_signature_get(rb_sig));
 	return Qnil;
 }
 
@@ -119,18 +85,15 @@ static VALUE rb_git_commit_author_GET(VALUE self)
 	git_commit *commit;
 	RUGGED_OBJ_UNWRAP(self, git_commit, commit);
 
-	return rugged_person_new((git_person *)git_commit_author(commit));
+	return rugged_signature_new(git_commit_author(commit));
 }
 
-static VALUE rb_git_commit_author_SET(VALUE self, VALUE rb_person)
+static VALUE rb_git_commit_author_SET(VALUE self, VALUE rb_sig)
 {
-	const char *name, *email;
-	time_t time;
 	git_commit *commit;
 	RUGGED_OBJ_UNWRAP(self, git_commit, commit);
 
-	rugged_person_get(rb_person, &name, &email, &time);
-	git_commit_set_author(commit, name, email, time);
+	git_commit_set_author(commit, rugged_signature_get(rb_sig));
 	return Qnil;
 }
 
