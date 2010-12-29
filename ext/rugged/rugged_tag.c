@@ -61,7 +61,7 @@ static VALUE rb_git_tag_target_type_GET(VALUE self)
 	git_tag *tag;
 	RUGGED_OBJ_UNWRAP(self, git_tag, tag);
 
-	return rb_str_new2(git_object_type2string(git_tag_type(tag)));
+	return LG2_STR_NEW2(git_object_type2string(git_tag_type(tag)), NULL);
 }
 
 static VALUE rb_git_tag_name_GET(VALUE self)
@@ -69,7 +69,7 @@ static VALUE rb_git_tag_name_GET(VALUE self)
 	git_tag *tag;
 	RUGGED_OBJ_UNWRAP(self, git_tag, tag);
 
-	return rb_str_new2(git_tag_name(tag));
+	return LG2_STR_NEW2(git_tag_name(tag), NULL);
 }
 
 static VALUE rb_git_tag_name_SET(VALUE self, VALUE val)
@@ -104,7 +104,7 @@ static VALUE rb_git_tag_message_GET(VALUE self)
 	git_tag *tag;
 	RUGGED_OBJ_UNWRAP(self, git_tag, tag);
 
-	return rb_str_new2(git_tag_message(tag));
+	return LG2_STR_NEW2(git_tag_message(tag), NULL);
 }
 
 static VALUE rb_git_tag_message_SET(VALUE self, VALUE val)

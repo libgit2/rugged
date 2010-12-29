@@ -37,7 +37,11 @@ VALUE rugged_rawobject_new(const git_rawobj *obj)
 	VALUE rb_obj_args[3];
 
 	rb_obj_args[0] = INT2FIX(obj->type);
+#ifdef HAVE_RUBY_ENCODING_H
+	rb_obj_args[1] = rb_enc_str_new(obj->data, obj->len, rb_ascii8bit_encoding());
+#else
 	rb_obj_args[1] = rb_str_new(obj->data, obj->len);
+#endif
 	rb_obj_args[2] = INT2FIX(obj->len);
 
 	return rb_class_new_instance(3, rb_obj_args, rb_cRuggedRawObject);
@@ -245,7 +249,7 @@ static VALUE rb_git_repo_obj_hash(VALUE self, VALUE rb_rawobj)
 	rugged_exception_check(error);
 
 	git_oid_fmt(out, &oid);
-	return rb_str_new(out, 40);
+	return LG2_STR_NEW(out, 40, NULL);
 }
 
 static VALUE rb_git_repo_write(VALUE self, VALUE rb_rawobj)
@@ -268,7 +272,7 @@ static VALUE rb_git_repo_write(VALUE self, VALUE rb_rawobj)
 	rugged_exception_check(error);
 
 	git_oid_fmt(out, &oid);
-	return rb_str_new(out, 40);
+	return LG2_STR_NEW(out, 40, NULL);
 }
 
 static VALUE rb_git_repo_lookup(int argc, VALUE *argv, VALUE self)

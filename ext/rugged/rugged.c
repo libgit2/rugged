@@ -33,7 +33,12 @@ static VALUE rb_git_hex_to_raw(VALUE self, VALUE hex)
 
 	Check_Type(hex, T_STRING);
 	git_oid_mkstr(&oid, RSTRING_PTR(hex));
+#ifdef HAVE_RUBY_ENCODING_H
+	/* make sure we use the binary encoding for raw bytes */
+	return rb_enc_str_new((&oid)->id, 20, rb_ascii8bit_encoding());
+#else
 	return rb_str_new((&oid)->id, 20);
+#endif
 }
 
 static VALUE rb_git_raw_to_hex(VALUE self, VALUE raw)
@@ -44,7 +49,8 @@ static VALUE rb_git_raw_to_hex(VALUE self, VALUE raw)
 	Check_Type(raw, T_STRING);
 	git_oid_mkraw(&oid, RSTRING_PTR(raw));
 	git_oid_fmt(out, &oid);
-	return rb_str_new(out, 40);
+
+	return LG2_STR_NEW(out, 40, NULL);
 }
 
 static VALUE rb_git_type_to_string(VALUE self, VALUE type)
@@ -54,7 +60,7 @@ static VALUE rb_git_type_to_string(VALUE self, VALUE type)
 	Check_Type(type, T_FIXNUM);
 	git_otype t = (git_otype)FIX2INT(type);
 	str = git_object_type2string(t);
-	return str ? rb_str_new2(str) : Qfalse;
+	return str ? LG2_STR_NEW2(str, NULL) : Qfalse;
 }
 
 static VALUE rb_git_string_to_type(VALUE self, VALUE string_type)

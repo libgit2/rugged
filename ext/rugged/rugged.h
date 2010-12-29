@@ -99,5 +99,44 @@ typedef struct {
 	_val = (_rugged_obj->owner);\
 }
 
+/* support for string encodings in 1.9 */
+#ifdef HAVE_RUBY_ENCODING_H
+
+#include <ruby/encoding.h>
+#define LG2_STR_NEW(str, len, rb_enc)                                 \
+  ({                                                                  \
+    VALUE _string;                                                    \
+    rb_encoding *internal_encoding = rb_default_internal_encoding();  \
+    if(rb_enc) {                                                      \
+      _string = rb_enc_str_new(str, len, rb_enc);                     \
+    } else {                                                          \
+      _string = rb_str_new(str, len);                                 \
+    }                                                                 \
+    if(internal_encoding) {                                           \
+      _string = rb_str_export_to_enc(_string, internal_encoding);     \
+    }                                                                 \
+    _string;                                                          \
+  })
+
+#define LG2_STR_NEW2(str, rb_enc)                                     \
+  ({                                                                  \
+    VALUE _string;                                                    \
+    rb_encoding *internal_encoding = rb_default_internal_encoding();  \
+    _string = rb_str_new2(str);                                       \
+    if(rb_enc) {                                                      \
+      rb_enc_associate(_string, rb_enc);                              \
+    }                                                                 \
+    if(internal_encoding) {                                           \
+      _string = rb_str_export_to_enc(_string, internal_encoding);     \
+    }                                                                 \
+    _string;                                                          \
+  })
+
+#else
+
+#define LG2_STR_NEW(str, len, rb_enc)  rb_str_new(str, len)
+#define LG2_STR_NEW2(str, rb_enc) rb_str_new2(str)
+
+#endif
 
 #endif

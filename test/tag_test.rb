@@ -20,6 +20,22 @@ context "Rugged::Tag tests" do
     assert_equal "Scott Chacon", c.name
     assert_equal 1288114383, c.time.to_i
     assert_equal "schacon@gmail.com", c.email
+
+    if defined? Encoding
+      with_default_encoding('utf-8') do |enc|
+        obj = @repo.lookup(sha)
+        assert_equal enc, obj.message.encoding
+        assert_equal enc, obj.name.encoding
+        assert_equal enc, obj.target_type.encoding
+      end
+
+      with_default_encoding('ascii') do |enc|
+        obj = @repo.lookup(sha)
+        assert_equal enc, obj.message.encoding
+        assert_equal enc, obj.target_type.encoding
+        assert_equal enc, obj.name.encoding
+      end
+    end
   end
   
   test "can write the tag data" do

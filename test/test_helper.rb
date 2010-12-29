@@ -33,3 +33,13 @@ def rm_loose(sha)
   `rm -f #{file}`
 end
 
+def with_default_encoding(encoding, &block)
+  old_encoding = Encoding.default_internal
+
+  new_encoding = Encoding.find(encoding)
+  Encoding.default_internal = new_encoding
+
+  yield new_encoding
+
+  Encoding.default_internal = old_encoding
+end

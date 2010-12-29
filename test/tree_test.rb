@@ -27,6 +27,18 @@ context "Rugged::Tree tests" do
     assert_equal "subdir", tent.name
     assert_equal "619f9935957e010c419cb9d15621916ddfcc0b96", tent.to_object.sha
     assert_equal "tree", tent.to_object.type
+
+    if defined? Encoding
+      with_default_encoding('utf-8') do |enc|
+        assert_equal enc, bent.name.encoding
+        assert_equal enc, bent.sha.encoding
+      end
+
+      with_default_encoding('ascii') do |enc|
+        assert_equal enc, bent.name.encoding
+        assert_equal enc, bent.sha.encoding
+      end
+    end
   end
 
   test "can iterate over the tree" do

@@ -69,14 +69,14 @@ static VALUE rb_git_signature_name_GET(VALUE self)
 {
 	git_signature *sig;
 	Data_Get_Struct(self, git_signature, sig);
-	return rb_str_new2(sig->name);
+	return LG2_STR_NEW2(sig->name, NULL);
 }
 
 static VALUE rb_git_signature_email_GET(VALUE self)
 {
 	git_signature *sig;
 	Data_Get_Struct(self, git_signature, sig);
-	return rb_str_new2(sig->email);
+	return LG2_STR_NEW2(sig->email, NULL);
 }
 
 static VALUE rb_git_signature_email_SET(VALUE self, VALUE rb_email)

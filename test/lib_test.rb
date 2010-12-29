@@ -16,12 +16,27 @@ context "Rugged::Lib stuff" do
     raw1 = Rugged::hex_to_raw(hex)
     raw2 = [hex].pack("H*")
     assert_equal raw1, raw2
+    if defined? Encoding
+      raw = Rugged::hex_to_raw(hex)
+      assert_equal Encoding.find('binary'), raw.encoding
+    end
   end
 
   test "can convert raw sha into hex" do
     raw = Base64.decode64("FqASNFZ4mrze9Ld1ITwjqL109eA=")
     hex = Rugged::raw_to_hex(raw)
     assert_equal "16a0123456789abcdef4b775213c23a8bd74f5e0", hex
+    if defined? Encoding
+      with_default_encoding('utf-8') do |enc|
+        hex = Rugged::raw_to_hex(raw)
+        assert_equal enc, hex.encoding
+      end
+
+      with_default_encoding('ascii') do |enc|
+        hex = Rugged::raw_to_hex(raw)
+        assert_equal enc, hex.encoding
+      end
+    end
   end
 
   test "converts raw into hex sha correctly" do

@@ -44,7 +44,7 @@ int rugged_backend__exists(git_odb_backend *_backend, const git_oid *oid)
 		return 0; /* not found! */
 
 	git_oid_fmt(oid_out, oid);
-	exists = rb_funcall(back->self, method, 1, rb_str_new(oid_out, 40));
+	exists = rb_funcall(back->self, method, 1, LG2_STR_NEW(oid_out, 40, NULL));
 
 	if (TYPE(exists) == T_TRUE)
 		return 1;
@@ -93,7 +93,7 @@ int rugged_backend__generic_read(int header_only, git_rawobj *obj, git_odb_backe
 
 	git_oid_fmt(oid_out, oid);
 
-	read_obj = rb_funcall(back->self, method, 1, rb_str_new(oid_out, 40));
+	read_obj = rb_funcall(back->self, method, 1, LG2_STR_NEW(oid_out, 40, NULL));
 
 	if (NIL_P(read_obj))
 		return GIT_ENOTFOUND;
