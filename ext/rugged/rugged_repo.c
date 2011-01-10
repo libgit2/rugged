@@ -168,6 +168,29 @@ static VALUE rb_git_repo_init(int argc, VALUE *argv, VALUE self)
 	return Qnil;
 }
 
+static VALUE rb_git_repo_init_at(VALUE klass, VALUE path, VALUE rb_is_bare)
+{
+	rugged_repository *r_repo;
+	git_repository *repo;
+	int error, is_bare;
+
+	is_bare = rugged_parse_bool(rb_is_bare);
+	Check_Type(path, T_STRING);
+	error = git_repository_init(&repo, RSTRING_PTR(path), is_bare);
+
+	rugged_exception_check(error);
+
+	/* manually allocate a new repository */
+	r_repo = malloc(sizeof(rugged_repository));
+	if (r_repo == NULL)
+		rb_raise(rb_eNoMemError, "out of memory");
+
+	r_repo->repo = repo;
+	r_repo->backends = rb_ary_new();
+
+	return Data_Wrap_Struct(klass, rb_git_repo__mark, rb_git_repo__free, r_repo);
+}
+
 static VALUE rb_git_repo_add_backend(VALUE self, VALUE rb_backend)
 {
 	rugged_repository *repo;
@@ -308,6 +331,7 @@ void Init_rugged_repo()
 	rb_define_method(rb_cRuggedRepo, "add_backend",  rb_git_repo_add_backend,  1);
 
 	rb_define_singleton_method(rb_cRuggedRepo, "hash",   rb_git_repo_obj_hash,  1);
+	rb_define_singleton_method(rb_cRuggedRepo, "init_at", rb_git_repo_init_at, 2);
 
 	rb_cRuggedRawObject = rb_define_class_under(rb_mRugged, "RawObject", rb_cObject);
 }

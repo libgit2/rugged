@@ -46,14 +46,7 @@ int rugged_backend__exists(git_odb_backend *_backend, const git_oid *oid)
 	git_oid_fmt(oid_out, oid);
 	exists = rb_funcall(back->self, method, 1, rugged_str_new(oid_out, 40, NULL));
 
-	if (TYPE(exists) == T_TRUE)
-		return 1;
-
-	if (TYPE(exists) == T_FALSE)
-		return 0;
-
-	rb_raise(rb_eRuntimeError, "'exists' interface must return true/false");
-	return 0; /* never reached */
+	return rugged_parse_bool(exists);
 }
 
 int rugged_backend__write(git_oid *id, git_odb_backend *_backend, git_rawobj *obj)

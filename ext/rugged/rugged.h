@@ -99,6 +99,14 @@ typedef struct {
 	_val = (_rugged_obj->owner);\
 }
 
+static inline int rugged_parse_bool(VALUE boolean)
+{
+	if (TYPE(boolean) != T_TRUE && TYPE(boolean) != T_FALSE)
+		rb_raise(rb_eTypeError, "Expected boolean value");
+
+	return boolean ? 1 : 0;
+}
+
 /* support for string encodings in 1.9 */
 #ifdef HAVE_RUBY_ENCODING_H
 
