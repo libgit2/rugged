@@ -42,7 +42,7 @@ static VALUE rb_git_commit_message_GET(VALUE self)
 	git_commit *commit;
 	RUGGED_OBJ_UNWRAP(self, git_commit, commit);
 
-	return LG2_STR_NEW2(git_commit_message(commit), NULL);
+	return rugged_str_new2(git_commit_message(commit), NULL);
 }
 
 static VALUE rb_git_commit_message_SET(VALUE self, VALUE val)
@@ -60,7 +60,7 @@ static VALUE rb_git_commit_message_short_GET(VALUE self)
 	git_commit *commit;
 	RUGGED_OBJ_UNWRAP(self, git_commit, commit);
 
-	return LG2_STR_NEW2(git_commit_message_short(commit), NULL);
+	return rugged_str_new2(git_commit_message_short(commit), NULL);
 }
 
 static VALUE rb_git_commit_committer_GET(VALUE self)

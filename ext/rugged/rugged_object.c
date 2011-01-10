@@ -185,7 +185,7 @@ static VALUE rb_git_object_sha_GET(VALUE self)
 	RUGGED_OBJ_UNWRAP(self, git_object, object);
 
 	git_oid_fmt(hex, git_object_id(object));
-	return LG2_STR_NEW(hex, 40, NULL);
+	return rugged_str_new(hex, 40, NULL);
 }
 
 static VALUE rb_git_object_type_GET(VALUE self)
@@ -193,7 +193,7 @@ static VALUE rb_git_object_type_GET(VALUE self)
 	git_object *object;
 	RUGGED_OBJ_UNWRAP(self, git_object, object);
 
-	return LG2_STR_NEW2(git_object_type2string(git_object_type(object)), NULL);
+	return rugged_str_new2(git_object_type2string(git_object_type(object)), NULL);
 }
 
 static VALUE rb_git_object_read_raw(VALUE self)
@@ -217,7 +217,7 @@ static VALUE rb_git_object_write(VALUE self)
 	rugged_exception_check(error);
 
 	git_oid_fmt(new_hex, git_object_id(object));
-	sha = LG2_STR_NEW(new_hex, 40, NULL);
+	sha = rugged_str_new(new_hex, 40, NULL);
 
 	return sha;
 }

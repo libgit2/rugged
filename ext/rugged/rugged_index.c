@@ -294,7 +294,7 @@ static VALUE rb_git_indexentry_path_GET(VALUE self)
 	if (entry->path == NULL)
 		return Qnil;
 
-	return LG2_STR_NEW2(entry->path, NULL);
+	return rugged_str_new2(entry->path, NULL);
 }
 
 static VALUE rb_git_indexentry_path_SET(VALUE self, VALUE val)
@@ -317,7 +317,7 @@ static VALUE rb_git_indexentry_oid_GET(VALUE self)
 	char out[40];
 	Data_Get_Struct(self, git_index_entry, entry);
 	git_oid_fmt(out, &entry->oid);
-	return LG2_STR_NEW(out, 40, NULL);
+	return rugged_str_new(out, 40, NULL);
 }
 
 static VALUE rb_git_indexentry_oid_SET(VALUE self, VALUE v) 

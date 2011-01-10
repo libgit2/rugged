@@ -54,13 +54,8 @@ static VALUE rb_git_blob_content_GET(VALUE self)
 	
 	size = git_blob_rawsize(blob);
 	if (size == 0)
-#ifdef HAVE_RUBY_ENCODING_H
-		return rb_enc_str_new("", 0, rb_ascii8bit_encoding());
-#else
-		return rb_str_new2("");
-#endif
+		return rugged_str_ascii("", 0);
 
-#ifdef HAVE_RUBY_ENCODING_H
 	/*
 	 * since we don't really ever know the encoding of a blob
 	 * lets default to the binary encoding (ascii-8bit)
@@ -70,10 +65,7 @@ static VALUE rb_git_blob_content_GET(VALUE self)
 	 * eventually end up converted to Encoding.default_internal because this
 	 * string could very well be binary data
 	 */
-	return rb_enc_str_new(git_blob_rawcontent(blob), size, rb_ascii8bit_encoding());
-#else
-	return rb_str_new(git_blob_rawcontent(blob), size);
-#endif
+	return rugged_str_ascii(git_blob_rawcontent(blob), size);
 }
 
 static VALUE rb_git_blob_rawsize(VALUE self)

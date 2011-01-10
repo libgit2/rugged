@@ -91,7 +91,7 @@ static VALUE rb_git_tree_entry_name_GET(VALUE self)
 	rugged_tree_entry *tree_entry;
 	Data_Get_Struct(self, rugged_tree_entry, tree_entry);
 
-	return LG2_STR_NEW2(git_tree_entry_name(tree_entry->entry), NULL);
+	return rugged_str_new2(git_tree_entry_name(tree_entry->entry), NULL);
 }
 
 static VALUE rb_git_tree_entry_name_SET(VALUE self, VALUE val)
@@ -111,7 +111,7 @@ static VALUE rb_git_tree_entry_sha_GET(VALUE self)
 	Data_Get_Struct(self, rugged_tree_entry, tree_entry);
 
 	git_oid_fmt(out, git_tree_entry_id(tree_entry->entry));
-	return LG2_STR_NEW(out, 40, NULL);
+	return rugged_str_new(out, 40, NULL);
 }
 
 static VALUE rb_git_tree_entry_sha_SET(VALUE self, VALUE val)
