@@ -43,7 +43,6 @@ context "Rugged::Repository stuff" do
   test "can hash data" do
     sha = Rugged::Repository::hash(@obj)
     assert_equal "76b1b55ab653581d6f2c7230d34098e837197674", sha
-    assert !@repo.exists("76b1b55ab653581d6f2c7230d34098e837197674")
   end
 
   test "can write to the db" do
