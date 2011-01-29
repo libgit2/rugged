@@ -176,6 +176,28 @@ static VALUE rb_git_tree_get_entry(VALUE self, VALUE entry_id)
 		rb_raise(rb_eTypeError, "entry_id must be either an index or a filename");
 }
 
+static VALUE rb_git_tree_add_entry(VALUE self, VALUE rb_oid, VALUE rb_filename, VALUE rb_mode)
+{
+	git_tree_entry *new_entry;
+	git_oid oid;
+	git_tree *tree;
+	int error;
+
+	RUGGED_OBJ_UNWRAP(self, git_tree, tree);
+
+	Check_Type(rb_oid, T_STRING);
+	Check_Type(rb_filename, T_STRING);
+	Check_Type(rb_mode, T_FIXNUM);
+
+	error = git_oid_mkstr(&oid, RSTRING_PTR(rb_oid));
+	rugged_exception_check(error);
+
+	error = git_tree_add_entry(&new_entry, tree, &oid, RSTRING_PTR(rb_filename), FIX2INT(rb_mode));
+	rugged_exception_check(error);
+
+	return rb_git_createentry(self, new_entry);
+}
+
 
 void Init_rugged_tree()
 {
@@ -201,6 +223,7 @@ void Init_rugged_tree()
 	rb_cRuggedTree = rb_define_class_under(rb_mRugged, "Tree", rb_cRuggedObject);
 	rb_define_method(rb_cRuggedTree, "initialize", rb_git_tree_init, -1);
 	rb_define_method(rb_cRuggedTree, "entry_count", rb_git_tree_entrycount, 0);
+	rb_define_method(rb_cRuggedTree, "add_entry", rb_git_tree_add_entry, 3);
 	rb_define_method(rb_cRuggedTree, "get_entry", rb_git_tree_get_entry, 1);
 	rb_define_method(rb_cRuggedTree, "[]", rb_git_tree_get_entry, 1);
 }
