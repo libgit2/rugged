@@ -173,7 +173,7 @@ context "Rugged::Index with working directory" do
       f.puts "test content"
     end
     @index.add('test.txt')
-	@index.write
+    @index.write
 
     index2 = Rugged::Index.new(@tmppath + '/.git/index')
     index2.refresh

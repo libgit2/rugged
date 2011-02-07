@@ -72,11 +72,16 @@ static VALUE rb_git_walker_next(VALUE self)
 {
 	rugged_walker *walk;
 	git_commit *commit;
+	int error;
 
 	Data_Get_Struct(self, rugged_walker, walk);
-	commit = git_revwalk_next(walk->walk);
 
-	return commit ? rugged_object_new(walk->owner, (git_object*)commit) : Qfalse;
+	error = git_revwalk_next(&commit, walk->walk);
+	if (error == GIT_EREVWALKOVER)
+		return Qfalse;
+
+	rugged_exception_check(error);
+	return rugged_object_new(walk->owner, (git_object*)commit);
 }
 
 static VALUE rb_git_walker_push(VALUE self, VALUE rb_commit)

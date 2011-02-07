@@ -219,10 +219,12 @@ static VALUE rb_git_repo_index(VALUE self)
 {
 	rugged_repository *repo;
 	git_index *index;
+	int error;
+
 	Data_Get_Struct(self, rugged_repository, repo);
 
-	if ((index = git_repository_index(repo->repo)) == NULL)
-		rb_raise(rb_eRuntimeError, "failed to open Index file");
+	error = git_repository_index(&index, repo->repo);
+	rugged_exception_check(error);
 
 	return rugged_index_new(self, index);
 }
