@@ -161,6 +161,15 @@ static VALUE rb_git_tree_entrycount(VALUE self)
 	return INT2FIX(git_tree_entrycount(tree));
 }
 
+static VALUE rb_git_tree_clear(VALUE self)
+{
+	git_tree *tree;
+	RUGGED_OBJ_UNWRAP(self, git_tree, tree);
+
+	git_tree_clear_entries(tree);
+	return Qnil;
+}
+
 static VALUE rb_git_tree_get_entry(VALUE self, VALUE entry_id)
 {
 	git_tree *tree;
@@ -223,6 +232,7 @@ void Init_rugged_tree()
 	rb_cRuggedTree = rb_define_class_under(rb_mRugged, "Tree", rb_cRuggedObject);
 	rb_define_method(rb_cRuggedTree, "initialize", rb_git_tree_init, -1);
 	rb_define_method(rb_cRuggedTree, "entry_count", rb_git_tree_entrycount, 0);
+	rb_define_method(rb_cRuggedTree, "clear", rb_git_tree_clear, 0);
 	rb_define_method(rb_cRuggedTree, "add_entry", rb_git_tree_add_entry, 3);
 	rb_define_method(rb_cRuggedTree, "get_entry", rb_git_tree_get_entry, 1);
 	rb_define_method(rb_cRuggedTree, "[]", rb_git_tree_get_entry, 1);
