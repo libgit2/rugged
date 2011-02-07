@@ -1,7 +1,16 @@
 # stolen largely from defunkt/mustache
 require 'rake/testtask'
 require 'rake/rdoctask'
-require 'rake/extensiontask'
+
+begin
+  require 'rake/extensiontask'
+rescue LoadError
+  abort <<-error
+  rake-compile is missing; Rugged depends on rake-compiler to build the C wrapping code.
+
+  Install it by running `gem i rake-compiler`
+error
+end
 
 Rake::ExtensionTask.new('rugged') do |r|
   r.lib_dir = 'lib/rugged'
@@ -42,20 +51,9 @@ if command? :kicker
   end
 end
 
-desc "Update the libgit2 SHA"
-task :libgit do
-  sha = `git --git-dir=../libgit2/.git rev-parse HEAD`
-  File.open("LIBGIT2_VERSION", 'w') do |f|
-    f.puts "# git --git-dir=../libgit2/.git rev-parse HEAD"
-    f.puts sha
-  end
-end
-
-
 #
 # Ron
 #
-
 if command? :ronn
   desc "Show the manual"
   task :man => "man:build" do
