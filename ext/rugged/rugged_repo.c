@@ -191,13 +191,15 @@ static VALUE rb_git_repo_init_at(VALUE klass, VALUE path, VALUE rb_is_bare)
 	return Data_Wrap_Struct(klass, rb_git_repo__mark, rb_git_repo__free, r_repo);
 }
 
-static VALUE rb_git_repo_add_backend(VALUE self, VALUE rb_backend)
+static VALUE rb_git_repo_add_backend(VALUE self, VALUE rb_backend, VALUE rb_priority)
 {
 	rugged_repository *repo;
 	rugged_backend *backend;
 	int error;
 
 	Data_Get_Struct(self, rugged_repository, repo);
+
+	Check_Type(rb_priority, T_FIXNUM);
 
 	if (!rb_obj_is_kind_of(rb_backend, rb_cRuggedBackend))
 		rb_raise(rb_eTypeError, "expecting a subclass of Rugged::Backend");
@@ -207,7 +209,7 @@ static VALUE rb_git_repo_add_backend(VALUE self, VALUE rb_backend)
 
 	Data_Get_Struct(rb_backend, rugged_backend, backend);
 
-	error = git_odb_add_backend(git_repository_database(repo->repo), (git_odb_backend *)backend);
+	error = git_odb_add_backend(git_repository_database(repo->repo), (git_odb_backend *)backend, FIX2INT(rb_priority));
 	rugged_exception_check(error);
 
 	rb_ary_push(repo->backends, rb_backend);

@@ -123,15 +123,8 @@ void rugged_backend__gcfree(void *data)
 }
 
 
-static VALUE rb_git_backend_init(VALUE self, VALUE priority)
+static VALUE rb_git_backend_init(VALUE self)
 {
-	rugged_backend *backend;
-
-	Data_Get_Struct(self, rugged_backend, backend);
-	Check_Type(priority, T_FIXNUM);
-
-	backend->parent.priority = FIX2INT(priority);
-
 	return Qnil;
 }
 
@@ -148,7 +141,6 @@ static VALUE rb_git_backend_allocate(VALUE klass)
 	backend->parent.write = &rugged_backend__write;
 	backend->parent.exists = &rugged_backend__exists;
 	backend->parent.free = &rugged_backend__free;
-	backend->parent.priority = 0; /* set later */
 	backend->self = Data_Wrap_Struct(klass, NULL, &rugged_backend__gcfree, backend);
 
 	return backend->self;
@@ -158,5 +150,5 @@ void Init_rugged_backend()
 {
 	rb_cRuggedBackend = rb_define_class_under(rb_mRugged, "Backend", rb_cObject);
 	rb_define_alloc_func(rb_cRuggedBackend, rb_git_backend_allocate);
-	rb_define_method(rb_cRuggedBackend, "initialize", rb_git_backend_init, 1);
+	rb_define_method(rb_cRuggedBackend, "initialize", rb_git_backend_init, 0);
 }
