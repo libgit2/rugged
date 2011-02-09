@@ -2,8 +2,8 @@ require File.expand_path "../test_helper", __FILE__
 
 context "Rugged::Commit tests" do
   setup do
-    path = File.dirname(__FILE__) + '/fixtures/testrepo.git/'
-    @repo = Rugged::Repository.new(path)
+    @path = File.dirname(__FILE__) + '/fixtures/testrepo.git/'
+    @repo = Rugged::Repository.new(@path)
   end
 
   test "can read the commit data" do
@@ -80,6 +80,7 @@ context "Rugged::Commit tests" do
     obj = @repo.lookup(sha)
     obj.message = 'new message'
     sha = obj.write
+
     if defined? Encoding
       with_default_encoding('utf-8') do |enc|
         obj = @repo.lookup(sha)
@@ -95,6 +96,7 @@ context "Rugged::Commit tests" do
         assert_equal enc, sha.encoding
       end
     end
+    rm_loose(sha)
   end
 
   test "can write new commit data" do
@@ -109,6 +111,7 @@ context "Rugged::Commit tests" do
     obj.committer = person
     obj.tree = tree
     obj.write
+    rm_loose(obj.sha)
   end
 
 end

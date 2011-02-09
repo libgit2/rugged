@@ -27,10 +27,17 @@ def context(*args, &block)
 end
 
 def rm_loose(sha)
-  dir = sha[0, 2]
-  rest = sha[2, 38]
-  file = File.join(@path, "objects", dir, rest)
-  `rm -f #{file}`
+
+  base_path = File.join(@path, "objects", sha[0, 2])
+
+  file = File.join(base_path, sha[2, 38])
+  dir_contents = File.join(base_path, "*")
+
+  File.delete(file)
+
+  if Dir[dir_contents].empty?
+    Dir.delete(base_path)
+  end
 end
 
 def with_default_encoding(encoding, &block)

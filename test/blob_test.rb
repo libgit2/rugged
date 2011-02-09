@@ -21,13 +21,14 @@ context "Rugged::Blob tests" do
     assert_equal @sha, blob.sha
     blob.write # should change the sha
     assert_equal "2dd916ea1ff086d61fbc1c286079305ffad4e92e", blob.sha
-    FileUtils.rm File.join(@path, "objects/2d/d916ea1ff086d61fbc1c286079305ffad4e92e")
+    rm_loose(blob.sha)
   end
 
   test "can write new blob data" do
     blob = Rugged::Blob.new(@repo)
     blob.content = "a new blob content"
     blob.write
+    rm_loose(blob.sha)
   end
 
   test "gets the complete content if it has nulls" do
@@ -40,6 +41,7 @@ context "Rugged::Blob tests" do
     sha = @repo.write(obj)
     blob = @repo.lookup(sha)
     assert_equal content, blob.read_raw.data
+    rm_loose(sha)
   end
 
 end

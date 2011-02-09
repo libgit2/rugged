@@ -49,7 +49,6 @@ context "Rugged::Repository stuff" do
     sha = @repo.write(@obj)
     assert_equal "76b1b55ab653581d6f2c7230d34098e837197674", sha
     assert @repo.exists("76b1b55ab653581d6f2c7230d34098e837197674")
-    rm_loose("76b1b55ab653581d6f2c7230d34098e837197674")
 
     if defined? Encoding
       with_default_encoding('utf-8') do |enc|
@@ -62,6 +61,7 @@ context "Rugged::Repository stuff" do
         assert_equal enc, sha.encoding
       end
     end
+    rm_loose(sha)
   end
 
   test "can use the builtin walk method" do
