@@ -315,7 +315,7 @@ static VALUE rb_git_repo_lookup(int argc, VALUE *argv, VALUE self)
 	type = NIL_P(rb_type) ? GIT_OBJ_ANY : FIX2INT(rb_type);
 	git_oid_mkstr(&oid, RSTRING_PTR(rb_sha));
 
-	error = git_repository_lookup(&obj, repo->repo, &oid, type);
+	error = git_object_lookup(&obj, repo->repo, &oid, type);
 	rugged_exception_check(error);
 
 	return obj ? rugged_object_new(self, obj) : Qnil;

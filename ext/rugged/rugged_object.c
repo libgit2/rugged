@@ -42,7 +42,7 @@ git_object *rugged_object_get(git_repository *repo, VALUE object_value, git_otyp
 		int error;
 
 		git_oid_mkstr(&oid, RSTRING_PTR(object_value));
-		error = git_repository_lookup(&object, repo, &oid, type);
+		error = git_object_lookup(&object, repo, &oid, type);
 		rugged_exception_check(error);
 
 	} else if (rb_obj_is_kind_of(object_value, rb_cRuggedObject)) {
@@ -60,15 +60,10 @@ git_object *rugged_object_get(git_repository *repo, VALUE object_value, git_otyp
 
 void rb_git_object__free(rugged_object *o)
 {
-	/* 
-	 * FIXME:
-	 * Manually remove the object from the repository cache?
-	 *
-	 * If we don't this manually, the object will get removed
-	 * when the owner repository is free'd.
+	/*
+	 * FIXME: Double-freeing issue
 	 */
-
-	// git_object_free(o->object);
+	// git_object_close(o->object);
 	free(o);
 }
 
@@ -146,13 +141,13 @@ VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE self)
 	Data_Get_Struct(rb_repo, rugged_repository, repo);
 
 	if (NIL_P(hex)) {
-		error = git_repository_newobject(&object, repo->repo, type);
+		error = git_object_new(&object, repo->repo, type);
 		rugged_exception_check(error);
 	} else {
 		git_oid oid;
 
 		git_oid_mkstr(&oid, RSTRING_PTR(hex));
-		error = git_repository_lookup(&object, repo->repo, &oid, type);
+		error = git_object_lookup(&object, repo->repo, &oid, type);
 		rugged_exception_check(error);
 	}
 

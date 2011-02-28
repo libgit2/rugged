@@ -159,13 +159,13 @@ end
 
 context "Rugged::Index with working directory" do
   setup do
-    @tmppath = Tempfile.new('index').path + '_dir'
-    FileUtils.mkdir(@tmppath)
-    Dir.chdir(@tmppath) do
-      `git init`
-    end
-    @repo = Rugged::Repository.new(@tmppath + '/.git')
+    @tmppath = Dir.mktmpdir
+    @repo = Rugged::Repository.init_at(@tmppath, false)
     @index = @repo.index
+  end
+
+  teardown do
+    FileUtils.remove_entry_secure(@tmppath)
   end
 
   test "can add from a path" do
@@ -178,6 +178,6 @@ context "Rugged::Index with working directory" do
     index2 = Rugged::Index.new(@tmppath + '/.git/index')
     index2.refresh
 
-	assert_equal index2.get_entry(0).path, 'test.txt'
+    assert_equal index2.get_entry(0).path, 'test.txt'
   end
 end
