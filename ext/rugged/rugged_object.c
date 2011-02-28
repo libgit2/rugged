@@ -60,10 +60,7 @@ git_object *rugged_object_get(git_repository *repo, VALUE object_value, git_otyp
 
 void rb_git_object__free(rugged_object *o)
 {
-	/*
-	 * FIXME: Double-freeing issue
-	 */
-	// git_object_close(o->object);
+	git_object_close(o->object);
 	free(o);
 }
 
