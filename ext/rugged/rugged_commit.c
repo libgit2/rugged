@@ -32,11 +32,6 @@ VALUE rb_cRuggedCommit;
 /*
  * Commit code
  */
-static VALUE rb_git_commit_init(int argc, VALUE *argv, VALUE self)
-{
-	return rb_git_object_init(GIT_OBJ_COMMIT, argc, argv, self);
-}
-
 static VALUE rb_git_commit_message_GET(VALUE self)
 {
 	git_commit *commit;
@@ -151,7 +146,6 @@ static VALUE rb_git_commit_parents_GET(VALUE self)
 void Init_rugged_commit()
 {
 	rb_cRuggedCommit = rb_define_class_under(rb_mRugged, "Commit", rb_cRuggedObject);
-	rb_define_method(rb_cRuggedCommit, "initialize", rb_git_commit_init, -1);
 
 	rb_define_method(rb_cRuggedCommit, "message", rb_git_commit_message_GET, 0);
 	rb_define_method(rb_cRuggedCommit, "message=", rb_git_commit_message_SET, 1);

@@ -29,11 +29,6 @@ extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedObject;
 VALUE rb_cRuggedBlob;
 
-static VALUE rb_git_blob_init(int argc, VALUE *argv, VALUE self)
-{
-	return rb_git_object_init(GIT_OBJ_BLOB, argc, argv, self);
-}
-
 static VALUE rb_git_blob_content_SET(VALUE self, VALUE rb_contents)
 {
 	git_blob *blob;
@@ -79,7 +74,6 @@ static VALUE rb_git_blob_rawsize(VALUE self)
 void Init_rugged_blob()
 {
 	rb_cRuggedBlob = rb_define_class_under(rb_mRugged, "Blob", rb_cRuggedObject);
-	rb_define_method(rb_cRuggedBlob, "initialize", rb_git_blob_init, -1);
 
 	rb_define_method(rb_cRuggedBlob, "size", rb_git_blob_rawsize, 0);
 

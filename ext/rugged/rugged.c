@@ -32,7 +32,7 @@ static VALUE rb_git_hex_to_raw(VALUE self, VALUE hex)
 	git_oid oid;
 
 	Check_Type(hex, T_STRING);
-	git_oid_mkstr(&oid, RSTRING_PTR(hex));
+	rugged_exception_check(git_oid_mkstr(&oid, RSTRING_PTR(hex)));
 	return rugged_str_ascii(oid.id, 20);
 }
 
@@ -64,13 +64,6 @@ static VALUE rb_git_string_to_type(VALUE self, VALUE string_type)
 	return INT2FIX(git_object_string2type(RSTRING_PTR(string_type)));
 }
 
-void rugged_exception_check(int errorcode)
-{
-	if (errorcode < 0)
-		rb_raise(rb_eRuntimeError, "Rugged exception: %s", git_strerror(errorcode));
-}
-
-
 void Init_rugged()
 {
 	rb_mRugged = rb_define_module("Rugged");
@@ -91,6 +84,7 @@ void Init_rugged()
 	Init_rugged_index();
 	Init_rugged_repo();
 	Init_rugged_revwalk();
+	Init_rugged_reference();
 
 	Init_rugged_backend();
 
@@ -106,5 +100,8 @@ void Init_rugged()
 	rb_define_const(rb_mRugged, "OBJ_TREE", INT2FIX(GIT_OBJ_TREE));
 	rb_define_const(rb_mRugged, "OBJ_BLOB", INT2FIX(GIT_OBJ_BLOB));
 	rb_define_const(rb_mRugged, "OBJ_TAG", INT2FIX(GIT_OBJ_TAG));
+
+	rb_define_const(rb_mRugged, "REF_OID", INT2FIX(GIT_REF_OID));
+	rb_define_const(rb_mRugged, "REF_SYMBOLIC", INT2FIX(GIT_REF_SYMBOLIC));
 }
 

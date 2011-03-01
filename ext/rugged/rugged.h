@@ -44,8 +44,7 @@ void Init_rugged_index();
 void Init_rugged_repo();
 void Init_rugged_revwalk();
 void Init_rugged_signature();
-
-void rugged_exception_check(int errorcode);
+void Init_rugged_reference();
 
 VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE self);
 
@@ -86,6 +85,11 @@ typedef struct {
 	VALUE owner;
 } rugged_walker;
 
+typedef struct {
+	git_reference *ref;
+	VALUE owner;
+} rugged_reference;
+
 
 #define RUGGED_OBJ_UNWRAP(_rb, _type, _c) {\
 	rugged_object *_rugged_obj; \
@@ -97,6 +101,12 @@ typedef struct {
 	rugged_object *_rugged_obj;\
 	Data_Get_Struct(_rb, rugged_object, _rugged_obj);\
 	_val = (_rugged_obj->owner);\
+}
+
+static inline void rugged_exception_check(int errorcode)
+{
+	if (errorcode < 0)
+		rb_raise(rb_eRuntimeError, "libgit2 failed [%s, %d]", git_strerror(errorcode), errorcode);
 }
 
 static inline int rugged_parse_bool(VALUE boolean)

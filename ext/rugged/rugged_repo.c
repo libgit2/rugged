@@ -238,9 +238,10 @@ static VALUE rb_git_repo_exists(VALUE self, VALUE hex)
 	git_oid oid;
 
 	Data_Get_Struct(self, rugged_repository, repo);
+	Check_Type(hex, T_STRING);
 
 	odb = git_repository_database(repo->repo);
-	git_oid_mkstr(&oid, RSTRING_PTR(hex));
+	rugged_exception_check(git_oid_mkstr(&oid, RSTRING_PTR(hex)));
 
 	return git_odb_exists(odb, &oid) ? Qtrue : Qfalse;
 }
@@ -252,6 +253,7 @@ static VALUE rb_git_repo_read(VALUE self, VALUE hex)
 	int error;
 
 	Data_Get_Struct(self, rugged_repository, repo);
+	Check_Type(hex, T_STRING);
 
 	error = git_oid_mkstr(&oid, RSTRING_PTR(hex));
 	rugged_exception_check(error);
@@ -298,7 +300,7 @@ static VALUE rb_git_repo_write(VALUE self, VALUE rb_rawobj)
 	return rugged_str_new(out, 40, NULL);
 }
 
-static VALUE rb_git_repo_lookup(int argc, VALUE *argv, VALUE self)
+static VALUE rb_git_repo_lookup_object(int argc, VALUE *argv, VALUE self)
 {
 	rugged_repository *repo;
 	git_otype type;
@@ -313,7 +315,10 @@ static VALUE rb_git_repo_lookup(int argc, VALUE *argv, VALUE self)
 	rb_scan_args(argc, argv, "11", &rb_sha, &rb_type);
 
 	type = NIL_P(rb_type) ? GIT_OBJ_ANY : FIX2INT(rb_type);
-	git_oid_mkstr(&oid, RSTRING_PTR(rb_sha));
+
+	Check_Type(rb_sha, T_STRING);
+	error = git_oid_mkstr(&oid, RSTRING_PTR(rb_sha));
+	rugged_exception_check(error);
 
 	error = git_object_lookup(&obj, repo->repo, &oid, type);
 	rugged_exception_check(error);
@@ -330,7 +335,7 @@ void Init_rugged_repo()
 	rb_define_method(rb_cRuggedRepo, "exists", rb_git_repo_exists, 1);
 	rb_define_method(rb_cRuggedRepo, "read",   rb_git_repo_read,   1);
 	rb_define_method(rb_cRuggedRepo, "write",  rb_git_repo_write,  1);
-	rb_define_method(rb_cRuggedRepo, "lookup", rb_git_repo_lookup,  -1);
+	rb_define_method(rb_cRuggedRepo, "lookup", rb_git_repo_lookup_object,  -1);
 	rb_define_method(rb_cRuggedRepo, "index",  rb_git_repo_index,  0);
 	rb_define_method(rb_cRuggedRepo, "add_backend",  rb_git_repo_add_backend,  1);
 

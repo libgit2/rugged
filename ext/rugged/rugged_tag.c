@@ -29,11 +29,6 @@ extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedObject;
 VALUE rb_cRuggedTag;
 
-static VALUE rb_git_tag_init(int argc, VALUE *argv, VALUE self)
-{
-	return rb_git_object_init(GIT_OBJ_TAG, argc, argv, self);
-}
-
 static VALUE rb_git_tag_target_GET(VALUE self)
 {
 	git_tag *tag;
@@ -121,7 +116,6 @@ static VALUE rb_git_tag_message_SET(VALUE self, VALUE val)
 void Init_rugged_tag()
 {
 	rb_cRuggedTag = rb_define_class_under(rb_mRugged, "Tag", rb_cRuggedObject);
-	rb_define_method(rb_cRuggedTag, "initialize", rb_git_tag_init, -1);
 
 	rb_define_method(rb_cRuggedTag, "message", rb_git_tag_message_GET, 0);
 	rb_define_method(rb_cRuggedTag, "message=", rb_git_tag_message_SET, 1);

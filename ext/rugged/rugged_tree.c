@@ -121,8 +121,8 @@ static VALUE rb_git_tree_entry_sha_SET(VALUE self, VALUE val)
 	Data_Get_Struct(self, rugged_tree_entry, tree_entry);
 
 	Check_Type(val, T_STRING);
-	if (git_oid_mkstr(&id, RSTRING_PTR(val)) < 0)
-		rb_raise(rb_eTypeError, "Invalid SHA1 value");
+	rugged_exception_check(git_oid_mkstr(&id, RSTRING_PTR(val)));
+
 	git_tree_entry_set_id(tree_entry->entry, &id);
 	return Qnil;
 }
@@ -148,11 +148,6 @@ static VALUE rb_git_tree_entry_2object(VALUE self)
 /*
  * Rugged Tree
  */
-static VALUE rb_git_tree_init(int argc, VALUE *argv, VALUE self)
-{
-	return rb_git_object_init(GIT_OBJ_TREE, argc, argv, self);
-}
-
 static VALUE rb_git_tree_entrycount(VALUE self)
 {
 	git_tree *tree;
@@ -230,7 +225,6 @@ void Init_rugged_tree()
 	 * Tree
 	 */
 	rb_cRuggedTree = rb_define_class_under(rb_mRugged, "Tree", rb_cRuggedObject);
-	rb_define_method(rb_cRuggedTree, "initialize", rb_git_tree_init, -1);
 	rb_define_method(rb_cRuggedTree, "entry_count", rb_git_tree_entrycount, 0);
 	rb_define_method(rb_cRuggedTree, "clear", rb_git_tree_clear, 0);
 	rb_define_method(rb_cRuggedTree, "add_entry", rb_git_tree_add_entry, 3);
