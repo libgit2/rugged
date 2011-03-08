@@ -24,6 +24,8 @@ def context(*args, &block)
   end
   (class << klass; self end).send(:define_method, :name) { name.gsub(/\W/,'_') }
   klass.class_eval &block
+  ($contexts ||= []) << klass # make sure klass doesn't get GC'd
+  klass
 end
 
 def rm_loose(sha)

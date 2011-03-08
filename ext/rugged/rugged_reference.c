@@ -153,7 +153,7 @@ static VALUE rb_git_ref_type(VALUE self)
 {
 	rugged_reference *ref;
 	UNPACK_REFERENCE(self, ref);
-	return INT2FIX(git_reference_type(ref->ref));
+	return rugged_str_new2(git_object_type2string(git_reference_type(ref->ref)), NULL);
 }
 
 static VALUE rb_git_ref_name(VALUE self)
@@ -220,7 +220,6 @@ void Init_rugged_reference()
 
 	rb_define_method(rb_cRuggedReference, "name", rb_git_ref_name, 0);
 	rb_define_method(rb_cRuggedReference, "name=", rb_git_ref_rename, 1);
-	rb_define_method(rb_cRuggedReference, "rename", rb_git_ref_rename, 1);
 
 	rb_define_method(rb_cRuggedReference, "delete", rb_git_ref_delete, 0);
 }
