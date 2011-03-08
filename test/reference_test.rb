@@ -50,4 +50,15 @@ context "Rugged::Reference stuff" do
     assert_equal "5b5b025afb0b4c913b4c338a42934a3863bf3644", ref.target
     ref.delete
   end
+
+  test "can resolve head" do
+    ref = Rugged::Reference.lookup(@repo, "HEAD")
+    assert_equal "refs/heads/master", ref.target
+    assert_equal "tree", ref.type
+
+    head = ref.resolve
+    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", head.target
+    assert_equal "commit", head.type
+  end
+
 end

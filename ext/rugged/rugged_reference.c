@@ -221,5 +221,6 @@ void Init_rugged_reference()
 	rb_define_method(rb_cRuggedReference, "name", rb_git_ref_name, 0);
 	rb_define_method(rb_cRuggedReference, "name=", rb_git_ref_rename, 1);
 
+	rb_define_method(rb_cRuggedReference, "resolve", rb_git_ref_resolve, 0);
 	rb_define_method(rb_cRuggedReference, "delete", rb_git_ref_delete, 0);
 }
