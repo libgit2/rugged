@@ -71,6 +71,12 @@ context "Rugged::Repository stuff" do
     assert list.map {|c| c.sha[0,5] }.join('.'), "a4a7d.c4780.9fd73.4a202.5b5b0.84960"
   end
 
+  test "can lookup head from repo" do
+    head = @repo.head
+    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", head.target
+    assert_equal "commit", head.type
+  end
+
   test "garbage collection methods don't crash" do
     Rugged::Repository.new(@path)
     ObjectSpace.garbage_collect

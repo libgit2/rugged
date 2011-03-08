@@ -10,6 +10,11 @@ module Rugged
         yield commit
       end
     end
+
+    def head
+      ref = Reference.lookup(self, "HEAD")
+      ref.resolve
+    end
   end
 
 end
