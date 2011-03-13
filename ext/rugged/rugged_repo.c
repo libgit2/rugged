@@ -89,7 +89,7 @@ VALUE rugged_raw_read(git_repository *repo, const git_oid *oid)
 
 void rb_git_repo__free(rugged_repository *repo)
 {
-	git_repository_free__no_gc(repo->repo);
+	git_repository_free(repo->repo);
 	free(repo);
 }
 

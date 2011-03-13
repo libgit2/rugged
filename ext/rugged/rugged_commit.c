@@ -104,24 +104,32 @@ static VALUE rb_git_commit_time_GET(VALUE self)
 static VALUE rb_git_commit_tree_GET(VALUE self)
 {
 	git_commit *commit;
-	const git_tree *tree;
+	git_tree *tree;
 	VALUE owner;
+	int error;
 
 	RUGGED_OBJ_UNWRAP(self, git_commit, commit);
 	RUGGED_OBJ_OWNER(self, owner);
 
-	tree = git_commit_tree(commit);
-	return tree ? rugged_object_new(owner, (git_object *)tree) : Qnil;
+	error = git_commit_tree(&tree, commit);
+	rugged_exception_check(error);
+
+	return rugged_object_new(owner, (git_object *)tree);
 }
 
 static VALUE rb_git_commit_tree_SET(VALUE self, VALUE val)
 {
 	git_commit *commit;
 	git_tree *tree;
+	int error;
+
 	RUGGED_OBJ_UNWRAP(self, git_commit, commit);
 
 	tree = (git_tree *)rugged_object_get(git_object_owner((git_object *)commit), val, GIT_OBJ_TREE);
-	git_commit_set_tree(commit, tree);
+
+	error = git_commit_set_tree(commit, tree);
+	rugged_exception_check(error);
+
 	return Qnil;
 }
 
@@ -131,12 +139,15 @@ static VALUE rb_git_commit_parents_GET(VALUE self)
 	git_commit *parent;
 	unsigned int n;
 	VALUE ret_arr, owner;
+	int error;
 
 	RUGGED_OBJ_UNWRAP(self, git_commit, commit);
 	RUGGED_OBJ_OWNER(self, owner);
 
 	ret_arr = rb_ary_new();
-	for (n = 0; (parent = git_commit_parent(commit, n)) != NULL; n++) {
+	for (n = 0; n < git_commit_parentcount(commit); n++) {
+		error = git_commit_parent(&parent, commit, n);
+		rugged_exception_check(error);
 		rb_ary_store(ret_arr, n, rugged_object_new(owner, (git_object *)parent));
 	}
 

@@ -72,16 +72,21 @@ static VALUE rb_git_walker_next(VALUE self)
 {
 	rugged_walker *walk;
 	git_commit *commit;
+	git_oid commit_oid;
 	int error;
 
 	Data_Get_Struct(self, rugged_walker, walk);
 
-	error = git_revwalk_next(&commit, walk->walk);
+	error = git_revwalk_next(&commit_oid, walk->walk);
 	if (error == GIT_EREVWALKOVER)
 		return Qfalse;
 
 	rugged_exception_check(error);
-	return rugged_object_new(walk->owner, (git_object*)commit);
+
+	error = git_commit_lookup(&commit, git_revwalk_repository(walk->walk), &commit_oid);
+	rugged_exception_check(error);
+
+	return rugged_object_new(walk->owner, (git_object *)commit);
 }
 
 static VALUE rb_git_walker_push(VALUE self, VALUE rb_commit)
@@ -91,7 +96,7 @@ static VALUE rb_git_walker_push(VALUE self, VALUE rb_commit)
 
 	Data_Get_Struct(self, rugged_walker, walk);
 	commit = (git_commit *)rugged_object_get(git_revwalk_repository(walk->walk), rb_commit, GIT_OBJ_COMMIT);
-	git_revwalk_push(walk->walk, commit);
+	git_revwalk_push(walk->walk, git_object_id((git_object *)commit));
 
 	return Qnil;
 }
@@ -103,7 +108,7 @@ static VALUE rb_git_walker_hide(VALUE self, VALUE rb_commit)
 
 	Data_Get_Struct(self, rugged_walker, walk);
 	commit = (git_commit *)rugged_object_get(git_revwalk_repository(walk->walk), rb_commit, GIT_OBJ_COMMIT);
-	git_revwalk_hide(walk->walk, commit);
+	git_revwalk_hide(walk->walk, git_object_id((git_object *)commit));
 
 	return Qnil;
 }
