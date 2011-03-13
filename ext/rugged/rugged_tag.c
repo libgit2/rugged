@@ -32,12 +32,17 @@ VALUE rb_cRuggedTag;
 static VALUE rb_git_tag_target_GET(VALUE self)
 {
 	git_tag *tag;
+	git_object *target;
+	int error;
 	VALUE owner;
 
 	RUGGED_OBJ_UNWRAP(self, git_tag, tag);
 	RUGGED_OBJ_OWNER(self, owner);
 
-	return rugged_object_new(owner, (git_object*)git_tag_target(tag));
+	error = git_tag_target(&target, tag);
+	rugged_exception_check(error);
+
+	return rugged_object_new(owner, target);
 }
 
 static VALUE rb_git_tag_target_SET(VALUE self, VALUE val)
