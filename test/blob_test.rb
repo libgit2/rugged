@@ -36,6 +36,7 @@ context "Rugged::Blob tests" do
                "\xE3\xC3\nK\xCD<!\xEA-_\x9E\xDC=40000 examples\x00"+
                "\xAE\xCB\xE9d!|\xB9\xA6\x96\x024],U\xEE\x99\xA2\xEE\xD4\x92"
 
+    content.force_encoding('binary') if content.respond_to?(:force_encoding)
     obj = Rugged::RawObject.new('tree', content)
 
     sha = @repo.write(obj)
