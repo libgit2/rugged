@@ -40,7 +40,7 @@ context "Rugged::Walker stuff" do
     assert_equal sha, @walker.next.sha
     assert_equal false, @walker.next
     @walker.reset
-    assert_equal sha, @walker.next.sha
+    assert_equal false, @walker.next
   end
 
   test "can enumerable" do
