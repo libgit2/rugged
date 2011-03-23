@@ -13,6 +13,13 @@ context "Rugged::Reference stuff" do
     assert_equal "refs/heads/master", ref.name
   end
 
+  test "can open packed reference" do
+    ref = Rugged::Reference.lookup(@repo, "refs/heads/packed")
+    assert_equal "41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9", ref.target
+    assert_equal "commit", ref.type
+    assert_equal "refs/heads/packed", ref.name
+  end
+
   test "can create reference from symbolic reference" do
     ref = Rugged::Reference.create(@repo, "refs/heads/unit_test", "refs/heads/master")
     assert_equal "refs/heads/master", ref.target
