@@ -26,6 +26,11 @@
 #ifndef __H_RUGGED_BINDINGS__
 #define __H_RUGGED_BINDINGS__
 
+// tell rbx not to use it's caching compat layer
+// by doing this we're making a promize to RBX that
+// we'll never modify the pointers we get back from RSTRING_PTR
+#define RSTRING_NOT_MODIFIED
+
 #include <ruby.h>
 
 #include <assert.h>
