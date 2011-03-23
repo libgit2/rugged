@@ -38,7 +38,7 @@ context "Rugged::Tag tests" do
     end
   end
   
-  test "can write the tag data" do
+  xtest "can write the tag data" do
     sha = "0c37a5391bbff43c37f0d0371823a5509eed5b1d"
     obj = @repo.lookup(sha)
     obj.message = 'new messages'

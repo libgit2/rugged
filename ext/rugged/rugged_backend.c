@@ -35,7 +35,6 @@ int rugged_backend__exists(git_odb_backend *_backend, const git_oid *oid)
 	ID method;
 	VALUE exists;
 	rugged_backend *back;
-	char oid_out[40];
 
 	back = (rugged_backend *)_backend;
 	method = rb_intern("exists");
@@ -43,13 +42,12 @@ int rugged_backend__exists(git_odb_backend *_backend, const git_oid *oid)
 	if (!rb_respond_to(back->self, method))
 		return 0; /* not found! */
 
-	git_oid_fmt(oid_out, oid);
-	exists = rb_funcall(back->self, method, 1, rugged_str_new(oid_out, 40, NULL));
+	exists = rb_funcall(back->self, method, 1, rugged_create_oid(oid));
 
 	return rugged_parse_bool(exists);
 }
 
-int rugged_backend__write(git_oid *id, git_odb_backend *_backend, git_rawobj *obj)
+int rugged_backend__write(git_oid *id, git_odb_backend *_backend, const void *data, size_t len, git_otype type)
 {
 	ID method;
 	rugged_backend *back;
@@ -61,7 +59,7 @@ int rugged_backend__write(git_oid *id, git_odb_backend *_backend, git_rawobj *ob
 	if (!rb_respond_to(back->self, method))
 		return GIT_ERROR;
 
-	rb_oid = rb_funcall(back->self, method, 1, rugged_rawobject_new(obj));
+	rb_oid = rb_funcall(back->self, method, 2, rugged_str_ascii(data, len), INT2FIX((int)type));
 
 	if (NIL_P(rb_oid))
 		return GIT_ERROR;
@@ -71,12 +69,12 @@ int rugged_backend__write(git_oid *id, git_odb_backend *_backend, git_rawobj *ob
 	return git_oid_mkstr(id, RSTRING_PTR(rb_oid));
 }
 
-int rugged_backend__generic_read(int header_only, git_rawobj *obj, git_odb_backend *_backend, const git_oid *oid)
+int rugged_backend__generic_read(int header_only, void **buffer_p, size_t *size_p, git_otype *type_p, git_odb_backend *_backend, const git_oid *oid)
 {
 	ID method;
-	VALUE read_obj;
+	VALUE read_hash;
+	VALUE ruby_type, ruby_size, ruby_data;
 	rugged_backend *back;
-	char oid_out[40];
 
 	back = (rugged_backend *)_backend;
 	method = rb_intern(header_only ? "read_header" : "read");
@@ -84,32 +82,56 @@ int rugged_backend__generic_read(int header_only, git_rawobj *obj, git_odb_backe
 	if (!rb_respond_to(back->self, method))
 		return GIT_ENOTFOUND;
 
-	git_oid_fmt(oid_out, oid);
+	read_hash = rb_funcall(back->self, method, 1, rugged_create_oid(oid));
 
-	read_obj = rb_funcall(back->self, method, 1, rugged_str_new(oid_out, 40, NULL));
-
-	if (NIL_P(read_obj))
+	if (NIL_P(read_hash))
 		return GIT_ENOTFOUND;
 
-	if (!rb_obj_is_instance_of(read_obj, rb_cRuggedRawObject))
-		rb_raise(rb_eTypeError, "'read' interface must return a Rugged::RawObject");
+	Check_Type(read_hash, T_HASH);
 
-	rugged_rawobject_get(obj, read_obj);
+	ruby_type = rb_hash_aref(read_hash, rb_intern("type"));
+	ruby_size = rb_hash_aref(read_hash, rb_intern("len"));
+	ruby_data = rb_hash_aref(read_hash, rb_intern("data"));
 
-	if (header_only && obj->data != NULL)
-		git_rawobj_close(obj);
+	if (NIL_P(ruby_type))
+		rb_raise(rb_eTypeError, "Missing required value ':type'");
+
+	*type_p = rugged_get_otype(ruby_type);
+
+	if (NIL_P(ruby_size))
+		rb_raise(rb_eTypeError, "Missing required value ':len'");
+
+	Check_Type(ruby_size, T_FIXNUM);
+
+	*size_p = FIX2INT(ruby_size);
+
+	if (!header_only) {
+		void *data;
+
+		assert(buffer_p);
+
+		if (NIL_P(ruby_data))
+			rb_raise(rb_eTypeError, "Missing required value ':data'");
+
+		Check_Type(ruby_data, T_STRING);
+
+		data = malloc(RSTRING_LEN(ruby_data));
+		memcpy(data, RSTRING_PTR(ruby_data), RSTRING_LEN(ruby_data));
+
+		*buffer_p = data;
+	}
 
 	return GIT_SUCCESS;
 }
 
-int rugged_backend__read(git_rawobj *obj, git_odb_backend *_backend, const git_oid *oid)
+int rugged_backend__read(void **buffer_p, size_t *size_p, git_otype *type_p, git_odb_backend *_backend, const git_oid *oid)
 {
-	return rugged_backend__generic_read(0, obj, _backend, oid);
+	return rugged_backend__generic_read(0, buffer_p, size_p, type_p, _backend, oid);
 }
 
-int rugged_backend__read_header(git_rawobj *obj, git_odb_backend *_backend, const git_oid *oid)
+int rugged_backend__read_header(size_t *size_p, git_otype *type_p, git_odb_backend *_backend, const git_oid *oid)
 {
-	return rugged_backend__generic_read(1, obj, _backend, oid);
+	return rugged_backend__generic_read(1, NULL, size_p, type_p, _backend, oid);
 }
 
 void rugged_backend__free(git_odb_backend *backend)
@@ -139,7 +161,10 @@ static VALUE rb_git_backend_allocate(VALUE klass)
 	backend->parent.read = &rugged_backend__read;
 	backend->parent.read_header = &rugged_backend__read_header;
 	backend->parent.write = &rugged_backend__write;
+	backend->parent.writestream = NULL;
+	backend->parent.readstream = NULL;
 	backend->parent.exists = &rugged_backend__exists;
+
 	backend->parent.free = &rugged_backend__free;
 	backend->self = Data_Wrap_Struct(klass, NULL, &rugged_backend__gcfree, backend);
 

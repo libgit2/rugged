@@ -27,18 +27,9 @@
 
 extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedObject;
+extern VALUE rb_cRuggedRepo;
+
 VALUE rb_cRuggedBlob;
-
-static VALUE rb_git_blob_content_SET(VALUE self, VALUE rb_contents)
-{
-	git_blob *blob;
-	RUGGED_OBJ_UNWRAP(self, git_blob, blob);
-
-	Check_Type(rb_contents, T_STRING);
-	git_blob_set_rawcontent(blob, RSTRING_PTR(rb_contents), RSTRING_LEN(rb_contents));
-
-	return Qnil;
-}
 
 static VALUE rb_git_blob_content_GET(VALUE self)
 {
@@ -71,12 +62,39 @@ static VALUE rb_git_blob_rawsize(VALUE self)
 	return INT2FIX(git_blob_rawsize(blob));
 }
 
+static VALUE rb_git_blob_create(int argc, VALUE *argv, VALUE self)
+{
+	int error;
+	git_oid oid;
+	rugged_repository *repo;
+
+	VALUE rb_buffer, rb_repo, rb_is_buffer = Qfalse;
+
+	rb_scan_args(argc, argv, "21", &rb_repo, &rb_buffer, &rb_is_buffer);
+
+	Check_Type(rb_buffer, T_STRING);
+	if (!rb_obj_is_instance_of(rb_repo, rb_cRuggedRepo))
+		rb_raise(rb_eTypeError, "Expecting a Rugged Repository");
+
+	Data_Get_Struct(rb_repo, rugged_repository, repo);
+
+	if (rugged_parse_bool(rb_is_buffer)) {
+		error = git_blob_create_frombuffer(&oid, repo->repo, RSTRING_PTR(rb_buffer), RSTRING_LEN(rb_buffer));
+	} else {
+		error = git_blob_create_fromfile(&oid, repo->repo, RSTRING_PTR(rb_buffer));
+	}
+
+	rugged_exception_check(error);
+
+	return rugged_create_oid(&oid);
+}
+
 void Init_rugged_blob()
 {
 	rb_cRuggedBlob = rb_define_class_under(rb_mRugged, "Blob", rb_cRuggedObject);
 
 	rb_define_method(rb_cRuggedBlob, "size", rb_git_blob_rawsize, 0);
-
 	rb_define_method(rb_cRuggedBlob, "content", rb_git_blob_content_GET, 0);
-	rb_define_method(rb_cRuggedBlob, "content=", rb_git_blob_content_SET, 1);
+
+	rb_define_singleton_method(rb_cRuggedBlob, "create", rb_git_blob_create, -1);
 }

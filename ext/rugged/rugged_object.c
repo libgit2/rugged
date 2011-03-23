@@ -30,6 +30,7 @@ extern VALUE rb_cRuggedTag;
 extern VALUE rb_cRuggedTree;
 extern VALUE rb_cRuggedCommit;
 extern VALUE rb_cRuggedBlob;
+extern VALUE rb_cRuggedRepo;
 
 VALUE rb_cRuggedObject;
 
@@ -160,6 +161,10 @@ VALUE rb_git_object_lookup(VALUE klass, VALUE rb_repo, VALUE rb_hex)
 		type = GIT_OBJ_ANY;
 
 	Check_Type(rb_hex, T_STRING);
+
+	if (!rb_obj_is_instance_of(rb_repo, rb_cRuggedRepo))
+		rb_raise(rb_eTypeError, "Expecting a Rugged Repository");
+
 	Data_Get_Struct(rb_repo, rugged_repository, repo);
 
 	error = git_oid_mkstr(&oid, RSTRING_PTR(rb_hex));
@@ -169,32 +174,6 @@ VALUE rb_git_object_lookup(VALUE klass, VALUE rb_repo, VALUE rb_hex)
 	rugged_exception_check(error);
 
 	return rugged_object_new(rb_repo, object);
-}
-
-VALUE rb_git_object_new(VALUE self, VALUE rb_repo)
-{
-	git_object *object;
-	git_otype type;
-	int error;
-
-	rugged_object *r_obj;
-	rugged_repository *repo;
-
-	type = class2otype(rb_obj_class(self));
-
-	if (type == GIT_OBJ_BAD)
-		rb_raise(rb_eTypeError, "Cannot instantiate an abstract Git Object");
-
-	Data_Get_Struct(rb_repo, rugged_repository, repo);
-	Data_Get_Struct(self, rugged_object, r_obj);
-
-	error = git_object_new(&object, repo->repo, type);
-	rugged_exception_check(error);
-
-	r_obj->object = object;
-	r_obj->owner = rb_repo;
-
-	return Qnil;
 }
 
 static VALUE rb_git_object_equal(VALUE self, VALUE other)
@@ -213,12 +192,8 @@ static VALUE rb_git_object_equal(VALUE self, VALUE other)
 static VALUE rb_git_object_sha_GET(VALUE self)
 {
 	git_object *object;
-	char hex[40];
-
 	RUGGED_OBJ_UNWRAP(self, git_object, object);
-
-	git_oid_fmt(hex, git_object_id(object));
-	return rugged_str_new(hex, 40, NULL);
+	return rugged_create_oid(git_object_id(object));
 }
 
 static VALUE rb_git_object_type_GET(VALUE self)
@@ -237,35 +212,14 @@ static VALUE rb_git_object_read_raw(VALUE self)
 	return rugged_raw_read(git_object_owner(object), git_object_id(object));
 }
 
-static VALUE rb_git_object_write(VALUE self)
-{
-	git_object *object;
-	char new_hex[40];
-	VALUE sha;
-	int error;
-
-	RUGGED_OBJ_UNWRAP(self, git_object, object);
-
-	error = git_object_write(object);
-	rugged_exception_check(error);
-
-	git_oid_fmt(new_hex, git_object_id(object));
-	sha = rugged_str_new(new_hex, 40, NULL);
-
-	return sha;
-}
-
-
 void Init_rugged_object()
 {
 	rb_cRuggedObject = rb_define_class_under(rb_mRugged, "Object", rb_cObject);
 	rb_define_alloc_func(rb_cRuggedObject, rb_git_object_allocate);
 
-	rb_define_method(rb_cRuggedObject, "initialize", rb_git_object_new, 1);
 	rb_define_singleton_method(rb_cRuggedObject, "lookup", rb_git_object_lookup, 2);
 
 	rb_define_method(rb_cRuggedObject, "read_raw", rb_git_object_read_raw, 0);
-	rb_define_method(rb_cRuggedObject, "write", rb_git_object_write, 0);
 	rb_define_method(rb_cRuggedObject, "==", rb_git_object_equal, 1);
 	rb_define_method(rb_cRuggedObject, "sha", rb_git_object_sha_GET, 0);
 	rb_define_method(rb_cRuggedObject, "type", rb_git_object_type_GET, 0);

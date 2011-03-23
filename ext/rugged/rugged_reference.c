@@ -118,9 +118,7 @@ static VALUE rb_git_ref_target(VALUE self)
 	UNPACK_REFERENCE(self, ref);
 
 	if (git_reference_type(ref->ref) == GIT_REF_OID) {
-		char out[40];
-		git_oid_fmt(out, git_reference_oid(ref->ref));
-		return rugged_str_new(out, 40, NULL);
+		return rugged_create_oid(git_reference_oid(ref->ref));
 	} else {
 		return rugged_str_new2(git_reference_target(ref->ref), NULL);
 	}

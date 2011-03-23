@@ -314,10 +314,8 @@ static VALUE rb_git_indexentry_path_SET(VALUE self, VALUE val)
 static VALUE rb_git_indexentry_oid_GET(VALUE self)
 {
 	git_index_entry *entry;
-	char out[40];
 	Data_Get_Struct(self, git_index_entry, entry);
-	git_oid_fmt(out, &entry->oid);
-	return rugged_str_new(out, 40, NULL);
+	return rugged_create_oid(&entry->oid);
 }
 
 static VALUE rb_git_indexentry_oid_SET(VALUE self, VALUE v) 

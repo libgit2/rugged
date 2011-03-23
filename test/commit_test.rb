@@ -74,32 +74,8 @@ context "Rugged::Commit tests" do
     assert parents.include?("9fd738e8f7967c078dceed8190330fc8648ee56a")
     assert parents.include?("c47800c7266a2be04c571c04d5a6614691ea99bd")
   end
-  
-  test "can write the commit data" do
-    sha = "8496071c1b46c854b31185ea97743be6a8774479"
-    obj = @repo.lookup(sha)
-    obj.message = 'new message'
-    sha = obj.write
 
-    if defined? Encoding
-      with_default_encoding('utf-8') do |enc|
-        obj = @repo.lookup(sha)
-        obj.message = 'new message'
-        sha = obj.write
-        assert_equal enc, sha.encoding
-      end
-
-      with_default_encoding('ascii') do |enc|
-        obj = @repo.lookup(sha)
-        obj.message = 'new message'
-        sha = obj.write
-        assert_equal enc, sha.encoding
-      end
-    end
-    rm_loose(sha)
-  end
-
-  test "can write new commit data" do
+  xtest "can write new commit data" do
     tsha = "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b"
     tree = @repo.lookup(tsha)
 

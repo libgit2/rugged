@@ -15,20 +15,9 @@ context "Rugged::Blob tests" do
     assert_equal @sha, blob.sha
   end
 
-  test "can rewrite blob data" do
-    blob = @repo.lookup(@sha)
-    blob.content = "my new content"
-    assert_equal @sha, blob.sha
-    blob.write # should change the sha
-    assert_equal "2dd916ea1ff086d61fbc1c286079305ffad4e92e", blob.sha
-    rm_loose(blob.sha)
-  end
-
   test "can write new blob data" do
-    blob = Rugged::Blob.new(@repo)
-    blob.content = "a new blob content"
-    blob.write
-    rm_loose(blob.sha)
+    sha = Rugged::Blob.create(@repo, "a new blob content", true)
+    rm_loose(sha)
   end
 
   test "gets the complete content if it has nulls" do
@@ -37,9 +26,8 @@ context "Rugged::Blob tests" do
                "\xAE\xCB\xE9d!|\xB9\xA6\x96\x024],U\xEE\x99\xA2\xEE\xD4\x92"
 
     content.force_encoding('binary') if content.respond_to?(:force_encoding)
-    obj = Rugged::RawObject.new('tree', content)
 
-    sha = @repo.write(obj)
+    sha = @repo.write(content, 'tree')
     blob = @repo.lookup(sha)
     assert_equal content, blob.read_raw.data
     rm_loose(sha)

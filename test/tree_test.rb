@@ -21,12 +21,12 @@ context "Rugged::Tree tests" do
     tent = @tree[2]
 
     assert_equal "README", bent.name
-    assert_equal bent.to_object.sha, bent.sha
+    assert_equal bent.to_object(@repo).sha, bent.sha
     # assert_equal 33188, bent.attributes
 
     assert_equal "subdir", tent.name
-    assert_equal "619f9935957e010c419cb9d15621916ddfcc0b96", tent.to_object.sha
-    assert_equal "tree", tent.to_object.type
+    assert_equal "619f9935957e010c419cb9d15621916ddfcc0b96", tent.to_object(@repo).sha
+    assert_equal "tree", tent.to_object(@repo).type
 
     if defined? Encoding
       with_default_encoding('utf-8') do |enc|

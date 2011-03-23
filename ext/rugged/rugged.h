@@ -58,12 +58,11 @@ VALUE rugged_raw_read(git_repository *repo, const git_oid *oid);
 VALUE rugged_signature_new(const git_signature *sig);
 VALUE rugged_object_new(VALUE repository, git_object *object);
 VALUE rugged_index_new(VALUE owner, git_index *index);
-VALUE rugged_rawobject_new(const git_rawobj *obj);
+
+git_otype rugged_get_otype(VALUE rb_type);
 
 git_signature *rugged_signature_get(VALUE rb_person);
 git_object *rugged_object_get(git_repository *repo, VALUE object_value, git_otype type);
-void rugged_rawobject_get(git_rawobj *obj, VALUE rb_obj);
-
 
 typedef struct {
 	git_odb_backend parent;
@@ -167,11 +166,18 @@ static inline VALUE rugged_str_new2(const char *str, rb_encoding *rb_enc)
 	return encoded_string;
 }
 
-#	define rugged_str_ascii(ptr, len) rb_enc_str_new((ptr), (len), rb_ascii8bit_encoding());
+#	define rugged_str_ascii(ptr, len) rb_enc_str_new((ptr), (len), rb_ascii8bit_encoding())
 #else
 #	define rugged_str_new(str, len, rb_enc)  rb_str_new(str, len)
 #	define rugged_str_new2(str, rb_enc) rb_str_new2(str)
 #	define rugged_str_ascii(ptr, len) rb_str_new(ptr, len)
 #endif
+
+static inline VALUE rugged_create_oid(const git_oid *oid)
+{
+	char out[40];
+	git_oid_fmt(out, oid);
+	return rugged_str_new(out, 40, NULL);
+}
 
 #endif

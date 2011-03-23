@@ -30,50 +30,73 @@ extern VALUE rb_cRuggedIndex;
 extern VALUE rb_cRuggedBackend;
 
 VALUE rb_cRuggedRepo;
-VALUE rb_cRuggedRawObject;
+VALUE rb_cRuggedOdbObject;
 
-VALUE rugged_rawobject_new(const git_rawobj *obj)
+
+git_otype rugged_get_otype(VALUE self)
 {
-	VALUE rb_obj_args[3];
+	git_otype type;
 
-	rb_obj_args[0] = INT2FIX(obj->type);
-	rb_obj_args[1] = rugged_str_ascii(obj->data, obj->len);
-	rb_obj_args[2] = INT2FIX(obj->len);
+	if (NIL_P(self))
+		return GIT_OBJ_ANY;
 
-	return rb_class_new_instance(3, rb_obj_args, rb_cRuggedRawObject);
+	switch (TYPE(self)) {
+	case T_STRING:
+		type = git_object_string2type(RSTRING_PTR(self));
+		break;
+
+	case T_FIXNUM:
+		type = FIX2INT(self);
+		break;
+
+	default:
+		type = GIT_OBJ_BAD;
+		break;
+	}
+
+	if (!git_object_typeisloose(type))
+		rb_raise(rb_eTypeError, "Invalid Git object type specifier");
+
+	return type;
 }
 
-void rugged_rawobject_get(git_rawobj *obj, VALUE rb_obj)
+static VALUE rb_git_odbobj_hash(VALUE self)
 {
-	VALUE rb_data, rb_len, rb_type;
+	git_odb_object *obj;
+	Data_Get_Struct(self, git_odb_object, obj);
+	return rugged_create_oid(git_odb_object_id(obj));
+}
 
-	rb_data = rb_iv_get(rb_obj, "@data");
-	rb_len = rb_iv_get(rb_obj, "@len");
-	rb_type = rb_iv_get(rb_obj, "@type");
+static VALUE rb_git_odbobj_data(VALUE self)
+{
+	git_odb_object *obj;
+	Data_Get_Struct(self, git_odb_object, obj);
+	return rugged_str_ascii(git_odb_object_data(obj), git_odb_object_size(obj));
+}
 
-	Check_Type(rb_type, T_FIXNUM);
-	Check_Type(rb_len, T_FIXNUM);
+static VALUE rb_git_odbobj_size(VALUE self)
+{
+	git_odb_object *obj;
+	Data_Get_Struct(self, git_odb_object, obj);
+	return INT2FIX(git_odb_object_size(obj));
+}
 
-	obj->type = (git_otype)FIX2INT(rb_type);
-	obj->len = FIX2INT(rb_len);
-	obj->data = NULL;
+static VALUE rb_git_odbobj_type(VALUE self)
+{
+	git_odb_object *obj;
+	Data_Get_Struct(self, git_odb_object, obj);
+	return INT2FIX(git_odb_object_type(obj));
+}
 
-	if (!NIL_P(rb_data)) {
-		Check_Type(rb_data, T_STRING);
-
-		obj->data = malloc(obj->len);
-		if (obj->data == NULL)
-			rb_raise(rb_eNoMemError, "out of memory");
-
-		memcpy(obj->data, RSTRING_PTR(rb_data), obj->len);
-	}
+void rb_git__odbobj_free(void *obj)
+{
+	git_odb_object_close((git_odb_object *)obj);
 }
 
 VALUE rugged_raw_read(git_repository *repo, const git_oid *oid)
 {
 	git_odb *odb;
-	git_rawobj obj;
-	VALUE raw_object;
+	git_odb_object *obj;
 
 	int error;
 
@@ -81,10 +104,7 @@ VALUE rugged_raw_read(git_repository *repo, const git_oid *oid)
 	error = git_odb_read(&obj, odb, oid);
 	rugged_exception_check(error);
 
-	raw_object = rugged_rawobject_new(&obj);
-	git_rawobj_close(&obj);
-
-	return raw_object;
+	return Data_Wrap_Struct(rb_cRuggedOdbObject, NULL, rb_git__odbobj_free, obj);
 }
 
 void rb_git_repo__free(rugged_repository *repo)
@@ -261,43 +281,45 @@ static VALUE rb_git_repo_read(VALUE self, VALUE hex)
 	return rugged_raw_read(repo->repo, &oid);
 }
 
-static VALUE rb_git_repo_obj_hash(VALUE self, VALUE rb_rawobj)
+static VALUE rb_git_repo_hash(VALUE self, VALUE rb_buffer, VALUE rub_type)
 {
-	git_rawobj obj;
-	char out[40];
 	int error;
 	git_oid oid;
 
-	rugged_rawobject_get(&obj, rb_rawobj);
+	Check_Type(rb_buffer, T_STRING);
 
-	error = git_rawobj_hash(&oid, &obj);
+	error = git_odb_hash(&oid, RSTRING_PTR(rb_buffer), RSTRING_LEN(rb_buffer), rugged_get_otype(rub_type));
 	rugged_exception_check(error);
 
-	git_oid_fmt(out, &oid);
-	return rugged_str_new(out, 40, NULL);
+	return rugged_create_oid(&oid);
 }
 
-static VALUE rb_git_repo_write(VALUE self, VALUE rb_rawobj)
+static VALUE rb_git_repo_write(VALUE self, VALUE rb_buffer, VALUE rub_type)
 {
 	rugged_repository *repo;
+	git_odb_stream *stream;
+
 	git_odb *odb;
-	git_rawobj obj;
 	git_oid oid;
 	int error;
-	char out[40];
+
+	git_otype type;
 
 	Data_Get_Struct(self, rugged_repository, repo);
+
 	odb = git_repository_database(repo->repo);
+	type = rugged_get_otype(rub_type);
 
-	rugged_rawobject_get(&obj, rb_rawobj);
-
-	error = git_odb_write(&oid, odb, &obj);
-	git_rawobj_close(&obj);
-
+	error = git_odb_open_wstream(&stream, odb, RSTRING_LEN(rb_buffer), type);
 	rugged_exception_check(error);
 
-	git_oid_fmt(out, &oid);
-	return rugged_str_new(out, 40, NULL);
+	error = stream->write(stream, RSTRING_PTR(rb_buffer), RSTRING_LEN(rb_buffer));
+	rugged_exception_check(error);
+
+	error = stream->finalize_write(&oid, stream);
+	rugged_exception_check(error);
+
+	return rugged_create_oid(&oid);
 }
 
 static VALUE rb_git_repo_lookup_object(int argc, VALUE *argv, VALUE self)
@@ -308,13 +330,13 @@ static VALUE rb_git_repo_lookup_object(int argc, VALUE *argv, VALUE self)
 	git_oid oid;
 	int error;
 
-	VALUE rb_type, rb_sha;
+	VALUE rub_type, rb_sha;
 
 	Data_Get_Struct(self, rugged_repository, repo);
 
-	rb_scan_args(argc, argv, "11", &rb_sha, &rb_type);
+	rb_scan_args(argc, argv, "11", &rb_sha, &rub_type);
 
-	type = NIL_P(rb_type) ? GIT_OBJ_ANY : FIX2INT(rb_type);
+	type = rugged_get_otype(rub_type);
 
 	Check_Type(rb_sha, T_STRING);
 	error = git_oid_mkstr(&oid, RSTRING_PTR(rb_sha));
@@ -334,13 +356,18 @@ void Init_rugged_repo()
 	rb_define_method(rb_cRuggedRepo, "initialize", rb_git_repo_init, -1);
 	rb_define_method(rb_cRuggedRepo, "exists", rb_git_repo_exists, 1);
 	rb_define_method(rb_cRuggedRepo, "read",   rb_git_repo_read,   1);
-	rb_define_method(rb_cRuggedRepo, "write",  rb_git_repo_write,  1);
+	rb_define_method(rb_cRuggedRepo, "write",  rb_git_repo_write,  2);
 	rb_define_method(rb_cRuggedRepo, "lookup", rb_git_repo_lookup_object,  -1);
 	rb_define_method(rb_cRuggedRepo, "index",  rb_git_repo_index,  0);
 	rb_define_method(rb_cRuggedRepo, "add_backend",  rb_git_repo_add_backend,  1);
 
-	rb_define_singleton_method(rb_cRuggedRepo, "hash",   rb_git_repo_obj_hash,  1);
+	rb_define_singleton_method(rb_cRuggedRepo, "hash",   rb_git_repo_hash,  2);
 	rb_define_singleton_method(rb_cRuggedRepo, "init_at", rb_git_repo_init_at, 2);
 
-	rb_cRuggedRawObject = rb_define_class_under(rb_mRugged, "RawObject", rb_cObject);
+	rb_cRuggedOdbObject = rb_define_class_under(rb_mRugged, "OdbObject", rb_cObject);
+	rb_define_method(rb_cRuggedOdbObject, "data",  rb_git_odbobj_data,  0);
+	rb_define_method(rb_cRuggedOdbObject, "len",  rb_git_odbobj_size,  0);
+	rb_define_method(rb_cRuggedOdbObject, "type",  rb_git_odbobj_type,  0);
+	rb_define_method(rb_cRuggedOdbObject, "hash",  rb_git_odbobj_hash,  0);
+	/* TODO: getters */
 }

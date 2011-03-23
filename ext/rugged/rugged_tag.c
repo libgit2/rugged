@@ -45,17 +45,6 @@ static VALUE rb_git_tag_target_GET(VALUE self)
 	return rugged_object_new(owner, target);
 }
 
-static VALUE rb_git_tag_target_SET(VALUE self, VALUE val)
-{
-	git_tag *tag;
-	git_object *target;
-	RUGGED_OBJ_UNWRAP(self, git_tag, tag);
-
-	target = rugged_object_get(git_object_owner((git_object *)tag), val, GIT_OBJ_ANY);
-	git_tag_set_target(tag, target);
-	return Qnil;
-}
-
 static VALUE rb_git_tag_target_type_GET(VALUE self)
 {
 	git_tag *tag;
@@ -72,31 +61,12 @@ static VALUE rb_git_tag_name_GET(VALUE self)
 	return rugged_str_new2(git_tag_name(tag), NULL);
 }
 
-static VALUE rb_git_tag_name_SET(VALUE self, VALUE val)
-{
-	git_tag *tag;
-	RUGGED_OBJ_UNWRAP(self, git_tag, tag);
-
-	Check_Type(val, T_STRING);
-	git_tag_set_name(tag, RSTRING_PTR(val));
-	return Qnil;
-}
-
 static VALUE rb_git_tag_tagger_GET(VALUE self)
 {
 	git_tag *tag;
 	RUGGED_OBJ_UNWRAP(self, git_tag, tag);
 
 	return rugged_signature_new(git_tag_tagger(tag));
-}
-
-static VALUE rb_git_tag_tagger_SET(VALUE self, VALUE rb_sig)
-{
-	git_tag *tag;
-	RUGGED_OBJ_UNWRAP(self, git_tag, tag);
-
-	git_tag_set_tagger(tag, rugged_signature_get(rb_sig));
-	return Qnil;
 }
 
 static VALUE rb_git_tag_message_GET(VALUE self)
@@ -107,33 +77,13 @@ static VALUE rb_git_tag_message_GET(VALUE self)
 	return rugged_str_new2(git_tag_message(tag), NULL);
 }
 
-static VALUE rb_git_tag_message_SET(VALUE self, VALUE val)
-{
-	git_tag *tag;
-	RUGGED_OBJ_UNWRAP(self, git_tag, tag);
-
-	Check_Type(val, T_STRING);
-	git_tag_set_message(tag, RSTRING_PTR(val));
-	return Qnil;
-}
-
-
 void Init_rugged_tag()
 {
 	rb_cRuggedTag = rb_define_class_under(rb_mRugged, "Tag", rb_cRuggedObject);
 
 	rb_define_method(rb_cRuggedTag, "message", rb_git_tag_message_GET, 0);
-	rb_define_method(rb_cRuggedTag, "message=", rb_git_tag_message_SET, 1);
-
 	rb_define_method(rb_cRuggedTag, "name", rb_git_tag_name_GET, 0);
-	rb_define_method(rb_cRuggedTag, "name=", rb_git_tag_name_SET, 1);
-
 	rb_define_method(rb_cRuggedTag, "target", rb_git_tag_target_GET, 0);
-	rb_define_method(rb_cRuggedTag, "target=", rb_git_tag_target_SET, 1);
-
-	/* Read only */
 	rb_define_method(rb_cRuggedTag, "target_type", rb_git_tag_target_type_GET, 0);
-
 	rb_define_method(rb_cRuggedTag, "tagger", rb_git_tag_tagger_GET, 0);
-	rb_define_method(rb_cRuggedTag, "tagger=", rb_git_tag_tagger_SET, 1);
 }

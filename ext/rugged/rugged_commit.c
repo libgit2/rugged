@@ -40,16 +40,6 @@ static VALUE rb_git_commit_message_GET(VALUE self)
 	return rugged_str_new2(git_commit_message(commit), NULL);
 }
 
-static VALUE rb_git_commit_message_SET(VALUE self, VALUE val)
-{
-	git_commit *commit;
-	RUGGED_OBJ_UNWRAP(self, git_commit, commit);
-
-	Check_Type(val, T_STRING);
-	git_commit_set_message(commit, RSTRING_PTR(val));
-	return Qnil;
-}
-
 static VALUE rb_git_commit_message_short_GET(VALUE self)
 {
 	git_commit *commit;
@@ -66,15 +56,6 @@ static VALUE rb_git_commit_committer_GET(VALUE self)
 	return rugged_signature_new(git_commit_committer(commit));
 }
 
-static VALUE rb_git_commit_committer_SET(VALUE self, VALUE rb_sig)
-{
-	git_commit *commit;
-	RUGGED_OBJ_UNWRAP(self, git_commit, commit);
-
-	git_commit_set_committer(commit, rugged_signature_get(rb_sig));
-	return Qnil;
-}
-
 static VALUE rb_git_commit_author_GET(VALUE self)
 {
 	git_commit *commit;
@@ -82,16 +63,6 @@ static VALUE rb_git_commit_author_GET(VALUE self)
 
 	return rugged_signature_new(git_commit_author(commit));
 }
-
-static VALUE rb_git_commit_author_SET(VALUE self, VALUE rb_sig)
-{
-	git_commit *commit;
-	RUGGED_OBJ_UNWRAP(self, git_commit, commit);
-
-	git_commit_set_author(commit, rugged_signature_get(rb_sig));
-	return Qnil;
-}
-
 
 static VALUE rb_git_commit_time_GET(VALUE self)
 {
@@ -115,22 +86,6 @@ static VALUE rb_git_commit_tree_GET(VALUE self)
 	rugged_exception_check(error);
 
 	return rugged_object_new(owner, (git_object *)tree);
-}
-
-static VALUE rb_git_commit_tree_SET(VALUE self, VALUE val)
-{
-	git_commit *commit;
-	git_tree *tree;
-	int error;
-
-	RUGGED_OBJ_UNWRAP(self, git_commit, commit);
-
-	tree = (git_tree *)rugged_object_get(git_object_owner((git_object *)commit), val, GIT_OBJ_TREE);
-
-	error = git_commit_set_tree(commit, tree);
-	rugged_exception_check(error);
-
-	return Qnil;
 }
 
 static VALUE rb_git_commit_parents_GET(VALUE self)
@@ -159,24 +114,11 @@ void Init_rugged_commit()
 	rb_cRuggedCommit = rb_define_class_under(rb_mRugged, "Commit", rb_cRuggedObject);
 
 	rb_define_method(rb_cRuggedCommit, "message", rb_git_commit_message_GET, 0);
-	rb_define_method(rb_cRuggedCommit, "message=", rb_git_commit_message_SET, 1);
-
-	/* Read only */
 	rb_define_method(rb_cRuggedCommit, "message_short", rb_git_commit_message_short_GET, 0); 
-
-	/* Read only */
 	rb_define_method(rb_cRuggedCommit, "time", rb_git_commit_time_GET, 0); /* READ ONLY */
-
 	rb_define_method(rb_cRuggedCommit, "committer", rb_git_commit_committer_GET, 0);
-	rb_define_method(rb_cRuggedCommit, "committer=", rb_git_commit_committer_SET, 1);
-
 	rb_define_method(rb_cRuggedCommit, "author", rb_git_commit_author_GET, 0);
-	rb_define_method(rb_cRuggedCommit, "author=", rb_git_commit_author_SET, 1);
-
 	rb_define_method(rb_cRuggedCommit, "tree", rb_git_commit_tree_GET, 0);
-	rb_define_method(rb_cRuggedCommit, "tree=", rb_git_commit_tree_SET, 1);
-
-	/* Read only, at least for now */
 	rb_define_method(rb_cRuggedCommit, "parents", rb_git_commit_parents_GET, 0);
 }
 

@@ -6,8 +6,8 @@ context "Rugged::Repository stuff" do
     @path = File.dirname(__FILE__) + '/fixtures/testrepo.git/'
     @repo = Rugged::Repository.new(@path)
 
-    content = "my test data\n"
-    @obj = Rugged::RawObject.new('blob', content)
+    @test_content = "my test data\n"
+    @test_content_type = 'blob'
   end
 
   test "fails to open unexisting repositories" do
@@ -41,23 +41,23 @@ context "Rugged::Repository stuff" do
   end
 
   test "can hash data" do
-    sha = Rugged::Repository::hash(@obj)
+    sha = Rugged::Repository::hash(@test_content, @test_content_type)
     assert_equal "76b1b55ab653581d6f2c7230d34098e837197674", sha
   end
 
   test "can write to the db" do
-    sha = @repo.write(@obj)
+    sha = @repo.write(@test_content, @test_content_type)
     assert_equal "76b1b55ab653581d6f2c7230d34098e837197674", sha
     assert @repo.exists("76b1b55ab653581d6f2c7230d34098e837197674")
 
     if defined? Encoding
       with_default_encoding('utf-8') do |enc|
-        sha = @repo.write(@obj)
+        sha = @repo.write(@test_content, @test_content_type)
         assert_equal enc, sha.encoding
       end
 
       with_default_encoding('ascii') do |enc|
-        sha = @repo.write(@obj)
+        sha = @repo.write(@test_content, @test_content_typeobj)
         assert_equal enc, sha.encoding
       end
     end
