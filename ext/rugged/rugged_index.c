@@ -175,7 +175,7 @@ static VALUE rb_git_index_add(VALUE self, VALUE rb_entry)
 
 	if (rb_obj_is_kind_of(rb_entry, rb_cRuggedIndexEntry)) {
 		Data_Get_Struct(rb_entry, git_index_entry, entry);
-		error = git_index_insert(index->index, entry);
+		error = git_index_add2(index->index, entry);
 	} else if (TYPE(rb_entry) == T_STRING) {
 		error = git_index_add(index->index, RSTRING_PTR(rb_entry), 0);
 	} else {
