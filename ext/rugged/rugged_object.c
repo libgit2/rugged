@@ -1,8 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2010 Scott Chacon
- * Copyright (c) 2010 Vicent Marti
+ * Copyright (c) 2011 GitHub, Inc
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -42,7 +41,7 @@ git_object *rugged_object_get(git_repository *repo, VALUE object_value, git_otyp
 		git_oid oid;
 		int error;
 
-		error = git_oid_mkstr(&oid, RSTRING_PTR(object_value));
+		error = git_oid_fromstr(&oid, StringValueCStr(object_value));
 		rugged_exception_check(error);
 
 		error = git_object_lookup(&object, repo, &oid, type);
@@ -152,6 +151,7 @@ VALUE rb_git_object_lookup(VALUE klass, VALUE rb_repo, VALUE rb_hex)
 	git_otype type;
 	git_oid oid;
 	int error;
+	size_t oid_length;
 
 	rugged_repository *repo;
 
@@ -161,16 +161,24 @@ VALUE rb_git_object_lookup(VALUE klass, VALUE rb_repo, VALUE rb_hex)
 		type = GIT_OBJ_ANY;
 
 	Check_Type(rb_hex, T_STRING);
+	oid_length = RSTRING_LEN(rb_hex);
 
 	if (!rb_obj_is_instance_of(rb_repo, rb_cRuggedRepo))
 		rb_raise(rb_eTypeError, "Expecting a Rugged Repository");
 
+	if (oid_length > GIT_OID_HEXSZ)
+		rb_raise(rb_eTypeError, "The given OID is too long");
+
 	Data_Get_Struct(rb_repo, rugged_repository, repo);
 
-	error = git_oid_mkstr(&oid, RSTRING_PTR(rb_hex));
+	error = git_oid_fromstrn(&oid, RSTRING_PTR(rb_hex), oid_length);
 	rugged_exception_check(error);
 
-	error = git_object_lookup(&object, repo->repo, &oid, type);
+	if (oid_length < GIT_OID_HEXSZ)
+		error = git_object_lookup_prefix(&object, repo->repo, &oid, oid_length, type);
+	else
+		error = git_object_lookup(&object, repo->repo, &oid, type);
+
 	rugged_exception_check(error);
 
 	return rugged_object_new(rb_repo, object);

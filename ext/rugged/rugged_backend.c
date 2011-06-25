@@ -1,8 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2010 Scott Chacon
- * Copyright (c) 2010 Vicent Marti
+ * Copyright (c) 2011 GitHub, Inc
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -66,7 +65,7 @@ int rugged_backend__write(git_oid *id, git_odb_backend *_backend, const void *da
 
 	Check_Type(rb_oid, T_STRING);
 
-	return git_oid_mkstr(id, RSTRING_PTR(rb_oid));
+	return git_oid_fromstr(id, StringValueCStr(rb_oid));
 }
 
 int rugged_backend__generic_read(int header_only, void **buffer_p, size_t *size_p, git_otype *type_p, git_odb_backend *_backend, const git_oid *oid)

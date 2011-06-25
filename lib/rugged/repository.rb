@@ -15,6 +15,10 @@ module Rugged
       ref = Reference.lookup(self, "HEAD")
       ref.resolve
     end
+
+    def lookup(sha1)
+      Rugged::Object.lookup(self, sha1)
+    end
   end
 
 end

@@ -1,8 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2010 Scott Chacon
- * Copyright (c) 2010 Vicent Marti
+ * Copyright (c) 2011 GitHub, Inc
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -37,6 +36,53 @@
 #include <git2.h>
 #include <git2/odb_backend.h>
 
+
+/**
+ *	The following methods from the libgit2 API
+ *	are not wrapped because they are redundant or
+ *	too low level:
+ *
+ *	__attribute__
+ *	git_blob_close
+ *	git_blob_lookup
+ *	git_blob_lookup_prefix
+ *	git_commit_close
+ *	git_commit_id
+ *	git_commit_lookup_prefix
+ *	git_oid_allocfmt
+ *	git_oid_cpy
+ *	git_oid_ncmp
+ *	git_oid_pathfmt
+ *	git_oid_to_string
+ *	git_reference_listall
+ *	git_strarray_free
+ *	git_tree_id
+ *	git_tree_lookup
+ *	git_tree_lookup_prefix
+ *	git_tree_close
+ *	git_tag_id
+ *	git_tag_lookup
+ *	git_tag_lookup_prefix
+ *	git_tag_close
+ *	git_object__size
+ *
+ *	git_tag_target_oid
+ *	git_odb_write
+ *	git_odb_add_alternate
+ *	git_odb_backend_loose
+ *	git_odb_backend_pack
+ *	git_odb_close
+ *	git_odb_new
+ *	git_odb_open_rstream
+ *	git_odb_read_header
+ *	git_odb_read_prefix
+ *	git_index_entry_stage
+ *	git_commit_create_v
+ *	git_commit_parent_oid
+ *	git_commit_time_offset
+ *	git_commit_tree_oid
+ */
+
 /*
  * Initialization functions 
  */
@@ -50,6 +96,7 @@ void Init_rugged_repo();
 void Init_rugged_revwalk();
 void Init_rugged_signature();
 void Init_rugged_reference();
+void Init_rugged_config();
 
 VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE self);
 
@@ -58,6 +105,7 @@ VALUE rugged_raw_read(git_repository *repo, const git_oid *oid);
 VALUE rugged_signature_new(const git_signature *sig);
 VALUE rugged_object_new(VALUE repository, git_object *object);
 VALUE rugged_index_new(VALUE owner, git_index *index);
+VALUE rugged_config_new(git_config *cfg);
 
 git_otype rugged_get_otype(VALUE rb_type);
 
@@ -94,6 +142,7 @@ typedef struct {
 	VALUE owner;
 } rugged_reference;
 
+#define CSTR2SYM(s) (ID2SYM(rb_intern((s))))
 
 #define RUGGED_OBJ_UNWRAP(_rb, _type, _c) {\
 	rugged_object *_rugged_obj; \
@@ -110,7 +159,9 @@ typedef struct {
 static inline void rugged_exception_check(int errorcode)
 {
 	if (errorcode < 0)
-		rb_raise(rb_eRuntimeError, "libgit2 failed [%s, %d]", git_strerror(errorcode), errorcode);
+		rb_raise(rb_eRuntimeError, git_lasterror());
+
+	git_clearerror();
 }
 
 static inline int rugged_parse_bool(VALUE boolean)

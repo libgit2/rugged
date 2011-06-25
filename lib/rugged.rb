@@ -1,6 +1,6 @@
 require 'rugged/rugged'
 require 'rugged/index'
-require 'rugged/tree'
+require 'rugged/objects'
 require 'rugged/tree_entry'
 require 'rugged/version'
 require 'rugged/repository'

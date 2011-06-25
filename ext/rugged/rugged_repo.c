@@ -1,8 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2010 Scott Chacon
- * Copyright (c) 2010 Vicent Marti
+ * Copyright (c) 2011 GitHub, Inc
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -42,7 +41,7 @@ git_otype rugged_get_otype(VALUE self)
 
 	switch (TYPE(self)) {
 	case T_STRING:
-		type = git_object_string2type(RSTRING_PTR(self));
+		type = git_object_string2type(StringValueCStr(self));
 		break;
 
 	case T_FIXNUM:
@@ -156,27 +155,27 @@ static VALUE rb_git_repo_init(int argc, VALUE *argv, VALUE self)
 
 		if (!NIL_P(rb_obj_dir)) {
 			Check_Type(rb_obj_dir, T_STRING);
-			git_obj_dir = RSTRING_PTR(rb_obj_dir);
+			git_obj_dir = StringValueCStr(rb_obj_dir);
 		}
 
 		if (!NIL_P(rb_index_file)) {
 			Check_Type(rb_index_file, T_STRING);
-			git_index_file = RSTRING_PTR(rb_index_file);
+			git_index_file = StringValueCStr(rb_index_file);
 		}
 
 		if (!NIL_P(rb_work_tree)) {
 			Check_Type(rb_work_tree, T_STRING);
-			git_work_tree = RSTRING_PTR(rb_work_tree);
+			git_work_tree = StringValueCStr(rb_work_tree);
 		}
 
 		error = git_repository_open2(&repo,
-				RSTRING_PTR(rb_dir),
+				StringValueCStr(rb_dir),
 				git_obj_dir,
 				git_index_file,
 				git_work_tree);
 	} else {
 		Check_Type(rb_dir, T_STRING);
-		error = git_repository_open(&repo, RSTRING_PTR(rb_dir));
+		error = git_repository_open(&repo, StringValueCStr(rb_dir));
 	}
 
 	rugged_exception_check(error);
@@ -196,7 +195,7 @@ static VALUE rb_git_repo_init_at(VALUE klass, VALUE path, VALUE rb_is_bare)
 
 	is_bare = rugged_parse_bool(rb_is_bare);
 	Check_Type(path, T_STRING);
-	error = git_repository_init(&repo, RSTRING_PTR(path), is_bare);
+	error = git_repository_init(&repo, StringValueCStr(path), is_bare);
 
 	rugged_exception_check(error);
 
@@ -261,7 +260,7 @@ static VALUE rb_git_repo_exists(VALUE self, VALUE hex)
 	Check_Type(hex, T_STRING);
 
 	odb = git_repository_database(repo->repo);
-	rugged_exception_check(git_oid_mkstr(&oid, RSTRING_PTR(hex)));
+	rugged_exception_check(git_oid_fromstr(&oid, StringValueCStr(hex)));
 
 	return git_odb_exists(odb, &oid) ? Qtrue : Qfalse;
 }
@@ -275,7 +274,7 @@ static VALUE rb_git_repo_read(VALUE self, VALUE hex)
 	Data_Get_Struct(self, rugged_repository, repo);
 	Check_Type(hex, T_STRING);
 
-	error = git_oid_mkstr(&oid, RSTRING_PTR(hex));
+	error = git_oid_fromstr(&oid, StringValueCStr(hex));
 	rugged_exception_check(error);
 
 	return rugged_raw_read(repo->repo, &oid);
@@ -322,32 +321,92 @@ static VALUE rb_git_repo_write(VALUE self, VALUE rb_buffer, VALUE rub_type)
 	return rugged_create_oid(&oid);
 }
 
-static VALUE rb_git_repo_lookup_object(int argc, VALUE *argv, VALUE self)
+#define GIT_REPO_GETTER(method) \
+static VALUE rb_git_repo_##method(VALUE self) \
+{ \
+	rugged_repository *repo; \
+	int error; \
+	Data_Get_Struct(self, rugged_repository, repo); \
+	error = git_repository_##method(repo->repo); \
+	rugged_exception_check(error); \
+	return error ? Qtrue : Qfalse; \
+}
+
+GIT_REPO_GETTER(is_bare); /* git_repository_is_bare */
+GIT_REPO_GETTER(is_empty); /* git_repository_is_empty */
+GIT_REPO_GETTER(head_detached); /* git_repository_head_detached */
+GIT_REPO_GETTER(head_orphan); /* git_repository_head_orphan */
+
+static VALUE rb_git_repo_paths(VALUE self)
 {
 	rugged_repository *repo;
-	git_otype type;
-	git_object *obj;
-	git_oid oid;
-	int error;
+	VALUE rb_paths;
+	Data_Get_Struct(self, rugged_repository, repo);
 
-	VALUE rub_type, rb_sha;
+	rb_paths = rb_hash_new();
+
+	rb_hash_aset(rb_paths, CSTR2SYM("repository"),
+		rugged_str_new2(git_repository_path(repo->repo, GIT_REPO_PATH), NULL));
+
+	rb_hash_aset(rb_paths, CSTR2SYM("index"),
+		rugged_str_new2(git_repository_path(repo->repo, GIT_REPO_PATH_INDEX), NULL));
+
+	rb_hash_aset(rb_paths, CSTR2SYM("odb"),
+		rugged_str_new2(git_repository_path(repo->repo, GIT_REPO_PATH_ODB), NULL));
+
+	rb_hash_aset(rb_paths, CSTR2SYM("workdir"),
+		rugged_str_new2(git_repository_path(repo->repo, GIT_REPO_PATH_WORKDIR), NULL));
+
+	return rb_paths;
+}
+
+static VALUE rb_git_repo_config(VALUE self)
+{
+	git_config *config;
+	rugged_repository *repo;
+	char user_config[GIT_PATH_MAX];
+	int error;
 
 	Data_Get_Struct(self, rugged_repository, repo);
 
-	rb_scan_args(argc, argv, "11", &rb_sha, &rub_type);
-
-	type = rugged_get_otype(rub_type);
-
-	Check_Type(rb_sha, T_STRING);
-	error = git_oid_mkstr(&oid, RSTRING_PTR(rb_sha));
+	error = git_config_find_global(user_config);
 	rugged_exception_check(error);
 
-	error = git_object_lookup(&obj, repo->repo, &oid, type);
+	error = git_repository_config(&config, repo->repo, user_config, NULL);
 	rugged_exception_check(error);
 
-	return obj ? rugged_object_new(self, obj) : Qnil;
+	return rugged_config_new(config);
 }
 
+static VALUE rb_git_repo_discover(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_path, rb_across_fs;
+	char repository_path[GIT_PATH_MAX];
+	int error, across_fs = 0;
+
+	rb_scan_args(argc, argv, "02", &rb_path, &rb_across_fs);
+
+	if (NIL_P(rb_path)) {
+		VALUE rb_dir = rb_const_get(rb_cObject, rb_intern("Dir"));
+		rb_path = rb_funcall(rb_dir, rb_intern("pwd"), 0);
+	}
+
+	if (!NIL_P(rb_across_fs)) {
+		across_fs = rugged_parse_bool(rb_across_fs);
+	}
+
+	Check_Type(rb_path, T_STRING);
+
+	error = git_repository_discover(
+		repository_path, GIT_PATH_MAX,
+		StringValueCStr(rb_path),
+		across_fs,
+		NULL
+	);
+
+	rugged_exception_check(error);
+	return rugged_str_new2(repository_path, NULL);
+}
 
 void Init_rugged_repo()
 {
@@ -357,17 +416,24 @@ void Init_rugged_repo()
 	rb_define_method(rb_cRuggedRepo, "exists", rb_git_repo_exists, 1);
 	rb_define_method(rb_cRuggedRepo, "read",   rb_git_repo_read,   1);
 	rb_define_method(rb_cRuggedRepo, "write",  rb_git_repo_write,  2);
-	rb_define_method(rb_cRuggedRepo, "lookup", rb_git_repo_lookup_object,  -1);
 	rb_define_method(rb_cRuggedRepo, "index",  rb_git_repo_index,  0);
 	rb_define_method(rb_cRuggedRepo, "add_backend",  rb_git_repo_add_backend,  1);
+	rb_define_method(rb_cRuggedRepo, "paths",  rb_git_repo_paths,  0);
+
+	rb_define_method(rb_cRuggedRepo, "config",  rb_git_repo_config,  0);
+
+	rb_define_method(rb_cRuggedRepo, "bare?",  rb_git_repo_is_bare,  0);
+	rb_define_method(rb_cRuggedRepo, "empty?",  rb_git_repo_is_empty,  0);
+	rb_define_method(rb_cRuggedRepo, "head_detached?",  rb_git_repo_head_detached,  0);
+	rb_define_method(rb_cRuggedRepo, "head_orphan?",  rb_git_repo_head_orphan,  0);
 
 	rb_define_singleton_method(rb_cRuggedRepo, "hash",   rb_git_repo_hash,  2);
 	rb_define_singleton_method(rb_cRuggedRepo, "init_at", rb_git_repo_init_at, 2);
+	rb_define_singleton_method(rb_cRuggedRepo, "discover", rb_git_repo_discover, -1);
 
 	rb_cRuggedOdbObject = rb_define_class_under(rb_mRugged, "OdbObject", rb_cObject);
 	rb_define_method(rb_cRuggedOdbObject, "data",  rb_git_odbobj_data,  0);
 	rb_define_method(rb_cRuggedOdbObject, "len",  rb_git_odbobj_size,  0);
 	rb_define_method(rb_cRuggedOdbObject, "type",  rb_git_odbobj_type,  0);
 	rb_define_method(rb_cRuggedOdbObject, "hash",  rb_git_odbobj_hash,  0);
-	/* TODO: getters */
 }

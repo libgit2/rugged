@@ -1,8 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2010 Scott Chacon
- * Copyright (c) 2010 Vicent Marti
+ * Copyright (c) 2011 GitHub, Inc
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -87,7 +86,7 @@ static VALUE rb_git_signature_email_SET(VALUE self, VALUE rb_email)
 	Check_Type(rb_email, T_STRING);
 
 	free(sig->email);
-	sig->email = strdup(RSTRING_PTR(rb_email));
+	sig->email = strdup(StringValueCStr(rb_email));
 
 	return Qnil;
 }
@@ -100,7 +99,7 @@ static VALUE rb_git_signature_name_SET(VALUE self, VALUE rb_name)
 	Check_Type(rb_name, T_STRING);
 
 	free(sig->name);
-	sig->name = strdup(RSTRING_PTR(rb_name));
+	sig->name = strdup(StringValueCStr(rb_name));
 
 	return Qnil;
 }
@@ -151,6 +150,16 @@ static VALUE rb_git_signature_init(VALUE self, VALUE name, VALUE email, VALUE ti
 	return Qnil;
 }
 
+static VALUE rb_git_signature_now(VALUE self, VALUE rb_name, VALUE rb_email)
+{
+	git_signature *sig;
+
+	Check_Type(rb_name, T_STRING);
+	Check_Type(rb_email, T_STRING);
+
+	sig = git_signature_now(StringValueCStr(rb_name), StringValueCStr(rb_email));
+	return Data_Wrap_Struct(self, NULL, rb_git_signature__free, sig);
+}
 
 void Init_rugged_signature()
 {
@@ -169,4 +178,6 @@ void Init_rugged_signature()
 	rb_define_method(rb_cRuggedSignature, "time=", rb_git_signature_time_SET, 1);
 
 	rb_define_method(rb_cRuggedSignature, "time_offset", rb_git_signature_time_offset_GET, 0);
+
+	rb_define_singleton_method(rb_cRuggedSignature, "now", rb_git_signature_now, 2);
 }

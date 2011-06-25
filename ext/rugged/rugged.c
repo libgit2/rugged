@@ -1,8 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2010 Scott Chacon
- * Copyright (c) 2010 Vicent Marti
+ * Copyright (c) 2011 GitHub, Inc
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,7 +31,7 @@ static VALUE rb_git_hex_to_raw(VALUE self, VALUE hex)
 	git_oid oid;
 
 	Check_Type(hex, T_STRING);
-	rugged_exception_check(git_oid_mkstr(&oid, RSTRING_PTR(hex)));
+	rugged_exception_check(git_oid_fromstr(&oid, StringValueCStr(hex)));
 	return rugged_str_ascii(oid.id, 20);
 }
 
@@ -42,7 +41,7 @@ static VALUE rb_git_raw_to_hex(VALUE self, VALUE raw)
 	char out[40];
 
 	Check_Type(raw, T_STRING);
-	git_oid_mkraw(&oid, RSTRING_PTR(raw));
+	git_oid_fromraw(&oid, StringValueCStr(raw));
 	git_oid_fmt(out, &oid);
 
 	return rugged_str_new(out, 40, NULL);
@@ -61,7 +60,7 @@ static VALUE rb_git_type_to_string(VALUE self, VALUE type)
 static VALUE rb_git_string_to_type(VALUE self, VALUE string_type)
 {
 	Check_Type(string_type, T_STRING);
-	return INT2FIX(git_object_string2type(RSTRING_PTR(string_type)));
+	return INT2FIX(git_object_string2type(StringValueCStr(string_type)));
 }
 
 void Init_rugged()
@@ -85,6 +84,7 @@ void Init_rugged()
 	Init_rugged_repo();
 	Init_rugged_revwalk();
 	Init_rugged_reference();
+	Init_rugged_config();
 
 	Init_rugged_backend();
 

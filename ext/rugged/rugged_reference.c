@@ -1,8 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2010 Scott Chacon
- * Copyright (c) 2010 Vicent Marti
+ * Copyright (c) 2011 GitHub, Inc
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,6 +32,7 @@
 }
 
 extern VALUE rb_mRugged;
+extern VALUE rb_cRuggedRepo;
 VALUE rb_cRuggedReference;
 
 void rb_git_ref__mark(rugged_reference *ref)
@@ -65,12 +65,69 @@ static VALUE rb_git_ref_packall(VALUE klass, VALUE rb_repo)
 	rugged_repository *repo;
 	int error;
 
+	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo))
+		rb_raise(rb_eTypeError, "Expecting a Rugged::Repository instance");
+
 	Data_Get_Struct(rb_repo, rugged_repository, repo);
 
 	error = git_reference_packall(repo->repo);
 	rugged_exception_check(error);
 
 	return Qnil;
+}
+
+int ref_foreach__list(const char *ref_name, void *opaque)
+{
+	rb_ary_push((VALUE)opaque, rugged_str_new2(ref_name, NULL));
+	return GIT_SUCCESS;
+}
+
+int ref_foreach__block(const char *ref_name, void *opaque)
+{
+	rb_funcall((VALUE)opaque, rb_intern("call"), 1, rugged_str_new2(ref_name, NULL));
+	return GIT_SUCCESS;
+}
+
+static VALUE rb_git_ref_each(int argc, VALUE *argv, VALUE self)
+{
+	rugged_repository *repo;
+	int error, flags;
+	VALUE rb_repo, rb_list, rb_block, result;
+
+	rb_scan_args(argc, argv, "11&", &rb_repo, &rb_list, &rb_block);
+
+	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo))
+		rb_raise(rb_eTypeError, "Expecting a Rugged::Repository instance");
+
+	Data_Get_Struct(rb_repo, rugged_repository, repo);
+
+	if (!NIL_P(rb_list)) {
+		ID list;
+
+		Check_Type(rb_list, T_SYMBOL);
+		list = SYM2ID(rb_list);
+
+		if (list == rb_intern("all"))
+			flags = GIT_REF_LISTALL;
+		else if (list == rb_intern("direct"))
+			flags = GIT_REF_OID|GIT_REF_PACKED;
+		else if (list == rb_intern("symbolic"))
+			flags = GIT_REF_SYMBOLIC|GIT_REF_PACKED;
+	} else {
+		flags = GIT_REF_LISTALL;
+	}
+
+	if (!RTEST(rb_block)) {
+		result = rb_ary_new();
+		error = git_reference_foreach(repo->repo, flags, &ref_foreach__list, (void *)result);
+		result = rb_funcall(result, rb_intern("to_enum"), 0);
+	} else {
+		result = Qnil;
+		error = git_reference_foreach(repo->repo, flags, &ref_foreach__block, (void *)rb_block);
+	}
+
+	rugged_exception_check(error);
+	return result;
 }
 
 static VALUE rb_git_ref_lookup(VALUE klass, VALUE rb_repo, VALUE rb_name)
@@ -82,28 +139,33 @@ static VALUE rb_git_ref_lookup(VALUE klass, VALUE rb_repo, VALUE rb_name)
 	Data_Get_Struct(rb_repo, rugged_repository, repo);
 	Check_Type(rb_name, T_STRING);
 
-	error = git_reference_lookup(&ref, repo->repo, RSTRING_PTR(rb_name));
+	error = git_reference_lookup(&ref, repo->repo, StringValueCStr(rb_name));
 	rugged_exception_check(error);
 
 	return rugged_ref_new(rb_repo, ref);
 }
 
-static VALUE rb_git_ref_create(VALUE klass, VALUE rb_repo, VALUE rb_name, VALUE rb_target)
+static VALUE rb_git_ref_create(int argc, VALUE *argv, VALUE self)
 {
+	VALUE rb_repo, rb_name, rb_target, rb_force;
 	rugged_repository *repo;
 	git_reference *ref;
 	git_oid oid;
+	int error, force = 0;
 
-	int error;
+	rb_scan_args(argc, argv, "31", &rb_repo, &rb_name, &rb_target, &rb_force);
 
 	Data_Get_Struct(rb_repo, rugged_repository, repo);
 	Check_Type(rb_name, T_STRING);
 	Check_Type(rb_target, T_STRING);
 
-	if (git_oid_mkstr(&oid, RSTRING_PTR(rb_target)) == GIT_SUCCESS) {
-		error = git_reference_create_oid(&ref, repo->repo, RSTRING_PTR(rb_name), &oid);
+	if (!NIL_P(rb_force))
+		force = rugged_parse_bool(rb_force);
+
+	if (git_oid_fromstr(&oid, StringValueCStr(rb_target)) == GIT_SUCCESS) {
+		error = git_reference_create_oid(&ref, repo->repo, StringValueCStr(rb_name), &oid, force);
 	} else {
-		error = git_reference_create_symbolic(&ref, repo->repo, RSTRING_PTR(rb_name), RSTRING_PTR(rb_target));
+		error = git_reference_create_symbolic(&ref, repo->repo, StringValueCStr(rb_name), RSTRING_PTR(rb_target), force);
 	}
 
 	rugged_exception_check(error);
@@ -135,12 +197,12 @@ static VALUE rb_git_ref_set_target(VALUE self, VALUE rb_target)
 	if (git_reference_type(ref->ref) == GIT_REF_OID) {
 		git_oid target;
 
-		error = git_oid_mkstr(&target, RSTRING_PTR(rb_target));
+		error = git_oid_fromstr(&target, StringValueCStr(rb_target));
 		rugged_exception_check(error);
 
 		error = git_reference_set_oid(ref->ref, &target);
 	} else {
-		error = git_reference_set_target(ref->ref, RSTRING_PTR(rb_target));
+		error = git_reference_set_target(ref->ref, StringValueCStr(rb_target));
 	}
 
 	rugged_exception_check(error);
@@ -175,15 +237,20 @@ static VALUE rb_git_ref_resolve(VALUE self)
 	return rugged_ref_new(ref->owner, resolved);
 }
 
-static VALUE rb_git_ref_rename(VALUE self, VALUE rb_name)
+static VALUE rb_git_ref_rename(int argc, VALUE *argv, VALUE self)
 {
 	rugged_reference *ref;
-	int error;
+	VALUE rb_name, rb_force;
+	int error, force;
 
 	UNPACK_REFERENCE(self, ref);
+	rb_scan_args(argc, argv, "11", &rb_name, &rb_force);
 
 	Check_Type(rb_name, T_STRING);
-	error = git_reference_rename(ref->ref, RSTRING_PTR(rb_name));
+	if (!NIL_P(rb_force))
+		force = rugged_parse_bool(rb_force);
+
+	error = git_reference_rename(ref->ref, StringValueCStr(rb_name), force);
 	rugged_exception_check(error);
 
 	return Qnil;
@@ -210,6 +277,7 @@ void Init_rugged_reference()
 	rb_define_singleton_method(rb_cRuggedReference, "lookup", rb_git_ref_lookup, 2);
 	rb_define_singleton_method(rb_cRuggedReference, "create", rb_git_ref_create, 3);
 	rb_define_singleton_method(rb_cRuggedReference, "pack_all", rb_git_ref_packall, 1);
+	rb_define_singleton_method(rb_cRuggedReference, "each", rb_git_ref_each, 1);
 
 	rb_define_method(rb_cRuggedReference, "target", rb_git_ref_target, 0);
 	rb_define_method(rb_cRuggedReference, "target=", rb_git_ref_set_target, 1);
