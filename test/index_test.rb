@@ -55,7 +55,7 @@ context "Rugged::Index reading stuff" do
 
     e = @index.get_entry(1)
     assert_equal 'new.txt', e[:path]
-    assert_equal 'fa49b077972391ad58037050f2a75f74e3671e92', e[:sha]
+    assert_equal 'fa49b077972391ad58037050f2a75f74e3671e92', e[:oid]
 
     if defined? Encoding
       with_default_encoding('utf-8') do |enc|
@@ -88,7 +88,7 @@ context "Rugged::Index reading stuff" do
     e[:mode] = 33199
     e[:uid] = 502
     e[:gid] = 502
-    e[:flags] = 234
+    e[:flags] = 4102
 
     @index.add(e)
     new_e = @index[e[:path]]

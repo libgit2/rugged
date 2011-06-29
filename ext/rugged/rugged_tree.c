@@ -244,7 +244,8 @@ void Init_rugged_tree()
 	 * Tree
 	 */
 	rb_cRuggedTree = rb_define_class_under(rb_mRugged, "Tree", rb_cRuggedObject);
-	rb_define_method(rb_cRuggedTree, "entry_count", rb_git_tree_entrycount, 0);
+	rb_define_method(rb_cRuggedTree, "count", rb_git_tree_entrycount, 0);
+	rb_define_method(rb_cRuggedTree, "length", rb_git_tree_entrycount, 0);
 	rb_define_method(rb_cRuggedTree, "get_entry", rb_git_tree_get_entry, 1);
 	rb_define_method(rb_cRuggedTree, "[]", rb_git_tree_get_entry, 1);
 	rb_define_method(rb_cRuggedTree, "each", rb_git_tree_each, 0);

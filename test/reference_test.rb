@@ -6,6 +6,10 @@ context "Rugged::Reference stuff" do
     @repo = Rugged::Repository.new(@path)
   end
 
+  teardown do
+    FileUtils.remove_entry_secure(@path + '/refs/heads/unit_test', true)
+  end
+
   test "can open reference" do
     ref = Rugged::Reference.lookup(@repo, "refs/heads/master")
     assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", ref.target
@@ -42,7 +46,7 @@ context "Rugged::Reference stuff" do
     assert_equal "commit", ref.type
     assert_equal "refs/heads/unit_test", ref.name
 
-    ref.name = "refs/heads/new_name"
+    ref.rename "refs/heads/new_name"
     assert_equal "refs/heads/new_name", ref.name
     ref.delete
   end

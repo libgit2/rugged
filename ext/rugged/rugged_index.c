@@ -308,6 +308,7 @@ static VALUE rb_git_indexentry_fromC(git_index_entry *entry)
 
 	rb_hash_aset(rb_entry, CSTR2SYM("dev"), INT2FIX(entry->dev));
 	rb_hash_aset(rb_entry, CSTR2SYM("ino"), INT2FIX(entry->ino));
+	rb_hash_aset(rb_entry, CSTR2SYM("mode"), INT2FIX(entry->mode));
 	rb_hash_aset(rb_entry, CSTR2SYM("gid"), INT2FIX(entry->gid));
 	rb_hash_aset(rb_entry, CSTR2SYM("uid"), INT2FIX(entry->uid));
 	rb_hash_aset(rb_entry, CSTR2SYM("file_size"), INT2FIX(entry->file_size));
@@ -345,6 +346,9 @@ static void rb_git_indexentry_toC(git_index_entry *entry, VALUE rb_entry)
 
 	val = GET_ENTRY_VAL("ino", T_FIXNUM);
 	entry->ino = FIX2INT(val);
+
+	val = GET_ENTRY_VAL("mode", T_FIXNUM);
+	entry->mode = FIX2INT(val);
 
 	val = GET_ENTRY_VAL("gid", T_FIXNUM);
 	entry->gid = FIX2INT(val);

@@ -275,9 +275,9 @@ void Init_rugged_reference()
 	rb_cRuggedReference = rb_define_class_under(rb_mRugged, "Reference", rb_cObject);
 
 	rb_define_singleton_method(rb_cRuggedReference, "lookup", rb_git_ref_lookup, 2);
-	rb_define_singleton_method(rb_cRuggedReference, "create", rb_git_ref_create, 3);
+	rb_define_singleton_method(rb_cRuggedReference, "create", rb_git_ref_create, -1);
 	rb_define_singleton_method(rb_cRuggedReference, "pack_all", rb_git_ref_packall, 1);
-	rb_define_singleton_method(rb_cRuggedReference, "each", rb_git_ref_each, 1);
+	rb_define_singleton_method(rb_cRuggedReference, "each", rb_git_ref_each, -1);
 
 	rb_define_method(rb_cRuggedReference, "target", rb_git_ref_target, 0);
 	rb_define_method(rb_cRuggedReference, "target=", rb_git_ref_set_target, 1);
@@ -285,7 +285,7 @@ void Init_rugged_reference()
 	rb_define_method(rb_cRuggedReference, "type", rb_git_ref_type, 0);
 
 	rb_define_method(rb_cRuggedReference, "name", rb_git_ref_name, 0);
-	rb_define_method(rb_cRuggedReference, "name=", rb_git_ref_rename, 1);
+	rb_define_method(rb_cRuggedReference, "rename", rb_git_ref_rename, -1);
 
 	rb_define_method(rb_cRuggedReference, "resolve", rb_git_ref_resolve, 0);
 	rb_define_method(rb_cRuggedReference, "delete", rb_git_ref_delete, 0);
