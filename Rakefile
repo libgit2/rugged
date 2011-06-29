@@ -17,15 +17,6 @@ Rake::ExtensionTask.new('rugged') do |r|
 end
 
 #
-# Helpers
-#
-
-def command?(command)
-  system("type #{command} > /dev/null")
-end
-
-
-#
 # Tests
 #
 
@@ -43,34 +34,9 @@ Rake::TestTask.new do |t|
   t.verbose = false
 end
 
-if command? :kicker
-  desc "Launch Kicker (like autotest)"
-  task :kicker do
-    puts "Kicking... (ctrl+c to cancel)"
-    exec "kicker -e rake test lib"
-  end
-end
-
-#
-# Ron
-#
-if command? :ronn
-  desc "Show the manual"
-  task :man => "man:build" do
-    exec "man man/mustache.1"
-  end
-
-  desc "Build the manual"
-  task "man:build" do
-    sh "ronn -br5 --organization=SCHACON --manual='Rugged Manual' man/*.ron"
-  end
-end
-
-
 #
 # Gems
 #
-
 begin
   require 'mg'
   MG.new("rugged.gemspec")
@@ -85,8 +51,15 @@ begin
     exec "rake pages"
   end
 rescue LoadError
-  warn "mg not available."
-  warn "Install it with: gem i mg"
+end
+
+begin
+  require 'rcov/rcovtask'
+  Rcov::RcovTask.new do |t|
+    t.test_files = FileList['test/test_*.rb']
+    # t.verbose = true     # uncomment to see the executed command
+  end
+rescue LoadError
 end
 
 #
