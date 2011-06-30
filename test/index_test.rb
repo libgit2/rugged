@@ -26,6 +26,15 @@ context "Rugged::Index reading stuff" do
     @index = Rugged::Index.new(path)
   end
 
+  test "can iterate through the index" do
+    enum = @index.each
+    assert enum.kind_of? Enumerable
+
+    i = 0
+    @index.each { |e| i += 1 }
+    assert_equal @index.count, i
+  end
+
   test "can count index entries" do
     assert_equal 2, @index.count
   end
@@ -33,6 +42,11 @@ context "Rugged::Index reading stuff" do
   test "can clear the in-memory index" do
     @index.clear
     assert_equal 0, @index.count
+  end
+
+  test "can remove entries from the index" do
+    @index.remove 0
+    assert_equal 1, @index.count
   end
 
   test "can get all data from an entry" do
@@ -47,11 +61,8 @@ context "Rugged::Index reading stuff" do
     assert_equal 33188, e[:mode]
     assert_equal 501, e[:uid]
     assert_equal 0, e[:gid]
-    assert_equal 6, e[:flags]
-
-    # TODO
-    # assert_equal false, e[:valid]
-    # assert_equal 0, e[:stage]
+    assert_equal false, e[:valid]
+    assert_equal 0, e[:stage]
 
     e = @index.get_entry(1)
     assert_equal 'new.txt', e[:path]
@@ -88,7 +99,7 @@ context "Rugged::Index reading stuff" do
     e[:mode] = 33199
     e[:uid] = 502
     e[:gid] = 502
-    e[:flags] = 4102
+    e[:stage] = 3
 
     @index.add(e)
     new_e = @index[e[:path]]
@@ -156,5 +167,30 @@ context "Rugged::Index with working directory" do
 
     index2 = Rugged::Index.new(@tmppath + '/.git/index')
     assert_equal index2.get_entry(0)[:path], 'test.txt'
+  end
+
+  test "can reload the index" do
+    File.open(File.join(@tmppath, 'test.txt'), 'w') do |f|
+      f.puts "test content"
+    end
+    @index.add('test.txt', 2)
+    @index.write
+
+    sleep(1) # we need this sleep to sync at the FS level
+    # most FSs have 1s granularity on mtimes
+
+    rindex = Rugged::Index.new(File.join(@tmppath, '/.git/index'))
+    e = rindex['test.txt']
+    assert_equal 2, e[:stage]
+
+    rindex << new_index_entry
+    rindex.write
+
+    assert_equal 1, @index.count
+    @index.reload
+    assert_equal 2, @index.count
+
+    e = @index['new_path']
+    assert_equal e[:mode], 33199
   end
 end

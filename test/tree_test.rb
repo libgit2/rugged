@@ -43,6 +43,9 @@ context "Rugged::Tree tests" do
   test "can iterate over the tree" do
     enum_test = @tree.sort { |a, b| a[:oid] <=> b[:oid] }.map { |e| e[:name] }.join(':')
     assert_equal "README:subdir:new.txt", enum_test
+
+    enum = @tree.each
+    assert enum.kind_of? Enumerable
   end
 
   xtest "can write the tree data" do

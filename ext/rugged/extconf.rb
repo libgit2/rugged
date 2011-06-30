@@ -17,4 +17,7 @@ end
 asplode('libgit2') unless have_library("git2")
 asplode('zlib') unless have_library('z')
 
+$CFLAGS << ' -g -O0 '
+$LDFLAGS << ' -g '
+
 create_makefile("rugged/rugged")

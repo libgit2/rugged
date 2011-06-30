@@ -296,7 +296,7 @@ static VALUE rb_git_unmerged_fromC(const git_index_entry_unmerged *entry)
 static VALUE rb_git_indexentry_fromC(git_index_entry *entry)
 {
 	VALUE rb_entry, rb_mtime, rb_ctime;
-	unsigned int flags;
+	unsigned int valid, stage;
 
 	if (!entry)
 		return Qnil;
@@ -313,8 +313,11 @@ static VALUE rb_git_indexentry_fromC(git_index_entry *entry)
 	rb_hash_aset(rb_entry, CSTR2SYM("uid"), INT2FIX(entry->uid));
 	rb_hash_aset(rb_entry, CSTR2SYM("file_size"), INT2FIX(entry->file_size));
 
-	flags = (entry->flags & 0xFFFF) | (entry->flags_extended << 16);
-	rb_hash_aset(rb_entry, CSTR2SYM("flags"), INT2FIX(flags));
+	valid = (entry->flags & GIT_IDXENTRY_VALID);
+	rb_hash_aset(rb_entry, CSTR2SYM("valid"), valid ? Qtrue : Qfalse);
+
+	stage = (entry->flags & GIT_IDXENTRY_STAGEMASK) >> GIT_IDXENTRY_STAGESHIFT;
+	rb_hash_aset(rb_entry, CSTR2SYM("stage"), INT2FIX(stage));
 
 	rb_mtime = rb_time_new(entry->mtime.seconds, entry->mtime.nanoseconds / 1000);
 	rb_ctime = rb_time_new(entry->ctime.seconds, entry->ctime.nanoseconds / 1000);
@@ -359,15 +362,8 @@ static void rb_git_indexentry_toC(git_index_entry *entry, VALUE rb_entry)
 	val = GET_ENTRY_VAL("file_size", T_FIXNUM);
 	entry->file_size = FIX2INT(val);
 
-	val = rb_hash_aref(rb_entry, CSTR2SYM("flags"));
-	if (!NIL_P(val)) {
-		unsigned int flags = NUM2INT(val);
-		entry->flags = (unsigned short)(flags & 0xFFFF);
-		entry->flags_extended = (unsigned short)((flags >> 16) & 0xFFFF);
-	} else {
-		entry->flags = 0x0;
-		entry->flags_extended = 0x0;
-	}
+	entry->flags = 0x0;
+	entry->flags_extended = 0x0;
 
 	val = rb_hash_aref(rb_entry, CSTR2SYM("stage"));
 	if (!NIL_P(val)) {
@@ -412,6 +408,7 @@ void Init_rugged_index()
 	rb_define_method(rb_cRuggedIndex, "clear", rb_git_index_clear, 0);
 	rb_define_method(rb_cRuggedIndex, "write", rb_git_index_write, 0);
 	rb_define_method(rb_cRuggedIndex, "get_entry", rb_git_index_get, 1);
+	rb_define_method(rb_cRuggedIndex, "get_unmerged", rb_git_index_get_unmerged, 1);
 	rb_define_method(rb_cRuggedIndex, "[]", rb_git_index_get, 1);
 	rb_define_method(rb_cRuggedIndex, "each", rb_git_index_each, 0);
 
