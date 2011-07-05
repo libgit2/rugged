@@ -147,7 +147,7 @@ static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 	rb_tree = rb_hash_aref(rb_data, CSTR2SYM("tree"));
 	tree = (git_tree *)rugged_object_get(repo->repo, rb_tree, GIT_OBJ_TREE);
 
-	parent_count = RARRAY(rb_parents)->len;
+	parent_count = RARRAY_LEN(rb_parents);
 	parents = malloc(parent_count * sizeof(void*));
 
 	for (i = 0; i < parent_count; ++i) {

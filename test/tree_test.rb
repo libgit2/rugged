@@ -30,11 +30,9 @@ context "Rugged::Tree tests" do
     if defined? Encoding
       with_default_encoding('utf-8') do |enc|
         assert_equal enc, bent[:name].encoding
-        assert_equal enc, bent[:oid].encoding
       end
 
       with_default_encoding('ascii') do |enc|
-        assert_equal enc, bent[:name].encoding
         assert_equal enc, bent[:name].encoding
       end
     end

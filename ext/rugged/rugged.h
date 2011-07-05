@@ -159,7 +159,7 @@ typedef struct {
 static inline void rugged_exception_check(int errorcode)
 {
 	if (errorcode < 0)
-		rb_raise(rb_eRuntimeError, git_lasterror());
+		rb_raise(rb_eRuntimeError, "%s\n(error code %d)", git_lasterror(), errorcode);
 
 	git_clearerror();
 }
