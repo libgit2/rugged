@@ -1,14 +1,11 @@
 module Rugged
 
   class Repository
-    def walk(from, sorting=Rugged::SORT_DATE)
+    def walk(from, sorting=Rugged::SORT_DATE, &block)
       walker = Rugged::Walker.new(self)
       walker.sorting(sorting)
       walker.push(from)
-
-      while commit = walker.next
-        yield commit
-      end
+      walker.each(&block)
     end
 
     def head
@@ -16,8 +13,16 @@ module Rugged
       ref.resolve
     end
 
-    def lookup(sha1)
-      Rugged::Object.lookup(self, sha1)
+    def lookup(oid)
+      Rugged::Object.lookup(self, oid)
+    end
+
+    def refs
+      Rugged::Reference.each(self)
+    end
+
+    def tags(pattern="")
+      Rugged::Tag.each(self, pattern)
     end
   end
 

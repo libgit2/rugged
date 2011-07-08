@@ -92,9 +92,12 @@ static VALUE rb_git_ref_each(int argc, VALUE *argv, VALUE self)
 {
 	rugged_repository *repo;
 	int error, flags;
-	VALUE rb_repo, rb_list, rb_block, result;
+	VALUE rb_repo, rb_list, rb_block;
 
 	rb_scan_args(argc, argv, "11&", &rb_repo, &rb_list, &rb_block);
+
+	if (!rb_block_given_p())
+		return rb_funcall(self, rb_intern("to_enum"), 3, CSTR2SYM("each"), rb_repo, rb_list);
 
 	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo))
 		rb_raise(rb_eTypeError, "Expecting a Rugged::Repository instance");
@@ -117,17 +120,9 @@ static VALUE rb_git_ref_each(int argc, VALUE *argv, VALUE self)
 		flags = GIT_REF_LISTALL;
 	}
 
-	if (!RTEST(rb_block)) {
-		result = rb_ary_new();
-		error = git_reference_foreach(repo->repo, flags, &ref_foreach__list, (void *)result);
-		result = rb_funcall(result, rb_intern("to_enum"), 0);
-	} else {
-		result = Qnil;
-		error = git_reference_foreach(repo->repo, flags, &ref_foreach__block, (void *)rb_block);
-	}
-
+	error = git_reference_foreach(repo->repo, flags, &ref_foreach__block, (void *)rb_block);
 	rugged_exception_check(error);
-	return result;
+	return Qnil;
 }
 
 static VALUE rb_git_ref_lookup(VALUE klass, VALUE rb_repo, VALUE rb_name)

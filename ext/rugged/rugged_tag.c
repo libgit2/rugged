@@ -128,33 +128,38 @@ static VALUE rb_git_tag_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 	return rugged_create_oid(&tag_oid);
 }
 
-static VALUE rb_git_tag_list(VALUE self, VALUE rb_repo)
+static VALUE rb_git_tag_each(int argc, VALUE *argv, VALUE self)
 {
 	rugged_repository *repo;
 	git_strarray tags;
 	size_t i;
 	int error;
-	VALUE result;
+	VALUE rb_repo, rb_pattern;
+	const char *pattern = NULL;
+
+	rb_scan_args(argc, argv, "11", &rb_repo, &rb_pattern);
+
+	if (!rb_block_given_p())
+		return rb_funcall(self, rb_intern("to_enum"), 3, CSTR2SYM("each"), rb_repo, rb_pattern);
+
+	if (!NIL_P(rb_pattern)) {
+		Check_Type(rb_pattern, T_STRING);
+		pattern = StringValueCStr(rb_pattern);
+	}
 
 	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo))
 		rb_raise(rb_eTypeError, "Expeting a Rugged::Repository instance");
+
 	Data_Get_Struct(rb_repo, rugged_repository, repo);
 
-	error = git_tag_list(&tags, repo->repo);
+	error = git_tag_list_match(&tags, pattern ? pattern : "", repo->repo);
 	rugged_exception_check(error);
 
-	if (rb_block_given_p()) {
-		result = Qnil;
-		for (i = 0; i < tags.count; ++i)
-			rb_yield(rugged_str_new2(tags.strings[i], NULL));
-	} else {
-		result = rb_ary_new2(tags.count);
-		for (i = 0; i < tags.count; ++i)
-			rb_ary_push(result, rugged_str_new2(tags.strings[i], NULL));
-	}
+	for (i = 0; i < tags.count; ++i)
+		rb_yield(rugged_str_new2(tags.strings[i], NULL));
 
 	git_strarray_free(&tags);
-	return result;
+	return Qnil;
 }
 
 static VALUE rb_git_tag_delete(VALUE self, VALUE rb_repo, VALUE rb_name)
@@ -178,7 +183,7 @@ void Init_rugged_tag()
 	rb_cRuggedTag = rb_define_class_under(rb_mRugged, "Tag", rb_cRuggedObject);
 
 	rb_define_singleton_method(rb_cRuggedTag, "create", rb_git_tag_create, 2);
-	rb_define_singleton_method(rb_cRuggedTag, "list", rb_git_tag_list, 1);
+	rb_define_singleton_method(rb_cRuggedTag, "each", rb_git_tag_each, -1);
 	rb_define_singleton_method(rb_cRuggedTag, "delete", rb_git_tag_delete, 2);
 
 	rb_define_method(rb_cRuggedTag, "message", rb_git_tag_message_GET, 0);

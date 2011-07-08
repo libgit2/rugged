@@ -28,11 +28,11 @@ def context(*args, &block)
   klass
 end
 
-def rm_loose(sha)
+def rm_loose(oid)
 
-  base_path = File.join(@path, "objects", sha[0, 2])
+  base_path = File.join(@path, "objects", oid[0, 2])
 
-  file = File.join(base_path, sha[2, 38])
+  file = File.join(base_path, oid[2, 38])
   dir_contents = File.join(base_path, "*")
 
   File.delete(file)

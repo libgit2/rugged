@@ -139,12 +139,6 @@ static int cb_config__each_pair(const char *key, const char *value, void *opaque
 	return GIT_SUCCESS;
 }
 
-static int cb_config__to_array(const char *key, const char *value, void *opaque)
-{
-	rb_ary_push((VALUE)opaque, rugged_str_new2(key, NULL));
-	return GIT_SUCCESS;
-}
-
 static int cb_config__to_hash(const char *key, const char *value, void *opaque)
 {
 	rb_hash_aset((VALUE)opaque,
@@ -158,40 +152,30 @@ static VALUE rb_git_config_each_key(VALUE self)
 {
 	git_config *config;
 	int error;
-	VALUE result = Qnil;
 
 	Data_Get_Struct(self, git_config, config);
 
-	if (rb_block_given_p()) {
-		error = git_config_foreach(config, &cb_config__each_key, (void *)rb_block_proc());
-	} else {
-		result = rb_ary_new();
-		error = git_config_foreach(config, &cb_config__to_array, (void *)result);
-		result = rb_funcall(result, rb_intern("to_enum"), 0);
-	}
+	if (!rb_block_given_p())
+		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_key"));
 
+	error = git_config_foreach(config, &cb_config__each_key, (void *)rb_block_proc());
 	rugged_exception_check(error);
-	return result;
+	return Qnil;
 }
 
 static VALUE rb_git_config_each_pair(VALUE self)
 {
 	git_config *config;
 	int error;
-	VALUE result = Qnil;
 
 	Data_Get_Struct(self, git_config, config);
 
-	if (rb_block_given_p()) {
-		error = git_config_foreach(config, &cb_config__each_pair, (void *)rb_block_proc());
-	} else {
-		result = rb_hash_new();
-		error = git_config_foreach(config, &cb_config__to_hash, (void *)result);
-		result = rb_funcall(result, rb_intern("to_enum"), 0);
-	}
+	if (!rb_block_given_p())
+		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_pair"));
 
+	error = git_config_foreach(config, &cb_config__each_pair, (void *)rb_block_proc());
 	rugged_exception_check(error);
-	return result;
+	return Qnil;
 }
 
 static VALUE rb_git_config_to_hash(VALUE self)
@@ -204,7 +188,6 @@ static VALUE rb_git_config_to_hash(VALUE self)
 	hash = rb_hash_new();
 
 	error = git_config_foreach(config, &cb_config__to_hash, (void *)hash);
-
 	rugged_exception_check(error);
 	return hash;
 }

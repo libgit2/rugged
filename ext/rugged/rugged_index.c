@@ -119,6 +119,14 @@ static VALUE rb_git_index_write(VALUE self)
 	return Qnil;
 }
 
+static VALUE rb_git_index_uniq(VALUE self)
+{
+	rugged_index *index;
+	Data_Get_Struct(self, rugged_index, index);
+	git_index_uniq(index->index);
+	return Qnil;
+}
+
 static VALUE rb_git_index_count(VALUE self)
 {
 	rugged_index *index;
@@ -152,27 +160,17 @@ static VALUE rb_git_index_each(VALUE self)
 
 	Data_Get_Struct(self, rugged_index, index);
 
+	if (!rb_block_given_p())
+		return rb_funcall(self, rb_intern("to_enum"), 0);
+
 	count = git_index_entrycount(index->index);
-
-	if (rb_block_given_p()) {
-		for (i = 0; i < count; ++i) {
-			git_index_entry *entry = git_index_get(index->index, i);
-			if (entry)
-				rb_yield(rb_git_indexentry_fromC(entry));
-		}
-
-		return Qnil;
-	} else {
-		VALUE array = rb_ary_new2(count);
-
-		for (i = 0; i < count; ++i) {
-			git_index_entry *entry = git_index_get(index->index, i);
-			if (entry)
-				rb_ary_push(array, rb_git_indexentry_fromC(entry));
-		}
-
-		return rb_funcall(array, rb_intern("to_enum"), 0);
+	for (i = 0; i < count; ++i) {
+		git_index_entry *entry = git_index_get(index->index, i);
+		if (entry)
+			rb_yield(rb_git_indexentry_fromC(entry));
 	}
+
+	return Qnil;
 }
 
 static VALUE rb_git_index_get_unmerged(VALUE self, VALUE entry)
@@ -407,6 +405,7 @@ void Init_rugged_index()
 	rb_define_method(rb_cRuggedIndex, "reload", rb_git_index_read, 0);
 	rb_define_method(rb_cRuggedIndex, "clear", rb_git_index_clear, 0);
 	rb_define_method(rb_cRuggedIndex, "write", rb_git_index_write, 0);
+	rb_define_method(rb_cRuggedIndex, "uniq!", rb_git_index_uniq, 0);
 	rb_define_method(rb_cRuggedIndex, "get_entry", rb_git_index_get, 1);
 	rb_define_method(rb_cRuggedIndex, "get_unmerged", rb_git_index_get_unmerged, 1);
 	rb_define_method(rb_cRuggedIndex, "[]", rb_git_index_get, 1);

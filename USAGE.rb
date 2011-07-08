@@ -8,22 +8,22 @@
 #
 
 repo = Rugged::Repository.new(path_to_repo)
-if repo.exists(blob_sha)
+if repo.exists(blob_oid)
   # reading
-  blob_data, type = repo.read(blob_sha)
-  blob = repo.lookup(blob_sha)
+  blob_data, type = repo.read(blob_oid)
+  blob = repo.lookup(blob_oid)
   puts blob.data
   assert blob.data == blob_data && type == 'blob'
 
   # writing
   blob_data += "FU, SPIDERMAN 3"
 
-  new_sha = repo.write(blob_data, blob)
+  new_oid = repo.write(blob_data, blob)
 
   blob.data(blob_data)
   assert !blob.written?
-  new_sha2 = blob.write
-  assert new_sha == new_sha2
+  new_oid2 = blob.write
+  assert new_oid == new_oid2
   assert blob.written?
 end
 
@@ -31,7 +31,7 @@ end
 # getting the contents of a blob with commit and path
 #
 
-commit = repo.lookup(commit_sha)
+commit = repo.lookup(commit_oid)
 commit.tree.each do |entry|
   if (entry.name == path) 
     && (entry.type == 'blob')
@@ -40,11 +40,11 @@ commit.tree.each do |entry|
 end
 
 # 
-# getting commit data from sha
+# getting commit data from oid
 #
 
-commit = repo.lookup(commit_sha, 'commit')
-puts "SHA: " + commit.sha
+commit = repo.lookup(commit_oid, 'commit')
+puts "oid: " + commit.oid
 puts commit.author.name
 puts commit.author.email
 puts commit.author.date.strftime("%y-%m-%d")
@@ -56,7 +56,7 @@ puts commit.message
 # listing a single level tree
 #
 
-commit = repo.lookup(commit_sha)
+commit = repo.lookup(commit_oid)
 commit.tree.each do |entry|
   puts entry.name
 end
@@ -66,51 +66,51 @@ end
 # git ls-tree -rt
 #
 
-def ls_tree(tree_sha)
-  tree = repo.lookup(tree_sha, 'tree')
+def ls_tree(tree_oid)
+  tree = repo.lookup(tree_oid, 'tree')
   tree.each do |entry|
-    puts [entry.mode, entry.sha, entry.name].join(' ')
+    puts [entry.mode, entry.oid, entry.name].join(' ')
     if entry.type == 'tree'
-      ls_tree(entry.sha)
+      ls_tree(entry.oid)
     end
   end
 end
 
-commit = repo.lookup(commit_sha)
-ls_tree(tree_sha)
+commit = repo.lookup(commit_oid)
+ls_tree(tree_oid)
 
 # 
 # updating a file and committing
 #
 
-commit = repo.lookup(head_sha)
+commit = repo.lookup(head_oid)
 tree = commit.tree
 entry = tree.path("file.txt")
 blob = entry.gobject
 blob.data(blob.data + "EXTRA")
-bsha = blob.write
-tree.add(entry.sha(bsha))
-tsha = tree.write
+boid = blob.write
+tree.add(entry.oid(boid))
+toid = tree.write
 
 new_commit = Rugged::Commit.new
 person = Rugged::Person.new("Scott", "scott@github.com", Time.now)
 commit.author(person)
 commit.message("updated file.txt")
-commit.parents([head_sha])
-commit.tree(tsha)
-commit_sha = commit.write
+commit.parents([head_oid])
+commit.tree(toid)
+commit_oid = commit.write
 
-repo.update_ref('refs/heads/master', commit_sha)
+repo.update_ref('refs/heads/master', commit_oid)
 
 #
 # git log
 #
 
 walker = repo.walker
-walker.push(head_sha)
-while sha = walker.next
-  commit = repo.lookup(sha)
-  puts [commit.sha[0, 8], commit.short_message].join(' ')
+walker.push(head_oid)
+while oid = walker.next
+  commit = repo.lookup(oid)
+  puts [commit.oid[0, 8], commit.short_message].join(' ')
 end
 
 #
@@ -120,14 +120,14 @@ end
 since_time = Time.parse("1 week ago")
 
 walker = repo.walker
-walker.push(a_sha)
-walker.hide(b_sha)
-while sha = walker.next
-  commit = repo.lookup(sha)
+walker.push(a_oid)
+walker.hide(b_oid)
+while oid = walker.next
+  commit = repo.lookup(oid)
   if commit.author.date > since_time
-    walker.hide(sha)
+    walker.hide(oid)
   else
-    puts [commit.sha[0, 8], commit.short_message].join(' ')
+    puts [commit.oid[0, 8], commit.short_message].join(' ')
   end
 end
 
@@ -137,9 +137,9 @@ end
 
 walker = repo.walker
 repo.branches(:heads).each do |branch|
-  walker.push(branch.sha)
+  walker.push(branch.oid)
 end
-while sha = walker.next
+while oid = walker.next
   ...
 end
 
@@ -149,12 +149,12 @@ end
 #
 
 walker = repo.walker
-walker.push(head_sha)
-while sha = walker.next
-  commit = repo.lookup(sha)
+walker.push(head_oid)
+while oid = walker.next
+  commit = repo.lookup(oid)
   diff = commit.diff_tree(commit.parents[0])
   if diff.include?(path)
-    return commit.sha
+    return commit.oid
   end
 end
 

@@ -4,20 +4,20 @@ context "Rugged::Blob tests" do
   setup do
     @path = File.dirname(__FILE__) + '/fixtures/testrepo.git/'
     @repo = Rugged::Repository.new(@path)
-    @sha = "fa49b077972391ad58037050f2a75f74e3671e92"
+    @oid = "fa49b077972391ad58037050f2a75f74e3671e92"
   end
 
   test "can read the blob data" do
-    blob = @repo.lookup(@sha)
+    blob = @repo.lookup(@oid)
     assert_equal 9, blob.size
     assert_equal "new file\n", blob.content
     assert_equal "blob", blob.type
-    assert_equal @sha, blob.sha
+    assert_equal @oid, blob.oid
   end
 
   test "can write new blob data" do
-    sha = Rugged::Blob.create(@repo, "a new blob content", true)
-    rm_loose(sha)
+    oid = Rugged::Blob.create(@repo, "a new blob content", true)
+    rm_loose(oid)
   end
 
   test "gets the complete content if it has nulls" do
@@ -27,10 +27,10 @@ context "Rugged::Blob tests" do
 
     content.force_encoding('binary') if content.respond_to?(:force_encoding)
 
-    sha = @repo.write(content, 'tree')
-    blob = @repo.lookup(sha)
+    oid = @repo.write(content, 'tree')
+    blob = @repo.lookup(oid)
     assert_equal content, blob.read_raw.data
-    rm_loose(sha)
+    rm_loose(oid)
   end
 
 end

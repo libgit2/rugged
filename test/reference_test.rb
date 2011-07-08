@@ -32,7 +32,7 @@ context "Rugged::Reference stuff" do
     ref.delete
   end
 
-  test "can create reference from sha" do
+  test "can create reference from oid" do
     ref = Rugged::Reference.create(@repo, "refs/heads/unit_test", "36060c58702ed4c2a40832c51758d5344201d89a")
     assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", ref.target
     assert_equal "commit", ref.type

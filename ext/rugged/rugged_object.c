@@ -197,7 +197,7 @@ static VALUE rb_git_object_equal(VALUE self, VALUE other)
 	return git_oid_cmp(git_object_id(a), git_object_id(b)) == 0 ? Qtrue : Qfalse;
 }
 
-static VALUE rb_git_object_sha_GET(VALUE self)
+static VALUE rb_git_object_oid_GET(VALUE self)
 {
 	git_object *object;
 	RUGGED_OBJ_UNWRAP(self, git_object, object);
@@ -229,6 +229,6 @@ void Init_rugged_object()
 
 	rb_define_method(rb_cRuggedObject, "read_raw", rb_git_object_read_raw, 0);
 	rb_define_method(rb_cRuggedObject, "==", rb_git_object_equal, 1);
-	rb_define_method(rb_cRuggedObject, "sha", rb_git_object_sha_GET, 0);
+	rb_define_method(rb_cRuggedObject, "oid", rb_git_object_oid_GET, 0);
 	rb_define_method(rb_cRuggedObject, "type", rb_git_object_type_GET, 0);
 }

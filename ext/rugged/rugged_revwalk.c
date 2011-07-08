@@ -67,25 +67,31 @@ static VALUE rb_git_walker_init(VALUE self, VALUE rb_repo)
 	return Qnil;
 }
 
-static VALUE rb_git_walker_next(VALUE self)
+static VALUE rb_git_walker_each(VALUE self)
 {
 	rugged_walker *walk;
 	git_commit *commit;
+	git_repository *repo;
 	git_oid commit_oid;
 	int error;
 
 	Data_Get_Struct(self, rugged_walker, walk);
+	repo = git_revwalk_repository(walk->walk);
 
-	error = git_revwalk_next(&commit_oid, walk->walk);
-	if (error == GIT_EREVWALKOVER)
-		return Qfalse;
+	if (!rb_block_given_p())
+		return rb_funcall(self, rb_intern("to_enum"), 0);
 
-	rugged_exception_check(error);
+	while ((error = git_revwalk_next(&commit_oid, walk->walk)) == 0) {
+		error = git_commit_lookup(&commit, repo, &commit_oid);
+		rugged_exception_check(error);
 
-	error = git_commit_lookup(&commit, git_revwalk_repository(walk->walk), &commit_oid);
-	rugged_exception_check(error);
+		rb_yield(rugged_object_new(walk->owner, (git_object *)commit));
+	}
 
-	return rugged_object_new(walk->owner, (git_object *)commit);
+	if (error != GIT_EREVWALKOVER)
+		rugged_exception_check(error);
+
+	return Qnil;
 }
 
 static VALUE rb_git_walker_push(VALUE self, VALUE rb_commit)
@@ -134,7 +140,8 @@ void Init_rugged_revwalk()
 	rb_define_alloc_func(rb_cRuggedWalker, rb_git_walker_allocate);
 	rb_define_method(rb_cRuggedWalker, "initialize", rb_git_walker_init, 1);
 	rb_define_method(rb_cRuggedWalker, "push", rb_git_walker_push, 1);
-	rb_define_method(rb_cRuggedWalker, "next", rb_git_walker_next, 0);
+	rb_define_method(rb_cRuggedWalker, "each", rb_git_walker_each, 0);
+	rb_define_method(rb_cRuggedWalker, "walk", rb_git_walker_each, 0);
 	rb_define_method(rb_cRuggedWalker, "hide", rb_git_walker_hide, 1);
 	rb_define_method(rb_cRuggedWalker, "reset", rb_git_walker_reset, 0);
 	rb_define_method(rb_cRuggedWalker, "sorting", rb_git_walker_sorting, 1);

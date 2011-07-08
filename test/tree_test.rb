@@ -4,12 +4,12 @@ context "Rugged::Tree tests" do
   setup do
     path = File.dirname(__FILE__) + '/fixtures/testrepo.git/'
     @repo = Rugged::Repository.new(path)
-    @sha = "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b"
-    @tree = @repo.lookup(@sha)
+    @oid = "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b"
+    @tree = @repo.lookup(@oid)
   end
 
   test "can read the tree data" do
-    assert_equal @sha, @tree.sha
+    assert_equal @oid, @tree.oid
 	  assert_equal "tree", @tree.type
 	  assert_equal 3, @tree.count
 	  assert_equal "1385f264afb75a56a5bec74243be9b367ba4ca08", @tree[0][:oid]

@@ -41,34 +41,34 @@ context "Rugged::Repository stuff" do
   end
 
   test "can hash data" do
-    sha = Rugged::Repository::hash(@test_content, @test_content_type)
-    assert_equal "76b1b55ab653581d6f2c7230d34098e837197674", sha
+    oid = Rugged::Repository::hash(@test_content, @test_content_type)
+    assert_equal "76b1b55ab653581d6f2c7230d34098e837197674", oid
   end
 
   test "can write to the db" do
-    sha = @repo.write(@test_content, @test_content_type)
-    assert_equal "76b1b55ab653581d6f2c7230d34098e837197674", sha
+    oid = @repo.write(@test_content, @test_content_type)
+    assert_equal "76b1b55ab653581d6f2c7230d34098e837197674", oid
     assert @repo.exists("76b1b55ab653581d6f2c7230d34098e837197674")
 
     if defined? Encoding
       with_default_encoding('utf-8') do |enc|
-        sha = @repo.write(@test_content, @test_content_type)
-        assert_equal enc, sha.encoding
+        oid = @repo.write(@test_content, @test_content_type)
+        assert_equal enc, oid.encoding
       end
 
       with_default_encoding('ascii') do |enc|
-        sha = @repo.write(@test_content, @test_content_typeobj)
-        assert_equal enc, sha.encoding
+        oid = @repo.write(@test_content, @test_content_typeobj)
+        assert_equal enc, oid.encoding
       end
     end
-    rm_loose(sha)
+    rm_loose(oid)
   end
 
   test "can use the builtin walk method" do
-    sha = "a4a7dce85cf63874e984719f4fdd239f5145052f"
+    oid = "a4a7dce85cf63874e984719f4fdd239f5145052f"
     list = []
-    @repo.walk(sha) { |c| list << c }
-    assert list.map {|c| c.sha[0,5] }.join('.'), "a4a7d.c4780.9fd73.4a202.5b5b0.84960"
+    @repo.walk(oid) { |c| list << c }
+    assert list.map {|c| c.oid[0,5] }.join('.'), "a4a7d.c4780.9fd73.4a202.5b5b0.84960"
   end
 
   test "can lookup head from repo" do

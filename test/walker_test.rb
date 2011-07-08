@@ -10,59 +10,53 @@ context "Rugged::Walker stuff" do
 
   test "can walk a simple revlist" do
     @walker.push("9fd738e8f7967c078dceed8190330fc8648ee56a")
-    data = []
-    4.times do
-      data << @walker.next.sha
-    end
-    shas = data.sort.map {|a| a[0,5]}.join('.')
-    assert_equal "4a202.5b5b0.84960.9fd73", shas
-    assert_equal false, @walker.next
+    data = @walker.each.to_a
+    oids = data.sort { |a, b| a.oid <=> b.oid }.map {|a| a.oid[0,5]}.join('.')
+    assert_equal "4a202.5b5b0.84960.9fd73", oids
   end
 
   test "can walk a part of a revlist" do
-    sha = "8496071c1b46c854b31185ea97743be6a8774479"
-    @walker.push(sha)
-    assert_equal sha, @walker.next.sha
-    assert_equal false, @walker.next
+    oid = "8496071c1b46c854b31185ea97743be6a8774479"
+    @walker.push(oid)
+    walk = @walker.each.to_a
+    assert_equal oid, walk[0].oid
+    assert_equal 1, walk.count
   end
 
   test "can hide part of a list" do
     @walker.push("9fd738e8f7967c078dceed8190330fc8648ee56a")
     @walker.hide("5b5b025afb0b4c913b4c338a42934a3863bf3644")
-    2.times { @walker.next }
-    assert_equal false, @walker.next
+    assert_equal 2, @walker.each.count
   end
 
   # resetting a walker emtpies the walking queue
   test "can reset a walker" do
-    sha = "8496071c1b46c854b31185ea97743be6a8774479"
-    @walker.push(sha)
-    assert_equal sha, @walker.next.sha
-    assert_equal false, @walker.next
+    oid = "8496071c1b46c854b31185ea97743be6a8774479"
+    @walker.push(oid)
+    walk = @walker.each.to_a
+    assert_equal oid, walk[0].oid
+    assert_equal 1, walk.count
     @walker.reset
-    assert_equal false, @walker.next
+    walk = @walker.each.to_a
+    assert_equal 0, walk.count
   end
 
   test "can enumerable" do
     @walker.push("9fd738e8f7967c078dceed8190330fc8648ee56a")
-    enum = @walker.sort { |a, b| a.sha <=> b.sha }.map { |a| a.sha[0, 4] }.join('.')
+    enum = @walker.sort { |a, b| a.oid <=> b.oid }.map { |a| a.oid[0, 4] }.join('.')
     assert_equal "4a20.5b5b.8496.9fd7", enum
   end
 
   def do_sort(sorting)
-    sha = "a4a7dce85cf63874e984719f4fdd239f5145052f"
+    oid = "a4a7dce85cf63874e984719f4fdd239f5145052f"
     @walker.sorting(sorting)
-    @walker.push(sha)
-    data = []
-    6.times do
-      data << @walker.next
-    end
-    data
+    @walker.push(oid)
+    @walker.each.to_a
   end
 
   def revlist_with_sorting(sorting)
     data = do_sort sorting
-    shas = data.map {|a| a.sha[0,5] if a }.join('.')
+    oids = data.map {|a| a.oid[0,5] if a }.join('.')
   end
 
   def is_toposorted(list)

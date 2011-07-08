@@ -81,27 +81,17 @@ static VALUE rb_git_tree_each(VALUE self)
 	unsigned int i, count;
 	RUGGED_OBJ_UNWRAP(self, git_tree, tree);
 
+	if (!rb_block_given_p())
+		return rb_funcall(self, rb_intern("to_enum"), 0);
+
 	count = git_tree_entrycount(tree);
 
-	if (rb_block_given_p()) {
-		for (i = 0; i < count; ++i) {
-			const git_tree_entry *entry = git_tree_entry_byindex(tree, i);
-			if (entry)
-				rb_yield(rb_git_treeentry_fromC(entry));
-		}
-
-		return Qnil;
-	} else {
-		VALUE array = rb_ary_new2(count);
-
-		for (i = 0; i < count; ++i) {
-			const git_tree_entry *entry = git_tree_entry_byindex(tree, i);
-			if (entry)
-				rb_ary_push(array, rb_git_treeentry_fromC(entry));
-		}
-
-		return rb_funcall(array, rb_intern("to_enum"), 0);
+	for (i = 0; i < count; ++i) {
+		const git_tree_entry *entry = git_tree_entry_byindex(tree, i);
+		rb_yield(rb_git_treeentry_fromC(entry));
 	}
+
+	return Qnil;
 }
 
 
