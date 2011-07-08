@@ -63,6 +63,55 @@ static VALUE rb_git_string_to_type(VALUE self, VALUE string_type)
 	return INT2FIX(git_object_string2type(StringValueCStr(string_type)));
 }
 
+static VALUE minimize_cb(VALUE rb_oid, git_oid_shorten *shortener)
+{
+	Check_Type(rb_oid, T_STRING);
+	git_oid_shorten_add(shortener, RSTRING_PTR(rb_oid));
+	return Qnil;
+}
+
+static VALUE minimize_yield(VALUE rb_oid, VALUE *data)
+{
+	rb_funcall(data[0], rb_intern("call"), 1,
+		rb_str_substr(rb_oid, 0, FIX2INT(data[1])));
+	return Qnil;
+}
+
+static VALUE rb_git_minimize_oid(int argc, VALUE *argv, VALUE self)
+{
+	git_oid_shorten *shrt;
+	int length, minlen = 7;
+	VALUE rb_enum, rb_minlen, rb_block;
+
+	rb_scan_args(argc, argv, "11&", &rb_enum, &rb_minlen, &rb_block);
+
+	if (!NIL_P(rb_minlen)) {
+		Check_Type(rb_minlen, T_FIXNUM);
+		minlen = FIX2INT(rb_minlen);
+	}
+
+	if (!rb_respond_to(rb_enum, rb_intern("each")))
+		rb_raise(rb_eTypeError, "Expecting an Enumerable instance");
+
+	shrt = git_oid_shorten_new(minlen);
+
+	rb_iterate(rb_each, rb_enum, &minimize_cb, (VALUE)shrt);
+	length = git_oid_shorten_add(shrt, NULL);
+	rugged_exception_check(length);
+
+	if (RTEST(rb_block)) {
+		VALUE yield_data[2];
+
+		yield_data[0] = rb_block;
+		yield_data[1] = INT2FIX(length);
+
+		rb_iterate(rb_each, rb_enum, &minimize_yield, (VALUE)yield_data);
+		return Qnil;
+	}
+
+	return INT2FIX(length);
+}
+
 void Init_rugged()
 {
 	rb_mRugged = rb_define_module("Rugged");
@@ -71,6 +120,7 @@ void Init_rugged()
 	rb_define_module_function(rb_mRugged, "raw_to_hex", rb_git_raw_to_hex, 1);
 	rb_define_module_function(rb_mRugged, "type_to_string", rb_git_type_to_string, 1);
 	rb_define_module_function(rb_mRugged, "string_to_type", rb_git_string_to_type, 1);
+	rb_define_module_function(rb_mRugged, "minimize_oid", rb_git_minimize_oid, -1);
 
 	Init_rugged_signature();
 
