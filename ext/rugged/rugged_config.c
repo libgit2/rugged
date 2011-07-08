@@ -124,6 +124,23 @@ static VALUE rb_git_config_store(VALUE self, VALUE rb_key, VALUE rb_val)
 	return Qnil;
 }
 
+static VALUE rb_git_config_delete(VALUE self, VALUE rb_key)
+{
+	git_config *config;
+	int error;
+	VALUE result;
+
+	Data_Get_Struct(self, git_config, config);
+	Check_Type(rb_key, T_STRING);
+
+	error = git_config_del(config, StringValueCStr(rb_key));
+	if (error == GIT_ENOTFOUND)
+		return Qfalse;
+
+	rugged_exception_check(error);
+	return Qtrue;
+}
+
 static int cb_config__each_key(const char *key, const char *value, void *opaque)
 {
 	rb_funcall((VALUE)opaque, rb_intern("call"), 1, rugged_str_new2(key, NULL));
@@ -211,6 +228,8 @@ void Init_rugged_config()
 	rb_cRuggedConfig = rb_define_class_under(rb_mRugged, "Config", rb_cObject);
 	rb_define_alloc_func(rb_cRuggedConfig, rb_git_config_allocate);
 	rb_define_method(rb_cRuggedConfig, "initialize", rb_git_config_init, 1);
+
+	rb_define_method(rb_cRuggedConfig, "delete", rb_git_config_delete, 1);
 
 	rb_define_method(rb_cRuggedConfig, "store", rb_git_config_store, 2);
 	rb_define_method(rb_cRuggedConfig, "[]=", rb_git_config_store, 2);
