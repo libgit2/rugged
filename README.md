@@ -152,7 +152,7 @@ of manually opening the Index by its path.
     # TODO: the remove and add functions immediately flush to the index file on disk
     index =
     Rugged::Index.new(path)
-            index.refresh              # re-read the index file from disk
+            index.reload              # re-read the index file from disk
       int = index.entry_count # count of index entries
       ent = index.get_entry(i/path)
             index.remove(i/path)
