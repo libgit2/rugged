@@ -1,3 +1,4 @@
 *.bundle
 *.swp
 tmp/
+test/fixtures/testrepo.git
