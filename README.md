@@ -11,9 +11,10 @@ First you need to install libgit2:
 
     $ git clone git://github.com/libgit2/libgit2.git
     $ cd libgit2
-    $ ./waf configure
-    $ ./waf build-shared
-    $ ./waf install
+    $ mdkir build && cd build
+    $ cmake ..
+    $ make
+    $ make install
 
 Next, you need to install rake-compiler:
 
