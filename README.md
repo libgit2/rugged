@@ -34,8 +34,8 @@ API
 There is a general library for some basic Gitty methods.  So far, just converting
 a raw sha (20 bytes) into a readable hex sha (40 char).
 
-    raw = Rugged::Lib.hex_to_raw(hex_sha)
-    hex = Rugged::Lib.raw_to_hex(20_byte_raw_sha)
+    raw = Rugged.hex_to_raw(hex_sha)
+    hex = Rugged.raw_to_hex(20_byte_raw_sha)
 
 
 Repository Access
@@ -76,22 +76,20 @@ but all of these methods should be useful in it's derived classes
     # the repository and instantiated
     # If the 'sha' ID of the object is missing, the object will be
     # created in memory and can be written later on to the repository
-    Rugged::Object(repo, sha)
-      obj.sha
+    Rugged::Object.new(repo, sha)
+      obj.oid
       obj.type
 
       str = obj.read_raw	# read the raw data of the object
-      sha = obj.write		# write the object to a repository
-
 
 The next classes are for consuming and creating the 4 base
-git object types.  just about every method should be able to take
-of each should be able to take a parameter to change the value
-so the object can be re-written slightly differently or no parameter
-to simply read the current value out
+git object types. Just about every method should be able to take
+a parameter to change the value so the object can be re-written 
+slightly different or no parameter to simply read the current 
+value out.
 
-    gobjc =
-    Rugged::Commit.new < Rugged::Object
+    gobjc = Rugged::Commit.new
+    # Rugged::Commit.new < Rugged::Object
       str   = gobjc.message
       str   = gobjc.message_short
       str   = gobjc.message_body # TODO
@@ -101,16 +99,16 @@ to simply read the current value out
       sha   = gobjc.tree_sha
       arr   = gobjc.parents [*] # TODO: write
 
-    gobtg =
-    Rugged::Tag.new < Rugged::Object
+    gobtg = Rugged::Tag.new
+    # Rugged::Tag.new < Rugged::Object
       gobj  = gobtg.target
       int   = gobtg.target_type
       str   = gobtg.name
       prsn  = gobtg.tagger
       str   = gobtg.message
 
-    gobtr =
-    Rugged::Tree.new < Rugged::Object
+    gobtr = Rugged::Tree.new
+    # Rugged::Tree.new < Rugged::Object
               gobtr.add(ent) # TODO
               gobtr.remove(name) # TODO
       int   = gobtr.entry_count
@@ -135,10 +133,11 @@ objects, one at a time. You can also hide() commits if you are not interested in
 anything beneath them (useful for a `git log master ^origin/master` type deal).
 
     walker = 
-    Rugged::Walker.new(repo) 
+    Rugged::Walker.new(repo)
+             walker.walk { |c| puts c.inspect } # walk is just an alias of each
+             walker.each { |c| puts c.inspect } 
              walker.push(hex_sha_interesting)
              walker.hide(hex_sha_uninteresting)
-      cmt  = walker.next # false if none left
              walker.reset
 
 
@@ -154,28 +153,16 @@ of manually opening the Index by its path.
     index =
     Rugged::Index.new(path)
             index.reload              # re-read the index file from disk
-      int = index.entry_count # count of index entries
+      int = index.count # count of index entries
+            index.entries # collection of index entries
+            index.each { |i| puts i.inspect }
       ent = index.get_entry(i/path)
             index.remove(i/path)
             index.add(ientry)    # also updates existing entry if there is one
             index.add(path)      # create ientry from file in path, update index
       #TODO index.read_tree(gobtr, path='/')
       #TODO index.write_tree
-    
-    ientry = 
-    Rugged::IndexEntry.new(index, offset)
-      str = ientry.path
-     time = ientry.ctime
-     time = ientry.mtime
-      str = ientry.sha
-      int = ientry.dev
-      int = ientry.ino
-      int = ientry.mode
-      int = ientry.uid
-      int = ientry.gid
-      int = ientry.file_size
-      int = ientry.flags # (what flags are available?)
-      int = ientry.flags_extended # (what flags are available?)
+ 
 
 Index Status # TODO
 -------------------
