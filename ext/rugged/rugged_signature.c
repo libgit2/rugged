@@ -157,7 +157,7 @@ static VALUE rb_git_signature_now(VALUE self, VALUE rb_name, VALUE rb_email)
 	Check_Type(rb_name, T_STRING);
 	Check_Type(rb_email, T_STRING);
 
-	sig = git_signature_now(StringValueCStr(rb_name), StringValueCStr(rb_email));
+	git_signature_now(sig, StringValueCStr(rb_name), StringValueCStr(rb_email));
 	return Data_Wrap_Struct(self, NULL, rb_git_signature__free, sig);
 }
 
