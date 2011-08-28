@@ -181,6 +181,7 @@ static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 		NULL,
 		author,
 		committer,
+		NULL,
 		StringValueCStr(rb_message),
 		tree,
 		parent_count,
