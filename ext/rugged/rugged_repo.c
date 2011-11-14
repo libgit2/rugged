@@ -112,14 +112,6 @@ void rb_git_repo__free(rugged_repository *repo)
 	free(repo);
 }
 
-void rb_git_repo__mark(rugged_repository *repo)
-{
-	int i;
-
-	for (i = 0; i < RARRAY_LEN(repo->backends); ++i)
-		rb_gc_mark(rb_ary_entry(repo->backends, i));
-}
-
 static VALUE rb_git_repo_allocate(VALUE klass)
 {
 	rugged_repository *repo;
@@ -129,9 +121,9 @@ static VALUE rb_git_repo_allocate(VALUE klass)
 		rb_raise(rb_eNoMemError, "out of memory");
 
 	repo->repo = NULL;
-	repo->backends = rb_ary_new();
+	repo->encoding = NULL;
 
-	return Data_Wrap_Struct(klass, rb_git_repo__mark, rb_git_repo__free, repo);
+	return Data_Wrap_Struct(klass, NULL, &rb_git_repo__free, repo);
 }
 
 static VALUE rb_git_repo_init(int argc, VALUE *argv, VALUE self)
@@ -183,6 +175,8 @@ static VALUE rb_git_repo_init(int argc, VALUE *argv, VALUE self)
 
 	Data_Get_Struct(self, rugged_repository, r_repo);
 	r_repo->repo = repo;
+	/* TODO: fetch this properly */
+	r_repo->encoding = rb_filesystem_encoding();
 
 	return Qnil;
 }
@@ -205,35 +199,10 @@ static VALUE rb_git_repo_init_at(VALUE klass, VALUE path, VALUE rb_is_bare)
 		rb_raise(rb_eNoMemError, "out of memory");
 
 	r_repo->repo = repo;
-	r_repo->backends = rb_ary_new();
+	/* TODO: fetch this properly */
+	r_repo->encoding = rb_filesystem_encoding();
 
-	return Data_Wrap_Struct(klass, rb_git_repo__mark, rb_git_repo__free, r_repo);
-}
-
-static VALUE rb_git_repo_add_backend(VALUE self, VALUE rb_backend, VALUE rb_priority)
-{
-	rugged_repository *repo;
-	rugged_backend *backend;
-	int error;
-
-	Data_Get_Struct(self, rugged_repository, repo);
-
-	Check_Type(rb_priority, T_FIXNUM);
-
-	if (!rb_obj_is_kind_of(rb_backend, rb_cRuggedBackend))
-		rb_raise(rb_eTypeError, "expecting a subclass of Rugged::Backend");
-
-	if (rb_obj_is_instance_of(rb_backend, rb_cRuggedBackend))
-		rb_raise(rb_eTypeError, "create a subclass of Rugged::Backend to define your custom backend");
-
-	Data_Get_Struct(rb_backend, rugged_backend, backend);
-
-	error = git_odb_add_backend(git_repository_database(repo->repo), (git_odb_backend *)backend, FIX2INT(rb_priority));
-	rugged_exception_check(error);
-
-	rb_ary_push(repo->backends, rb_backend);
-
-	return Qnil;
+	return Data_Wrap_Struct(klass, NULL, &rb_git_repo__free, r_repo);
 }
 
 static VALUE rb_git_repo_index(VALUE self)
@@ -417,7 +386,6 @@ void Init_rugged_repo()
 	rb_define_method(rb_cRuggedRepo, "read",   rb_git_repo_read,   1);
 	rb_define_method(rb_cRuggedRepo, "write",  rb_git_repo_write,  2);
 	rb_define_method(rb_cRuggedRepo, "index",  rb_git_repo_index,  0);
-	rb_define_method(rb_cRuggedRepo, "add_backend",  rb_git_repo_add_backend,  1);
 	rb_define_method(rb_cRuggedRepo, "paths",  rb_git_repo_paths,  0);
 
 	rb_define_method(rb_cRuggedRepo, "config",  rb_git_repo_config,  0);

@@ -33,7 +33,7 @@ VALUE rb_cRuggedBlob;
 static VALUE rb_git_blob_content_GET(VALUE self)
 {
 	git_blob *blob;
-	int size;
+	size_t size;
 
 	RUGGED_OBJ_UNWRAP(self, git_blob, blob);
 	

@@ -67,7 +67,7 @@ static VALUE rb_git_tag_tagger_GET(VALUE self)
 	git_tag *tag;
 	RUGGED_OBJ_UNWRAP(self, git_tag, tag);
 
-	return rugged_signature_new(git_tag_tagger(tag));
+	return rugged_signature_new(git_tag_tagger(tag), NULL);
 }
 
 static VALUE rb_git_tag_message_GET(VALUE self)

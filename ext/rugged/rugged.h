@@ -32,6 +32,10 @@
 
 #include <ruby.h>
 
+#ifdef HAVE_RUBY_ENCODING_H
+#	include <ruby/encoding.h>
+#endif
+
 #include <assert.h>
 #include <git2.h>
 #include <git2/odb_backend.h>
@@ -94,7 +98,6 @@ void Init_rugged_blob();
 void Init_rugged_index();
 void Init_rugged_repo();
 void Init_rugged_revwalk();
-void Init_rugged_signature();
 void Init_rugged_reference();
 void Init_rugged_config();
 
@@ -102,7 +105,7 @@ VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE self);
 
 VALUE rugged_raw_read(git_repository *repo, const git_oid *oid);
 
-VALUE rugged_signature_new(const git_signature *sig);
+VALUE rugged_signature_new(const git_signature *sig, const char *encoding_name);
 VALUE rugged_object_new(VALUE repository, git_object *object);
 VALUE rugged_index_new(VALUE owner, git_index *index);
 VALUE rugged_config_new(git_config *cfg);
@@ -113,18 +116,15 @@ git_signature *rugged_signature_get(VALUE rb_person);
 git_object *rugged_object_get(git_repository *repo, VALUE object_value, git_otype type);
 
 typedef struct {
-	git_odb_backend parent;
-	VALUE self;
-} rugged_backend;
-
-typedef struct {
 	git_object	*object;
 	VALUE owner;
 } rugged_object;
 
 typedef struct {
 	git_repository *repo;
-	VALUE backends;
+#ifdef HAVE_RUBY_ENCODING_H
+	rb_encoding *encoding;
+#endif
 } rugged_repository;
 
 typedef struct {
@@ -174,54 +174,21 @@ static inline int rugged_parse_bool(VALUE boolean)
 
 /* support for string encodings in 1.9 */
 #ifdef HAVE_RUBY_ENCODING_H
+#	define rugged_str_new(str, len, enc) rb_enc_str_new(str, len, enc)
+#	define rugged_str_new2(str, enc) rb_enc_str_new(str, strlen(str), enc)
+#	define rugged_str_ascii(str, len) rb_enc_str_new(str, len, rb_ascii8bit_encoding());
 
-#	include <ruby/encoding.h>
-
-static inline VALUE rugged_str_new(const char *str, long len, rb_encoding *rb_enc)
+static VALUE rugged_str_repoenc(const char *str, long len, VALUE rb_repo)
 {
-	VALUE encoded_string;
-	rb_encoding *internal_encoding = NULL;
-
-	internal_encoding = rb_default_internal_encoding();
-
-	if (rb_enc) {
-		encoded_string = rb_enc_str_new(str, len, rb_enc);
-	} else {
-		encoded_string = rb_str_new(str, len);
-	}
-
-	if (internal_encoding) {
-		encoded_string = rb_str_export_to_enc(encoded_string, internal_encoding);
-	}
-
-	return encoded_string;
+	rugged_repository *repo;
+	Data_Get_Struct(rb_repo, rugged_repository, repo);
+	return rb_enc_str_new(str, len, repo->encoding);
 }
-
-
-static inline VALUE rugged_str_new2(const char *str, rb_encoding *rb_enc)
-{
-	VALUE encoded_string;
-	rb_encoding *internal_encoding = NULL;
-
-	internal_encoding = rb_default_internal_encoding();
-	encoded_string = rb_str_new2(str);
-
-	if (rb_enc) {
-		rb_enc_associate(encoded_string, rb_enc);
-	}
-
-	if (internal_encoding) {
-		encoded_string = rb_str_export_to_enc(encoded_string, internal_encoding);
-	}
-
-	return encoded_string;
-}
-
-#	define rugged_str_ascii(ptr, len) rb_enc_str_new((ptr), (len), rb_ascii8bit_encoding())
 #else
 #	define rugged_str_new(str, len, rb_enc)  rb_str_new(str, len)
 #	define rugged_str_new2(str, rb_enc) rb_str_new2(str)
-#	define rugged_str_ascii(ptr, len) rb_str_new(ptr, len)
+#	define rugged_str_repoenc(str, len, repo) rb_str_new(str, len)
+#	define rugged_str_ascii(str, len) rb_str_new(str, len)
 #endif
 
 static inline VALUE rugged_create_oid(const git_oid *oid)

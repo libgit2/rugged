@@ -87,6 +87,8 @@ static VALUE rb_git_config_get(VALUE self, VALUE rb_key)
 		return Qnil;
 
 	rugged_exception_check(error);
+
+	/* Return all config values as ASCII strings */
 	return rugged_str_new2(value, NULL);
 }
 
@@ -112,7 +114,7 @@ static VALUE rb_git_config_store(VALUE self, VALUE rb_key, VALUE rb_val)
 		break;
 
 	case T_FIXNUM:
-		error = git_config_set_int(config, key, FIX2INT(rb_val));
+		error = git_config_set_int32(config, key, FIX2INT(rb_val));
 		break;
 
 	default:
@@ -133,7 +135,7 @@ static VALUE rb_git_config_delete(VALUE self, VALUE rb_key)
 	Data_Get_Struct(self, git_config, config);
 	Check_Type(rb_key, T_STRING);
 
-	error = git_config_del(config, StringValueCStr(rb_key));
+	error = git_config_delete(config, StringValueCStr(rb_key));
 	if (error == GIT_ENOTFOUND)
 		return Qfalse;
 

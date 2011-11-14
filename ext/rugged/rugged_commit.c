@@ -36,17 +36,21 @@ VALUE rb_cRuggedCommit;
 static VALUE rb_git_commit_message_GET(VALUE self)
 {
 	git_commit *commit;
+
+#ifdef HAVE_RUBY_ENCODING_H
+	rb_encoding *encoding = NULL;
+	const char *encoding_name;
+#endif
+
 	RUGGED_OBJ_UNWRAP(self, git_commit, commit);
 
-	return rugged_str_new2(git_commit_message(commit), NULL);
-}
+#ifdef HAVE_RUBY_ENCODING_H
+	encoding_name = git_commit_message_encoding(commit);
+	if (encoding_name != NULL)
+		encoding = rb_enc_find(encoding_name);
+#endif
 
-static VALUE rb_git_commit_message_short_GET(VALUE self)
-{
-	git_commit *commit;
-	RUGGED_OBJ_UNWRAP(self, git_commit, commit);
-
-	return rugged_str_new2(git_commit_message_short(commit), NULL);
+	return rugged_str_new2(git_commit_message(commit), encoding);
 }
 
 static VALUE rb_git_commit_committer_GET(VALUE self)
@@ -54,7 +58,9 @@ static VALUE rb_git_commit_committer_GET(VALUE self)
 	git_commit *commit;
 	RUGGED_OBJ_UNWRAP(self, git_commit, commit);
 
-	return rugged_signature_new(git_commit_committer(commit));
+	return rugged_signature_new(
+		git_commit_committer(commit),
+		git_commit_message_encoding(commit));
 }
 
 static VALUE rb_git_commit_author_GET(VALUE self)
@@ -62,7 +68,9 @@ static VALUE rb_git_commit_author_GET(VALUE self)
 	git_commit *commit;
 	RUGGED_OBJ_UNWRAP(self, git_commit, commit);
 
-	return rugged_signature_new(git_commit_author(commit));
+	return rugged_signature_new(
+		git_commit_author(commit),
+		git_commit_message_encoding(commit));
 }
 
 static VALUE rb_git_commit_time_GET(VALUE self)
@@ -114,7 +122,7 @@ static VALUE rb_git_commit_parents_GET(VALUE self)
 
 static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 {
-	VALUE rb_message, rb_committer, rb_author, rb_tree, rb_parents;
+	VALUE rb_message, rb_tree, rb_parents;
 	int parent_count, i, error;
 	const git_commit **parents;
 	git_tree *tree;
@@ -131,15 +139,13 @@ static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 	rb_message = rb_hash_aref(rb_data, CSTR2SYM("message"));
 	Check_Type(rb_message, T_STRING);
 
-	rb_committer = rb_hash_aref(rb_data, CSTR2SYM("committer"));
-	if (!rb_obj_is_kind_of(rb_committer, rb_cRuggedSignature))
-		rb_raise(rb_eTypeError, "Expeting a Rugged::Signature instance");
-	Data_Get_Struct(rb_committer, git_signature, committer);
+	committer = rugged_signature_get(
+		rb_hash_aref(rb_data, CSTR2SYM("committer"))
+	);
 
-	rb_author = rb_hash_aref(rb_data, CSTR2SYM("author"));
-	if (!rb_obj_is_kind_of(rb_author, rb_cRuggedSignature))
-		rb_raise(rb_eTypeError, "Expeting a Rugged::Signature instance");
-	Data_Get_Struct(rb_author, git_signature, author);
+	author = rugged_signature_get(
+		rb_hash_aref(rb_data, CSTR2SYM("author"))
+	);
 
 	rb_parents = rb_hash_aref(rb_data, CSTR2SYM("parents"));
 	Check_Type(rb_parents, T_ARRAY);
@@ -147,7 +153,7 @@ static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 	rb_tree = rb_hash_aref(rb_data, CSTR2SYM("tree"));
 	tree = (git_tree *)rugged_object_get(repo->repo, rb_tree, GIT_OBJ_TREE);
 
-	parent_count = RARRAY_LEN(rb_parents);
+	parent_count = (int)RARRAY_LEN(rb_parents);
 	parents = malloc(parent_count * sizeof(void*));
 
 	for (i = 0; i < parent_count; ++i) {
@@ -181,12 +187,16 @@ static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 		NULL,
 		author,
 		committer,
+		NULL,
 		StringValueCStr(rb_message),
 		tree,
 		parent_count,
 		parents);
 
 cleanup:
+	git_signature_free(author);
+	git_signature_free(committer);
+
 	git_object_close((git_object *)tree);
 
 	for (i = 0; i < parent_count; ++i)
@@ -205,7 +215,6 @@ void Init_rugged_commit()
 	rb_define_singleton_method(rb_cRuggedCommit, "create", rb_git_commit_create, 2);
 
 	rb_define_method(rb_cRuggedCommit, "message", rb_git_commit_message_GET, 0);
-	rb_define_method(rb_cRuggedCommit, "message_short", rb_git_commit_message_short_GET, 0); 
 	rb_define_method(rb_cRuggedCommit, "time", rb_git_commit_time_GET, 0);
 	rb_define_method(rb_cRuggedCommit, "committer", rb_git_commit_committer_GET, 0);
 	rb_define_method(rb_cRuggedCommit, "author", rb_git_commit_author_GET, 0);

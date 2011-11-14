@@ -32,6 +32,7 @@ static VALUE rb_git_hex_to_raw(VALUE self, VALUE hex)
 
 	Check_Type(hex, T_STRING);
 	rugged_exception_check(git_oid_fromstr(&oid, StringValueCStr(hex)));
+
 	return rugged_str_ascii(oid.id, 20);
 }
 
@@ -52,8 +53,7 @@ static VALUE rb_git_type_to_string(VALUE self, VALUE type)
 	const char *str;
 
 	Check_Type(type, T_FIXNUM);
-	git_otype t = (git_otype)FIX2INT(type);
-	str = git_object_type2string(t);
+	str = git_object_type2string(FIX2INT(type));
 	return str ? rugged_str_new2(str, NULL) : Qfalse;
 }
 
@@ -122,8 +122,6 @@ void Init_rugged()
 	rb_define_module_function(rb_mRugged, "string_to_type", rb_git_string_to_type, 1);
 	rb_define_module_function(rb_mRugged, "minimize_oid", rb_git_minimize_oid, -1);
 
-	Init_rugged_signature();
-
 	Init_rugged_object();
 	Init_rugged_commit();
 	Init_rugged_tree();
@@ -135,8 +133,6 @@ void Init_rugged()
 	Init_rugged_revwalk();
 	Init_rugged_reference();
 	Init_rugged_config();
-
-	Init_rugged_backend();
 
 	/* Constants */
 	rb_define_const(rb_mRugged, "SORT_NONE", INT2FIX(0));

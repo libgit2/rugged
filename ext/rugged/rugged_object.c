@@ -151,7 +151,7 @@ VALUE rb_git_object_lookup(VALUE klass, VALUE rb_repo, VALUE rb_hex)
 	git_otype type;
 	git_oid oid;
 	int error;
-	size_t oid_length;
+	int oid_length;
 
 	rugged_repository *repo;
 
@@ -161,7 +161,7 @@ VALUE rb_git_object_lookup(VALUE klass, VALUE rb_repo, VALUE rb_hex)
 		type = GIT_OBJ_ANY;
 
 	Check_Type(rb_hex, T_STRING);
-	oid_length = RSTRING_LEN(rb_hex);
+	oid_length = (int)RSTRING_LEN(rb_hex);
 
 	if (!rb_obj_is_instance_of(rb_repo, rb_cRuggedRepo))
 		rb_raise(rb_eTypeError, "Expecting a Rugged Repository");

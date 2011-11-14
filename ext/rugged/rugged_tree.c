@@ -160,7 +160,7 @@ static VALUE rb_git_treebuilder_insert(VALUE self, VALUE rb_entry)
 
 	rb_oid = rb_hash_aref(rb_entry, CSTR2SYM("oid"));
 	Check_Type(rb_oid, T_STRING);
-	rugged_exception_check(git_oid_mkstr(&oid, StringValueCStr(rb_oid)));
+	rugged_exception_check(git_oid_fromstr(&oid, StringValueCStr(rb_oid)));
 
 	rb_attr = rb_hash_aref(rb_entry, CSTR2SYM("attributes"));
 	Check_Type(rb_attr, T_FIXNUM);

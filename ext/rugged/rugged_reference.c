@@ -43,6 +43,7 @@ void rb_git_ref__mark(rugged_reference *ref)
 
 void rb_git_ref__free(rugged_reference *ref)
 {
+	git_reference_free(ref->ref);
 	free(ref);
 }
 
@@ -57,7 +58,12 @@ VALUE rugged_ref_new(VALUE rb_repo, git_reference *ref)
 	r_ref->ref = ref;
 	r_ref->owner = rb_repo;
 
-	return Data_Wrap_Struct(rb_cRuggedReference, rb_git_ref__mark, rb_git_ref__free, r_ref);
+	return Data_Wrap_Struct(
+		rb_cRuggedReference,
+		&rb_git_ref__mark,
+		&rb_git_ref__free,
+		r_ref
+	);
 }
 
 static VALUE rb_git_ref_packall(VALUE klass, VALUE rb_repo)
@@ -91,7 +97,7 @@ int ref_foreach__block(const char *ref_name, void *opaque)
 static VALUE rb_git_ref_each(int argc, VALUE *argv, VALUE self)
 {
 	rugged_repository *repo;
-	int error, flags;
+	int error, flags = 0;
 	VALUE rb_repo, rb_list, rb_block;
 
 	rb_scan_args(argc, argv, "11&", &rb_repo, &rb_list, &rb_block);
@@ -236,7 +242,7 @@ static VALUE rb_git_ref_rename(int argc, VALUE *argv, VALUE self)
 {
 	rugged_reference *ref;
 	VALUE rb_name, rb_force;
-	int error, force;
+	int error, force = 0;
 
 	UNPACK_REFERENCE(self, ref);
 	rb_scan_args(argc, argv, "11", &rb_name, &rb_force);
