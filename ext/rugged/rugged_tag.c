@@ -27,7 +27,6 @@
 extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedObject;
 extern VALUE rb_cRuggedRepo;
-extern VALUE rb_cRuggedSignature;
 VALUE rb_cRuggedTag;
 
 static VALUE rb_git_tag_target_GET(VALUE self)
@@ -101,9 +100,7 @@ static VALUE rb_git_tag_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 	Check_Type(rb_name, T_STRING);
 
 	rb_tagger = rb_hash_aref(rb_data, CSTR2SYM("tagger"));
-	if (!rb_obj_is_kind_of(rb_tagger, rb_cRuggedSignature))
-		rb_raise(rb_eTypeError, "Expeting a Rugged::Signature instance");
-	Data_Get_Struct(rb_tagger, git_signature, tagger);
+	tagger = rugged_signature_get(rb_tagger);
 
 	rb_target = rb_hash_aref(rb_data, CSTR2SYM("target"));
 	target = rugged_object_get(repo->repo, rb_target, GIT_OBJ_ANY);
@@ -122,6 +119,7 @@ static VALUE rb_git_tag_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 		force
 	);
 
+	git_signature_free(tagger);
 	git_object_close(target);
 	rugged_exception_check(error);
 

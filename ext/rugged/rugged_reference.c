@@ -217,6 +217,30 @@ static VALUE rb_git_ref_type(VALUE self)
 	return rugged_str_new2(git_object_type2string(git_reference_type(ref->ref)), NULL);
 }
 
+static VALUE rb_git_ref_packed(VALUE self)
+{
+	rugged_reference *ref;
+	UNPACK_REFERENCE(self, ref);
+
+	return git_reference_is_packed(ref->ref) ? Qtrue : Qfalse;
+}
+
+static VALUE rb_git_ref_reload(VALUE self)
+{
+	int error;
+	rugged_reference *ref;
+	UNPACK_REFERENCE(self, ref);
+
+	error = git_reference_reload(ref->ref);
+
+	/* If reload fails, the reference is invalidated */
+	if (error < GIT_SUCCESS)
+		ref->ref = NULL;
+
+	rugged_exception_check(error);
+	return Qnil;
+}
+
 static VALUE rb_git_ref_name(VALUE self)
 {
 	rugged_reference *ref;
@@ -288,6 +312,9 @@ void Init_rugged_reference()
 	rb_define_method(rb_cRuggedReference, "name", rb_git_ref_name, 0);
 	rb_define_method(rb_cRuggedReference, "rename", rb_git_ref_rename, -1);
 
+	rb_define_method(rb_cRuggedReference, "reload!", rb_git_ref_reload, 0);
 	rb_define_method(rb_cRuggedReference, "resolve", rb_git_ref_resolve, 0);
-	rb_define_method(rb_cRuggedReference, "delete", rb_git_ref_delete, 0);
+	rb_define_method(rb_cRuggedReference, "delete!", rb_git_ref_delete, 0);
+
+	rb_define_method(rb_cRuggedReference, "packed?", rb_git_ref_packed, 0);
 }

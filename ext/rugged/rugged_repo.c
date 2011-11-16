@@ -249,14 +249,34 @@ static VALUE rb_git_repo_read(VALUE self, VALUE hex)
 	return rugged_raw_read(repo->repo, &oid);
 }
 
-static VALUE rb_git_repo_hash(VALUE self, VALUE rb_buffer, VALUE rub_type)
+static VALUE rb_git_repo_hash(VALUE self, VALUE rb_buffer, VALUE rb_type)
 {
 	int error;
 	git_oid oid;
 
 	Check_Type(rb_buffer, T_STRING);
 
-	error = git_odb_hash(&oid, RSTRING_PTR(rb_buffer), RSTRING_LEN(rb_buffer), rugged_get_otype(rub_type));
+	error = git_odb_hash(&oid,
+		RSTRING_PTR(rb_buffer),
+		RSTRING_LEN(rb_buffer),
+		rugged_get_otype(rb_type)
+	);
+	rugged_exception_check(error);
+
+	return rugged_create_oid(&oid);
+}
+
+static VALUE rb_git_repo_hashfile(VALUE self, VALUE rb_path, VALUE rb_type)
+{
+	int error;
+	git_oid oid;
+
+	Check_Type(rb_path, T_STRING);
+
+	error = git_odb_hashfile(&oid,
+		StringValueCStr(rb_path),
+		rugged_get_otype(rb_type)
+	);
 	rugged_exception_check(error);
 
 	return rugged_create_oid(&oid);
@@ -377,6 +397,73 @@ static VALUE rb_git_repo_discover(int argc, VALUE *argv, VALUE self)
 	return rugged_str_new2(repository_path, NULL);
 }
 
+static VALUE flags_to_rb(unsigned int flags)
+{
+	VALUE rb_flags = rb_ary_new();
+
+	if (flags & GIT_STATUS_INDEX_NEW)
+		rb_ary_push(rb_flags, CSTR2SYM("index_new"));
+
+	if (flags & GIT_STATUS_INDEX_MODIFIED)
+		rb_ary_push(rb_flags, CSTR2SYM("index_modified"));
+
+	if (flags & GIT_STATUS_INDEX_DELETED)
+		rb_ary_push(rb_flags, CSTR2SYM("index_deleted"));
+
+	if (flags & GIT_STATUS_WT_NEW)
+		rb_ary_push(rb_flags, CSTR2SYM("worktree_new"));
+
+	if (flags & GIT_STATUS_WT_MODIFIED)
+		rb_ary_push(rb_flags, CSTR2SYM("worktree_modified"));
+
+	if (flags & GIT_STATUS_WT_DELETED)
+		rb_ary_push(rb_flags, CSTR2SYM("worktree_deleted"));
+
+	return rb_flags;
+}
+
+static int rugged__status_cb(const char *path, unsigned int flags, void *payload)
+{
+	rb_funcall((VALUE)payload, rb_intern("call"), 2,
+		rugged_str_new2(path, NULL),
+		flags_to_rb(flags)
+	);
+
+	return GIT_SUCCESS;
+}
+
+static VALUE rb_git_repo_status(int argc, VALUE *argv, VALUE self)
+{
+	int error;
+	VALUE rb_path;
+	rugged_repository *repo;
+
+	Data_Get_Struct(self, rugged_repository, repo);
+
+	if (rb_scan_args(argc, argv, "01", &rb_path) == 1) {
+		unsigned int flags;
+		Check_Type(rb_path, T_STRING);
+		error = git_status_file(&flags, repo->repo, StringValueCStr(rb_path));
+		rugged_exception_check(error);
+
+		return flags_to_rb(flags);
+	}
+
+	if (!rb_block_given_p())
+		rb_raise(rb_eRuntimeError,
+			"A block was expected for iterating through "
+			"the repository contents.");
+
+	error = git_status_foreach(
+		repo->repo,
+		&rugged__status_cb,
+		(void *)rb_block_proc()
+	);
+
+	rugged_exception_check(error);
+	return Qnil;
+}
+
 void Init_rugged_repo()
 {
 	rb_cRuggedRepo = rb_define_class_under(rb_mRugged, "Repository", rb_cObject);
@@ -389,6 +476,7 @@ void Init_rugged_repo()
 	rb_define_method(rb_cRuggedRepo, "paths",  rb_git_repo_paths,  0);
 
 	rb_define_method(rb_cRuggedRepo, "config",  rb_git_repo_config,  0);
+	rb_define_method(rb_cRuggedRepo, "status",  rb_git_repo_status,  -1);
 
 	rb_define_method(rb_cRuggedRepo, "bare?",  rb_git_repo_is_bare,  0);
 	rb_define_method(rb_cRuggedRepo, "empty?",  rb_git_repo_is_empty,  0);
@@ -396,6 +484,7 @@ void Init_rugged_repo()
 	rb_define_method(rb_cRuggedRepo, "head_orphan?",  rb_git_repo_head_orphan,  0);
 
 	rb_define_singleton_method(rb_cRuggedRepo, "hash",   rb_git_repo_hash,  2);
+	rb_define_singleton_method(rb_cRuggedRepo, "hash_file",   rb_git_repo_hashfile,  2);
 	rb_define_singleton_method(rb_cRuggedRepo, "init_at", rb_git_repo_init_at, 2);
 	rb_define_singleton_method(rb_cRuggedRepo, "discover", rb_git_repo_discover, -1);
 
