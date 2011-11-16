@@ -67,18 +67,6 @@ context "Rugged::Index reading stuff" do
     e = @index.get_entry(1)
     assert_equal 'new.txt', e[:path]
     assert_equal 'fa49b077972391ad58037050f2a75f74e3671e92', e[:oid]
-
-    if defined? Encoding
-      with_default_encoding('utf-8') do |enc|
-        e = @index.get_entry(1)
-        assert_equal enc, e[:path].encoding
-      end
-
-      with_default_encoding('ascii') do |enc|
-        e = @index.get_entry(1)
-        assert_equal enc, e[:path].encoding
-      end
-    end
   end
 
   test "can iterate over the entries" do

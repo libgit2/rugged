@@ -50,17 +50,6 @@ context "Rugged::Repository stuff" do
     assert_equal "76b1b55ab653581d6f2c7230d34098e837197674", oid
     assert @repo.exists("76b1b55ab653581d6f2c7230d34098e837197674")
 
-    if defined? Encoding
-      with_default_encoding('utf-8') do |enc|
-        oid = @repo.write(@test_content, @test_content_type)
-        assert_equal enc, oid.encoding
-      end
-
-      with_default_encoding('ascii') do |enc|
-        oid = @repo.write(@test_content, @test_content_typeobj)
-        assert_equal enc, oid.encoding
-      end
-    end
     rm_loose(oid)
   end
 

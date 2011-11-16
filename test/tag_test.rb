@@ -17,33 +17,8 @@ context "Rugged::Tag tests" do
     assert_equal "5b5b025afb0b4c913b4c338a42934a3863bf3644", obj.target.oid
     assert_equal "commit", obj.target_type
     c = obj.tagger
-    assert_equal "Scott Chacon", c.name
-    assert_equal 1288114383, c.time.to_i
-    assert_equal "schacon@gmail.com", c.email
-
-    if defined? Encoding
-      with_default_encoding('utf-8') do |enc|
-        obj = @repo.lookup(oid)
-        assert_equal enc, obj.message.encoding
-        assert_equal enc, obj.name.encoding
-        assert_equal enc, obj.target_type.encoding
-      end
-
-      with_default_encoding('ascii') do |enc|
-        obj = @repo.lookup(oid)
-        assert_equal enc, obj.message.encoding
-        assert_equal enc, obj.target_type.encoding
-        assert_equal enc, obj.name.encoding
-      end
-    end
+    assert_equal "Scott Chacon", c[:name]
+    assert_equal 1288114383, c[:time].to_i
+    assert_equal "schacon@gmail.com", c[:email]
   end
-  
-  xtest "can write the tag data" do
-    oid = "0c37a5391bbff43c37f0d0371823a5509eed5b1d"
-    obj = @repo.lookup(oid)
-    obj.message = 'new messages'
-    obj.write
-    rm_loose(obj.oid)
-  end
-
 end
