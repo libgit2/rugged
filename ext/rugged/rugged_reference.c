@@ -295,6 +295,101 @@ static VALUE rb_git_ref_delete(VALUE self)
 	return Qnil;
 }
 
+static VALUE reflog_entry_new(const git_reflog_entry *entry)
+{
+	VALUE rb_entry = rb_hash_new();
+
+	rb_hash_aset(rb_entry,
+		CSTR2SYM("oid_old"),
+		rugged_create_oid(git_reflog_entry_oidold(entry))
+	);
+
+	rb_hash_aset(rb_entry,
+		CSTR2SYM("oid_new"),
+		rugged_create_oid(git_reflog_entry_oidnew(entry))
+	);
+
+	rb_hash_aset(rb_entry,
+		CSTR2SYM("committer"),
+		rugged_signature_new(git_reflog_entry_committer(entry), NULL)
+	);
+
+	rb_hash_aset(rb_entry,
+		CSTR2SYM("message"),
+		rugged_str_new2(git_reflog_entry_msg(entry), NULL)
+	);
+
+	return rb_entry;
+}
+
+static VALUE rb_git_reflog(VALUE self)
+{
+	git_reflog *reflog;
+	rugged_reference *ref;
+	int error;
+	VALUE rb_log;
+	unsigned int i, ref_count;
+
+	UNPACK_REFERENCE(self, ref);
+
+	error = git_reflog_read(&reflog, ref->ref);
+	rugged_exception_check(error);
+
+	ref_count = git_reflog_entrycount(reflog);
+	rb_log = rb_ary_new2(ref_count);
+
+	for (i = 0; i < ref_count; ++i) {
+		const git_reflog_entry *entry =
+			git_reflog_entry_byindex(reflog, i);
+
+		rb_ary_push(rb_log, reflog_entry_new(entry));
+	}
+
+	git_reflog_free(reflog);
+	return rb_log;
+}
+
+static VALUE rb_git_reflog_write(
+	VALUE self,
+	VALUE rb_oid_old,
+	VALUE rb_committer,
+	VALUE rb_message)
+{
+	rugged_reference *ref;
+	int error;
+	git_signature *committer;
+	const char *message = NULL;
+	git_oid oid_old;
+
+	UNPACK_REFERENCE(self, ref);
+
+	if (!NIL_P(rb_message)) {
+		Check_Type(rb_message, T_STRING);
+		message = StringValueCStr(rb_message);
+	}
+
+	if (!NIL_P(rb_oid_old)) {
+		Check_Type(rb_oid_old, T_STRING);
+		error = git_oid_fromstr(&oid_old, StringValueCStr(rb_oid_old));
+		rugged_exception_check(error);
+	}
+
+	committer = rugged_signature_get(rb_committer);
+
+	error = git_reflog_write(
+		ref->ref,
+		NIL_P(rb_oid_old) ? NULL : &oid_old,
+		committer,
+		message
+	);
+
+	git_signature_free(committer);
+
+	rugged_exception_check(error);
+	return Qnil;
+}
+
+
 void Init_rugged_reference()
 {
 	rb_cRuggedReference = rb_define_class_under(rb_mRugged, "Reference", rb_cObject);
@@ -317,4 +412,6 @@ void Init_rugged_reference()
 	rb_define_method(rb_cRuggedReference, "delete!", rb_git_ref_delete, 0);
 
 	rb_define_method(rb_cRuggedReference, "packed?", rb_git_ref_packed, 0);
+	rb_define_method(rb_cRuggedReference, "log", rb_git_reflog, 0);
+	rb_define_method(rb_cRuggedReference, "log!", rb_git_reflog_write, 3);
 }
