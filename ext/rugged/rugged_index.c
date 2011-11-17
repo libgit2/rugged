@@ -415,6 +415,20 @@ VALUE rb_git_indexer(VALUE self, VALUE rb_packfile_path)
 	return rb_oid;
 }
 
+VALUE rb_git_index_writetree(VALUE self)
+{
+	rugged_index *index;
+	git_oid tree_oid;
+	int error;
+
+	Data_Get_Struct(self, rugged_index, index);
+
+	error = git_tree_create_fromindex(&tree_oid, index->index);
+	rugged_exception_check(error);
+
+	return rugged_create_oid(&tree_oid);
+}
+
 void Init_rugged_index()
 {
 	/*
@@ -441,8 +455,9 @@ void Init_rugged_index()
 	rb_define_method(rb_cRuggedIndex, "<<", rb_git_index_append, -1);
 
 	rb_define_method(rb_cRuggedIndex, "remove", rb_git_index_remove, 1);
+	rb_define_method(rb_cRuggedIndex, "write_tree", rb_git_index_writetree, 0);
 
-	rb_define_singleton_method(rb_cRuggedIndex, "index_pack!", rb_git_indexer, 1);
+	rb_define_singleton_method(rb_cRuggedIndex, "index_pack", rb_git_indexer, 1);
 
 	rb_const_set(rb_cRuggedIndex, rb_intern("ENTRY_FLAGS_STAGE"), INT2FIX(GIT_IDXENTRY_STAGEMASK));
 	rb_const_set(rb_cRuggedIndex, rb_intern("ENTRY_FLAGS_STAGE_SHIFT"), INT2FIX(GIT_IDXENTRY_STAGESHIFT));
