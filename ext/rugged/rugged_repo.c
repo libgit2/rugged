@@ -120,9 +120,7 @@ static VALUE rb_git_repo_allocate(VALUE klass)
 	if (repo == NULL)
 		rb_raise(rb_eNoMemError, "out of memory");
 
-	repo->repo = NULL;
-	repo->encoding = NULL;
-
+	memset(repo, 0x0, sizeof(rugged_repository));
 	return Data_Wrap_Struct(klass, NULL, &rb_git_repo__free, repo);
 }
 
@@ -175,8 +173,11 @@ static VALUE rb_git_repo_init(int argc, VALUE *argv, VALUE self)
 
 	Data_Get_Struct(self, rugged_repository, r_repo);
 	r_repo->repo = repo;
+
+#ifdef HAVE_RUBY_ENCODING_H
 	/* TODO: fetch this properly */
 	r_repo->encoding = rb_filesystem_encoding();
+#endif
 
 	return Qnil;
 }
@@ -199,8 +200,11 @@ static VALUE rb_git_repo_init_at(VALUE klass, VALUE path, VALUE rb_is_bare)
 		rb_raise(rb_eNoMemError, "out of memory");
 
 	r_repo->repo = repo;
+
+#ifdef HAVE_RUBY_ENCODING_H
 	/* TODO: fetch this properly */
 	r_repo->encoding = rb_filesystem_encoding();
+#endif
 
 	return Data_Wrap_Struct(klass, NULL, &rb_git_repo__free, r_repo);
 }

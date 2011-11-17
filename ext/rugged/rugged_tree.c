@@ -94,6 +94,43 @@ static VALUE rb_git_tree_each(VALUE self)
 	return Qnil;
 }
 
+static int rugged__treewalk_cb(const char *root, git_tree_entry *entry, void *proc)
+{
+	rb_funcall((VALUE)proc, rb_intern("call"), 2,
+		rugged_str_new2(root, NULL),
+		rb_git_treeentry_fromC(entry));
+
+	return GIT_SUCCESS;
+}
+
+static VALUE rb_git_tree_walk(VALUE self, VALUE rb_mode)
+{
+	git_tree *tree;
+	int error, mode = 0;
+	ID id_mode;
+
+	RUGGED_OBJ_UNWRAP(self, git_tree, tree);
+
+	if (!rb_block_given_p())
+		return rb_funcall(self, rb_intern("to_enum"), 2, CSTR2SYM("walk"), rb_mode);
+
+	Check_Type(rb_mode, T_SYMBOL);
+	id_mode = SYM2ID(rb_mode);
+
+	if (id_mode == rb_intern("preorder"))
+		mode = GIT_TREEWALK_PRE;
+	else if (id_mode == rb_intern("postorder"))
+		mode = GIT_TREEWALK_POST;
+	else
+		rb_raise(rb_eTypeError,
+			"Invalid iteration mode. Expected `:preorder` or `:postorder`");
+
+	error = git_tree_walk(tree, &rugged__treewalk_cb, mode, (void *)rb_block_proc());
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
 static VALUE rb_git_tree_subtree(VALUE self, VALUE rb_path)
 {
 	int error;
@@ -255,6 +292,7 @@ void Init_rugged_tree()
 	rb_define_method(rb_cRuggedTree, "get_subtree", rb_git_tree_subtree, 1);
 	rb_define_method(rb_cRuggedTree, "[]", rb_git_tree_get_entry, 1);
 	rb_define_method(rb_cRuggedTree, "each", rb_git_tree_each, 0);
+	rb_define_method(rb_cRuggedTree, "walk", rb_git_tree_walk, 1);
 
 	rb_cRuggedTreeBuilder = rb_define_class_under(rb_cRuggedTree, "Builder", rb_cObject);
 	rb_define_alloc_func(rb_cRuggedTreeBuilder, rb_git_treebuilder_allocate);
