@@ -25,6 +25,7 @@
 #include "rugged.h"
 
 VALUE rb_mRugged;
+static VALUE rb_mShutdownHook;
 
 static VALUE rb_git_hex_to_raw(VALUE self, VALUE hex)
 {
@@ -112,6 +113,12 @@ static VALUE rb_git_minimize_oid(int argc, VALUE *argv, VALUE self)
 	return INT2FIX(length);
 }
 
+static void cleanup_cb(void *unused)
+{
+	(void)unused;
+	git_threads_shutdown();
+}
+
 void Init_rugged()
 {
 	rb_mRugged = rb_define_module("Rugged");
@@ -133,6 +140,7 @@ void Init_rugged()
 	Init_rugged_revwalk();
 	Init_rugged_reference();
 	Init_rugged_config();
+	Init_rugged_remote();
 
 	/* Constants */
 	rb_define_const(rb_mRugged, "SORT_NONE", INT2FIX(0));
@@ -149,5 +157,13 @@ void Init_rugged()
 
 	rb_define_const(rb_mRugged, "REF_OID", INT2FIX(GIT_REF_OID));
 	rb_define_const(rb_mRugged, "REF_SYMBOLIC", INT2FIX(GIT_REF_SYMBOLIC));
+
+	/* Initialize libgit2 */
+	git_threads_init();
+
+	/* Hook a global object to cleanup the library
+	 * on shutdown */
+	rb_mShutdownHook = Data_Wrap_Struct(rb_cObject, NULL, &cleanup_cb, NULL);
+	rb_global_variable(&rb_mShutdownHook);
 }
 

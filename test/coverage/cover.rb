@@ -28,12 +28,27 @@ source_files.each do |file|
   end
 end
 
+total_missing = 0
+total_methods = 0
+
 method_list.each do |group, gr_methods|
-  gr_found = gr_methods.select {|m| found.include? m}
-  puts "#{group} [#{gr_found.size}/#{gr_methods.size}]"
+  gr_miss = gr_methods.reject {|m| found.include? m}
+  print "#{group} [#{gr_methods.size - gr_miss.size}/#{gr_methods.size}]: "
+
+  total_missing += gr_miss.size
+  total_methods += gr_methods.size
 
   gr_methods.each do |m|
-    puts "  #{m} #{found.include?(m) ? "" : "** MISSING"}"
+    print found.include?(m) ? "." : "M"
   end
+
+  print "\n"
+
+  if not gr_miss.empty?
+    print "    Missing: #{gr_miss.join(', ')}\n"
+  end
+
+  print "\n"
 end
 
+puts "TOTAL: [#{total_methods - total_missing}/#{total_methods}] wrapped. (#{100.0 * (total_methods - total_missing)/total_methods}%)"
