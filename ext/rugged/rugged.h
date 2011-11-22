@@ -100,6 +100,7 @@ void Init_rugged_repo();
 void Init_rugged_revwalk();
 void Init_rugged_reference();
 void Init_rugged_config();
+void Init_rugged_remote();
 
 VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE self);
 
@@ -131,6 +132,11 @@ typedef struct {
 	git_index *index;
 	VALUE owner;
 } rugged_index;
+
+typedef struct {
+	git_remote *remote;
+	VALUE owner;
+} rugged_remote;
 
 typedef struct {
 	git_revwalk *walk;
