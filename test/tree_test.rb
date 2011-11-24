@@ -36,6 +36,14 @@ context "Rugged::Tree tests" do
     assert enum.kind_of? Enumerable
   end
 
+  test "can walk the tree, yielding only trees" do
+    @tree.each_tree {|root, entry| assert_equal :tree, entry[:type]}
+  end
+
+  test "can walk the tree, yielding only blobs" do
+    @tree.each_blob {|root, entry| assert_equal :blob, entry[:type]}
+  end
+
   xtest "can write the tree data" do
   end
 
