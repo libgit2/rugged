@@ -11,12 +11,12 @@ module Rugged
     end
 
     # Iterate over the blobs in this tree
-    def each_blob(mode=:postorder)
+    def each_blob
       self.each { |e| yield e if e[:type] == :blob }
     end
 
     # Iterat over the subtrees in this tree
-    def each_tree(mode=:postorder)
+    def each_tree
       self.each { |e| yield e if e[:type] == :tree }
     end
   end
