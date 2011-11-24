@@ -34,6 +34,7 @@ VALUE rb_cRuggedTreeBuilder;
 static VALUE rb_git_treeentry_fromC(const git_tree_entry *entry)
 {
 	VALUE rb_entry;
+	VALUE type;
 
 	if (!entry)
 		return Qnil;
@@ -44,7 +45,16 @@ static VALUE rb_git_treeentry_fromC(const git_tree_entry *entry)
 	rb_hash_aset(rb_entry, CSTR2SYM("oid"), rugged_create_oid(git_tree_entry_id(entry)));
 
 	rb_hash_aset(rb_entry, CSTR2SYM("attributes"), INT2FIX(git_tree_entry_attributes(entry)));
-	rb_hash_aset(rb_entry, CSTR2SYM("type"), INT2FIX(git_tree_entry_type(entry)));
+
+	switch(git_tree_entry_type(entry)) {
+		case GIT_OBJ_TREE:
+			type = CSTR2SYM("tree");
+			break;
+		case GIT_OBJ_BLOB:
+			type = CSTR2SYM("blob");
+			break;
+	}
+	rb_hash_aset(rb_entry, CSTR2SYM("type"), type);
 
 	return rb_entry;
 }
