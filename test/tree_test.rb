@@ -37,11 +37,19 @@ context "Rugged::Tree tests" do
   end
 
   test "can walk the tree, yielding only trees" do
-    @tree.each_tree {|root, entry| assert_equal :tree, entry[:type]}
+    @tree.walk_trees {|root, entry| assert_equal :tree, entry[:type]}
   end
 
   test "can walk the tree, yielding only blobs" do
-    @tree.each_blob {|root, entry| assert_equal :blob, entry[:type]}
+    @tree.walk_blobs {|root, entry| assert_equal :blob, entry[:type]}
+  end
+
+  test "can iterate over the subtrees a tree" do
+    @tree.each_tree {|tree| assert_equal :tree, tree[:type]}
+  end
+
+  test "can iterate over the subtrees a tree" do
+    @tree.each_blob {|tree| assert_equal :blob, tree[:type]}
   end
 
   xtest "can write the tree data" do
