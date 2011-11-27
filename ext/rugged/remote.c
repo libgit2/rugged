@@ -37,7 +37,7 @@ static VALUE rb_git_remote__new(int argc, VALUE *argv, VALUE klass)
 {
 	VALUE rb_remote, rb_repo, rb_url, rb_name;
 	git_remote *remote;
-	rugged_repository *repo;
+	git_repository *repo;
 	const char *url;
 	int error;
 
@@ -48,7 +48,7 @@ static VALUE rb_git_remote__new(int argc, VALUE *argv, VALUE klass)
 	if (!rb_obj_is_instance_of(rb_repo, rb_cRuggedRepo))
 		rb_raise(rb_eTypeError, "Expecting a Rugged Repository");
 
-	Data_Get_Struct(rb_repo, rugged_repository, repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
 
 	url = StringValueCStr(rb_url);
 
@@ -58,12 +58,12 @@ static VALUE rb_git_remote__new(int argc, VALUE *argv, VALUE klass)
 
 		error = git_remote_new(
 			&remote,
-			repo->repo,
+			repo,
 			StringValueCStr(rb_url),
 			NIL_P(rb_name) ? NULL : StringValueCStr(rb_name)
 		);
 	} else {
-		error = git_remote_load(&remote, repo->repo, url);
+		error = git_remote_load(&remote, repo, url);
 	}
 
 	rugged_exception_check(error);

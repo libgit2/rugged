@@ -49,15 +49,15 @@ VALUE rugged_ref_new(VALUE klass, VALUE owner, git_reference *ref)
 
 static VALUE rb_git_ref_packall(VALUE klass, VALUE rb_repo)
 {
-	rugged_repository *repo;
+	git_repository *repo;
 	int error;
 
 	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo))
 		rb_raise(rb_eTypeError, "Expecting a Rugged::Repository instance");
 
-	Data_Get_Struct(rb_repo, rugged_repository, repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
 
-	error = git_reference_packall(repo->repo);
+	error = git_reference_packall(repo);
 	rugged_exception_check(error);
 
 	return Qnil;
@@ -77,7 +77,7 @@ int ref_foreach__block(const char *ref_name, void *opaque)
 
 static VALUE rb_git_ref_each(int argc, VALUE *argv, VALUE self)
 {
-	rugged_repository *repo;
+	git_repository *repo;
 	int error, flags = 0;
 	VALUE rb_repo, rb_list, rb_block;
 
@@ -89,7 +89,7 @@ static VALUE rb_git_ref_each(int argc, VALUE *argv, VALUE self)
 	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo))
 		rb_raise(rb_eTypeError, "Expecting a Rugged::Repository instance");
 
-	Data_Get_Struct(rb_repo, rugged_repository, repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
 
 	if (!NIL_P(rb_list)) {
 		ID list;
@@ -107,21 +107,21 @@ static VALUE rb_git_ref_each(int argc, VALUE *argv, VALUE self)
 		flags = GIT_REF_LISTALL;
 	}
 
-	error = git_reference_foreach(repo->repo, flags, &ref_foreach__block, (void *)rb_block);
+	error = git_reference_foreach(repo, flags, &ref_foreach__block, (void *)rb_block);
 	rugged_exception_check(error);
 	return Qnil;
 }
 
 static VALUE rb_git_ref_lookup(VALUE klass, VALUE rb_repo, VALUE rb_name)
 {
-	rugged_repository *repo;
+	git_repository *repo;
 	git_reference *ref;
 	int error;
 
-	Data_Get_Struct(rb_repo, rugged_repository, repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
 	Check_Type(rb_name, T_STRING);
 
-	error = git_reference_lookup(&ref, repo->repo, StringValueCStr(rb_name));
+	error = git_reference_lookup(&ref, repo, StringValueCStr(rb_name));
 	rugged_exception_check(error);
 
 	return rugged_ref_new(klass, rb_repo, ref);
@@ -130,14 +130,14 @@ static VALUE rb_git_ref_lookup(VALUE klass, VALUE rb_repo, VALUE rb_name)
 static VALUE rb_git_ref_create(int argc, VALUE *argv, VALUE klass)
 {
 	VALUE rb_repo, rb_name, rb_target, rb_force;
-	rugged_repository *repo;
+	git_repository *repo;
 	git_reference *ref;
 	git_oid oid;
 	int error, force = 0;
 
 	rb_scan_args(argc, argv, "31", &rb_repo, &rb_name, &rb_target, &rb_force);
 
-	Data_Get_Struct(rb_repo, rugged_repository, repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
 	Check_Type(rb_name, T_STRING);
 	Check_Type(rb_target, T_STRING);
 
@@ -146,10 +146,10 @@ static VALUE rb_git_ref_create(int argc, VALUE *argv, VALUE klass)
 
 	if (git_oid_fromstr(&oid, StringValueCStr(rb_target)) == GIT_SUCCESS) {
 		error = git_reference_create_oid(
-			&ref, repo->repo, StringValueCStr(rb_name), &oid, force);
+			&ref, repo, StringValueCStr(rb_name), &oid, force);
 	} else {
 		error = git_reference_create_symbolic(
-			&ref, repo->repo, StringValueCStr(rb_name), RSTRING_PTR(rb_target), force);
+			&ref, repo, StringValueCStr(rb_name), RSTRING_PTR(rb_target), force);
 	}
 
 	rugged_exception_check(error);

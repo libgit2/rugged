@@ -256,7 +256,7 @@ static VALUE rb_git_treebuilder_remove(VALUE self, VALUE path)
 static VALUE rb_git_treebuilder_write(VALUE self, VALUE rb_repo)
 {
 	git_treebuilder *builder;
-	rugged_repository *repo;
+	git_repository *repo;
 	git_oid written_id;
 	int error;
 
@@ -264,9 +264,9 @@ static VALUE rb_git_treebuilder_write(VALUE self, VALUE rb_repo)
 		rb_raise(rb_eTypeError, "Expecting a Rugged::Repository instance");
 
 	Data_Get_Struct(self, git_treebuilder, builder);
-	Data_Get_Struct(rb_repo, rugged_repository, repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
 
-	error = git_treebuilder_write(&written_id, repo->repo, builder);
+	error = git_treebuilder_write(&written_id, repo, builder);
 	rugged_exception_check(error);
 
 	return rugged_create_oid(&written_id);

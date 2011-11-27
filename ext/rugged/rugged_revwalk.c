@@ -41,13 +41,13 @@ VALUE rugged_walker_new(VALUE klass, VALUE owner, git_revwalk *walk)
 
 static VALUE rb_git_walker_new(VALUE klass, VALUE rb_repo)
 {
-	rugged_repository *repo;
+	git_repository *repo;
 	git_revwalk *walk;
 	int error;
 
-	Data_Get_Struct(rb_repo, rugged_repository, repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
 
-	error = git_revwalk_new(&walk, repo->repo);
+	error = git_revwalk_new(&walk, repo);
 	rugged_exception_check(error);
 
 	return rugged_walker_new(klass, rb_repo, walk);;

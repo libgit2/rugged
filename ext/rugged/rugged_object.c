@@ -123,7 +123,7 @@ VALUE rb_git_object_lookup(VALUE klass, VALUE rb_repo, VALUE rb_hex)
 	int error;
 	int oid_length;
 
-	rugged_repository *repo;
+	git_repository *repo;
 
 	type = class2otype(rb_obj_class(klass));
 
@@ -139,15 +139,15 @@ VALUE rb_git_object_lookup(VALUE klass, VALUE rb_repo, VALUE rb_hex)
 	if (oid_length > GIT_OID_HEXSZ)
 		rb_raise(rb_eTypeError, "The given OID is too long");
 
-	Data_Get_Struct(rb_repo, rugged_repository, repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
 
 	error = git_oid_fromstrn(&oid, RSTRING_PTR(rb_hex), oid_length);
 	rugged_exception_check(error);
 
 	if (oid_length < GIT_OID_HEXSZ)
-		error = git_object_lookup_prefix(&object, repo->repo, &oid, oid_length, type);
+		error = git_object_lookup_prefix(&object, repo, &oid, oid_length, type);
 	else
-		error = git_object_lookup(&object, repo->repo, &oid, type);
+		error = git_object_lookup(&object, repo, &oid, type);
 
 	rugged_exception_check(error);
 

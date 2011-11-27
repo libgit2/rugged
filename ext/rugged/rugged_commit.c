@@ -128,13 +128,13 @@ static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 	git_tree *tree;
 	git_signature *author, *committer;
 	git_oid commit_oid;
-	rugged_repository *repo;
+	git_repository *repo;
 
 	Check_Type(rb_data, T_HASH);
 
 	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo))
 		rb_raise(rb_eTypeError, "Expeting a Rugged::Repository instance");
-	Data_Get_Struct(rb_repo, rugged_repository, repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
 
 	rb_message = rb_hash_aref(rb_data, CSTR2SYM("message"));
 	Check_Type(rb_message, T_STRING);
@@ -151,7 +151,7 @@ static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 	Check_Type(rb_parents, T_ARRAY);
 
 	rb_tree = rb_hash_aref(rb_data, CSTR2SYM("tree"));
-	tree = (git_tree *)rugged_object_load(repo->repo, rb_tree, GIT_OBJ_TREE);
+	tree = (git_tree *)rugged_object_load(repo, rb_tree, GIT_OBJ_TREE);
 
 	parent_count = (int)RARRAY_LEN(rb_parents);
 	parents = malloc(parent_count * sizeof(void*));
@@ -167,7 +167,7 @@ static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 			if (error < GIT_SUCCESS)
 				goto cleanup;
 
-			error = git_commit_lookup(&parent, repo->repo, &oid);
+			error = git_commit_lookup(&parent, repo, &oid);
 			if (error < GIT_SUCCESS)
 				goto cleanup;
 
@@ -183,7 +183,7 @@ static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 
 	error = git_commit_create(
 		&commit_oid,
-		repo->repo,
+		repo,
 		NULL,
 		author,
 		committer,

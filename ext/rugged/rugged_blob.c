@@ -65,7 +65,7 @@ static VALUE rb_git_blob_create(int argc, VALUE *argv, VALUE self)
 {
 	int error;
 	git_oid oid;
-	rugged_repository *repo;
+	git_repository *repo;
 
 	VALUE rb_buffer, rb_repo, rb_is_buffer = Qfalse;
 
@@ -75,12 +75,12 @@ static VALUE rb_git_blob_create(int argc, VALUE *argv, VALUE self)
 	if (!rb_obj_is_instance_of(rb_repo, rb_cRuggedRepo))
 		rb_raise(rb_eTypeError, "Expecting a Rugged Repository");
 
-	Data_Get_Struct(rb_repo, rugged_repository, repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
 
 	if (rugged_parse_bool(rb_is_buffer)) {
-		error = git_blob_create_frombuffer(&oid, repo->repo, RSTRING_PTR(rb_buffer), RSTRING_LEN(rb_buffer));
+		error = git_blob_create_frombuffer(&oid, repo, RSTRING_PTR(rb_buffer), RSTRING_LEN(rb_buffer));
 	} else {
-		error = git_blob_create_fromfile(&oid, repo->repo, StringValueCStr(rb_buffer));
+		error = git_blob_create_fromfile(&oid, repo, StringValueCStr(rb_buffer));
 	}
 
 	rugged_exception_check(error);

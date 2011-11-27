@@ -32,7 +32,6 @@ extern VALUE rb_cRuggedBackend;
 VALUE rb_cRuggedRepo;
 VALUE rb_cRuggedOdbObject;
 
-
 git_otype rugged_get_otype(VALUE self)
 {
 	git_otype type;
@@ -111,29 +110,22 @@ VALUE rugged_raw_read(git_repository *repo, const git_oid *oid)
 	return Data_Wrap_Struct(rb_cRuggedOdbObject, NULL, rb_git__odbobj_free, obj);
 }
 
-void rb_git_repo__free(rugged_repository *repo)
+void rb_git_repo__free(git_repository *repo)
 {
-	git_repository_free(repo->repo);
-	free(repo);
+	git_repository_free(repo);
 }
 
 static VALUE rugged_repo_new(VALUE klass, git_repository *repo)
 {
-	rugged_repository *r_repo;
-
-	/* manually allocate a new repository */
-	r_repo = malloc(sizeof(rugged_repository));
-	if (r_repo == NULL)
-		rb_raise(rb_eNoMemError, "out of memory");
-
-	r_repo->repo = repo;
+	VALUE rb_repo = Data_Wrap_Struct(klass, NULL, &rb_git_repo__free, repo);
 
 #ifdef HAVE_RUBY_ENCODING_H
-	/* TODO: fetch this properly */
-	r_repo->encoding = rb_filesystem_encoding();
+	/* TODO: set this properly */
+	rb_iv_set(rb_repo, "@encoding",
+		rb_enc_from_encoding(rb_filesystem_encoding()));
 #endif
 
-	return Data_Wrap_Struct(klass, NULL, &rb_git_repo__free, r_repo);
+	return rb_repo;
 }
 
 static VALUE rb_git_repo_new(VALUE klass, VALUE rb_path)
@@ -168,11 +160,11 @@ static VALUE rb_git_repo_init_at(VALUE klass, VALUE path, VALUE rb_is_bare)
 	{ \
 		VALUE rb_data = rb_iv_get(self, "@" #_object); \
 		if (NIL_P(rb_data)) { \
-			rugged_repository *repo; \
+			git_repository *repo; \
 			git_##_object *data; \
 			int error; \
-			Data_Get_Struct(self, rugged_repository, repo); \
-			error = git_repository_##_object(&data, repo->repo); \
+			Data_Get_Struct(self, git_repository, repo); \
+			error = git_repository_##_object(&data, repo); \
 			rugged_exception_check(error); \
 			rb_data = rugged_##_object##_new(_klass, self, data); \
 			rb_iv_set(self, "@" #_object, rb_data); \
@@ -182,7 +174,7 @@ static VALUE rb_git_repo_init_at(VALUE klass, VALUE path, VALUE rb_is_bare)
 	static VALUE rb_git_repo_set_##_object(VALUE self, VALUE rb_data) \
 	{ \
 		VALUE rb_old_data; \
-		rugged_repository *repo; \
+		git_repository *repo; \
 		git_##_object *data; \
 		if (!rb_obj_is_kind_of(rb_data, _klass))\
 			rb_raise(rb_eTypeError, \
@@ -190,9 +182,9 @@ static VALUE rb_git_repo_init_at(VALUE klass, VALUE path, VALUE rb_is_bare)
 		if (!NIL_P(rugged_owner(rb_data))) \
 			rb_raise(rb_eRuntimeError, \
 				"The given object is already owned by another repository"); \
-		Data_Get_Struct(self, rugged_repository, repo); \
+		Data_Get_Struct(self, git_repository, repo); \
 		Data_Get_Struct(rb_data, git_##_object, data); \
-		git_repository_set_##_object(repo->repo, data); \
+		git_repository_set_##_object(repo, data); \
 		rb_old_data = rb_iv_get(self, "@" #_object); \
 		if (!NIL_P(rb_old_data)) rugged_set_owner(rb_old_data, Qnil); \
 		rugged_set_owner(rb_data, self); \
@@ -205,16 +197,16 @@ RB_GIT_REPO_OWNED_ATTR(rb_cRuggedConfig, config);
 
 static VALUE rb_git_repo_exists(VALUE self, VALUE hex)
 {
-	rugged_repository *repo;
+	git_repository *repo;
 	git_odb *odb;
 	git_oid oid;
 	int error;
 	VALUE rb_result;
 
-	Data_Get_Struct(self, rugged_repository, repo);
+	Data_Get_Struct(self, git_repository, repo);
 	Check_Type(hex, T_STRING);
 
-	error = git_repository_odb(&odb, repo->repo);
+	error = git_repository_odb(&odb, repo);
 	rugged_exception_check(error);
 
 	error = git_oid_fromstr(&oid, StringValueCStr(hex));
@@ -228,17 +220,17 @@ static VALUE rb_git_repo_exists(VALUE self, VALUE hex)
 
 static VALUE rb_git_repo_read(VALUE self, VALUE hex)
 {
-	rugged_repository *repo;
+	git_repository *repo;
 	git_oid oid;
 	int error;
 
-	Data_Get_Struct(self, rugged_repository, repo);
+	Data_Get_Struct(self, git_repository, repo);
 	Check_Type(hex, T_STRING);
 
 	error = git_oid_fromstr(&oid, StringValueCStr(hex));
 	rugged_exception_check(error);
 
-	return rugged_raw_read(repo->repo, &oid);
+	return rugged_raw_read(repo, &oid);
 }
 
 static VALUE rb_git_repo_hash(VALUE self, VALUE rb_buffer, VALUE rb_type)
@@ -276,7 +268,7 @@ static VALUE rb_git_repo_hashfile(VALUE self, VALUE rb_path, VALUE rb_type)
 
 static VALUE rb_git_repo_write(VALUE self, VALUE rb_buffer, VALUE rub_type)
 {
-	rugged_repository *repo;
+	git_repository *repo;
 	git_odb_stream *stream;
 
 	git_odb *odb;
@@ -285,9 +277,9 @@ static VALUE rb_git_repo_write(VALUE self, VALUE rb_buffer, VALUE rub_type)
 
 	git_otype type;
 
-	Data_Get_Struct(self, rugged_repository, repo);
+	Data_Get_Struct(self, git_repository, repo);
 
-	error = git_repository_odb(&odb, repo->repo);
+	error = git_repository_odb(&odb, repo);
 	rugged_exception_check(error);
 
 	type = rugged_get_otype(rub_type);
@@ -309,10 +301,10 @@ static VALUE rb_git_repo_write(VALUE self, VALUE rb_buffer, VALUE rub_type)
 #define GIT_REPO_GETTER(method) \
 static VALUE rb_git_repo_##method(VALUE self) \
 { \
-	rugged_repository *repo; \
+	git_repository *repo; \
 	int error; \
-	Data_Get_Struct(self, rugged_repository, repo); \
-	error = git_repository_##method(repo->repo); \
+	Data_Get_Struct(self, git_repository, repo); \
+	error = git_repository_##method(repo); \
 	rugged_exception_check(error); \
 	return error ? Qtrue : Qfalse; \
 }
@@ -324,18 +316,18 @@ GIT_REPO_GETTER(head_orphan); /* git_repository_head_orphan */
 
 static VALUE rb_git_repo_path(VALUE self)
 {
-	rugged_repository *repo;
-	Data_Get_Struct(self, rugged_repository, repo);
-	return rugged_str_new2(git_repository_path(repo->repo), NULL);
+	git_repository *repo;
+	Data_Get_Struct(self, git_repository, repo);
+	return rugged_str_new2(git_repository_path(repo), NULL);
 }
 
 static VALUE rb_git_repo_workdir(VALUE self)
 {
-	rugged_repository *repo;
+	git_repository *repo;
 	const char *workdir;
 
-	Data_Get_Struct(self, rugged_repository, repo);
-	workdir = git_repository_workdir(repo->repo);
+	Data_Get_Struct(self, git_repository, repo);
+	workdir = git_repository_workdir(repo);
 
 	return workdir ? rugged_str_new2(workdir, NULL) : Qnil;
 }
@@ -409,14 +401,14 @@ static VALUE rb_git_repo_status(int argc, VALUE *argv, VALUE self)
 {
 	int error;
 	VALUE rb_path;
-	rugged_repository *repo;
+	git_repository *repo;
 
-	Data_Get_Struct(self, rugged_repository, repo);
+	Data_Get_Struct(self, git_repository, repo);
 
 	if (rb_scan_args(argc, argv, "01", &rb_path) == 1) {
 		unsigned int flags;
 		Check_Type(rb_path, T_STRING);
-		error = git_status_file(&flags, repo->repo, StringValueCStr(rb_path));
+		error = git_status_file(&flags, repo, StringValueCStr(rb_path));
 		rugged_exception_check(error);
 
 		return flags_to_rb(flags);
@@ -428,7 +420,7 @@ static VALUE rb_git_repo_status(int argc, VALUE *argv, VALUE self)
 			"the repository contents.");
 
 	error = git_status_foreach(
-		repo->repo,
+		repo,
 		&rugged__status_cb,
 		(void *)rb_block_proc()
 	);

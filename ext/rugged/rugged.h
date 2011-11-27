@@ -117,13 +117,6 @@ git_otype rugged_get_otype(VALUE rb_type);
 git_signature *rugged_signature_get(VALUE rb_person);
 git_object *rugged_object_load(git_repository *repo, VALUE object_value, git_otype type);
 
-typedef struct {
-	git_repository *repo;
-#ifdef HAVE_RUBY_ENCODING_H
-	rb_encoding *encoding;
-#endif
-} rugged_repository;
-
 #define CSTR2SYM(s) (ID2SYM(rb_intern((s))))
 
 static inline void rugged_set_owner(VALUE object, VALUE owner)
@@ -160,9 +153,8 @@ static inline int rugged_parse_bool(VALUE boolean)
 
 static VALUE rugged_str_repoenc(const char *str, long len, VALUE rb_repo)
 {
-	rugged_repository *repo;
-	Data_Get_Struct(rb_repo, rugged_repository, repo);
-	return rb_enc_str_new(str, len, repo->encoding);
+	VALUE rb_enc = rb_iv_get(rb_repo, "@encoding");
+	return rb_enc_str_new(str, len, NIL_P(rb_enc) ? NULL : rb_to_encoding(rb_enc));
 }
 #else
 #	define rugged_str_new(str, len, rb_enc)  rb_str_new(str, len)
