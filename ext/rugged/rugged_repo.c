@@ -192,7 +192,10 @@ static VALUE rb_git_repo_init_at(VALUE klass, VALUE path, VALUE rb_is_bare)
 		return Qnil; \
 	}
 
+/* git_repository_index, git_repository_set_index */
 RB_GIT_REPO_OWNED_ATTR(rb_cRuggedIndex, index);
+
+/* git_repository_config, git_repository_set_config */
 RB_GIT_REPO_OWNED_ATTR(rb_cRuggedConfig, config);
 
 static VALUE rb_git_repo_exists(VALUE self, VALUE hex)
