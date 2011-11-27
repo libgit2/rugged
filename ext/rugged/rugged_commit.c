@@ -42,7 +42,7 @@ static VALUE rb_git_commit_message_GET(VALUE self)
 	const char *encoding_name;
 #endif
 
-	RUGGED_OBJ_UNWRAP(self, git_commit, commit);
+	Data_Get_Struct(self, git_commit, commit);
 
 #ifdef HAVE_RUBY_ENCODING_H
 	encoding_name = git_commit_message_encoding(commit);
@@ -56,7 +56,7 @@ static VALUE rb_git_commit_message_GET(VALUE self)
 static VALUE rb_git_commit_committer_GET(VALUE self)
 {
 	git_commit *commit;
-	RUGGED_OBJ_UNWRAP(self, git_commit, commit);
+	Data_Get_Struct(self, git_commit, commit);
 
 	return rugged_signature_new(
 		git_commit_committer(commit),
@@ -66,7 +66,7 @@ static VALUE rb_git_commit_committer_GET(VALUE self)
 static VALUE rb_git_commit_author_GET(VALUE self)
 {
 	git_commit *commit;
-	RUGGED_OBJ_UNWRAP(self, git_commit, commit);
+	Data_Get_Struct(self, git_commit, commit);
 
 	return rugged_signature_new(
 		git_commit_author(commit),
@@ -76,7 +76,7 @@ static VALUE rb_git_commit_author_GET(VALUE self)
 static VALUE rb_git_commit_time_GET(VALUE self)
 {
 	git_commit *commit;
-	RUGGED_OBJ_UNWRAP(self, git_commit, commit);
+	Data_Get_Struct(self, git_commit, commit);
 
 	return ULONG2NUM(git_commit_time(commit));
 }
@@ -88,8 +88,8 @@ static VALUE rb_git_commit_tree_GET(VALUE self)
 	VALUE owner;
 	int error;
 
-	RUGGED_OBJ_UNWRAP(self, git_commit, commit);
-	RUGGED_OBJ_OWNER(self, owner);
+	Data_Get_Struct(self, git_commit, commit);
+	owner = rugged_owner(self);
 
 	error = git_commit_tree(&tree, commit);
 	rugged_exception_check(error);
@@ -105,8 +105,8 @@ static VALUE rb_git_commit_parents_GET(VALUE self)
 	VALUE ret_arr, owner;
 	int error;
 
-	RUGGED_OBJ_UNWRAP(self, git_commit, commit);
-	RUGGED_OBJ_OWNER(self, owner);
+	Data_Get_Struct(self, git_commit, commit);
+	owner = rugged_owner(self);
 
 	parent_count = git_commit_parentcount(commit);
 	ret_arr = rb_ary_new2((long)parent_count);
@@ -151,7 +151,7 @@ static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 	Check_Type(rb_parents, T_ARRAY);
 
 	rb_tree = rb_hash_aref(rb_data, CSTR2SYM("tree"));
-	tree = (git_tree *)rugged_object_get(repo->repo, rb_tree, GIT_OBJ_TREE);
+	tree = (git_tree *)rugged_object_load(repo->repo, rb_tree, GIT_OBJ_TREE);
 
 	parent_count = (int)RARRAY_LEN(rb_parents);
 	parents = malloc(parent_count * sizeof(void*));
@@ -172,7 +172,7 @@ static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 				goto cleanup;
 
 		} else if (rb_obj_is_kind_of(p, rb_cRuggedCommit)) {
-			RUGGED_OBJ_UNWRAP(p, git_commit, parent);
+			Data_Get_Struct(p, git_commit, parent);
 		} else {
 			error = GIT_EINVALIDTYPE;
 			goto cleanup;
@@ -197,10 +197,10 @@ cleanup:
 	git_signature_free(author);
 	git_signature_free(committer);
 
-	git_object_close((git_object *)tree);
+	git_object_free((git_object *)tree);
 
 	for (i = 0; i < parent_count; ++i)
-		git_object_close((git_object *)parents[i]);
+		git_object_free((git_object *)parents[i]);
 
 	free(parents);
 	rugged_exception_check(error);

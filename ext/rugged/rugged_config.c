@@ -32,22 +32,14 @@ void rb_git_config__free(git_config *config)
 	git_config_free(config);
 }
 
-static VALUE rugged_config__alloc(VALUE klass, git_config *cfg)
+VALUE rugged_config_new(VALUE klass, VALUE owner, git_config *cfg)
 {
-	return Data_Wrap_Struct(klass, NULL, rb_git_config__free, cfg);
+	VALUE rb_config = Data_Wrap_Struct(klass, NULL, &rb_git_config__free, cfg);
+	rugged_set_owner(rb_config, owner);
+	return owner;
 }
 
-VALUE rugged_config_new(git_config *cfg)
-{
-	return rugged_config__alloc(rb_cRuggedConfig, cfg);
-}
-
-static VALUE rb_git_config_allocate(VALUE klass)
-{
-	return rugged_config__alloc(klass, NULL);
-}
-
-static VALUE rb_git_config_init(VALUE self, VALUE rb_path)
+static VALUE rb_git_config_new(VALUE klass, VALUE rb_path)
 {
 	git_config *config = NULL;
 	int error, i;
@@ -69,8 +61,7 @@ static VALUE rb_git_config_init(VALUE self, VALUE rb_path)
 		rb_raise(rb_eTypeError, "Expecting a filename or an array of filenames");
 	}
 
-	DATA_PTR(self) = config;
-	return Qnil;
+	return rugged_config_new(klass, Qnil, config);
 }
 
 static VALUE rb_git_config_get(VALUE self, VALUE rb_key)
@@ -211,7 +202,7 @@ static VALUE rb_git_config_to_hash(VALUE self)
 	return hash;
 }
 
-static VALUE rb_git_config_open_global(VALUE self)
+static VALUE rb_git_config_open_global(VALUE klass)
 {
 	git_config *cfg;
 	int error;
@@ -219,7 +210,7 @@ static VALUE rb_git_config_open_global(VALUE self)
 	error = git_config_open_global(&cfg);
 	rugged_exception_check(error);
 
-	return rugged_config_new(cfg);
+	return rugged_config_new(klass, Qnil, cfg);
 }
 
 void Init_rugged_config()
@@ -228,8 +219,8 @@ void Init_rugged_config()
 	 * Config
 	 */
 	rb_cRuggedConfig = rb_define_class_under(rb_mRugged, "Config", rb_cObject);
-	rb_define_alloc_func(rb_cRuggedConfig, rb_git_config_allocate);
-	rb_define_method(rb_cRuggedConfig, "initialize", rb_git_config_init, 1);
+	rb_define_singleton_method(rb_cRuggedConfig, "new", rb_git_config_new, 1);
+	rb_define_singleton_method(rb_cRuggedConfig, "open_global", rb_git_config_open_global, 0);
 
 	rb_define_method(rb_cRuggedConfig, "delete", rb_git_config_delete, 1);
 
@@ -244,5 +235,4 @@ void Init_rugged_config()
 	rb_define_method(rb_cRuggedConfig, "each", rb_git_config_each_pair, 0);
 	rb_define_method(rb_cRuggedConfig, "to_hash", rb_git_config_to_hash, 0);
 
-	rb_define_singleton_method(rb_cRuggedConfig, "open_global", rb_git_config_open_global, 0);
 }

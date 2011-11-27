@@ -36,8 +36,8 @@ static VALUE rb_git_tag_target_GET(VALUE self)
 	int error;
 	VALUE owner;
 
-	RUGGED_OBJ_UNWRAP(self, git_tag, tag);
-	RUGGED_OBJ_OWNER(self, owner);
+	Data_Get_Struct(self, git_tag, tag);
+	owner = rugged_owner(self);
 
 	error = git_tag_target(&target, tag);
 	rugged_exception_check(error);
@@ -48,7 +48,7 @@ static VALUE rb_git_tag_target_GET(VALUE self)
 static VALUE rb_git_tag_target_type_GET(VALUE self)
 {
 	git_tag *tag;
-	RUGGED_OBJ_UNWRAP(self, git_tag, tag);
+	Data_Get_Struct(self, git_tag, tag);
 
 	return rugged_str_new2(git_object_type2string(git_tag_type(tag)), NULL);
 }
@@ -56,7 +56,7 @@ static VALUE rb_git_tag_target_type_GET(VALUE self)
 static VALUE rb_git_tag_name_GET(VALUE self)
 {
 	git_tag *tag;
-	RUGGED_OBJ_UNWRAP(self, git_tag, tag);
+	Data_Get_Struct(self, git_tag, tag);
 
 	return rugged_str_new2(git_tag_name(tag), NULL);
 }
@@ -64,7 +64,7 @@ static VALUE rb_git_tag_name_GET(VALUE self)
 static VALUE rb_git_tag_tagger_GET(VALUE self)
 {
 	git_tag *tag;
-	RUGGED_OBJ_UNWRAP(self, git_tag, tag);
+	Data_Get_Struct(self, git_tag, tag);
 
 	return rugged_signature_new(git_tag_tagger(tag), NULL);
 }
@@ -72,7 +72,7 @@ static VALUE rb_git_tag_tagger_GET(VALUE self)
 static VALUE rb_git_tag_message_GET(VALUE self)
 {
 	git_tag *tag;
-	RUGGED_OBJ_UNWRAP(self, git_tag, tag);
+	Data_Get_Struct(self, git_tag, tag);
 
 	return rugged_str_new2(git_tag_message(tag), NULL);
 }
@@ -103,7 +103,7 @@ static VALUE rb_git_tag_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 	tagger = rugged_signature_get(rb_tagger);
 
 	rb_target = rb_hash_aref(rb_data, CSTR2SYM("target"));
-	target = rugged_object_get(repo->repo, rb_target, GIT_OBJ_ANY);
+	target = rugged_object_load(repo->repo, rb_target, GIT_OBJ_ANY);
 
 	rb_force = rb_hash_aref(rb_data, CSTR2SYM("force"));
 	if (!NIL_P(rb_force))
@@ -120,7 +120,7 @@ static VALUE rb_git_tag_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 	);
 
 	git_signature_free(tagger);
-	git_object_close(target);
+	git_object_free(target);
 	rugged_exception_check(error);
 
 	return rugged_create_oid(&tag_oid);

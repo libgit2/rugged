@@ -65,7 +65,7 @@ static VALUE rb_git_treeentry_fromC(const git_tree_entry *entry)
 static VALUE rb_git_tree_entrycount(VALUE self)
 {
 	git_tree *tree;
-	RUGGED_OBJ_UNWRAP(self, git_tree, tree);
+	Data_Get_Struct(self, git_tree, tree);
 
 	return INT2FIX(git_tree_entrycount(tree));
 }
@@ -73,7 +73,7 @@ static VALUE rb_git_tree_entrycount(VALUE self)
 static VALUE rb_git_tree_get_entry(VALUE self, VALUE entry_id)
 {
 	git_tree *tree;
-	RUGGED_OBJ_UNWRAP(self, git_tree, tree);
+	Data_Get_Struct(self, git_tree, tree);
 
 	if (TYPE(entry_id) == T_FIXNUM)
 		return rb_git_treeentry_fromC(git_tree_entry_byindex(tree, FIX2INT(entry_id)));
@@ -89,7 +89,7 @@ static VALUE rb_git_tree_each(VALUE self)
 {
 	git_tree *tree;
 	unsigned int i, count;
-	RUGGED_OBJ_UNWRAP(self, git_tree, tree);
+	Data_Get_Struct(self, git_tree, tree);
 
 	if (!rb_block_given_p())
 		return rb_funcall(self, rb_intern("to_enum"), 0);
@@ -119,7 +119,7 @@ static VALUE rb_git_tree_walk(VALUE self, VALUE rb_mode)
 	int error, mode = 0;
 	ID id_mode;
 
-	RUGGED_OBJ_UNWRAP(self, git_tree, tree);
+	Data_Get_Struct(self, git_tree, tree);
 
 	if (!rb_block_given_p())
 		return rb_funcall(self, rb_intern("to_enum"), 2, CSTR2SYM("walk"), rb_mode);
@@ -147,8 +147,8 @@ static VALUE rb_git_tree_subtree(VALUE self, VALUE rb_path)
 	git_tree *tree, *subtree;
 	VALUE owner;
 
-	RUGGED_OBJ_UNWRAP(self, git_tree, tree);
-	RUGGED_OBJ_OWNER(self, owner);
+	Data_Get_Struct(self, git_tree, tree);
+	owner = rugged_owner(self);
 
 	Check_Type(rb_path, T_STRING);
 
@@ -179,7 +179,7 @@ static VALUE rb_git_treebuilder_init(int argc, VALUE *argv, VALUE self)
 		if (!rb_obj_is_kind_of(rb_object, rb_cRuggedTree))
 			rb_raise(rb_eTypeError, "A Rugged::Tree instance is required");
 
-		RUGGED_OBJ_UNWRAP(rb_object, git_tree, tree);
+		Data_Get_Struct(rb_object, git_tree, tree);
 	}
 
 	error = git_treebuilder_create(&builder, tree);

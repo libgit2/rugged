@@ -35,7 +35,7 @@ static VALUE rb_git_blob_content_GET(VALUE self)
 	git_blob *blob;
 	size_t size;
 
-	RUGGED_OBJ_UNWRAP(self, git_blob, blob);
+	Data_Get_Struct(self, git_blob, blob);
 	
 	size = git_blob_rawsize(blob);
 	if (size == 0)
@@ -56,7 +56,7 @@ static VALUE rb_git_blob_content_GET(VALUE self)
 static VALUE rb_git_blob_rawsize(VALUE self)
 {
 	git_blob *blob;
-	RUGGED_OBJ_UNWRAP(self, git_blob, blob);
+	Data_Get_Struct(self, git_blob, blob);
 
 	return INT2FIX(git_blob_rawsize(blob));
 }

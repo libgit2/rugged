@@ -107,19 +107,15 @@ VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE self);
 VALUE rugged_raw_read(git_repository *repo, const git_oid *oid);
 
 VALUE rugged_signature_new(const git_signature *sig, const char *encoding_name);
-VALUE rugged_object_new(VALUE repository, git_object *object);
-VALUE rugged_index_new(VALUE owner, git_index *index);
-VALUE rugged_config_new(git_config *cfg);
+
+VALUE rugged_index_new(VALUE klass, VALUE owner, git_index *index);
+VALUE rugged_object_new(VALUE owner, git_object *object);
+VALUE rugged_config_new(VALUE klass, VALUE owner, git_config *cfg);
 
 git_otype rugged_get_otype(VALUE rb_type);
 
 git_signature *rugged_signature_get(VALUE rb_person);
-git_object *rugged_object_get(git_repository *repo, VALUE object_value, git_otype type);
-
-typedef struct {
-	git_object	*object;
-	VALUE owner;
-} rugged_object;
+git_object *rugged_object_load(git_repository *repo, VALUE object_value, git_otype type);
 
 typedef struct {
 	git_repository *repo;
@@ -128,38 +124,16 @@ typedef struct {
 #endif
 } rugged_repository;
 
-typedef struct {
-	git_index *index;
-	VALUE owner;
-} rugged_index;
-
-typedef struct {
-	git_remote *remote;
-	VALUE owner;
-} rugged_remote;
-
-typedef struct {
-	git_revwalk *walk;
-	VALUE owner;
-} rugged_walker;
-
-typedef struct {
-	git_reference *ref;
-	VALUE owner;
-} rugged_reference;
-
 #define CSTR2SYM(s) (ID2SYM(rb_intern((s))))
 
-#define RUGGED_OBJ_UNWRAP(_rb, _type, _c) {\
-	rugged_object *_rugged_obj; \
-	Data_Get_Struct(_rb, rugged_object, _rugged_obj); \
-	_c = (_type *)(_rugged_obj->object); \
+static inline void rugged_set_owner(VALUE object, VALUE owner)
+{
+	rb_iv_set(object, "@owner", owner);
 }
 
-#define RUGGED_OBJ_OWNER(_rb, _val) {\
-	rugged_object *_rugged_obj;\
-	Data_Get_Struct(_rb, rugged_object, _rugged_obj);\
-	_val = (_rugged_obj->owner);\
+static inline VALUE rugged_owner(VALUE object)
+{
+	rb_iv_get(object, "@owner");
 }
 
 static inline void rugged_exception_check(int errorcode)

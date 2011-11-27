@@ -27,65 +27,51 @@
 extern VALUE rb_mRugged;
 VALUE rb_cRuggedWalker;
 
-void rb_git_walker__mark(rugged_walker *walk)
+static void rb_git_walk__free(git_revwalk *walk)
 {
-	rb_gc_mark(walk->owner);
+	git_revwalk_free(walk);
 }
 
-void rb_git_walker__free(rugged_walker *walk)
+VALUE rugged_walker_new(VALUE klass, VALUE owner, git_revwalk *walk)
 {
-	git_revwalk_free(walk->walk);
-	free(walk);
+	VALUE rb_walk = Data_Wrap_Struct(klass, NULL, &rb_git_walk__free, walk);
+	rugged_set_owner(rb_walk, owner);
+	return rb_walk;
 }
 
-static VALUE rb_git_walker_allocate(VALUE klass)
-{
-	rugged_walker *walker = NULL;
-
-	walker = malloc(sizeof(rugged_walker));
-	if (walker == NULL)
-		rb_raise(rb_eNoMemError, "out of memory");
-
-	walker->walk = NULL;
-	walker->owner = Qnil;
-
-	return Data_Wrap_Struct(klass, rb_git_walker__mark, rb_git_walker__free, walker);
-}
-
-static VALUE rb_git_walker_init(VALUE self, VALUE rb_repo)
+static VALUE rb_git_walker_new(VALUE klass, VALUE rb_repo)
 {
 	rugged_repository *repo;
-	rugged_walker *walk;
+	git_revwalk *walk;
 	int error;
 
-	Data_Get_Struct(self, rugged_walker, walk);
 	Data_Get_Struct(rb_repo, rugged_repository, repo);
 
-	error = git_revwalk_new(&walk->walk, repo->repo);
+	error = git_revwalk_new(&walk, repo->repo);
 	rugged_exception_check(error);
 
-	return Qnil;
+	return rugged_walker_new(klass, rb_repo, walk);;
 }
 
 static VALUE rb_git_walker_each(VALUE self)
 {
-	rugged_walker *walk;
+	git_revwalk *walk;
 	git_commit *commit;
 	git_repository *repo;
 	git_oid commit_oid;
 	int error;
 
-	Data_Get_Struct(self, rugged_walker, walk);
-	repo = git_revwalk_repository(walk->walk);
+	Data_Get_Struct(self, git_revwalk, walk);
+	repo = git_revwalk_repository(walk);
 
 	if (!rb_block_given_p())
 		return rb_funcall(self, rb_intern("to_enum"), 0);
 
-	while ((error = git_revwalk_next(&commit_oid, walk->walk)) == 0) {
+	while ((error = git_revwalk_next(&commit_oid, walk)) == 0) {
 		error = git_commit_lookup(&commit, repo, &commit_oid);
 		rugged_exception_check(error);
 
-		rb_yield(rugged_object_new(walk->owner, (git_object *)commit));
+		rb_yield(rugged_object_new(rugged_owner(self), (git_object *)commit));
 	}
 
 	if (error != GIT_EREVWALKOVER)
@@ -96,49 +82,53 @@ static VALUE rb_git_walker_each(VALUE self)
 
 static VALUE rb_git_walker_push(VALUE self, VALUE rb_commit)
 {
-	rugged_walker *walk;
+	git_revwalk *walk;
 	git_commit *commit;
 
-	Data_Get_Struct(self, rugged_walker, walk);
-	commit = (git_commit *)rugged_object_get(git_revwalk_repository(walk->walk), rb_commit, GIT_OBJ_COMMIT);
-	git_revwalk_push(walk->walk, git_object_id((git_object *)commit));
+	Data_Get_Struct(self, git_revwalk, walk);
 
+	commit = (git_commit *)rugged_object_load(
+		git_revwalk_repository(walk), rb_commit, GIT_OBJ_COMMIT);
+
+	git_revwalk_push(walk, git_object_id((git_object *)commit));
 	return Qnil;
 }
 
 static VALUE rb_git_walker_hide(VALUE self, VALUE rb_commit)
 {
-	rugged_walker *walk;
+	git_revwalk *walk;
 	git_commit *commit;
 
-	Data_Get_Struct(self, rugged_walker, walk);
-	commit = (git_commit *)rugged_object_get(git_revwalk_repository(walk->walk), rb_commit, GIT_OBJ_COMMIT);
-	git_revwalk_hide(walk->walk, git_object_id((git_object *)commit));
+	Data_Get_Struct(self, git_revwalk, walk);
 
+	commit = (git_commit *)rugged_object_load(
+		git_revwalk_repository(walk), rb_commit, GIT_OBJ_COMMIT);
+
+	git_revwalk_hide(walk, git_object_id((git_object *)commit));
 	return Qnil;
 }
 
 static VALUE rb_git_walker_sorting(VALUE self, VALUE ruby_sort_mode)
 {
-	rugged_walker *walk;
-	Data_Get_Struct(self, rugged_walker, walk);
-	git_revwalk_sorting(walk->walk, FIX2INT(ruby_sort_mode));
+	git_revwalk *walk;
+	Data_Get_Struct(self, git_revwalk, walk);
+	git_revwalk_sorting(walk, FIX2INT(ruby_sort_mode));
 	return Qnil;
 }
 
 static VALUE rb_git_walker_reset(VALUE self)
 {
-	rugged_walker *walk;
-	Data_Get_Struct(self, rugged_walker, walk);
-	git_revwalk_reset(walk->walk);
+	git_revwalk *walk;
+	Data_Get_Struct(self, git_revwalk, walk);
+	git_revwalk_reset(walk);
 	return Qnil;
 }
 
 void Init_rugged_revwalk()
 {
 	rb_cRuggedWalker = rb_define_class_under(rb_mRugged, "Walker", rb_cObject);
-	rb_define_alloc_func(rb_cRuggedWalker, rb_git_walker_allocate);
-	rb_define_method(rb_cRuggedWalker, "initialize", rb_git_walker_init, 1);
+	rb_define_singleton_method(rb_cRuggedWalker, "new", rb_git_walker_new, 1);
+
 	rb_define_method(rb_cRuggedWalker, "push", rb_git_walker_push, 1);
 	rb_define_method(rb_cRuggedWalker, "each", rb_git_walker_each, 0);
 	rb_define_method(rb_cRuggedWalker, "walk", rb_git_walker_each, 0);

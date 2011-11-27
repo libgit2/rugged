@@ -33,7 +33,7 @@ extern VALUE rb_cRuggedRepo;
 
 VALUE rb_cRuggedObject;
 
-git_object *rugged_object_get(git_repository *repo, VALUE object_value, git_otype type)
+git_object *rugged_object_load(git_repository *repo, VALUE object_value, git_otype type)
 {
 	git_object *object = NULL;
 
@@ -48,7 +48,7 @@ git_object *rugged_object_get(git_repository *repo, VALUE object_value, git_otyp
 		rugged_exception_check(error);
 
 	} else if (rb_obj_is_kind_of(object_value, rb_cRuggedObject)) {
-		RUGGED_OBJ_UNWRAP(object_value, git_object, object);
+		Data_Get_Struct(object_value, git_object, object);
 
 		if (type != GIT_OBJ_ANY && git_object_type(object) != type)
 			rb_raise(rb_eTypeError, "Object is not of the required type");
@@ -60,28 +60,16 @@ git_object *rugged_object_get(git_repository *repo, VALUE object_value, git_otyp
 	return object;
 }
 
-void rb_git_object__free(rugged_object *o)
+static void rb_git_object__free(git_object *object)
 {
-	git_object_close(o->object);
-	free(o);
+	git_object_free(object);
 }
 
-void rb_git_object__mark(rugged_object *o)
+VALUE rugged_object_new(VALUE owner, git_object *object)
 {
-	/* The Repository doesn't go away as long
-	 * as we still have objects lying around */
-	rb_gc_mark(o->owner);
-}
+	VALUE klass, rb_object;
 
-VALUE rugged_object_new(VALUE rb_repo, git_object *object)
-{
-	rugged_object *r_object;
-	git_otype type;
-	VALUE klass;
-
-	type = git_object_type(object);
-
-	switch (type)
+	switch (git_object_type(object))
 	{
 		case GIT_OBJ_COMMIT:
 			klass = rb_cRuggedCommit;
@@ -100,33 +88,15 @@ VALUE rugged_object_new(VALUE rb_repo, git_object *object)
 			break;
 
 		default:
-			klass = rb_cRuggedObject;
-			break;
+			rb_raise(rb_eTypeError, "Invalid type for Rugged::Object");
+			return Qnil; /* never reached */
 	}
 
-	r_object = malloc(sizeof(rugged_object));
-	if (r_object == NULL)
-		rb_raise(rb_eNoMemError, "out of memory");
-
-	r_object->object = object;
-	r_object->owner = rb_repo;
-
-	return Data_Wrap_Struct(klass, rb_git_object__mark, rb_git_object__free, r_object);
+	rb_object = Data_Wrap_Struct(klass, NULL, &rb_git_object__free, object);
+	rugged_set_owner(rb_object, owner);
+	return rb_object;
 }
 
-static VALUE rb_git_object_allocate(VALUE klass)
-{
-	rugged_object *object;
-
-	object = malloc(sizeof(rugged_object));
-	if (object == NULL)
-		rb_raise(rb_eNoMemError, "out of memory");
-
-	object->object = NULL;
-	object->owner = Qnil;
-
-	return Data_Wrap_Struct(klass, rb_git_object__mark, rb_git_object__free, object);
-}
 
 static git_otype class2otype(VALUE klass)
 {
@@ -191,8 +161,8 @@ static VALUE rb_git_object_equal(VALUE self, VALUE other)
 	if (!rb_obj_is_kind_of(other, rb_cRuggedObject))
 		return Qfalse;
 
-	RUGGED_OBJ_UNWRAP(self, git_object, a);
-	RUGGED_OBJ_UNWRAP(other, git_object, b);
+	Data_Get_Struct(self, git_object, a);
+	Data_Get_Struct(other, git_object, b);
 
 	return git_oid_cmp(git_object_id(a), git_object_id(b)) == 0 ? Qtrue : Qfalse;
 }
@@ -200,14 +170,14 @@ static VALUE rb_git_object_equal(VALUE self, VALUE other)
 static VALUE rb_git_object_oid_GET(VALUE self)
 {
 	git_object *object;
-	RUGGED_OBJ_UNWRAP(self, git_object, object);
+	Data_Get_Struct(self, git_object, object);
 	return rugged_create_oid(git_object_id(object));
 }
 
 static VALUE rb_git_object_type_GET(VALUE self)
 {
 	git_object *object;
-	RUGGED_OBJ_UNWRAP(self, git_object, object);
+	Data_Get_Struct(self, git_object, object);
 
 	return rugged_str_new2(git_object_type2string(git_object_type(object)), NULL);
 }
@@ -215,7 +185,7 @@ static VALUE rb_git_object_type_GET(VALUE self)
 static VALUE rb_git_object_read_raw(VALUE self)
 {
 	git_object *object;
-	RUGGED_OBJ_UNWRAP(self, git_object, object);
+	Data_Get_Struct(self, git_object, object);
 
 	return rugged_raw_read(git_object_owner(object), git_object_id(object));
 }
@@ -223,9 +193,8 @@ static VALUE rb_git_object_read_raw(VALUE self)
 void Init_rugged_object()
 {
 	rb_cRuggedObject = rb_define_class_under(rb_mRugged, "Object", rb_cObject);
-	rb_define_alloc_func(rb_cRuggedObject, rb_git_object_allocate);
-
 	rb_define_singleton_method(rb_cRuggedObject, "lookup", rb_git_object_lookup, 2);
+	rb_define_singleton_method(rb_cRuggedObject, "new", rb_git_object_lookup, 2);
 
 	rb_define_method(rb_cRuggedObject, "read_raw", rb_git_object_read_raw, 0);
 	rb_define_method(rb_cRuggedObject, "==", rb_git_object_equal, 1);
