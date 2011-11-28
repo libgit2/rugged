@@ -50,8 +50,13 @@ static VALUE rb_git_treeentry_fromC(const git_tree_entry *entry)
 		case GIT_OBJ_TREE:
 			type = CSTR2SYM("tree");
 			break;
+
 		case GIT_OBJ_BLOB:
 			type = CSTR2SYM("blob");
+			break;
+
+		default:
+			type = Qnil;
 			break;
 	}
 	rb_hash_aset(rb_entry, CSTR2SYM("type"), type);
