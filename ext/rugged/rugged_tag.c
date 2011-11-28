@@ -80,49 +80,73 @@ static VALUE rb_git_tag_message_GET(VALUE self)
 static VALUE rb_git_tag_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 {
 	git_oid tag_oid;
-	git_signature *tagger;
-	git_object *target;
-	git_repository *repo;
+	git_repository *repo = NULL;
 	int error, force = 0;
 
 	VALUE rb_name, rb_target, rb_tagger, rb_message, rb_force;
 
-	Check_Type(rb_data, T_HASH);
-
 	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo))
 		rb_raise(rb_eTypeError, "Expeting a Rugged::Repository instance");
+
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
-	rb_message = rb_hash_aref(rb_data, CSTR2SYM("message"));
-	Check_Type(rb_message, T_STRING);
+	if (TYPE(rb_data) == T_STRING) {
+		error = git_tag_create_frombuffer(
+			&tag_oid,
+			repo,
+			StringValueCStr(rb_data),
+			force
+		);
+	} else if (TYPE(rb_data) == T_HASH) {
+		git_object *target = NULL;
 
-	rb_name = rb_hash_aref(rb_data, CSTR2SYM("name"));
-	Check_Type(rb_name, T_STRING);
+		rb_name = rb_hash_aref(rb_data, CSTR2SYM("name"));
+		Check_Type(rb_name, T_STRING);
 
-	rb_tagger = rb_hash_aref(rb_data, CSTR2SYM("tagger"));
-	tagger = rugged_signature_get(rb_tagger);
+		rb_target = rb_hash_aref(rb_data, CSTR2SYM("target"));
+		target = rugged_object_load(repo, rb_target, GIT_OBJ_ANY);
 
-	rb_target = rb_hash_aref(rb_data, CSTR2SYM("target"));
-	target = rugged_object_load(repo, rb_target, GIT_OBJ_ANY);
+		rb_force = rb_hash_aref(rb_data, CSTR2SYM("force"));
+		if (!NIL_P(rb_force))
+			force = rugged_parse_bool(rb_force);
 
-	rb_force = rb_hash_aref(rb_data, CSTR2SYM("force"));
-	if (!NIL_P(rb_force))
-		force = rugged_parse_bool(rb_force);
+		/* only for heavy tags */
+		rb_message = rb_hash_aref(rb_data, CSTR2SYM("message"));
+		rb_tagger = rb_hash_aref(rb_data, CSTR2SYM("tagger"));
 
-	error = git_tag_create(
-		&tag_oid,
-		repo,
-		StringValueCStr(rb_name),
-		target,
-		tagger,
-		StringValueCStr(rb_message),
-		force
-	);
+		if (!NIL_P(rb_tagger) && !NIL_P(rb_message)) {
+			git_signature *tagger = NULL;
 
-	git_signature_free(tagger);
-	git_object_free(target);
+			tagger = rugged_signature_get(rb_tagger);
+			Check_Type(rb_message, T_STRING);
+
+			error = git_tag_create(
+				&tag_oid,
+				repo,
+				StringValueCStr(rb_name),
+				target,
+				tagger,
+				StringValueCStr(rb_message),
+				force
+			);
+
+			git_signature_free(tagger);
+		} else {
+			error = git_tag_create_lightweight(
+				&tag_oid,
+				repo,
+				StringValueCStr(rb_name),
+				target,
+				force
+			);
+		}
+
+		git_object_free(target);
+	} else {
+		rb_raise(rb_eTypeError, "Invalid tag data: expected a String or a Hash");
+	}
+
 	rugged_exception_check(error);
-
 	return rugged_create_oid(&tag_oid);
 }
 

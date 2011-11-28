@@ -49,6 +49,9 @@ IGNORE_METHOD = %w(
   git_tree_id
   git_tree_lookup
   git_tree_lookup_prefix
+  git_reference_listall
+  git_reflog_delete
+  git_reflog_rename
 )
 
 source_files = Dir.glob("#{CWD}/../../ext/rugged/*.{c,h}")

@@ -335,6 +335,20 @@ static VALUE rb_git_repo_workdir(VALUE self)
 	return workdir ? rugged_str_new2(workdir, NULL) : Qnil;
 }
 
+static VALUE rb_git_repo_set_workdir(VALUE self, VALUE rb_workdir)
+{
+	git_repository *repo;
+
+	Data_Get_Struct(self, git_repository, repo);
+	Check_Type(rb_workdir, T_STRING);
+
+	rugged_exception_check(
+		git_repository_set_workdir(repo, StringValueCStr(rb_workdir))
+	);
+
+	return Qnil;
+}
+
 static VALUE rb_git_repo_discover(int argc, VALUE *argv, VALUE self)
 {
 	VALUE rb_path, rb_across_fs;
@@ -447,6 +461,7 @@ void Init_rugged_repo()
 	rb_define_method(rb_cRuggedRepo, "write",  rb_git_repo_write,  2);
 	rb_define_method(rb_cRuggedRepo, "path",  rb_git_repo_path, 0);
 	rb_define_method(rb_cRuggedRepo, "workdir",  rb_git_repo_workdir, 0);
+	rb_define_method(rb_cRuggedRepo, "workdir=",  rb_git_repo_set_workdir, 1);
 	rb_define_method(rb_cRuggedRepo, "status",  rb_git_repo_status,  -1);
 
 	rb_define_method(rb_cRuggedRepo, "index",  rb_git_repo_get_index,  0);

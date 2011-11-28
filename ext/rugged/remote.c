@@ -52,7 +52,7 @@ static VALUE rb_git_remote__new(int argc, VALUE *argv, VALUE klass)
 
 	url = StringValueCStr(rb_url);
 
-	if (git_transport_valid_url(url)) {
+	if (git_remote_valid_url(url)) {
 		if (!NIL_P(rb_name))
 			Check_Type(rb_name, T_STRING);
 
@@ -110,6 +110,39 @@ static VALUE rb_git_remote_connect(VALUE self, VALUE rb_direction)
 	return Qnil;
 }
 
+static VALUE rugged_rhead_new(git_remote_head *head)
+{
+	VALUE rb_head = rb_hash_new();
+
+	rb_hash_aset(rb_head, CSTR2SYM("local?"), head->local ? Qtrue : Qfalse);
+	rb_hash_aset(rb_head, CSTR2SYM("oid"), rugged_create_oid(&head->oid));
+	rb_hash_aset(rb_head, CSTR2SYM("loid"), rugged_create_oid(&head->loid));
+	rb_hash_aset(rb_head, CSTR2SYM("name"), rugged_str_new2(head->name, NULL));
+
+	return rb_head;
+}
+
+static int cb_remote__ls(git_remote_head *head, void *payload)
+{
+	rb_funcall((VALUE)payload, rb_intern("call"), 1, rugged_rhead_new(head));
+	return GIT_SUCCESS;
+}
+
+static VALUE rb_git_remote_ls(VALUE self)
+{
+	int error;
+	git_remote *remote;
+	Data_Get_Struct(self, git_remote, remote);
+
+	if (!rb_block_given_p())
+		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("ls"));
+
+	error = git_remote_ls(remote, &cb_remote__ls, (void *)rb_block_proc());
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
 static VALUE rb_git_remote_name(VALUE self)
 {
 	git_remote *remote;
@@ -118,12 +151,51 @@ static VALUE rb_git_remote_name(VALUE self)
 	return rugged_str_new2(git_remote_name(remote), NULL);
 }
 
+static VALUE rb_git_remote_url(VALUE self)
+{
+	git_remote *remote;
+	Data_Get_Struct(self, git_remote, remote);
+
+	return rugged_str_new2(git_remote_url(remote), NULL);
+}
+
 static VALUE rb_git_remote_connected(VALUE self)
 {
 	git_remote *remote;
 	Data_Get_Struct(self, git_remote, remote);
 
 	return git_remote_connected(remote) ? Qtrue : Qfalse;
+}
+
+static VALUE rb_git_remote_download(VALUE self)
+{
+	int error;
+	git_remote *remote;
+	char *path;
+	VALUE rb_path;
+
+	Data_Get_Struct(self, git_remote, remote);
+
+	error = git_remote_download(&path, remote);
+	rugged_exception_check(error);
+
+	rb_path = rugged_str_new2(path, NULL);
+	free(path);
+
+	return rb_path;
+}
+
+static VALUE rb_git_remote_update_tips(VALUE self)
+{
+	int error;
+	git_remote *remote;
+
+	Data_Get_Struct(self, git_remote, remote);
+
+	error = git_remote_update_tips(remote);
+	rugged_exception_check(error);
+
+	return Qnil;
 }
 
 void Init_rugged_remote()
@@ -135,5 +207,9 @@ void Init_rugged_remote()
 	rb_define_method(rb_cRuggedRemote, "connect", rb_git_remote_connect, 1);
 	rb_define_method(rb_cRuggedRemote, "disconnect", rb_git_remote_disconnect, 0);
 	rb_define_method(rb_cRuggedRemote, "name", rb_git_remote_name, 0);
+	rb_define_method(rb_cRuggedRemote, "url", rb_git_remote_url, 0);
 	rb_define_method(rb_cRuggedRemote, "connected?", rb_git_remote_connected, 0);
+	rb_define_method(rb_cRuggedRemote, "ls", rb_git_remote_ls, 0);
+	rb_define_method(rb_cRuggedRemote, "download", rb_git_remote_download, 0);
+	rb_define_method(rb_cRuggedRemote, "update_tips!", rb_git_remote_update_tips, 0);
 }
