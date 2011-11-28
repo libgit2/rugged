@@ -24,7 +24,7 @@ if p = ENV['LIBGIT2_PATH']
 else
   CWD = File.expand_path(File.dirname(__FILE__))
 
-  LIBGIT2_DIST = 'libgit2-libgit2-b0b2dd5.tar.gz'
+  LIBGIT2_DIST = 'libgit2-libgit2-b233714.tar.gz'
   LIBGIT2_DIR = File.basename(LIBGIT2_DIST, '.tar.gz')
 
   Dir.chdir("#{CWD}/vendor") do
