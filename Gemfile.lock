@@ -1,0 +1,12 @@
+GEM
+  remote: http://rubygems.org/
+  specs:
+    rake (0.9.2.2)
+    rake-compiler (0.7.9)
+      rake
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  rake-compiler
