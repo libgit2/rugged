@@ -36,7 +36,7 @@ VALUE rugged_config_new(VALUE klass, VALUE owner, git_config *cfg)
 {
 	VALUE rb_config = Data_Wrap_Struct(klass, NULL, &rb_git_config__free, cfg);
 	rugged_set_owner(rb_config, owner);
-	return owner;
+	return rb_config;
 }
 
 static VALUE rb_git_config_new(VALUE klass, VALUE rb_path)
