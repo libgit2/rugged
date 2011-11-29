@@ -10,6 +10,11 @@ context "Rugged::Reference stuff" do
     FileUtils.remove_entry_secure(@path + '/refs/heads/unit_test', true)
   end
 
+  test "can list references" do
+    refs = @repo.refs.map { |r| r.gsub("refs/", '') }.sort.join(':')
+    assert_equal "heads/master:heads/packed:tags/v0.9:tags/v1.0", refs
+  end
+
   test "can open reference" do
     ref = Rugged::Reference.lookup(@repo, "refs/heads/master")
     assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", ref.target

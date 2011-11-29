@@ -10,10 +10,10 @@ context "Rugged::Tree tests" do
 
   test "can read the tree data" do
     assert_equal @oid, @tree.oid
-	  assert_equal "tree", @tree.type
-	  assert_equal 3, @tree.count
-	  assert_equal "1385f264afb75a56a5bec74243be9b367ba4ca08", @tree[0][:oid]
-	  assert_equal "fa49b077972391ad58037050f2a75f74e3671e92", @tree[1][:oid]
+    assert_equal "tree", @tree.type
+    assert_equal 3, @tree.count
+    assert_equal "1385f264afb75a56a5bec74243be9b367ba4ca08", @tree[0][:oid]
+    assert_equal "fa49b077972391ad58037050f2a75f74e3671e92", @tree[1][:oid]
   end
 
   test "can read the tree entry data" do
@@ -21,9 +21,11 @@ context "Rugged::Tree tests" do
     tent = @tree[2]
 
     assert_equal "README", bent[:name]
+    assert_equal :blob, bent[:type]
     # assert_equal 33188, bent.attributes
 
     assert_equal "subdir", tent[:name]
+    assert_equal :tree, tent[:type]
     assert_equal "619f9935957e010c419cb9d15621916ddfcc0b96", tent[:oid]
     assert_equal "tree", @repo.lookup(tent[:oid]).type
   end
@@ -52,7 +54,17 @@ context "Rugged::Tree tests" do
     @tree.each_blob {|tree| assert_equal :blob, tree[:type]}
   end
 
-  xtest "can write the tree data" do
+  test "can write the tree data" do
+    entry = {:type => :blob,
+             :path => "README.txt",
+             :oid  => "1385f264afb75a56a5bec74243be9b367ba4ca08",
+             :attributes => 33188}
+
+    builder = Rugged::Tree::Builder.new
+    builder << entry
+    sha = builder.write(@repo)
+    obj = @repo.lookup(sha)
+    assert_equal 38, obj.read_raw.len
   end
 
 end
