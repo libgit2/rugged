@@ -19,6 +19,18 @@ end
 #
 task :default => [:compile, :test]
 
+task :pack_dist do
+  dir = File.dirname(File.expand_path(__FILE__))
+  output = File.join(dir, 'ext', 'rugged', 'vendor', 'libgit2-dist.tar.gz')
+  Dir.chdir(ENV['LIBGIT2_PATH']) do
+    `git archive --format=tar --prefix=libgit2-dist/ HEAD | gzip > #{output}`
+  end
+end
+
+task :cover do
+  ruby 'test/coverage/cover.rb'
+end
+
 Rake::TestTask.new do |t|
   t.libs << 'lib'
   t.pattern = 'test/**/*_test.rb'
