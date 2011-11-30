@@ -1,7 +1,9 @@
 dir = File.dirname(File.expand_path(__FILE__))
 $LOAD_PATH.unshift dir + '/../lib'
+$TEST_DIR = File.dirname(File.expand_path(__FILE__))
 $TESTING = true
 require 'test/unit'
+require 'tempfile'
 require 'rubygems'
 require 'rugged'
 require 'pp'
@@ -26,6 +28,25 @@ def context(*args, &block)
   klass.class_eval &block
   ($contexts ||= []) << klass # make sure klass doesn't get GC'd
   klass
+end
+
+def testpath(path)
+  File.join($TEST_DIR, path)
+end
+
+def test_repo(repo)
+  dir = temp_dir
+  repo_dir = testpath(File.join('fixtures', repo, '.'))
+  `git clone #{repo_dir} #{dir}`
+  dir
+end
+
+def temp_dir
+  file = Tempfile.new('dir')
+  dir = file.path
+  file.unlink
+  Dir.mkdir(dir)
+  dir
 end
 
 def rm_loose(oid)

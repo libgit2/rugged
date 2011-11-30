@@ -32,6 +32,16 @@ context "Rugged::Reference stuff" do
     assert_equal "refs/heads/master", ref.name
   end
 
+  test "can get a reflog" do
+    ref = Rugged::Reference.lookup(@repo, "refs/heads/master")
+    log = ref.log
+    e =  log[1]
+    assert_equal e[:oid_old], "8496071c1b46c854b31185ea97743be6a8774479"
+    assert_equal e[:oid_new], "5b5b025afb0b4c913b4c338a42934a3863bf3644"
+    assert_equal e[:message], "commit: another commit"
+    assert_equal e[:committer][:email], "schacon@gmail.com"
+  end
+
   test "can open packed reference" do
     ref = Rugged::Reference.lookup(@repo, "refs/heads/packed")
     assert_equal "41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9", ref.target
