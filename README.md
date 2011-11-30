@@ -198,8 +198,16 @@ The RefList class allows you to list, create and delete packed and loose refs.
       str = ref.type   # "commit"
       str = ref.name   # "refs/heads/master"
 
-    @repo.refs.each do |ref_name|
-      ref = Rugged::Reference.lookup(@repo, ref_name)
+You can also easily get an array of references:
+
+    @repo.refs.each do |ref|
+      puts ref.name
+    end
+
+Or with a pattern (regex):
+
+    @repo.refs(/tags/).each do |ref|
+      puts ref.name
     end
 
     ref = Rugged::Reference.create(@repo, "refs/heads/unit_test", "36060c58702ed4c2a40832c51758d5344201d89a")

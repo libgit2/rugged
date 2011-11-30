@@ -11,8 +11,18 @@ context "Rugged::Reference stuff" do
   end
 
   test "can list references" do
-    refs = @repo.refs.map { |r| r.gsub("refs/", '') }.sort.join(':')
+    refs = @repo.refs.map { |r| r.name.gsub("refs/", '') }.sort.join(':')
     assert_equal "heads/master:heads/packed:tags/v0.9:tags/v1.0", refs
+  end
+
+  test "can list filtered references from regex" do
+    refs = @repo.refs(/tags/).map { |r| r.name.gsub("refs/", '') }.sort.join(':')
+    assert_equal "tags/v0.9:tags/v1.0", refs
+  end
+
+  test "can list filtered references from string" do
+    refs = @repo.refs('0.9').map { |r| r.name.gsub("refs/", '') }.sort.join(':')
+    assert_equal "tags/v0.9", refs
   end
 
   test "can open reference" do

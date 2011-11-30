@@ -17,7 +17,20 @@ module Rugged
       Rugged::Object.lookup(self, oid)
     end
 
-    def refs
+    def refs(pattern = nil)
+      r = []
+      ref_names.each do |ref_name|
+        if pattern
+          p = Regexp.new(pattern)
+          r << Rugged::Reference.lookup(self, ref_name) if p.match(ref_name)
+        else
+          r << Rugged::Reference.lookup(self, ref_name)
+        end
+      end
+      r
+    end
+
+    def ref_names
       Rugged::Reference.each(self)
     end
 
