@@ -210,8 +210,35 @@ Or with a pattern (regex):
       puts ref.name
     end
 
-    ref = Rugged::Reference.create(@repo, "refs/heads/unit_test", "36060c58702ed4c2a40832c51758d5344201d89a")
+It is also easy to create, update, rename or delete a reference:
 
+    ref = Rugged::Reference.create(@repo, "refs/heads/unit_test", some_commit_sha)
+
+    ref.target = new_sha
+
+    ref.rename("refs/heads/blead")
+
+    ref.delete!
+
+Finally, you can access the reflog for any branch:
+
+    ref = Rugged::Reference.lookup(@repo, "refs/heads/master")
+    entry = ref.log.first
+      sha   = entry[:oid_old]
+      sha   = entry[:oid_new]
+      str   = entry[:message]
+      prsn  = entry[:committer]
+
+
+Git Config Files
+----------------
+
+It is very easy to read and manipulate the Git config file data with Rugged.
+
+    config = @repo.config
+    str    = config['core.bare']
+             config['user.name'] = true
+             config.delete('user.name')
 
 CONTRIBUTING
 ==============
