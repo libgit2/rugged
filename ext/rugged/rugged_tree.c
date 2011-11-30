@@ -222,7 +222,7 @@ static VALUE rb_git_treebuilder_insert(VALUE self, VALUE rb_entry)
 	Data_Get_Struct(self, git_treebuilder, builder);
 	Check_Type(rb_entry, T_HASH);
 
-	rb_path = rb_hash_aref(rb_entry, CSTR2SYM("path"));
+	rb_path = rb_hash_aref(rb_entry, CSTR2SYM("name"));
 	Check_Type(rb_path, T_STRING);
 
 	rb_oid = rb_hash_aref(rb_entry, CSTR2SYM("oid"));

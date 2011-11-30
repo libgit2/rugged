@@ -56,7 +56,7 @@ context "Rugged::Tree tests" do
 
   test "can write the tree data" do
     entry = {:type => :blob,
-             :path => "README.txt",
+             :name => "README.txt",
              :oid  => "1385f264afb75a56a5bec74243be9b367ba4ca08",
              :attributes => 33188}
 
