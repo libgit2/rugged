@@ -154,7 +154,7 @@ static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 	tree = (git_tree *)rugged_object_load(repo, rb_tree, GIT_OBJ_TREE);
 
 	parent_count = (int)RARRAY_LEN(rb_parents);
-	parents = malloc(parent_count * sizeof(void*));
+	parents = xmalloc(parent_count * sizeof(void*));
 
 	for (i = 0; i < parent_count; ++i) {
 		VALUE p = rb_ary_entry(rb_parents, i);
@@ -202,7 +202,7 @@ cleanup:
 	for (i = 0; i < parent_count; ++i)
 		git_object_free((git_object *)parents[i]);
 
-	free(parents);
+	xfree(parents);
 	rugged_exception_check(error);
 
 	return rugged_create_oid(&commit_oid);
