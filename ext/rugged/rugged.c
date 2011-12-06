@@ -43,7 +43,11 @@ static VALUE rb_git_raw_to_hex(VALUE self, VALUE raw)
 	char out[40];
 
 	Check_Type(raw, T_STRING);
-	git_oid_fromraw(&oid, StringValueCStr(raw));
+
+	if (RSTRING_LEN(raw) != GIT_OID_RAWSZ)
+		rb_raise(rb_eTypeError, "Invalid buffer size for an OID");
+
+	git_oid_fromraw(&oid, RSTRING_PTR(raw));
 	git_oid_fmt(out, &oid);
 
 	return rugged_str_new(out, 40, NULL);

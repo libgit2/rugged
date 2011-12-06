@@ -30,4 +30,11 @@ context "Rugged::Lib stuff" do
     hex2 = raw.unpack("H*")[0]
     assert_equal hex1, hex2
   end
+
+  test "converts raw into hex with null bytes" do
+    raw = Rugged::hex_to_raw("702f00394564b24052511cb69961164828bf5494")
+    hex1 = Rugged::raw_to_hex(raw)
+    hex2 = raw.unpack("H*")[0]
+    assert_equal hex1, hex2
+  end
 end
