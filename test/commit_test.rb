@@ -37,19 +37,17 @@ context "Rugged::Commit tests" do
     assert parents.include?("c47800c7266a2be04c571c04d5a6614691ea99bd")
   end
 
-  xtest "can write new commit data" do
-    toid = "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b"
-    tree = @repo.lookup(toid)
+  test "can write new commit data" do
+    person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
 
-    obj = Rugged::Commit.new(@repo)
-    person = Rugged::Signature.new('Scott', 'schacon@gmail.com', Time.now)
+    commit_oid = Rugged::Commit.create(@repo,
+      :message => "This is the commit message\n\nThis commit is created from Rugged",
+      :committer => person,
+      :author => person,
+      :parents => [@repo.head.target],
+      :tree => "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
 
-    obj.message = 'new message'
-    obj.author = person
-    obj.committer = person
-    obj.tree = tree
-    obj.write
-    rm_loose(obj.oid)
+    rm_loose(commit_oid)
   end
 
 end

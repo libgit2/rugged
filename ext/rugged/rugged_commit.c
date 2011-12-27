@@ -124,7 +124,8 @@ static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 {
 	VALUE rb_message, rb_tree, rb_parents;
 	int parent_count, i, error;
-	const git_commit **parents;
+	const git_commit **parents = NULL;
+	git_commit **free_list = NULL;
 	git_tree *tree;
 	git_signature *author, *committer;
 	git_oid commit_oid;
@@ -155,10 +156,12 @@ static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 
 	parent_count = (int)RARRAY_LEN(rb_parents);
 	parents = xmalloc(parent_count * sizeof(void*));
+	free_list = xmalloc(parent_count * sizeof(void*));
 
 	for (i = 0; i < parent_count; ++i) {
 		VALUE p = rb_ary_entry(rb_parents, i);
 		git_commit *parent = NULL;
+		git_commit *free_ptr = NULL;
 
 		if (TYPE(p) == T_STRING) {
 			git_oid oid;
@@ -171,14 +174,16 @@ static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 			if (error < GIT_SUCCESS)
 				goto cleanup;
 
+			free_ptr = parent;
+
 		} else if (rb_obj_is_kind_of(p, rb_cRuggedCommit)) {
 			Data_Get_Struct(p, git_commit, parent);
 		} else {
-			error = GIT_EINVALIDTYPE;
-			goto cleanup;
+			rb_raise(rb_eTypeError, "Invalid type for parent object");
 		}
 
 		parents[i] = parent;
+		free_list[i] = free_ptr;
 	}
 
 	error = git_commit_create(
@@ -200,9 +205,10 @@ cleanup:
 	git_object_free((git_object *)tree);
 
 	for (i = 0; i < parent_count; ++i)
-		git_object_free((git_object *)parents[i]);
+		git_object_free((git_object *)free_list[i]);
 
 	xfree(parents);
+	xfree(free_list);
 	rugged_exception_check(error);
 
 	return rugged_create_oid(&commit_oid);

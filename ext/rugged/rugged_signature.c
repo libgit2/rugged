@@ -55,9 +55,9 @@ git_signature *rugged_signature_get(VALUE rb_sig)
 
 	Check_Type(rb_sig, T_HASH);
 
-	rb_name = rb_hash_aref(rb_sig, rb_intern("name"));
-	rb_email = rb_hash_aref(rb_sig, rb_intern("email"));
-	rb_time = rb_hash_aref(rb_sig, rb_intern("time"));
+	rb_name = rb_hash_aref(rb_sig, CSTR2SYM("name"));
+	rb_email = rb_hash_aref(rb_sig, CSTR2SYM("email"));
+	rb_time = rb_hash_aref(rb_sig, CSTR2SYM("time"));
 
 	Check_Type(rb_name, T_STRING);
 	Check_Type(rb_email, T_STRING);
