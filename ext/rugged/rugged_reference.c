@@ -402,6 +402,7 @@ void Init_rugged_reference()
 
 	rb_define_singleton_method(rb_cRuggedReference, "lookup", rb_git_ref_lookup, 2);
 	rb_define_singleton_method(rb_cRuggedReference, "exist?", rb_git_ref_exist, 2);
+	rb_define_singleton_method(rb_cRuggedReference, "exists?", rb_git_ref_exist, 2);
 	rb_define_singleton_method(rb_cRuggedReference, "create", rb_git_ref_create, -1);
 	rb_define_singleton_method(rb_cRuggedReference, "pack_all", rb_git_ref_packall, 1);
 	rb_define_singleton_method(rb_cRuggedReference, "each", rb_git_ref_each, -1);
