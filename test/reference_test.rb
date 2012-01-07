@@ -48,10 +48,10 @@ context "Rugged::Reference stuff" do
   end
 
   test "can check for the existence of a reference" do
-    exists = Rugged::Reference.exists?(@repo, "refs/heads/master")
+    exists = Rugged::Reference.exist?(@repo, "refs/heads/master")
     assert exists
 
-    exists = Rugged::Reference.exists?(@repo, "lol/wut")
+    exists = Rugged::Reference.exist?(@repo, "lol/wut")
     assert !exists
   end
 
