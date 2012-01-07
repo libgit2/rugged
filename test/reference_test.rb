@@ -47,6 +47,14 @@ context "Rugged::Reference stuff" do
     assert_equal e[:committer][:email], "schacon@gmail.com"
   end
 
+  test "can check for the existence of a reference" do
+    exists = Rugged::Reference.exists?(@repo, "refs/heads/master")
+    assert exists
+
+    exists = Rugged::Reference.exists?(@repo, "lol/wut")
+    assert !exists
+  end
+
   test "can open packed reference" do
     ref = Rugged::Reference.lookup(@repo, "refs/heads/packed")
     assert_equal "41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9", ref.target

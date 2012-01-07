@@ -130,6 +130,25 @@ static VALUE rb_git_ref_lookup(VALUE klass, VALUE rb_repo, VALUE rb_name)
 	return rugged_ref_new(klass, rb_repo, ref);
 }
 
+static VALUE rb_git_ref_exists(VALUE klass, VALUE rb_repo, VALUE rb_name)
+{
+	git_repository *repo;
+	git_reference *ref;
+	int error;
+
+	Data_Get_Struct(rb_repo, git_repository, repo);
+	Check_Type(rb_name, T_STRING);
+
+	error = git_reference_lookup(&ref, repo, StringValueCStr(rb_name));
+	if (error == GIT_ENOTFOUND)
+		return Qfalse;
+	else
+		rugged_exception_check(error);
+
+	git_reference_free(ref);
+	return Qtrue;
+}
+
 static VALUE rb_git_ref_create(int argc, VALUE *argv, VALUE klass)
 {
 	VALUE rb_repo, rb_name, rb_target, rb_force;
@@ -382,6 +401,7 @@ void Init_rugged_reference()
 	rb_cRuggedReference = rb_define_class_under(rb_mRugged, "Reference", rb_cObject);
 
 	rb_define_singleton_method(rb_cRuggedReference, "lookup", rb_git_ref_lookup, 2);
+	rb_define_singleton_method(rb_cRuggedReference, "exists?", rb_git_ref_exists, 2);
 	rb_define_singleton_method(rb_cRuggedReference, "create", rb_git_ref_create, -1);
 	rb_define_singleton_method(rb_cRuggedReference, "pack_all", rb_git_ref_packall, 1);
 	rb_define_singleton_method(rb_cRuggedReference, "each", rb_git_ref_each, -1);
