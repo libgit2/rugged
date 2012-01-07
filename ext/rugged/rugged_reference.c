@@ -122,7 +122,10 @@ static VALUE rb_git_ref_lookup(VALUE klass, VALUE rb_repo, VALUE rb_name)
 	Check_Type(rb_name, T_STRING);
 
 	error = git_reference_lookup(&ref, repo, StringValueCStr(rb_name));
-	rugged_exception_check(error);
+	if (error == GIT_ENOTFOUND)
+		return Qnil;
+	else
+		rugged_exception_check(error);
 
 	return rugged_ref_new(klass, rb_repo, ref);
 }

@@ -32,6 +32,11 @@ context "Rugged::Reference stuff" do
     assert_equal "refs/heads/master", ref.name
   end
 
+  test "will return nil for an invalid reference" do
+    ref = Rugged::Reference.lookup(@repo, "lol/wut")
+    assert_equal nil, ref
+  end
+
   test "can get a reflog" do
     ref = Rugged::Reference.lookup(@repo, "refs/heads/master")
     log = ref.log
