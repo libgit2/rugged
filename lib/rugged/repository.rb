@@ -5,6 +5,8 @@ module Rugged
       "#<Rugged::Repository:#{object_id} path: #{path.inspect}>"
     end
 
+    alias :to_s :inspect
+
     def walk(from, sorting=Rugged::SORT_DATE, &block)
       walker = Rugged::Walker.new(self)
       walker.sorting(sorting)
