@@ -50,7 +50,7 @@ static VALUE rb_git_tag_target_type_GET(VALUE self)
 	git_tag *tag;
 	Data_Get_Struct(self, git_tag, tag);
 
-	return rugged_str_new2(git_object_type2string(git_tag_type(tag)), NULL);
+	return rugged_otype_new(git_tag_type(tag));
 }
 
 static VALUE rb_git_tag_name_GET(VALUE self)

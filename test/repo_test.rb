@@ -63,7 +63,7 @@ context "Rugged::Repository stuff" do
   test "can lookup head from repo" do
     head = @repo.head
     assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", head.target
-    assert_equal "commit", head.type
+    assert_equal :direct, head.type
   end
 
   test "garbage collection methods don't crash" do

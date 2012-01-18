@@ -15,7 +15,7 @@ context "Rugged::Object stuff" do
 
   test "can lookup an object" do
     obj = @repo.lookup("8496071c1b46c854b31185ea97743be6a8774479")
-    assert_equal 'commit', obj.type
+    assert_equal :commit, obj.type
     assert_equal '8496071c1b46c854b31185ea97743be6a8774479', obj.oid
   end
 

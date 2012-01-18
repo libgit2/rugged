@@ -53,21 +53,6 @@ static VALUE rb_git_raw_to_hex(VALUE self, VALUE raw)
 	return rugged_str_new(out, 40, NULL);
 }
 
-static VALUE rb_git_type_to_string(VALUE self, VALUE type)
-{
-	const char *str;
-
-	Check_Type(type, T_FIXNUM);
-	str = git_object_type2string(FIX2INT(type));
-	return str ? rugged_str_new2(str, NULL) : Qfalse;
-}
-
-static VALUE rb_git_string_to_type(VALUE self, VALUE string_type)
-{
-	Check_Type(string_type, T_STRING);
-	return INT2FIX(git_object_string2type(StringValueCStr(string_type)));
-}
-
 static VALUE minimize_cb(VALUE rb_oid, git_oid_shorten *shortener)
 {
 	Check_Type(rb_oid, T_STRING);
@@ -131,8 +116,6 @@ void Init_rugged()
 
 	rb_define_module_function(rb_mRugged, "hex_to_raw", rb_git_hex_to_raw, 1);
 	rb_define_module_function(rb_mRugged, "raw_to_hex", rb_git_raw_to_hex, 1);
-	rb_define_module_function(rb_mRugged, "type_to_string", rb_git_type_to_string, 1);
-	rb_define_module_function(rb_mRugged, "string_to_type", rb_git_string_to_type, 1);
 	rb_define_module_function(rb_mRugged, "minimize_oid", rb_git_minimize_oid, -1);
 
 	Init_rugged_object();

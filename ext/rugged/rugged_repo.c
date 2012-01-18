@@ -32,33 +32,6 @@ extern VALUE rb_cRuggedBackend;
 VALUE rb_cRuggedRepo;
 VALUE rb_cRuggedOdbObject;
 
-git_otype rugged_get_otype(VALUE self)
-{
-	git_otype type;
-
-	if (NIL_P(self))
-		return GIT_OBJ_ANY;
-
-	switch (TYPE(self)) {
-	case T_STRING:
-		type = git_object_string2type(StringValueCStr(self));
-		break;
-
-	case T_FIXNUM:
-		type = FIX2INT(self);
-		break;
-
-	default:
-		type = GIT_OBJ_BAD;
-		break;
-	}
-
-	if (!git_object_typeisloose(type))
-		rb_raise(rb_eTypeError, "Invalid Git object type specifier");
-
-	return type;
-}
-
 static VALUE rb_git_odbobj_hash(VALUE self)
 {
 	git_odb_object *obj;
@@ -246,7 +219,7 @@ static VALUE rb_git_repo_hash(VALUE self, VALUE rb_buffer, VALUE rb_type)
 	error = git_odb_hash(&oid,
 		RSTRING_PTR(rb_buffer),
 		RSTRING_LEN(rb_buffer),
-		rugged_get_otype(rb_type)
+		rugged_otype_get(rb_type)
 	);
 	rugged_exception_check(error);
 
@@ -262,7 +235,7 @@ static VALUE rb_git_repo_hashfile(VALUE self, VALUE rb_path, VALUE rb_type)
 
 	error = git_odb_hashfile(&oid,
 		StringValueCStr(rb_path),
-		rugged_get_otype(rb_type)
+		rugged_otype_get(rb_type)
 	);
 	rugged_exception_check(error);
 
@@ -285,7 +258,7 @@ static VALUE rb_git_repo_write(VALUE self, VALUE rb_buffer, VALUE rub_type)
 	error = git_repository_odb(&odb, repo);
 	rugged_exception_check(error);
 
-	type = rugged_get_otype(rub_type);
+	type = rugged_otype_get(rub_type);
 
 	error = git_odb_open_wstream(&stream, odb, RSTRING_LEN(rb_buffer), type);
 	rugged_exception_check(error);

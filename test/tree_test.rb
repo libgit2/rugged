@@ -10,7 +10,7 @@ context "Rugged::Tree tests" do
 
   test "can read the tree data" do
     assert_equal @oid, @tree.oid
-    assert_equal "tree", @tree.type
+    assert_equal :tree, @tree.type
     assert_equal 3, @tree.count
     assert_equal "1385f264afb75a56a5bec74243be9b367ba4ca08", @tree[0][:oid]
     assert_equal "fa49b077972391ad58037050f2a75f74e3671e92", @tree[1][:oid]
@@ -27,7 +27,7 @@ context "Rugged::Tree tests" do
     assert_equal "subdir", tent[:name]
     assert_equal :tree, tent[:type]
     assert_equal "619f9935957e010c419cb9d15621916ddfcc0b96", tent[:oid]
-    assert_equal "tree", @repo.lookup(tent[:oid]).type
+    assert_equal :tree, @repo.lookup(tent[:oid]).type
   end
 
   test "can iterate over the tree" do

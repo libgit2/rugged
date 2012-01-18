@@ -33,6 +33,59 @@ extern VALUE rb_cRuggedRepo;
 
 VALUE rb_cRuggedObject;
 
+git_otype rugged_otype_get(VALUE self)
+{
+	git_otype type = GIT_OBJ_BAD;
+
+	if (NIL_P(self))
+		return GIT_OBJ_ANY;
+
+	switch (TYPE(self)) {
+	case T_STRING:
+		type = git_object_string2type(StringValueCStr(self));
+		break;
+
+	case T_FIXNUM:
+		type = FIX2INT(self);
+		break;
+
+	case T_SYMBOL: {
+		ID t = SYM2ID(self);
+
+		if (t == rb_intern("commit"))
+			type = GIT_OBJ_COMMIT;
+		else if (t == rb_intern("tree"))
+			type = GIT_OBJ_TREE;
+		else if (t == rb_intern("tag"))
+			type = GIT_OBJ_TAG;
+		else if (t == rb_intern("blob"))
+			type = GIT_OBJ_BLOB;
+	   }
+	}
+
+	if (!git_object_typeisloose(type))
+		rb_raise(rb_eTypeError, "Invalid Git object type specifier");
+
+	return type;
+}
+
+VALUE rugged_otype_new(git_otype t)
+{
+	switch (t) {
+		case GIT_OBJ_COMMIT:
+			return CSTR2SYM("commit");
+		case GIT_OBJ_TAG:
+			return CSTR2SYM("tag");
+		case GIT_OBJ_TREE:
+			return CSTR2SYM("tree");
+		case GIT_OBJ_BLOB:
+			return CSTR2SYM("blob");
+		default:
+			return Qnil;
+	}
+}
+
+
 git_object *rugged_object_load(git_repository *repo, VALUE object_value, git_otype type)
 {
 	git_object *object = NULL;
@@ -179,7 +232,7 @@ static VALUE rb_git_object_type_GET(VALUE self)
 	git_object *object;
 	Data_Get_Struct(self, git_object, object);
 
-	return rugged_str_new2(git_object_type2string(git_object_type(object)), NULL);
+	return rugged_otype_new(git_object_type(object));
 }
 
 static VALUE rb_git_object_read_raw(VALUE self)

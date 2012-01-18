@@ -28,7 +28,7 @@ context "Rugged::Reference stuff" do
   test "can open reference" do
     ref = Rugged::Reference.lookup(@repo, "refs/heads/master")
     assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", ref.target
-    assert_equal "commit", ref.type
+    assert_equal :direct, ref.type
     assert_equal "refs/heads/master", ref.name
   end
 
@@ -58,14 +58,14 @@ context "Rugged::Reference stuff" do
   test "can open packed reference" do
     ref = Rugged::Reference.lookup(@repo, "refs/heads/packed")
     assert_equal "41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9", ref.target
-    assert_equal "commit", ref.type
+    assert_equal :direct, ref.type
     assert_equal "refs/heads/packed", ref.name
   end
 
   test "can create reference from symbolic reference" do
     ref = Rugged::Reference.create(@repo, "refs/heads/unit_test", "refs/heads/master")
     assert_equal "refs/heads/master", ref.target
-    assert_equal "tree", ref.type
+    assert_equal :symbolic, ref.type
     assert_equal "refs/heads/unit_test", ref.name
     ref.delete!
   end
@@ -73,7 +73,7 @@ context "Rugged::Reference stuff" do
   test "can create reference from oid" do
     ref = Rugged::Reference.create(@repo, "refs/heads/unit_test", "36060c58702ed4c2a40832c51758d5344201d89a")
     assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", ref.target
-    assert_equal "commit", ref.type
+    assert_equal :direct, ref.type
     assert_equal "refs/heads/unit_test", ref.name
     ref.delete!
   end
@@ -81,7 +81,7 @@ context "Rugged::Reference stuff" do
   test "can rename ref" do
     ref = Rugged::Reference.create(@repo, "refs/heads/unit_test", "36060c58702ed4c2a40832c51758d5344201d89a")
     assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", ref.target
-    assert_equal "commit", ref.type
+    assert_equal :direct, ref.type
     assert_equal "refs/heads/unit_test", ref.name
 
     ref.rename "refs/heads/rug_new_name"
@@ -92,7 +92,7 @@ context "Rugged::Reference stuff" do
   test "can set target on reference" do
     ref = Rugged::Reference.create(@repo, "refs/heads/unit_test", "36060c58702ed4c2a40832c51758d5344201d89a")
     assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", ref.target
-    assert_equal "commit", ref.type
+    assert_equal :direct, ref.type
     assert_equal "refs/heads/unit_test", ref.name
 
     ref.target = "5b5b025afb0b4c913b4c338a42934a3863bf3644"
@@ -103,11 +103,11 @@ context "Rugged::Reference stuff" do
   test "can resolve head" do
     ref = Rugged::Reference.lookup(@repo, "HEAD")
     assert_equal "refs/heads/master", ref.target
-    assert_equal "tree", ref.type
+    assert_equal :symbolic, ref.type
 
     head = ref.resolve
     assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", head.target
-    assert_equal "commit", head.type
+    assert_equal :direct, head.type
   end
 
 end

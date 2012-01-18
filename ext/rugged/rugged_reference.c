@@ -47,6 +47,13 @@ VALUE rugged_ref_new(VALUE klass, VALUE owner, git_reference *ref)
 	return rb_ref;
 }
 
+/*
+ *	call-seq:
+ *		Reference.pack_all(repository)
+ *
+ *	Pack all the references in +repository+ into the +packed_refs+
+ *	file.
+ */
 static VALUE rb_git_ref_packall(VALUE klass, VALUE rb_repo)
 {
 	git_repository *repo;
@@ -63,18 +70,23 @@ static VALUE rb_git_ref_packall(VALUE klass, VALUE rb_repo)
 	return Qnil;
 }
 
-int ref_foreach__list(const char *ref_name, void *opaque)
-{
-	rb_ary_push((VALUE)opaque, rugged_str_new2(ref_name, NULL));
-	return GIT_SUCCESS;
-}
-
-int ref_foreach__block(const char *ref_name, void *opaque)
+static int ref_foreach__block(const char *ref_name, void *opaque)
 {
 	rb_funcall((VALUE)opaque, rb_intern("call"), 1, rugged_str_new2(ref_name, NULL));
 	return GIT_SUCCESS;
 }
 
+/*
+ *	call-seq:
+ *		Reference.each(repository, filter = :all) { |ref_name| block }
+ *		Reference.each(repository, filter = :all) -> Iterator
+ *
+ *	Iterate through all the references in +repository+. Iteration can be
+ *	optionally filtered to only +:direct+ or +:symbolic+ references.
+ *
+ *	The given block will be called once with the name of each reference.
+ *	If no block is given, an iterator will be returned.
+ */
 static VALUE rb_git_ref_each(int argc, VALUE *argv, VALUE self)
 {
 	git_repository *repo;
@@ -112,6 +124,13 @@ static VALUE rb_git_ref_each(int argc, VALUE *argv, VALUE self)
 	return Qnil;
 }
 
+/*
+ *	call-seq:
+ *		Reference.lookup(repository, ref_name) -> new_ref
+ *
+ *	Lookup a reference from the +repository+.
+ *	Returns a new +Rugged::Reference+ object.
+ */
 static VALUE rb_git_ref_lookup(VALUE klass, VALUE rb_repo, VALUE rb_name)
 {
 	git_repository *repo;
@@ -130,6 +149,13 @@ static VALUE rb_git_ref_lookup(VALUE klass, VALUE rb_repo, VALUE rb_name)
 	return rugged_ref_new(klass, rb_repo, ref);
 }
 
+/*
+ *	call-seq:
+ *		Reference.exist?(repository, ref_name) -> true or false
+ *		Reference.exists?(repository, ref_name) -> true or false
+ *
+ *	Check if a given reference exists on +repository+.
+ */
 static VALUE rb_git_ref_exist(VALUE klass, VALUE rb_repo, VALUE rb_name)
 {
 	git_repository *repo;
@@ -149,6 +175,18 @@ static VALUE rb_git_ref_exist(VALUE klass, VALUE rb_repo, VALUE rb_name)
 	return Qtrue;
 }
 
+/*
+ *	call-seq:
+ *		Reference.create(repository, name, oid, force = false) -> new_ref
+ *		Reference.create(repository, name, target, force = false) -> new_ref
+ *
+ *	Create a symbolic or direct reference on +repository+ with the given +name+.
+ *	If the third argument is a valid OID, the reference will be created as direct.
+ *	Otherwise, it will be assumed the target is the name of another reference.
+ *
+ *	If a reference with the given +name+ already exists and +force+ is +true+,
+ *	it will be overwritten. Otherwise, an exception will be raised.
+ */
 static VALUE rb_git_ref_create(int argc, VALUE *argv, VALUE klass)
 {
 	VALUE rb_repo, rb_name, rb_target, rb_force;
@@ -179,6 +217,20 @@ static VALUE rb_git_ref_create(int argc, VALUE *argv, VALUE klass)
 	return rugged_ref_new(klass, rb_repo, ref);
 }
 
+/*
+ *	call-seq:
+ *		reference.target -> oid
+ *		reference.target -> ref_name
+ *
+ *	Return the target of the reference, which is an OID for +:direct+
+ *	references, and the name of another reference for +:symbolic+ ones.
+ *
+ *		r1.type #=> :symbolic
+ *		r1.target #=> "refs/heads/master"
+ *
+ *		r2.type #=> :direct
+ *		r2.target #=> "de5ba987198bcf2518885f0fc1350e5172cded78"
+ */
 static VALUE rb_git_ref_target(VALUE self)
 {
 	git_reference *ref;
@@ -192,6 +244,22 @@ static VALUE rb_git_ref_target(VALUE self)
 	}
 }
 
+/*
+ *	call-seq:
+ *		reference.target = t
+ *
+ *	Set the target of a reference. If +reference+ is a direct reference,
+ *	the new target must be a +String+ representing a SHA1 OID.
+ *
+ *	If +reference+ is symbolic, the new target must be a +String+ with
+ *	the name of another reference.
+ *
+ *		r1.type #=> :symbolic
+ *		r1.target = "refs/heads/master"
+ *
+ *		r2.type #=> :direct
+ *		r2.target = "de5ba987198bcf2518885f0fc1350e5172cded78"
+ */
 static VALUE rb_git_ref_set_target(VALUE self, VALUE rb_target)
 {
 	git_reference *ref;
@@ -215,13 +283,32 @@ static VALUE rb_git_ref_set_target(VALUE self, VALUE rb_target)
 	return Qnil;
 }
 
+/*
+ *	call-seq:
+ *		reference.type -> :symbolic or :direct
+ *
+ *	Return whether the reference is +:symbolic+ or +:direct+
+ */
 static VALUE rb_git_ref_type(VALUE self)
 {
 	git_reference *ref;
 	UNPACK_REFERENCE(self, ref);
-	return rugged_str_new2(git_object_type2string(git_reference_type(ref)), NULL);
+	switch (git_reference_type(ref)) {
+		case GIT_REF_OID:
+			return CSTR2SYM("direct");
+		case GIT_REF_SYMBOLIC:
+			return CSTR2SYM("symbolic");
+		default:
+			return Qnil;
+	}
 }
 
+/*
+ *	call-seq:
+ *		reference.packed? -> true or false
+ *
+ *	Return whether the reference is packed or not
+ */
 static VALUE rb_git_ref_packed(VALUE self)
 {
 	git_reference *ref;
@@ -230,6 +317,12 @@ static VALUE rb_git_ref_packed(VALUE self)
 	return git_reference_is_packed(ref) ? Qtrue : Qfalse;
 }
 
+/*
+ *	call-seq:
+ *		reference.reload!
+ *
+ *	Reload the reference from disk
+ */
 static VALUE rb_git_ref_reload(VALUE self)
 {
 	int error;
@@ -246,6 +339,14 @@ static VALUE rb_git_ref_reload(VALUE self)
 	return Qnil;
 }
 
+/*
+ *	call-seq:
+ *		reference.name -> name
+ *
+ *	Returns the name of the reference
+ *
+ *		reference.name #=> 'HEAD'
+ */
 static VALUE rb_git_ref_name(VALUE self)
 {
 	git_reference *ref;
@@ -253,6 +354,19 @@ static VALUE rb_git_ref_name(VALUE self)
 	return rugged_str_new2(git_reference_name(ref), NULL);
 }
 
+/*
+ *	call-seq:
+ *		reference.resolve -> peeled_ref
+ *
+ *	Peel a symbolic reference to its target reference.
+ *
+ *		r1.type #=> :symbolic
+ *		r1.name #=> 'HEAD'
+ *		r1.target #=> 'refs/heads/master'
+ *
+ *		r2 = r1.resolve #=> #<Rugged::Reference:0x401b3948>
+ *		r2.target #=> '9d09060c850defbc7711d08b57def0d14e742f4e'
+ */
 static VALUE rb_git_ref_resolve(VALUE self)
 {
 	git_reference *ref;
@@ -267,6 +381,17 @@ static VALUE rb_git_ref_resolve(VALUE self)
 	return rugged_ref_new(rb_cRuggedReference, rugged_owner(self), resolved);
 }
 
+/*
+ *	call-seq:
+ *		reference.rename(new_name, force = false)
+ *
+ *	Change the name of a reference. If +force+ is +true+, any previously
+ *	existing references will be overwritten when renaming.
+ *
+ *		reference.name #=> 'refs/heads/master'
+ *		reference.rename('refs/heads/development') #=> nil
+ *		reference.name #=> 'refs/heads/development'
+ */
 static VALUE rb_git_ref_rename(int argc, VALUE *argv, VALUE self)
 {
 	git_reference *ref;
@@ -286,6 +411,17 @@ static VALUE rb_git_ref_rename(int argc, VALUE *argv, VALUE self)
 	return Qnil;
 }
 
+/*
+ *	call-seq:
+ *		reference.delete!
+ *
+ *	Delete this reference from disk. The +reference+ object will
+ *	become invalidated.
+ *
+ *		reference.name #=> 'HEAD'
+ *		reference.delete!
+ *		reference.name # Exception raised
+ */
 static VALUE rb_git_ref_delete(VALUE self)
 {
 	git_reference *ref;
@@ -328,6 +464,27 @@ static VALUE reflog_entry_new(const git_reflog_entry *entry)
 	return rb_entry;
 }
 
+/*
+ *	call-seq:
+ *		reference.log -> [reflog_entry, ...]
+ *
+ *	Return an array with the log of all modifications to this reference
+ *
+ *	Each +reflog_entry+ is a hash with the following keys:
+ *
+ *	+:oid_old+: previous OID before the change
+ *	+:oid_new+: OID after the change
+ *	+:committer+: author of the change
+ *	+:message+: message for the change
+ *
+ *		reference.log #=> [
+ *		# {
+ *		#	:oid_old => nil,
+ *		#	:oid_new => '9d09060c850defbc7711d08b57def0d14e742f4e',
+ *		#	:committer => {:name => 'Vicent Marti', :email => {'vicent@github.com'}},
+ *		#	:message => 'created reference'
+ *		# }, ... ]
+ */
 static VALUE rb_git_reflog(VALUE self)
 {
 	git_reflog *reflog;
@@ -355,6 +512,13 @@ static VALUE rb_git_reflog(VALUE self)
 	return rb_log;
 }
 
+/*
+ *	call-seq:
+ *		reference.log!(old_oid, committer, message = nil)
+ *
+ *	Log a modification for this reference to the reflog.
+ *	+old_oid+ may be +nil+ for newly created references.
+ */
 static VALUE rb_git_reflog_write(
 	VALUE self,
 	VALUE rb_oid_old,

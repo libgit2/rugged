@@ -11,7 +11,7 @@ context "Rugged::Blob tests" do
     blob = @repo.lookup(@oid)
     assert_equal 9, blob.size
     assert_equal "new file\n", blob.content
-    assert_equal "blob", blob.type
+    assert_equal :blob, blob.type
     assert_equal @oid, blob.oid
   end
 

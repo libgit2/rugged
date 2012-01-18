@@ -11,7 +11,7 @@ context "Rugged::Commit tests" do
     obj = @repo.lookup(oid)
 
     assert_equal obj.oid, oid
-    assert_equal obj.type, "commit"
+    assert_equal obj.type, :commit
     assert_equal obj.message, "testing\n"
     assert_equal obj.time.to_i, 1273360386
 

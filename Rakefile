@@ -36,3 +36,14 @@ Rake::TestTask.new do |t|
   t.pattern = 'test/**/*_test.rb'
   t.verbose = false
 end
+
+begin
+  require 'rdoc/task'
+  Rake::RDocTask.new do |rdoc|
+      rdoc.rdoc_dir = 'rdoc'
+      rdoc.rdoc_files.include('ext/**/*.c')
+      rdoc.rdoc_files.include('lib/**/*.rb')
+  end
+rescue LoadError
+end
+
