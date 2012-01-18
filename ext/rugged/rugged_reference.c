@@ -472,10 +472,10 @@ static VALUE reflog_entry_new(const git_reflog_entry *entry)
  *
  *	Each +reflog_entry+ is a hash with the following keys:
  *
- *	+:oid_old+: previous OID before the change
- *	+:oid_new+: OID after the change
- *	+:committer+: author of the change
- *	+:message+: message for the change
+ *	- +:oid_old+: previous OID before the change
+ *	- +:oid_new+: OID after the change
+ *	- +:committer+: author of the change
+ *	- +:message+: message for the change
  *
  *		reference.log #=> [
  *		# {
