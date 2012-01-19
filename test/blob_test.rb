@@ -16,7 +16,7 @@ context "Rugged::Blob tests" do
   end
 
   test "can write new blob data" do
-    oid = Rugged::Blob.create(@repo, "a new blob content", true)
+    oid = Rugged::Blob.create(@repo, "a new blob content")
     rm_loose(oid)
   end
 

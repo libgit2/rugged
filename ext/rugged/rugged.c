@@ -137,16 +137,6 @@ void Init_rugged()
 	rb_define_const(rb_mRugged, "SORT_DATE", INT2FIX(2));
 	rb_define_const(rb_mRugged, "SORT_REVERSE", INT2FIX(4));
 
-	rb_define_const(rb_mRugged, "OBJ_ANY", INT2FIX(GIT_OBJ_ANY));
-	rb_define_const(rb_mRugged, "OBJ_BAD", INT2FIX(GIT_OBJ_BAD));
-	rb_define_const(rb_mRugged, "OBJ_COMMIT", INT2FIX(GIT_OBJ_COMMIT));
-	rb_define_const(rb_mRugged, "OBJ_TREE", INT2FIX(GIT_OBJ_TREE));
-	rb_define_const(rb_mRugged, "OBJ_BLOB", INT2FIX(GIT_OBJ_BLOB));
-	rb_define_const(rb_mRugged, "OBJ_TAG", INT2FIX(GIT_OBJ_TAG));
-
-	rb_define_const(rb_mRugged, "REF_OID", INT2FIX(GIT_REF_OID));
-	rb_define_const(rb_mRugged, "REF_SYMBOLIC", INT2FIX(GIT_REF_SYMBOLIC));
-
 	/* Initialize libgit2 */
 	git_threads_init();
 

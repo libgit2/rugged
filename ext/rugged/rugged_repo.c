@@ -57,7 +57,7 @@ static VALUE rb_git_odbobj_type(VALUE self)
 {
 	git_odb_object *obj;
 	Data_Get_Struct(self, git_odb_object, obj);
-	return INT2FIX(git_odb_object_type(obj));
+	return rugged_otype_new(git_odb_object_type(obj));
 }
 
 void rb_git__odbobj_free(void *obj)
