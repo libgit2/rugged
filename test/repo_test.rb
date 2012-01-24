@@ -21,10 +21,10 @@ context "Rugged::Repository stuff" do
   end
 
   test "can tell if an object exists or not" do
-    assert @repo.exists("8496071c1b46c854b31185ea97743be6a8774479")
-    assert @repo.exists("1385f264afb75a56a5bec74243be9b367ba4ca08")
-    assert !@repo.exists("ce08fe4884650f067bd5703b6a59a8b3b3c99a09")
-    assert !@repo.exists("8496071c1c46c854b31185ea97743be6a8774479")
+    assert @repo.exists?("8496071c1b46c854b31185ea97743be6a8774479")
+    assert @repo.exists?("1385f264afb75a56a5bec74243be9b367ba4ca08")
+    assert !@repo.exists?("ce08fe4884650f067bd5703b6a59a8b3b3c99a09")
+    assert !@repo.exists?("8496071c1c46c854b31185ea97743be6a8774479")
   end
 
   test "can read an object from the db" do
@@ -48,7 +48,7 @@ context "Rugged::Repository stuff" do
   test "can write to the db" do
     oid = @repo.write(@test_content, @test_content_type)
     assert_equal "76b1b55ab653581d6f2c7230d34098e837197674", oid
-    assert @repo.exists("76b1b55ab653581d6f2c7230d34098e837197674")
+    assert @repo.exists?("76b1b55ab653581d6f2c7230d34098e837197674")
 
     rm_loose(oid)
   end
