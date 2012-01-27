@@ -29,7 +29,7 @@ context "Rugged::Commit tests" do
     assert_equal obj.tree.oid, "181037049a54a1eb5fab404658a3a250b44335d7"
     assert_equal [], obj.parents
   end
-  
+
   test "can have multiple parents" do
     oid = "a4a7dce85cf63874e984719f4fdd239f5145052f"
     obj = @repo.lookup(oid)
