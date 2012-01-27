@@ -67,6 +67,16 @@ static VALUE rb_git_treeentry_fromC(const git_tree_entry *entry)
 /*
  * Rugged Tree
  */
+/*
+ *	call-seq:
+ *		tree.count -> count
+ *		tree.length -> count
+ *
+ *	Return the number of entries contained in the tree.
+ *
+ *	Note that this only applies to entries in the root of the tree,
+ *	not any other entries contained in sub-folders.
+ */
 static VALUE rb_git_tree_entrycount(VALUE self)
 {
 	git_tree *tree;
@@ -75,6 +85,23 @@ static VALUE rb_git_tree_entrycount(VALUE self)
 	return INT2FIX(git_tree_entrycount(tree));
 }
 
+/*
+ *	call-seq:
+ *		tree[e] -> entry
+ *		tree.get_entry(e) -> entry
+ *
+ *	Return one of the entries from a tree as a +Hash+. If +e+ is a number, the +e+nth entry
+ *	from the tree will be returned. If +e+ is a string, the entry with that name
+ *	will be returned.
+ *
+ *	If the entry doesn't exist, +nil+ will be returned.
+ *
+ *		tree[3] #=> {:name => "foo.txt", :type => :blob, :oid => "d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f", :attributes => 0}
+ *
+ *		tree['bar.txt'] #=> {:name => "bar.txt", :type => :blob, :oid => "de5ba987198bcf2518885f0fc1350e5172cded78", :attributes => 0}
+ *
+ *		tree['baz.txt'] #=> nil
+ */
 static VALUE rb_git_tree_get_entry(VALUE self, VALUE entry_id)
 {
 	git_tree *tree;
@@ -90,6 +117,25 @@ static VALUE rb_git_tree_get_entry(VALUE self, VALUE entry_id)
 		rb_raise(rb_eTypeError, "entry_id must be either an index or a filename");
 }
 
+/*
+ *	call-seq:
+ *		tree.each { |entry| block }
+ *		tree.each -> Iterator
+ *
+ *	Call +block+ with each of the entries of the subtree as a +Hash+. If no +block+
+ *	is given, an +Iterator+ is returned instead.
+ *
+ *	Note that only the entries in the root of the tree are yielded; if you need to
+ *	list also entries in subfolders, use +tree.walk+ instead.
+ *
+ *		tree.each { |entry| puts entry.inspect }
+ *
+ *	generates:
+ *
+ *		{:name => "foo.txt", :type => :blob, :oid => "d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f", :attributes => 0}
+ *		{:name => "bar.txt", :type => :blob, :oid => "de5ba987198bcf2518885f0fc1350e5172cded78", :attributes => 0}
+ *		...
+ */
 static VALUE rb_git_tree_each(VALUE self)
 {
 	git_tree *tree;
@@ -118,6 +164,28 @@ static int rugged__treewalk_cb(const char *root, git_tree_entry *entry, void *pr
 	return GIT_SUCCESS;
 }
 
+/*
+ *	call-seq:
+ *		tree.walk(mode) { |root, entry| block }
+ *		tree.walk(mode) -> Iterator
+ *
+ *	Walk +tree+ with the given mode (either +:preorder+ or +:postorder+) and yield
+ *	to +block+ every entry in +tree+ and all its subtrees, as a +Hash+. The +block+
+ *	also takes a +root+, the relative path in the traversal, starting from the root
+ *	of the original tree.
+ *
+ *	If no +block+ is given, an +Iterator+ is returned instead.
+ *
+ *		tree.walk(:postorder) { |root, entry| puts "#{root}#{entry[:name]} [#{entry[:oid]}]" }
+ *
+ *	generates:
+ *
+ *		USAGE.rb [02bae86c91f96b5fdb6b1cf06f5aa3612139e318]
+ *		ext [23f135b3c576b6ac4785821888991d7089f35db1] 
+ *		ext/rugged [25c88faa9302e34e16664eb9c990deb2bcf77849]
+ *		ext/rugged/extconf.rb [40c1aa8a8cec8ca444ed5758e3f00ecff093070a]
+ *		...
+ */
 static VALUE rb_git_tree_walk(VALUE self, VALUE rb_mode)
 {
 	git_tree *tree;
