@@ -14,6 +14,7 @@ context "Rugged::Commit tests" do
     assert_equal obj.type, :commit
     assert_equal obj.message, "testing\n"
     assert_equal obj.time.to_i, 1273360386
+    assert_equal obj.epoch_time, 1273360386
 
     c = obj.committer
     assert_equal c[:name], "Scott Chacon"

@@ -1,5 +1,13 @@
 module Rugged
   class Commit
+    # The time when this commit was made effective. This is the same value
+    # as the +:time+ attribute for +commit.committer+.
+    #
+    # Returns a Time object
+    def time
+      @time ||= Time.at(self.epoch_time)
+    end
+
     def to_hash
       {
         :message => message,

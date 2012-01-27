@@ -119,15 +119,15 @@ static VALUE rb_git_commit_author_GET(VALUE self)
 
 /*
  *	call-seq:
- *		commit.time -> t
+ *		commit.epoch_time -> t
  *
  *	Return the time when this commit was made effective. This is the same value
  *	as the +:time+ attribute for +commit.committer+, but represented as an +Integer+
  *	value in seconds since the Epoch.
- *	
+ *
  *		commit.time #=> 1327383765
  */
-static VALUE rb_git_commit_time_GET(VALUE self)
+static VALUE rb_git_commit_epoch_time_GET(VALUE self)
 {
 	git_commit *commit;
 	Data_Get_Struct(self, git_commit, commit);
@@ -335,7 +335,7 @@ void Init_rugged_commit()
 	rb_define_singleton_method(rb_cRuggedCommit, "create", rb_git_commit_create, 2);
 
 	rb_define_method(rb_cRuggedCommit, "message", rb_git_commit_message_GET, 0);
-	rb_define_method(rb_cRuggedCommit, "time", rb_git_commit_time_GET, 0);
+	rb_define_method(rb_cRuggedCommit, "epoch_time", rb_git_commit_epoch_time_GET, 0);
 	rb_define_method(rb_cRuggedCommit, "committer", rb_git_commit_committer_GET, 0);
 	rb_define_method(rb_cRuggedCommit, "author", rb_git_commit_author_GET, 0);
 	rb_define_method(rb_cRuggedCommit, "tree", rb_git_commit_tree_GET, 0);
