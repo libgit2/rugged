@@ -10,6 +10,11 @@ context "Rugged::Repository stuff" do
     @test_content_type = 'blob'
   end
 
+  test "last_commit returns the most recent commit" do
+    assert @repo.respond_to? :last_commit
+    assert "36060c58702ed4c2a40832c51758d5344201d89a", @repo.last_commit.oid
+  end
+
   test "fails to open unexisting repositories" do
     assert_raise RuntimeError do
       repo = Rugged::Repository.new("fakepath/123/")

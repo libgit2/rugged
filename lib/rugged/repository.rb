@@ -1,6 +1,13 @@
 module Rugged
 
   class Repository
+    # Get the most recent commit from this repo
+    #
+    # Returns a Rugged::Commit object
+    def last_commit
+      self.lookup self.head.target
+    end
+
     def walk(from, sorting=Rugged::SORT_DATE, &block)
       walker = Rugged::Walker.new(self)
       walker.sorting(sorting)
