@@ -12,7 +12,7 @@ by using Rubygems:
 
     $ gem install rugged
 
-API 
+API
 ==============
 
 Here are some of the ways you can use Rugged:
@@ -95,7 +95,7 @@ git object types.
       prsn  = gobjc.committer
       gobjr = gobjc.tree
       sha   = gobjc.tree.oid
-      arr   = gobjc.parents 
+      arr   = gobjc.parents
 
 You can also write new objects to the database this way:
 
@@ -154,8 +154,8 @@ You can also write trees with the TreeBuilder:
 Commit Walker
 -----------------
 
-There is also a Walker class that currently takes a repo object. You can push 
-head SHAs onto the walker, then call next to get a list of the reachable commit 
+There is also a Walker class that currently takes a repo object. You can push
+head SHAs onto the walker, then call next to get a list of the reachable commit
 objects, one at a time. You can also hide() commits if you are not interested in
 anything beneath them (useful for a `git log master ^origin/master` type deal).
 
@@ -163,7 +163,7 @@ anything beneath them (useful for a `git log master ^origin/master` type deal).
          walker.sorting(Rugged::SORT_TOPO | Rugged::SORT_REVERSE) # optional
          walker.push(hex_sha_interesting)
          walker.hide(hex_sha_uninteresting)
-         walker.each { |c| puts c.inspect } 
+         walker.each { |c| puts c.inspect }
          walker.reset
 
 
@@ -184,7 +184,7 @@ of manually opening the Index by its path.
             index.remove(i/path)
             index.add(ientry)    # also updates existing entry if there is one
             index.add(path)      # create ientry from file in path, update index
- 
+
 
 Ref Management
 --------------
@@ -267,7 +267,7 @@ Now that those are installed, you can install Rugged:
     $ rake test
 
 
-AUTHORS 
+AUTHORS
 ==============
 
 * Vicent Marti <tanoku@gmail.com>
