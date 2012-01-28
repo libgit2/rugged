@@ -253,7 +253,7 @@ First you need to install libgit2:
 
     $ git clone git://github.com/libgit2/libgit2.git
     $ cd libgit2
-    $ mdkir build && cd build
+    $ mkdir build && cd build
     $ cmake ..
     $ make
     $ make install
