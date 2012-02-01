@@ -1,5 +1,10 @@
 module Rugged
   class Commit
+
+    def inspect
+      "#<Rugged::Commit:#{object_id} {message: #{message.inspect}, tree: #{tree.inspect}, parents: #{parents.inspect}>"
+    end
+
     # The time when this commit was made effective. This is the same value
     # as the +:time+ attribute for +commit.committer+.
     #
