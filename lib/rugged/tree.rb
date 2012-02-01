@@ -1,5 +1,7 @@
 module Rugged
   class Tree
+    include Enumerable
+
     # Walks the tree but only yields blobs
     def walk_blobs(mode=:postorder)
       self.walk(mode) { |root, e| yield root, e if e[:type] == :blob }

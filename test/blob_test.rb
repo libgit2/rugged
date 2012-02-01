@@ -11,12 +11,12 @@ context "Rugged::Blob tests" do
     blob = @repo.lookup(@oid)
     assert_equal 9, blob.size
     assert_equal "new file\n", blob.content
-    assert_equal "blob", blob.type
+    assert_equal :blob, blob.type
     assert_equal @oid, blob.oid
   end
 
   test "can write new blob data" do
-    oid = Rugged::Blob.create(@repo, "a new blob content", true)
+    oid = Rugged::Blob.create(@repo, "a new blob content")
     rm_loose(oid)
   end
 

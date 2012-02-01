@@ -39,6 +39,14 @@ VALUE rugged_config_new(VALUE klass, VALUE owner, git_config *cfg)
 	return rb_config;
 }
 
+/*
+ *	call-seq:
+ *		Config.new(path) -> new_config
+ *
+ *	Open the file specified in +path+ as a +Rugged::Config+ file.
+ *	If +path+ cannot be found, or the file is an invalid Git config,
+ *	an exception will be raised.
+ */
 static VALUE rb_git_config_new(VALUE klass, VALUE rb_path)
 {
 	git_config *config = NULL;
@@ -64,6 +72,18 @@ static VALUE rb_git_config_new(VALUE klass, VALUE rb_path)
 	return rugged_config_new(klass, Qnil, config);
 }
 
+/*
+ *	call-seq:
+ *		cfg.get(key) -> value
+ *		cfg[key] -> value
+ *
+ *	Get the value for the given config +key+. Values are always
+ *	returned as +String+, or +nil+ if the given key doesn't exist
+ *	in the Config file.
+ *
+ *		cfg['apply.whitespace'] #=> 'fix'
+ *		cfg['diff.renames'] #=> 'true'
+ */
 static VALUE rb_git_config_get(VALUE self, VALUE rb_key)
 {
 	git_config *config;
@@ -83,6 +103,21 @@ static VALUE rb_git_config_get(VALUE self, VALUE rb_key)
 	return rugged_str_new2(value, NULL);
 }
 
+/*
+ *	call-seq:
+ *		cfg.store(key, value)
+ *		cfg[key] = value
+ *
+ *	Store the given +value+ in the Config file, under the section
+ *	and name specified by +key+. Value can be any of the following
+ *	Ruby types: +String+, +true+, +false+ and +Fixnum+.
+ *
+ *	The config file will be automatically stored to disk.
+ *
+ *		cfg['apply.whitespace'] = 'fix'
+ *		cfg['diff.renames'] = true
+ *		cfg['gc.reflogexpre'] = 90
+ */
 static VALUE rb_git_config_store(VALUE self, VALUE rb_key, VALUE rb_val)
 {
 	git_config *config;
@@ -117,6 +152,16 @@ static VALUE rb_git_config_store(VALUE self, VALUE rb_key, VALUE rb_val)
 	return Qnil;
 }
 
+/*
+ *	call-seq:
+ *		cfg.delete(key) -> true or false
+ *
+ *	Delete the given +key+ from the config file. Return +true+ if
+ *	the deletion was successful, or +false+ if the key was not
+ *	found in the Config file.
+ *
+ *	The config file is immediately updated on disk.
+ */
 static VALUE rb_git_config_delete(VALUE self, VALUE rb_key)
 {
 	git_config *config;
@@ -158,6 +203,18 @@ static int cb_config__to_hash(const char *key, const char *value, void *opaque)
 	return GIT_SUCCESS;
 }
 
+/*
+ *	call-seq:
+ *		cfg.each_key { |key| block }
+ *		cfg.each_key -> Iterator
+ *
+ *	Call the given block once for each key in the config file. If no block
+ *	is given, an +Iterator+ is returned.
+ *
+ *		cfg.each_key do |key|
+ *			puts key
+ *		end
+ */
 static VALUE rb_git_config_each_key(VALUE self)
 {
 	git_config *config;
@@ -173,6 +230,20 @@ static VALUE rb_git_config_each_key(VALUE self)
 	return Qnil;
 }
 
+/*
+ *	call-seq:
+ *		cfg.each_pair { |key, value| block }
+ *		cfg.each_pair -> Iterator
+ *		cfg.each { |key, value| block }
+ *		cfg.each -> Iterator
+ *
+ *	Call the given block once for each key/value pair in the config file.
+ *	If no block is given, an +Iterator+ is returned.
+ *
+ *		cfg.each do |key, value|
+ *			puts "#{key} => #{value}"
+ *		end
+ */
 static VALUE rb_git_config_each_pair(VALUE self)
 {
 	git_config *config;
@@ -188,6 +259,16 @@ static VALUE rb_git_config_each_pair(VALUE self)
 	return Qnil;
 }
 
+/*
+ *	call-seq:
+ *		cfg.to_hash -> hash
+ *
+ *	Returns the config file represented as a Ruby hash, where
+ *	each configuration entry appears as a key with its
+ *	corresponding value.
+ *
+ *		cfg.to_hash #=> {"core.autolf" => "true", "core.bare" => "true"}
+ */
 static VALUE rb_git_config_to_hash(VALUE self)
 {
 	git_config *config;
@@ -202,6 +283,14 @@ static VALUE rb_git_config_to_hash(VALUE self)
 	return hash;
 }
 
+/*
+ *	call-seq:
+ *		Config.open_global() -> new_config
+ *
+ *	Open the global config file as a new +Rugged::Config+ object.
+ *	An exception will be raised if the global config file doesn't
+ *	exist.
+ */
 static VALUE rb_git_config_open_global(VALUE klass)
 {
 	git_config *cfg;

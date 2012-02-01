@@ -40,6 +40,8 @@
 #include <git2.h>
 #include <git2/odb_backend.h>
 
+#define CSTR2SYM(s) (ID2SYM(rb_intern((s))))
+
 /*
  * Initialization functions 
  */
@@ -65,12 +67,11 @@ VALUE rugged_index_new(VALUE klass, VALUE owner, git_index *index);
 VALUE rugged_object_new(VALUE owner, git_object *object);
 VALUE rugged_config_new(VALUE klass, VALUE owner, git_config *cfg);
 
-git_otype rugged_get_otype(VALUE rb_type);
+VALUE rugged_otype_new(git_otype t);
+git_otype rugged_otype_get(VALUE rb_type);
 
 git_signature *rugged_signature_get(VALUE rb_person);
 git_object *rugged_object_load(git_repository *repo, VALUE object_value, git_otype type);
-
-#define CSTR2SYM(s) (ID2SYM(rb_intern((s))))
 
 static inline void rugged_set_owner(VALUE object, VALUE owner)
 {

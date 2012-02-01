@@ -11,11 +11,11 @@ context "Rugged::Tag tests" do
     obj = @repo.lookup(oid)
 
     assert_equal oid, obj.oid
-    assert_equal "tag", obj.type
+    assert_equal :tag, obj.type
     assert_equal "test tag message\n", obj.message
     assert_equal "v1.0", obj.name
     assert_equal "5b5b025afb0b4c913b4c338a42934a3863bf3644", obj.target.oid
-    assert_equal "commit", obj.target_type
+    assert_equal :commit, obj.target_type
     c = obj.tagger
     assert_equal "Scott Chacon", c[:name]
     assert_equal 1288114383, c[:time].to_i

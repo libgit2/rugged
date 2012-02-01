@@ -29,6 +29,15 @@ extern VALUE rb_cRuggedObject;
 extern VALUE rb_cRuggedRepo;
 VALUE rb_cRuggedTag;
 
+/*
+ *	call-seq:
+ *		tag.target -> object
+ *
+ *	Return the +object+ pointed at by this tag, as a <tt>Rugged::Object</tt>
+ *	instance.
+ *		
+ *		tag.target #=> #<Rugged::Commit:0x108828918>
+ */
 static VALUE rb_git_tag_target_GET(VALUE self)
 {
 	git_tag *tag;
@@ -45,14 +54,34 @@ static VALUE rb_git_tag_target_GET(VALUE self)
 	return rugged_object_new(owner, target);
 }
 
+/*
+ *	call-seq:
+ *		tag.type -> t
+ *
+ *	Return a symbol representing the type of the objeced pointed at by
+ *	this +tag+. Possible values are +:blob+, +:commit+, +:tree+ and +:tag+.
+ *
+ *	This is always the same as the +type+ of the returned <tt>tag.target</tt>
+ *
+ *		tag.type #=> :commit
+ *		tag.target.type == tag.type #=> true
+ */
 static VALUE rb_git_tag_target_type_GET(VALUE self)
 {
 	git_tag *tag;
 	Data_Get_Struct(self, git_tag, tag);
 
-	return rugged_str_new2(git_object_type2string(git_tag_type(tag)), NULL);
+	return rugged_otype_new(git_tag_type(tag));
 }
 
+/*
+ *	call-seq:
+ *		tag.name -> name
+ *
+ *	Return a string with the name of this +tag+.
+ *
+ *		tag.name #=> "v0.16.0"
+ */
 static VALUE rb_git_tag_name_GET(VALUE self)
 {
 	git_tag *tag;
@@ -61,6 +90,16 @@ static VALUE rb_git_tag_name_GET(VALUE self)
 	return rugged_str_new2(git_tag_name(tag), NULL);
 }
 
+/*
+ *	call-seq:
+ *		tag.tagger -> signature
+ *
+ *	Return the signature for the author of this +tag+. The signature
+ *	is returned as a +Hash+ containing +:name+, +:email+ of the author
+ *	and +:time+ of the tagging.
+ *
+ *		tag.tagger #=> {:email=>"tanoku@gmail.com", :time=>Tue Jan 24 05:42:45 UTC 2012, :name=>"Vicent Mart\303\255"}
+ */
 static VALUE rb_git_tag_tagger_GET(VALUE self)
 {
 	git_tag *tag;
@@ -69,6 +108,15 @@ static VALUE rb_git_tag_tagger_GET(VALUE self)
 	return rugged_signature_new(git_tag_tagger(tag), NULL);
 }
 
+/*
+ *	call-seq:
+ *		tag.message -> msg
+ *
+ *	Return the message of this +tag+. This includes the full body of the
+ *	message and any optional footers or signatures after it.
+ *
+ *		tag.message #=> "Release v0.16.0, codename 'broken stuff'"
+ */
 static VALUE rb_git_tag_message_GET(VALUE self)
 {
 	git_tag *tag;
