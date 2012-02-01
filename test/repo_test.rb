@@ -40,7 +40,7 @@ context "Rugged::Repository stuff" do
   end
 
   test "checks that reading fails on unexisting objects" do
-    assert_raise RuntimeError do 
+    assert_raise RuntimeError do
       @repo.read("a496071c1b46c854b31185ea97743be6a8774471")
     end
   end

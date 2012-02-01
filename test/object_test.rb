@@ -8,7 +8,7 @@ context "Rugged::Object stuff" do
   end
 
   test "cannot lookup a non-existant object" do
-    assert_raise RuntimeError do 
+    assert_raise RuntimeError do
       obj = @repo.lookup("a496071c1b46c854b31185ea97743be6a8774479")
     end
   end
@@ -24,7 +24,7 @@ context "Rugged::Object stuff" do
     obj2 = @repo.lookup("8496071c1b46c854b31185ea97743be6a8774479")
     assert_equal obj, obj2
   end
-  
+
   test "can read raw data from an object" do
     obj = @repo.lookup("8496071c1b46c854b31185ea97743be6a8774479")
     assert obj.read_raw

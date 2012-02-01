@@ -1,6 +1,10 @@
 module Rugged
-
   class Repository
+
+    def inspect
+      "#<Rugged::Repository:#{object_id} {path: #{path.inspect}}>"
+    end
+
     # Get the most recent commit from this repo
     #
     # Returns a Rugged::Commit object
