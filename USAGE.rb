@@ -27,19 +27,19 @@ if repo.exists(blob_oid)
   assert blob.written?
 end
 
-# 
+#
 # getting the contents of a blob with commit and path
 #
 
 commit = repo.lookup(commit_oid)
 commit.tree.each do |entry|
-  if (entry.name == path) 
+  if (entry.name == path)
     && (entry.type == 'blob')
     return entry.gobect.data
   end
 end
 
-# 
+#
 # getting commit data from oid
 #
 
@@ -52,7 +52,7 @@ puts
 puts commit.message
 
 
-# 
+#
 # listing a single level tree
 #
 
@@ -62,7 +62,7 @@ commit.tree.each do |entry|
 end
 
 
-# 
+#
 # git ls-tree -rt
 #
 
@@ -79,7 +79,7 @@ end
 commit = repo.lookup(commit_oid)
 ls_tree(tree_oid)
 
-# 
+#
 # updating a file and committing
 #
 
@@ -157,8 +157,3 @@ while oid = walker.next
     return commit.oid
   end
 end
-
-
-
-
-
