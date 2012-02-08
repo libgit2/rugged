@@ -14,6 +14,12 @@ Rake::ExtensionTask.new('rugged') do |r|
   r.lib_dir = 'lib/rugged'
 end
 
+task :embedded_clean do
+  lib_path = File.expand_path '../ext/rugged/libgit2_embed.a', __FILE__
+  system "rm #{lib_path}"
+end
+Rake::Task[:clean].prerequisites << :embedded_clean
+
 #
 # Tests
 #

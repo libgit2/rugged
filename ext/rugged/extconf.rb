@@ -26,14 +26,17 @@ else
 
   LIBGIT2_DIST = 'libgit2-dist.tar.gz'
   LIBGIT2_DIR = File.basename(LIBGIT2_DIST, '.tar.gz')
+  LIBGIT2_LIB_PATH = "#{CWD}/libgit2_embed.a"
 
-  Dir.chdir("#{CWD}/vendor") do
-    FileUtils.rm_rf(LIBGIT2_DIR) if File.exists?(LIBGIT2_DIR)
+  if !File.exists?(LIBGIT2_LIB_PATH)
+    Dir.chdir("#{CWD}/vendor") do
+      FileUtils.rm_rf(LIBGIT2_DIR) if File.exists?(LIBGIT2_DIR)
 
-    sys("tar zxvf #{LIBGIT2_DIST}")
-    Dir.chdir(LIBGIT2_DIR) do
-      sys("make -f Makefile.embed")
-      FileUtils.cp "libgit2.a", "#{CWD}/libgit2_embed.a"
+      sys("tar zxvf #{LIBGIT2_DIST}")
+      Dir.chdir(LIBGIT2_DIR) do
+        sys("make -f Makefile.embed")
+        FileUtils.cp "libgit2.a", LIBGIT2_LIB_PATH
+      end
     end
   end
 
