@@ -130,12 +130,52 @@ static VALUE rb_git_blob_writefile(VALUE self, VALUE rb_repo, VALUE rb_path)
 	return rugged_create_oid(&oid);
 }
 
+/*
+ *	call-seq:
+ *		blob.sloc -> Integer
+ *
+ *	Return the number of non-empty code lines for the blob,
+ *	assuming the blob is plaintext (i.e. not binary)
+ */
+static VALUE rb_git_blob_sloc(VALUE self)
+{
+	git_blob *blob;
+	const char *data, *data_end;
+	size_t sloc = 0;
+
+	Data_Get_Struct(self, git_blob, blob);
+
+	data = git_blob_rawcontent(blob);
+	data_end = data + git_blob_rawsize(blob);
+
+	if (data == data_end)
+		return INT2FIX(0);
+
+	/* go through the whole blob, counting lines
+	 * that are not empty */
+	while (data < data_end) {
+		if (*data++ == '\n') {
+			while (isspace(*data))
+				data++;
+
+			sloc++;
+		}
+	}
+
+	/* last line without trailing '\n'? */
+	if (data[-1] != '\n')
+		sloc++;
+
+	return INT2FIX(sloc);
+}
+
 void Init_rugged_blob()
 {
 	rb_cRuggedBlob = rb_define_class_under(rb_mRugged, "Blob", rb_cRuggedObject);
 
 	rb_define_method(rb_cRuggedBlob, "size", rb_git_blob_rawsize, 0);
 	rb_define_method(rb_cRuggedBlob, "content", rb_git_blob_content_GET, 0);
+	rb_define_method(rb_cRuggedBlob, "sloc", rb_git_blob_sloc, 0);
 
 	rb_define_singleton_method(rb_cRuggedBlob, "create", rb_git_blob_create, 2);
 	rb_define_singleton_method(rb_cRuggedBlob, "write_file", rb_git_blob_writefile, 2);
