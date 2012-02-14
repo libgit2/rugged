@@ -155,7 +155,7 @@ static VALUE rb_git_blob_sloc(VALUE self)
 	 * that are not empty */
 	while (data < data_end) {
 		if (*data++ == '\n') {
-			while (isspace(*data))
+			while (data < data_end && isspace(*data))
 				data++;
 
 			sloc++;
