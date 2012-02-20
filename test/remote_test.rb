@@ -6,14 +6,14 @@ context "Rugged::Tag tests" do
     @repo = Rugged::Repository.new(@path)
   end
 
-  test "test remote connection" do
+  test "is able to connect to the remote" do
     remote = Rugged::Remote.new(@repo, "git://github.com/libgit2/libgit2.git")
 
     remote.connect(:fetch) do |r|
       assert r.connected?
     end
 
-    assert (not remote.connected?)
+    assert !remote.connected?
   end
 
 end
