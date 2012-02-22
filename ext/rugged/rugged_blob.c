@@ -37,7 +37,7 @@ VALUE rb_cRuggedBlob;
  *	Return up to +max_lines+ of text from a blob as a +String+.
  *
  *	In Ruby 1.9.x, the string is created with the given +encoding+,
- *	defaulting to UTF-8.
+ *	defaulting to Encoding.default_external.
  *
  *	In previous versions, the +encoding+ argument is dummy and has no
  *	effect on the returned string.
@@ -49,7 +49,7 @@ VALUE rb_cRuggedBlob;
 static VALUE rb_git_blob_text_GET(int argc, VALUE *argv, VALUE self)
 {
 #ifdef HAVE_RUBY_ENCODING_H
-	rb_encoding *encoding = rb_utf8_encoding();
+	rb_encoding *encoding = rb_default_external_encoding();
 #endif
 
 	git_blob *blob;
