@@ -32,20 +32,99 @@ VALUE rb_cRuggedBlob;
 
 /*
  *	call-seq:
- *		blob.content -> cnt
+ *		blob.text(max_lines = -1, encoding = Encoding::UTF_8) -> String
  *
- *	Return the contents of a blob as bytes +String+.
- *	In Ruby 1.9.x, this string has ASCII encoding: the
- *	bytes are returned as-is.
+ *	Return up to +max_lines+ of text from a blob as a +String+.
+ *
+ *	In Ruby 1.9.x, the string is created with the given +encoding+,
+ *	defaulting to UTF-8.
+ *
+ *	In previous versions, the +encoding+ argument is dummy and has no
+ *	effect on the returned string.
+ *
+ *	When limiting the size of the text with +max_lines+, the string is
+ *	expected to have an ASCII-compatible encoding, and is checked
+ *	for the newline +\n+ character.
  */
-static VALUE rb_git_blob_content_GET(VALUE self)
+static VALUE rb_git_blob_text_GET(int argc, VALUE *argv, VALUE self)
+{
+#ifdef HAVE_RUBY_ENCODING_H
+	rb_encoding *encoding = rb_utf8_encoding();
+#endif
+
+	git_blob *blob;
+	size_t size;
+	const char *content;
+	VALUE rb_max_lines, rb_encoding;
+
+	Data_Get_Struct(self, git_blob, blob);
+	rb_scan_args(argc, argv, "02", &rb_max_lines, &rb_encoding);
+
+	content = git_blob_rawcontent(blob);
+	size = git_blob_rawsize(blob);
+
+	if (!NIL_P(rb_max_lines)) {
+		size_t i = 0;
+		int lines = 0, maxlines;
+
+		Check_Type(rb_max_lines, T_FIXNUM);
+		maxlines = FIX2INT(rb_max_lines);
+
+		if (maxlines >= 0) {
+			while (i < size && lines < maxlines) {
+				if (content[i++] == '\n')
+					lines++;
+			}
+		}
+
+		size = (size_t)i;
+	}
+
+#ifdef HAVE_RUBY_ENCODING_H
+	if (!NIL_P(rb_encoding)) {
+		encoding = rb_to_encoding(rb_encoding);
+	}
+#endif
+
+	if (size == 0)
+		return rugged_str_new("", 0, encoding);
+
+	return rugged_str_new(content, size, encoding);
+}
+
+/*
+ *	call-seq:
+ *		blob.content(max_bytes=-1) -> String
+ *
+ *	Return up to +max_bytes+ from the contents of a blob as bytes +String+.
+ *	If max_bytes is less than 0, the full string is returned.
+ *
+ *	In Ruby 1.9.x, this string has raw ASCII encoding: the
+ *	bytes are returned as-is, since Git is encoding agnostic.
+ */
+static VALUE rb_git_blob_content_GET(int argc, VALUE *argv, VALUE self)
 {
 	git_blob *blob;
 	size_t size;
+	const char *content;
+	VALUE rb_max_bytes;
 
 	Data_Get_Struct(self, git_blob, blob);
+	rb_scan_args(argc, argv, "01", &rb_max_bytes);
 	
+	content = git_blob_rawcontent(blob);
 	size = git_blob_rawsize(blob);
+
+	if (!NIL_P(rb_max_bytes)) {
+		int maxbytes;
+
+		Check_Type(rb_max_bytes, T_FIXNUM);
+		maxbytes = FIX2INT(rb_max_bytes);
+
+		if (maxbytes >= 0 && (size_t)maxbytes < size)
+			size = (size_t)maxbytes;
+	}
+
 	if (size == 0)
 		return rugged_str_ascii("", 0);
 
@@ -58,7 +137,7 @@ static VALUE rb_git_blob_content_GET(VALUE self)
 	 * eventually end up converted to Encoding.default_internal because this
 	 * string could very well be binary data
 	 */
-	return rugged_str_ascii(git_blob_rawcontent(blob), size);
+	return rugged_str_ascii(content, size);
 }
 
 /*
@@ -174,7 +253,8 @@ void Init_rugged_blob()
 	rb_cRuggedBlob = rb_define_class_under(rb_mRugged, "Blob", rb_cRuggedObject);
 
 	rb_define_method(rb_cRuggedBlob, "size", rb_git_blob_rawsize, 0);
-	rb_define_method(rb_cRuggedBlob, "content", rb_git_blob_content_GET, 0);
+	rb_define_method(rb_cRuggedBlob, "content", rb_git_blob_content_GET, -1);
+	rb_define_method(rb_cRuggedBlob, "text", rb_git_blob_text_GET, -1);
 	rb_define_method(rb_cRuggedBlob, "sloc", rb_git_blob_sloc, 0);
 
 	rb_define_singleton_method(rb_cRuggedBlob, "create", rb_git_blob_create, 2);
