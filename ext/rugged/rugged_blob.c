@@ -32,7 +32,7 @@ VALUE rb_cRuggedBlob;
 
 /*
  *	call-seq:
- *		blob.text(max_lines = -1, encoding = Encoding::UTF_8) -> String
+ *		blob.text(max_lines = -1, encoding = Encoding.default_external) -> String
  *
  *	Return up to +max_lines+ of text from a blob as a +String+.
  *
