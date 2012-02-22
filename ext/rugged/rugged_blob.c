@@ -99,7 +99,7 @@ static VALUE rb_git_blob_text_GET(int argc, VALUE *argv, VALUE self)
  *	Return up to +max_bytes+ from the contents of a blob as bytes +String+.
  *	If max_bytes is less than 0, the full string is returned.
  *
- *	In Ruby 1.9.x, this string has raw ASCII encoding: the
+ *	In Ruby 1.9.x, this string is tagged with the ASCII-8BIT encoding: the
  *	bytes are returned as-is, since Git is encoding agnostic.
  */
 static VALUE rb_git_blob_content_GET(int argc, VALUE *argv, VALUE self)
