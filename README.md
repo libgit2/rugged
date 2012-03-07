@@ -57,8 +57,8 @@ else will emanate from.
       path   = repo.workdir
       path   = repo.path
 
-      Rugged::Repository.init_at(path)
-
+      Rugged::Repository.init_at(path, true) # 2nd param means "whether it's a bare repo"
+      
       Rugged::Repository.discover("/Users/schacon/projects/work/repo/lib/subdir/")
       => "/Users/schacon/projects/work/repo/.git/"
 
