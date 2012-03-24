@@ -198,11 +198,40 @@ static VALUE rb_git_remote_update_tips(VALUE self)
 	return Qnil;
 }
 
+static VALUE rb_git_remote_each(int argc, VALUE *argv, VALUE self)
+{
+	git_repository *repo;
+	git_strarray remotes;
+	size_t i;
+	int error;
+	VALUE rb_repo;
+
+	rb_scan_args(argc, argv, "11", &rb_repo);
+
+	if (!rb_block_given_p())
+		return rb_funcall(self, rb_intern("to_enum"), 3, CSTR2SYM("each"), rb_repo);
+
+	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo))
+		rb_raise(rb_eTypeError, "Expeting a Rugged::Repository instance");
+
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	error = git_remote_list(&remotes, repo);
+	rugged_exception_check(error);
+
+	for (i = 0; i < remotes.count; ++i)
+		rb_yield(rugged_str_new2(remotes.strings[i], NULL));
+
+	git_strarray_free(&remotes);
+	return Qnil;
+}
+
 void Init_rugged_remote()
 {
 	rb_cRuggedRemote = rb_define_class_under(rb_mRugged, "Remote", rb_cObject);
 
 	rb_define_singleton_method(rb_cRuggedRemote, "new", rb_git_remote__new, -1);
+	rb_define_singleton_method(rb_cRuggedRemote, "each", rb_git_remote_each, -1);
 
 	rb_define_method(rb_cRuggedRemote, "connect", rb_git_remote_connect, 1);
 	rb_define_method(rb_cRuggedRemote, "disconnect", rb_git_remote_disconnect, 0);

@@ -48,6 +48,10 @@ module Rugged
     def tags(pattern="")
       Rugged::Tag.each(self, pattern)
     end
+
+    def remotes
+      Rugged::Remote.each(self)
+    end
   end
 
 end
