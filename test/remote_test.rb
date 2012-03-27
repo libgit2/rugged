@@ -16,4 +16,10 @@ context "Rugged::Tag tests" do
     assert !remote.connected?
   end
 
+  test "can list remotes" do
+    remotes = @repo.remotes
+    assert remotes.kind_of? Enumerable
+    assert_equal [ "libgit2" ], remotes.to_a
+  end
+
 end
