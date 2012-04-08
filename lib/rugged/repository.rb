@@ -52,6 +52,15 @@ module Rugged
     def remotes
       Rugged::Remote.each(self)
     end
+
+    def file_at(revision, path)
+      tree = Rugged::Commit.lookup(self, revision).tree
+      subtree = tree.get_subtree(path)
+      blob_data = subtree.get_entry(File.basename path)
+      blob = Rugged::Blob.lookup(self, blob_data[:oid])
+      blob.content
+    end
+
   end
 
 end

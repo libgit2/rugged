@@ -2,6 +2,12 @@ module Rugged
   class Tree
     include Enumerable
 
+    def inspect
+      data = "#<Rugged::Tree:#{object_id} {oid: #{oid}}>\n"
+      self.each { |e| data << "  <\"#{e[:name]}\" #{e[:oid]}>\n" }
+      data
+    end
+
     # Walks the tree but only yields blobs
     def walk_blobs(mode=:postorder)
       self.walk(mode) { |root, e| yield root, e if e[:type] == :blob }
