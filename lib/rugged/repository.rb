@@ -28,6 +28,11 @@ module Rugged
       Rugged::Object.lookup(self, oid)
     end
 
+    # Look up a single reference by name
+    def ref(ref_name)
+      Rugged::Reference.lookup(self, ref_name)
+    end
+
     def refs(pattern = nil)
       r = []
       ref_names.each do |ref_name|
