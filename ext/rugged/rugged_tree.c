@@ -228,6 +228,9 @@ static VALUE rb_git_tree_diff(VALUE self, VALUE remote_tree)
 	int error, mode = 0;
 	ID id_mode;
 
+    if (!rb_obj_is_kind_of(remote_tree, rb_cRuggedTree))
+        rb_raise(rb_eTypeError, "Expecting a Rugged::Tree instance");
+    
 	Data_Get_Struct(self, git_tree, tree);
 	Data_Get_Struct(remote_tree, git_tree, other_tree);
 	
