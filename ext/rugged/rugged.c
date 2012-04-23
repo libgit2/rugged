@@ -198,6 +198,11 @@ void Init_rugged()
 	rb_define_const(rb_mRugged, "SORT_DATE", INT2FIX(2));
 	rb_define_const(rb_mRugged, "SORT_REVERSE", INT2FIX(4));
 
+	rb_define_const(rb_mRugged, "GIT_STATUS_ADDED", INT2FIX(1));
+	rb_define_const(rb_mRugged, "GIT_STATUS_DELETED", INT2FIX(2));
+	rb_define_const(rb_mRugged, "GIT_STATUS_MODIFIED", INT2FIX(3));
+
+
 	/* Initialize libgit2 */
 	git_threads_init();
 

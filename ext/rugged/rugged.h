@@ -80,7 +80,7 @@ static inline void rugged_set_owner(VALUE object, VALUE owner)
 
 static inline VALUE rugged_owner(VALUE object)
 {
-	rb_iv_get(object, "@owner");
+	return rb_iv_get(object, "@owner");
 }
 
 static inline void rugged_exception_check(int errorcode)

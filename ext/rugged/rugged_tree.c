@@ -216,8 +216,20 @@ static VALUE rb_git_tree_walk(VALUE self, VALUE rb_mode)
 
 static int rugged__treediff_cb(const git_tree_diff_data *ptr, void *proc)
 {
-	rb_funcall((VALUE)proc, rb_intern("call"), 1,
-		rugged_str_new2(ptr->path, NULL));
+	char old[GIT_OID_HEXSZ+1];
+	char new[GIT_OID_HEXSZ+1];
+
+	git_oid_tostr(new, GIT_OID_HEXSZ+1, &ptr->new_oid);
+	git_oid_tostr(old, GIT_OID_HEXSZ+1, &ptr->old_oid);
+
+	rb_funcall((VALUE)proc, rb_intern("call"), 6,
+		INT2FIX(ptr->old_attr),
+		INT2FIX(ptr->new_attr),
+		rugged_str_new2(old, NULL),
+		rugged_str_new2(new, NULL),
+		INT2FIX(ptr->status),
+		rugged_str_new2(ptr->path, NULL)
+		);
 
 	return GIT_SUCCESS;
 }

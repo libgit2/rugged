@@ -67,4 +67,17 @@ context "Rugged::Tree tests" do
     assert_equal 38, obj.read_raw.len
   end
 
+  test "can diff two sha1s" do
+    source = @repo.lookup('8496071c1b46c854b31185ea97743be6a8774479').tree
+    destination = @repo.lookup('36060c58702ed4c2a40832c51758d5344201d89a').tree
+    found = false
+    source.diff(destination) do |old_attribute, new_attribute, old_oid, new_oid, status, path|
+      if path == "new.txt"
+        found = true
+        assert_equal 'fa49b077972391ad58037050f2a75f74e3671e92', new_oid
+        assert_equal Rugged::GIT_STATUS_ADDED, status
+      end
+    end
+    assert_equal true, found
+  end
 end
