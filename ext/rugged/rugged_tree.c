@@ -214,6 +214,47 @@ static VALUE rb_git_tree_walk(VALUE self, VALUE rb_mode)
 	return Qnil;
 }
 
+static int rugged__treediff_cb(const git_tree_diff_data *ptr, void *proc)
+{
+	char old[GIT_OID_HEXSZ+1];
+	char new[GIT_OID_HEXSZ+1];
+
+	git_oid_tostr(new, GIT_OID_HEXSZ+1, &ptr->new_oid);
+	git_oid_tostr(old, GIT_OID_HEXSZ+1, &ptr->old_oid);
+
+	rb_funcall((VALUE)proc, rb_intern("call"), 6,
+		INT2FIX(ptr->old_attr),
+		INT2FIX(ptr->new_attr),
+		rugged_str_new2(old, NULL),
+		rugged_str_new2(new, NULL),
+		INT2FIX(ptr->status),
+		rugged_str_new2(ptr->path, NULL)
+		);
+
+	return GIT_SUCCESS;
+}
+
+static VALUE rb_git_tree_diff(VALUE self, VALUE remote_tree)
+{
+	git_tree *tree, *other_tree;
+	int error, mode = 0;
+	ID id_mode;
+
+    if (!rb_obj_is_kind_of(remote_tree, rb_cRuggedTree))
+        rb_raise(rb_eTypeError, "Expecting a Rugged::Tree instance");
+    
+	Data_Get_Struct(self, git_tree, tree);
+	Data_Get_Struct(remote_tree, git_tree, other_tree);
+	
+	if (!rb_block_given_p())
+		return rb_funcall(self, rb_intern("to_enum"), 2, CSTR2SYM("diff"), tree);
+
+	error = git_tree_diff(tree, other_tree, &rugged__treediff_cb, (void *)rb_block_proc());
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
 static VALUE rb_git_tree_subtree(VALUE self, VALUE rb_path)
 {
 	int error;
@@ -376,7 +417,8 @@ void Init_rugged_tree()
 	rb_define_method(rb_cRuggedTree, "[]", rb_git_tree_get_entry, 1);
 	rb_define_method(rb_cRuggedTree, "each", rb_git_tree_each, 0);
 	rb_define_method(rb_cRuggedTree, "walk", rb_git_tree_walk, 1);
-
+	rb_define_method(rb_cRuggedTree, "diff", rb_git_tree_diff, 1);
+	
 	rb_cRuggedTreeBuilder = rb_define_class_under(rb_cRuggedTree, "Builder", rb_cObject);
 	rb_define_alloc_func(rb_cRuggedTreeBuilder, rb_git_treebuilder_allocate);
 	rb_define_method(rb_cRuggedTreeBuilder, "initialize", rb_git_treebuilder_init, -1);
