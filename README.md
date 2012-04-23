@@ -1,107 +1,157 @@
-Rugged - libgit2 bindings in Ruby
-===================================
+# Rugged
+**libgit2 bindings in Ruby**
 
-Rugged is a Ruby bindings to the libgit2 linkable C Git library. This is
-for testing and using the libgit2 library in a language that is awesome.
+Rugged is a library for accessing libgit2 in Ruby. It gives you the speed and
+portability of libgit2 with the beauty of the Ruby language.
 
-INSTALLING AND RUNNING
-========================
+### libgit2
 
-This is a self-contained gem and you should be able to easily install it
-by using Rubygems:
+libgit2 is a pure C implementation of the Git core methods. It's designed to be
+fast and portable. For more information about libgit2,
+[check out libgit2's website](http://libgit2.github.com) or browse the
+[libgit2 organization](https://github.com/libgit2) on GitHub.
+
+## Install
+
+Rugged is a self-contained gem. You can install it by running:
 
     $ gem install rugged
 
-API
-==============
-
-Here are some of the ways you can use Rugged:
-
-General Methods
----------------
-
-There is a general library for some basic Gitty methods.  So far, just converting
-a raw sha (20 bytes) into a readable hex sha (40 char).
+To load Rugged, you'll usually want to add something like this:
 
 ```ruby
-raw = Rugged.hex_to_raw(hex_sha)
-hex = Rugged.raw_to_hex(20_byte_raw_sha)
+require 'rugged'
 ```
 
+## Usage
 
-Repository Access
------------------
+Rugged gives you access to the many parts of a Git repository. You can read and
+write objects, walk a tree, access the staging area, and lots more. Let's look
+at each area individually.
 
-There is a Repository class that you can instantiate with a path.
-This lets you check for objects, read raw object data, write raw object data and
-get a hash (SHA1 checksum) of what contents would be without writing them out.
-You also use it to lookup Git objects from it.
+### Repositories
 
-Repository is the main repository object that everything
-else will emanate from.
+#### Instantiation
+
+The repository is naturally central to Git. Rugged has a `Repository` class that
+you can instantiate with a path:
 
 ```ruby
-repo   = Rugged::Repository.new(path)
-bool   = repo.exists(sha)
-rawobj = repo.read(sha)
-len    = rawobj.len
-data   = rawobj.data
-         rawobj.type #=> Rugged::OBJ_COMMIT
+repo = Rugged::Repository.new('path/to/my/repository')
+# => #<Rugged::Repository:2228536260 {path: "path/to/my/repository/.git/"}>
+```
+
+If you're working against a bare repository, you'll need to indicate that:
+
+```ruby
+# Second parameter indicates whether the repo is a bare repository
+Rugged::Repository.init_at('.', true)
+```
+
+You can also let Rugged discover the path to the .git directory if you give it a
+subdirectory.
+
+```ruby
+Rugged::Repository.discover("/Users/me/projects/repo/lib/subdir/")
+# => "/Users/me/projects/repo/.git/"
+```
+
+Once your Repository instantiated (in the following examples, as `repo`), you
+can access or modify it.
+
+#### Accessing a Repository
+
+```ruby
+# Does the given SHA1 exist in this repository?
+repo.exists?('07b44cbda23b726e5d54e2ef383495922c024202')
+# => true
+
+# Boolean repository state values:
+repo.bare?
+# => false
+repo.empty?
+# => true
+repo.head_orphan?
+# => false
+repo.head_detached?
+# => false
+
+# Path accessors
+repo.path
+# => "path/to/my/repository/.git/"
+repo.workdir
+# => "path/to/my/repository/"
+
+# The HEAD of the repository.
+ref = repo.head
+# => #<Rugged::Reference:2228467240 {name: "refs/heads/master", target: "07b44cbda23b726e5d54e2ef383495922c024202"}>
+
+# From the returned ref, you can also access the `name` and `target`:
+ref.name
+# => "refs/heads/master"
+ref.target
+# => "07b44cbda23b726e5d54e2ef383495922c024202"
+
+# Reading an object
+object = repo.read('a0ae5566e3c8a3bddffab21022056f0b5e03ef07')
+# => #<Rugged::OdbObject:0x109a64780>
+object.len
+# => 237
+object.data
+# => "tree 76f23f186076fc291742816721ea8c3e95567241\nparent 8e3c5c52b8f29da0adc7e8be8a037cbeaea6de6b\nauthor Vicent Mart\303\255 <tanoku@gmail.com> 1333859005 +0200\ncommitter Vicent Mart\303\255 <tanoku@gmail.com> 1333859005 +0200\n\nAdd `Repository#file_at`\n"
+object.type
+# => :commit
+```
+
+#### Writing to a Repository
+
+------------------TODODODODODODODOOOOO--------------
+
 sha    = repo.hash(content, type)
 sha    = repo.write(content, type)
-ref    = repo.head
 sha    = ref.target
          ref.type #=> "commit"
-bool   = repo.bare?
-bool   = repo.empty?
-bool   = repo.head_detatched?
-bool   = repo.head_orphan?
-path   = repo.workdir
-path   = repo.path
 
-Rugged::Repository.init_at(path, true) # 2nd param means "whether it's a bare repo"
+---
 
-Rugged::Repository.discover("/Users/schacon/projects/work/repo/lib/subdir/")
-#=> "/Users/schacon/projects/work/repo/.git/"
-```
+### Objects
 
-The 'path' argument must point to an actual git repository folder. The library
-will automatically guess if it's a bare repository or a '.git' folder inside a
-working repository, and locate the working path accordingly.
-
-Object Access
--------------
-
-Object is the main object class - it shouldn't be created directly,
-but all of these methods should be useful in it's derived classes
+`Object` is the main object class - it shouldn't be created directly, but all of
+these methods should be useful in their derived classes.
 
 ```ruby
-obj = @repo.lookup(sha)
+obj = repo.lookup(sha)
 obj.oid  # object sha
 obj.type [OBJ_COMMIT, OBJ_TREE, OBJ_BLOB, OBJ_TAG]
 
 robj = obj.read_raw
-str   = robj.data
-int   = robj.len
+str  = robj.data
+int  = robj.len
 ```
 
-The next classes are for consuming and creating the 4 base
-git object types.
+There are four base object types in Git: **blobs**, **commits**, **tags**, and
+**trees**. Each of these object types have a corresponding class within Rugged.
 
 ### Commit Objects
 
 ```ruby
-gobjc = @repo.lookup(commit_sha)
-str   = gobjc.message
-time  = gobjc.time       # author time
-prsn  = gobjc.author
-str   = prsn[:name]
-str   = prsn[:time]
-str   = prsn[:email]
-prsn  = gobjc.committer
-gobjr = gobjc.tree
-sha   = gobjc.tree.oid
-arr   = gobjc.parents
+commit = repo.lookup('a0ae5566e3c8a3bddffab21022056f0b5e03ef07')
+# => #<Rugged::Commit:2245304380>
+
+commit.message
+# => "Add `Repository#file_at`\n"
+
+commit.time
+# => Sat Apr 07 21:23:25 -0700 2012
+
+commit.author
+# => {:email=>"tanoku@gmail.com", :name=>"Vicent Mart\303\255", :time=>Sun Apr 08 04:23:25 UTC 2012}
+
+commit.tree
+# => #<Rugged::Tree:2245269740>
+
+commit.parents
+=> [#<Rugged::Commit:2245264600 {message: "Merge pull request #47 from isaac/remotes\n\nAdd Rugged::Repository#remotes", tree: #<Rugged::Tree:2245264240 {oid: 6a2aee58a41fa007d07aa55565e2231f9b39b4a9}>
 ```
 
 You can also write new objects to the database this way:
@@ -109,55 +159,56 @@ You can also write new objects to the database this way:
 ```ruby
 person = Rugged::Signature.new('Scott', 'schacon@gmail.com', Time.now)
 
-gobjc = Rugged::Commit.new(@repo)
-gobjc.message = "my message"
-gobjc.author = person
-gobjc.tree = gobjt
-gobjc.write
+commit = Rugged::Commit.new(repo)
+commit.message = "my message"
+commit.author = person
+commit.tree = commit
+commit.write
 ```
 
 ### Tag Objects
 
 ```ruby
-gobtg = @repo.lookup(tag_sha)
-gobj  = gobtg.target
-sha   = gobtg.target.oid
-str   = gobtg.target_type # "commit", "tag", "blob"
-str   = gobtg.name        # "v1.0"
-str   = gobtg.message
-prsn  = gobtg.tagger
-str   = prsn[:name]
-str   = prsn[:time]
-str   = prsn[:email]
+tag  = repo.lookup(tag_sha)
+
+object = tag.target
+sha    = tag.target.oid
+str    = tag.target_type # "commit", "tag", "blob"
+str    = tag.name        # "v1.0"
+str    = tag.message
+person = tag.tagger
 ```
 
 ### Tree Objects
 
 ```ruby
-gobtr = @repo.lookup(tree_sha)
-int   = gobtr.count        # number of tree entries
-ent   = gobtr[0]           # get object of first entry
-ent   = gobtr.get_entry(0) # get object of first entry
-str  = ent[:name]      # "README.txt"
-str  = ent[:type]      # :blob
-sha  = ent[:oid]       # object sha
+tree = repo.lookup('779fbb1e17e666832773a9825875300ea736c2da')
+# => #<Rugged::Tree:2245194360>
+
+# number of tree entries
+tree.count
+
+tree[0]           # or...
+tree.first        # or...
+tree.get_entry(0)
+# => {:type=>:blob, :oid=>"99e7edb53db9355f10c6f2dfaa5a183f205d93bf", :attributes=>33188, :name=>".gitignore"}
 ```
 
 The tree object is an Enumerable, so you can also do stuff like this:
 
 ```ruby
-gobjr.each { |e| puts e[:oid] }
-gobjr.sort { |a, b| a[:oid] <=> b[:oid] }.map { |e| e[:name] }.join(':')
+tree.each { |e| puts e[:oid] }
+tree.sort { |a, b| a[:oid] <=> b[:oid] }.map { |e| e[:name] }.join(':')
 ```
 
-And there are some Rugged specific methods, too:
+And there are some Rugged-specific methods, too:
 
 ```ruby
-gobjr.each_tree { |entry| puts entry[:name] }  # list subdirs
-gobjr.each_blob { |entry| puts entry[:name] }  # list only files
+tree.each_tree { |entry| puts entry[:name] }  # list subdirs
+tree.each_blob { |entry| puts entry[:name] }  # list only files
 ```
 
-You can also write trees with the TreeBuilder:
+You can also write trees with the `TreeBuilder`:
 
 ```ruby
 entry = {:type => :blob,
@@ -167,16 +218,20 @@ entry = {:type => :blob,
 
 builder = Rugged::Tree::Builder.new
 builder << entry
-sha = builder.write(@repo)
+sha = builder.write(repo)
 ```
 
-Commit Walker
------------------
+---
 
-There is also a Walker class that currently takes a repo object. You can push
-head SHAs onto the walker, then call next to get a list of the reachable commit
-objects, one at a time. You can also hide() commits if you are not interested in
-anything beneath them (useful for a `git log master ^origin/master` type deal).
+### Commit Walker
+
+`Rugged::Walker` is a class designed to help you traverse a set of commits over
+a repository.
+
+You first push head SHAs onto the walker, and then call next to get a list of
+the reachable commit objects one at a time. You can also `hide()` commits if you
+are not interested in anything beneath them (useful in situations like when
+you're running something like `git log master ^origin/master`).
 
 ```ruby
 walker = Rugged::Walker.new(repo)
@@ -187,34 +242,52 @@ walker.each { |c| puts c.inspect }
 walker.reset
 ```
 
-Index/Staging Area
--------------------
+---
 
-We can inspect and manipulate the Git Index as well. To work with the index inside
-of an existing repository, instantiate it by using the `Repository.index` method instead
-of manually opening the Index by its path.
+### Index ("staging") area
+
+We can inspect and manipulate the Git Index as well. To work with the index
+inside an existing repository, instantiate it by using the `Repository.index`
+method instead of manually opening the Index by its path.
 
 ```ruby
 index = Rugged::Index.new(path)
-index.reload              # re-read the index file from disk
-int = index.count # count of index entries
-index.entries # collection of index entries
+
+# Re-read the index file from disk.
+index.reload
+
+# Count up index entries.
+count = index.count
+
+# The collection of index entries.
+index.entries
+
+# Iterating over index entries.
 index.each { |i| puts i.inspect }
-ent = index.get_entry(i/path)
+
+# Get a particular entry in the index.
+index.get_entry(path)
+
+# Unstage.
 index.remove(i/path)
-index.add(ientry)    # also updates existing entry if there is one
-index.add(path)      # create ientry from file in path, update index
+
+# Stage. Also updates existing entry if there is one.
+index.add(ientry)
+
+# Stage. Create ientry from file in path, updates the index.
+index.add(path)
 ```
 
-Ref Management
---------------
+---
 
-The RefList class allows you to list, create and delete packed and loose refs.
+### Refs
+
+The `RefList` class allows you to list, create and delete packed and loose refs.
 
 ```ruby
-ref = @repo.head
+ref = repo.head # or...
+ref = Rugged::Reference.lookup(repo, "refs/heads/master")
 
-ref = Rugged::Reference.lookup(@repo, "refs/heads/master")
 sha = ref.target
 str = ref.type   # "commit"
 str = ref.name   # "refs/heads/master"
@@ -223,15 +296,15 @@ str = ref.name   # "refs/heads/master"
 You can also easily get an array of references:
 
 ```ruby
-@repo.refs.each do |ref|
+repo.refs.each do |ref|
   puts ref.name
 end
 ```
 
-Or with a pattern (regex):
+Or use a pattern (regex):
 
 ```ruby
-@repo.refs(/tags/).each do |ref|
+repo.refs(/tags/).each do |ref|
   puts ref.name
 end
 ```
@@ -239,7 +312,7 @@ end
 It is also easy to create, update, rename or delete a reference:
 
 ```ruby
-ref = Rugged::Reference.create(@repo, "refs/heads/unit_test", some_commit_sha)
+ref = Rugged::Reference.create(repo, "refs/heads/unit_test", some_commit_sha)
 
 ref.target = new_sha
 
@@ -251,7 +324,7 @@ ref.delete!
 Finally, you can access the reflog for any branch:
 
 ```ruby
-ref = Rugged::Reference.lookup(@repo, "refs/heads/master")
+ref = Rugged::Reference.lookup(repo, "refs/heads/master")
 entry = ref.log.first
 sha   = entry[:oid_old]
 sha   = entry[:oid_new]
@@ -259,30 +332,52 @@ str   = entry[:message]
 prsn  = entry[:committer]
 ```
 
-Git Config Files
-----------------
+---
 
-It is very easy to read and manipulate the Git config file data with Rugged.
+### Config files
+
+It's also easy to read and manipulate the Git config file data with Rugged.
 
 ```ruby
-config = @repo.config
-str    = config['core.bare']
-         config['user.name'] = true
-         config.delete('user.name')
+# Read values
+repo.config['core.bare']
+
+# Set values
+repo.config['user.name'] = true
+
+# Delete values
+repo.config.delete('user.name')
 ```
 
-CONTRIBUTING
-==============
+---
+
+### General methods
+
+Rugged also includes a general library for handling basic Git operations. One of
+these is converting a raw sha (20 bytes) into a readable hex sha (40
+characters).
+
+```ruby
+Rugged.hex_to_raw('bfde59cdd0dfac1d892814f66a95641abd8a1faf')
+# => "\277\336Y\315\320\337\254\035\211(\024\366j\225d\032\275\212\037\257"
+
+Rugged.raw_to_hex("\277\336Y\315\320\337\254\035\211(\024\366j\225d\032\275\212\037\257")
+=> "bfde59cdd0dfac1d892814f66a95641abd8a1faf"
+```
+
+---
+
+## Contributing
 
 Fork libgit2/rugged on GitHub, make it awesomer (preferably in a branch named
 for the topic), send a pull request.
 
-INSTALL FOR DEVELOPING
-----------------------
+
+## Development
 
 First you need to install libgit2:
 
-    $ git clone git://github.com/libgit2/libgit2.git
+    $ git clone https://github.com/libgit2/rugged.git
     $ cd libgit2
     $ mkdir build && cd build
     $ cmake ..
@@ -298,15 +393,12 @@ Now that those are installed, you can install Rugged:
     $ rake test
 
 
-AUTHORS
-==============
+## Authors
 
 * Vicent Marti <tanoku@gmail.com>
 * Scott Chacon <schacon@gmail.com>
 
 
-LICENSE
-==============
+## License
 
-MIT.  See LICENSE file.
-
+MIT. See LICENSE file.
