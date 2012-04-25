@@ -105,12 +105,16 @@ object.type
 
 #### Writing to a Repository
 
-------------------TODODODODODODODOOOOO--------------
+There's a few ways to write to a repository. To write directly from your
+instantiated repository object:
 
-sha    = repo.hash(content, type)
-sha    = repo.write(content, type)
-sha    = ref.target
-         ref.type #=> "commit"
+```ruby
+sha = repo.hash(content, type)
+sha = repo.write(content, type)
+```
+
+You can also use the `Commit` object directly to craft a commit; this is a bit
+more high-level, so it may be preferable.
 
 ---
 
