@@ -20,6 +20,11 @@ task :embedded_clean do
 end
 Rake::Task[:clean].prerequisites << :embedded_clean
 
+desc "Open an irb session preloaded with Rugged"
+task :console do
+  sh "irb -rubygems -I lib -r ./lib/rugged"
+end
+
 #
 # Tests
 #
