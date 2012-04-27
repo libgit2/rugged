@@ -381,7 +381,7 @@ for the topic), send a pull request.
 
 First you need to install libgit2:
 
-    $ git clone https://github.com/libgit2/rugged.git
+    $ git clone https://github.com/libgit2/libgit2.git
     $ cd libgit2
     $ mkdir build && cd build
     $ cmake ..
@@ -390,7 +390,7 @@ First you need to install libgit2:
 
 Now that those are installed, you can install Rugged:
 
-    $ git clone git://github.com/libgit2/rugged.git
+    $ git clone https://github.com/libgit2/rugged.git
     $ cd rugged
     $ bundle install
     $ rake compile
