@@ -117,6 +117,7 @@ module Rugged
       tree = Rugged::Commit.lookup(self, revision).tree
       subtree = tree.get_subtree(path)
       blob_data = subtree.get_entry(File.basename path)
+      return nil unless blob_data
       blob = Rugged::Blob.lookup(self, blob_data[:oid])
       blob.content
     end
