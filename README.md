@@ -161,13 +161,14 @@ commit.parents
 You can also write new objects to the database this way:
 
 ```ruby
-person = Rugged::Signature.new('Scott', 'schacon@gmail.com', Time.now)
+author = {:email=>"tanoku@gmail.com", :time=>Time.now, :name=>"Vicent Mart\303\255"}
 
-commit = Rugged::Commit.new(repo)
-commit.message = "my message"
-commit.author = person
-commit.tree = commit
-commit.write
+Rugged::Commit.create(r,
+	:author => author,
+	:message => "Hello world\n\n",
+	:committer => author,
+	:parents => ["2cb831a8aea28b2c1b9c63385585b864e4d3bad1"],
+	:tree => some_tree) #=> "f148106ca58764adc93ad4e2d6b1d168422b9796"
 ```
 
 ### Tag Objects
