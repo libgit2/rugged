@@ -217,7 +217,7 @@ You can also write trees with the `TreeBuilder`:
 
 ```ruby
 entry = {:type => :blob,
-         :name => "README.txt",
+         :path => "README.txt",
          :oid  => "1385f264afb75a56a5bec74243be9b367ba4ca08",
          :attributes => 33188}
 
