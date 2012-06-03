@@ -25,6 +25,21 @@
 #include "rugged.h"
 
 VALUE rb_mRugged;
+VALUE rb_eRuggedError;
+VALUE rb_eRuggedOsError;
+VALUE rb_eRuggedInvalidError;
+VALUE rb_eRuggedRefError;
+VALUE rb_eRuggedZlibError;
+VALUE rb_eRuggedRepoError;
+VALUE rb_eRuggedConfigError;
+VALUE rb_eRuggedRegexError;
+VALUE rb_eRuggedOdbError;
+VALUE rb_eRuggedIndexError;
+VALUE rb_eRuggedObjError;
+VALUE rb_eRuggedNetError;
+VALUE rb_eRuggedTagError;
+VALUE rb_eRuggedTreeError;
+VALUE rb_eRuggedIndexerError;
 static VALUE rb_mShutdownHook;
 
 /*
@@ -174,6 +189,22 @@ static void cleanup_cb(void *unused)
 void Init_rugged()
 {
 	rb_mRugged = rb_define_module("Rugged");
+
+	rb_eRuggedError = rb_define_class_under(rb_mRugged, "Error", rb_eStandardError);
+	rb_eRuggedOsError = rb_define_class_under(rb_mRugged, "OsError", rb_eRuggedError);
+	rb_eRuggedInvalidError = rb_define_class_under(rb_mRugged, "InvalidError", rb_eRuggedError);
+	rb_eRuggedRefError = rb_define_class_under(rb_mRugged, "ReferenceError", rb_eRuggedError);
+	rb_eRuggedZlibError = rb_define_class_under(rb_mRugged, "ZlibError", rb_eRuggedError);
+	rb_eRuggedRepoError = rb_define_class_under(rb_mRugged, "RepositoryError", rb_eRuggedError);
+	rb_eRuggedConfigError = rb_define_class_under(rb_mRugged, "ConfigError", rb_eRuggedError);
+	rb_eRuggedRegexError = rb_define_class_under(rb_mRugged, "RegexError", rb_eRuggedError);
+	rb_eRuggedOdbError = rb_define_class_under(rb_mRugged, "OdbError", rb_eRuggedError);
+	rb_eRuggedIndexError = rb_define_class_under(rb_mRugged, "IndexError", rb_eRuggedError);
+	rb_eRuggedObjError = rb_define_class_under(rb_mRugged, "ObjectError", rb_eRuggedError);
+	rb_eRuggedNetError = rb_define_class_under(rb_mRugged, "NetworkError", rb_eRuggedError);
+	rb_eRuggedTagError = rb_define_class_under(rb_mRugged, "TagError", rb_eRuggedError);
+	rb_eRuggedTreeError = rb_define_class_under(rb_mRugged, "TreeError", rb_eRuggedError);
+	rb_eRuggedIndexerError = rb_define_class_under(rb_mRugged, "IndexerError", rb_eRuggedError);
 
 	rb_define_module_function(rb_mRugged, "hex_to_raw", rb_git_hex_to_raw, 1);
 	rb_define_module_function(rb_mRugged, "raw_to_hex", rb_git_raw_to_hex, 1);
