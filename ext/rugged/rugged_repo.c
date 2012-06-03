@@ -614,7 +614,7 @@ static int rugged__status_cb(const char *path, unsigned int flags, void *payload
 		flags_to_rb(flags)
 	);
 
-	return GIT_SUCCESS;
+	return GIT_OK;
 }
 
 /*

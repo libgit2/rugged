@@ -85,10 +85,10 @@ static inline VALUE rugged_owner(VALUE object)
 
 static inline void rugged_exception_check(int errorcode)
 {
-	if (errorcode < 0)
-		rb_raise(rb_eRuntimeError, "%s\n(error code %d)", git_lasterror(), errorcode);
+	if (errorcode < 0 && giterr_last() != NULL)
+		rb_raise(rb_eRuntimeError, "%s\n(error code %d)", giterr_last()->message, errorcode);
 
-	git_clearerror();
+	giterr_clear();
 }
 
 static inline int rugged_parse_bool(VALUE boolean)
