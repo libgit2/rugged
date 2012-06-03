@@ -93,7 +93,7 @@ static VALUE rb_git_config_get(VALUE self, VALUE rb_key)
 	Data_Get_Struct(self, git_config, config);
 	Check_Type(rb_key, T_STRING);
 
-	error = git_config_get_string(config, StringValueCStr(rb_key), &value);
+	error = git_config_get_string(&value, config, StringValueCStr(rb_key));
 	if (error == GIT_ENOTFOUND)
 		return Qnil;
 
@@ -182,7 +182,7 @@ static VALUE rb_git_config_delete(VALUE self, VALUE rb_key)
 static int cb_config__each_key(const char *key, const char *value, void *opaque)
 {
 	rb_funcall((VALUE)opaque, rb_intern("call"), 1, rugged_str_new2(key, NULL));
-	return GIT_SUCCESS;
+	return GIT_OK;
 }
 
 static int cb_config__each_pair(const char *key, const char *value, void *opaque)
@@ -191,7 +191,7 @@ static int cb_config__each_pair(const char *key, const char *value, void *opaque
 		rugged_str_new2(key, NULL),
 		rugged_str_new2(value, NULL));
 
-	return GIT_SUCCESS;
+	return GIT_OK;
 }
 
 static int cb_config__to_hash(const char *key, const char *value, void *opaque)
@@ -200,7 +200,7 @@ static int cb_config__to_hash(const char *key, const char *value, void *opaque)
 		rugged_str_new2(key, NULL),
 		rugged_str_new2(value, NULL));
 
-	return GIT_SUCCESS;
+	return GIT_OK;
 }
 
 /*

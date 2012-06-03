@@ -280,11 +280,11 @@ static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 			git_oid oid;
 
 			error = git_oid_fromstr(&oid, StringValueCStr(p));
-			if (error < GIT_SUCCESS)
+			if (error < GIT_OK)
 				goto cleanup;
 
 			error = git_commit_lookup(&parent, repo, &oid);
-			if (error < GIT_SUCCESS)
+			if (error < GIT_OK)
 				goto cleanup;
 
 			free_ptr = parent;
