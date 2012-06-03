@@ -181,7 +181,7 @@ static int rugged__treewalk_cb(const char *root, git_tree_entry *entry, void *pr
  *	generates:
  *
  *		USAGE.rb [02bae86c91f96b5fdb6b1cf06f5aa3612139e318]
- *		ext [23f135b3c576b6ac4785821888991d7089f35db1] 
+ *		ext [23f135b3c576b6ac4785821888991d7089f35db1]
  *		ext/rugged [25c88faa9302e34e16664eb9c990deb2bcf77849]
  *		ext/rugged/extconf.rb [40c1aa8a8cec8ca444ed5758e3f00ecff093070a]
  *		...
