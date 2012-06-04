@@ -85,8 +85,21 @@ static inline VALUE rugged_owner(VALUE object)
 
 static inline void rugged_exception_check(int errorcode)
 {
-	if (errorcode < 0 && giterr_last() != NULL)
-		rb_raise(rb_eRuntimeError, "%s\n(error code %d)", giterr_last()->message, errorcode);
+	switch(errorcode) {
+		case GIT_ENOTFOUND:
+			// return nil instaed of raising, should this be handled outside of this function?
+		case GIT_EEXISTS:
+			// file already exists
+		case GIT_EAMBIGUOUS:
+			// oid passed wasn't specific enough
+		case GIT_EBUFS:
+			// buffer wasn't big enough, shouldn't be raise do ruby land
+			// this should probably never happen given we use ruby strings
+		case GIT_ERROR:
+		default:
+			if (errorcode < 0)
+				rb_raise(rb_eRuntimeError, "%s\n(error code %d)", giterr_last()->message, errorcode);
+	}
 
 	giterr_clear();
 }
