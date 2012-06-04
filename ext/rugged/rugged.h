@@ -85,6 +85,7 @@ static inline VALUE rugged_owner(VALUE object)
 
 static inline void rugged_exception_check(int errorcode)
 {
+	VALUE err_obj;
 	const git_error *error;
 
 	if (errorcode < 0) {
@@ -103,14 +104,11 @@ static inline void rugged_exception_check(int errorcode)
 				error = giterr_last();
 
 				if (error) {
-					rb_raise(rb_eRuntimeError, "%s\n(error code %d)", error->message, errorcode);
+					err_obj = rb_exc_new2(rb_eRuggedError, error->message);
 					giterr_clear();
+					rb_exc_raise(err_obj);
 				}
 		}
-	}
-}
-
-		giterr_clear();
 	}
 }
 
