@@ -42,6 +42,22 @@
 
 #define CSTR2SYM(s) (ID2SYM(rb_intern((s))))
 
+extern VALUE rb_eRuggedError;
+extern VALUE rb_eRuggedOsError;
+extern VALUE rb_eRuggedInvalidError;
+extern VALUE rb_eRuggedRefError;
+extern VALUE rb_eRuggedZlibError;
+extern VALUE rb_eRuggedRepoError;
+extern VALUE rb_eRuggedConfigError;
+extern VALUE rb_eRuggedRegexError;
+extern VALUE rb_eRuggedOdbError;
+extern VALUE rb_eRuggedIndexError;
+extern VALUE rb_eRuggedObjError;
+extern VALUE rb_eRuggedNetError;
+extern VALUE rb_eRuggedTagError;
+extern VALUE rb_eRuggedTreeError;
+extern VALUE rb_eRuggedIndexerError;
+
 /*
  * Initialization functions
  */
@@ -83,6 +99,71 @@ static inline VALUE rugged_owner(VALUE object)
 	rb_iv_get(object, "@owner");
 }
 
+static inline void rugged_exception_raise(int errorcode)
+{
+	VALUE err_klass;
+	VALUE err_obj;
+	const git_error *error;
+
+	switch(errorcode) {
+		case GITERR_NOMEMORY:
+			err_klass = rb_eNoMemError;
+			break;
+		case GITERR_OS:
+			err_klass = rb_eRuggedOsError;
+			break;
+		case GITERR_INVALID:
+			err_klass = rb_eRuggedInvalidError;
+			break;
+		case GITERR_REFERENCE:
+			err_klass = rb_eRuggedRefError;
+			break;
+		case GITERR_ZLIB:
+			err_klass = rb_eRuggedZlibError;
+			break;
+		case GITERR_REPOSITORY:
+			err_klass = rb_eRuggedRepoError;
+			break;
+		case GITERR_CONFIG:
+			err_klass = rb_eRuggedConfigError;
+			break;
+		case GITERR_REGEX:
+			err_klass = rb_eRuggedRegexError;
+			break;
+		case GITERR_ODB:
+			err_klass = rb_eRuggedOdbError;
+			break;
+		case GITERR_INDEX:
+			err_klass = rb_eRuggedIndexError;
+			break;
+		case GITERR_OBJECT:
+			err_klass = rb_eRuggedObjError;
+			break;
+		case GITERR_NET:
+			err_klass = rb_eRuggedNetError;
+			break;
+		case GITERR_TAG:
+			err_klass = rb_eRuggedTagError;
+			break;
+		case GITERR_TREE:
+			err_klass = rb_eRuggedTreeError;
+			break;
+		case GITERR_INDEXER:
+			err_klass = rb_eRuggedIndexerError;
+			break;
+		default:
+			err_klass = rb_eRuggedError;
+	}
+
+	error = giterr_last();
+
+	if (error) {
+		err_obj = rb_exc_new2(err_klass, error->message);
+		giterr_clear();
+		rb_exc_raise(err_obj);
+	}
+}
+
 static inline void rugged_exception_check(int errorcode)
 {
 	VALUE err_obj;
@@ -100,6 +181,8 @@ static inline void rugged_exception_check(int errorcode)
 				// buffer wasn't big enough, shouldn't be raise do ruby land
 				// this should probably never happen given we use ruby strings
 			case GIT_ERROR:
+				rugged_exception_raise(errorcode);
+				break;
 			default:
 				error = giterr_last();
 
