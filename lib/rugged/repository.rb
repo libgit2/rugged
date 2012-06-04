@@ -107,6 +107,14 @@ module Rugged
       Rugged::Remote.each(self)
     end
 
+    def branches
+      @branches ||= BranchCollection.new(self)
+    end
+
+    def create_branch(name, target = "HEAD")
+      branches.create(name, target)
+    end
+
     # Get the content of a file at a specific revision.
     #
     # revision - The String SHA1.
