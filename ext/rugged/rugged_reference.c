@@ -73,7 +73,7 @@ static VALUE rb_git_ref_packall(VALUE klass, VALUE rb_repo)
 static int ref_foreach__block(const char *ref_name, void *opaque)
 {
 	rb_funcall((VALUE)opaque, rb_intern("call"), 1, rugged_str_new2(ref_name, NULL));
-	return GIT_SUCCESS;
+	return GIT_OK;
 }
 
 /*
@@ -204,7 +204,7 @@ static VALUE rb_git_ref_create(int argc, VALUE *argv, VALUE klass)
 	if (!NIL_P(rb_force))
 		force = rugged_parse_bool(rb_force);
 
-	if (git_oid_fromstr(&oid, StringValueCStr(rb_target)) == GIT_SUCCESS) {
+	if (git_oid_fromstr(&oid, StringValueCStr(rb_target)) == GIT_OK) {
 		error = git_reference_create_oid(
 			&ref, repo, StringValueCStr(rb_name), &oid, force);
 	} else {
@@ -332,7 +332,7 @@ static VALUE rb_git_ref_reload(VALUE self)
 	error = git_reference_reload(ref);
 
 	/* If reload fails, the reference is invalidated */
-	if (error < GIT_SUCCESS)
+	if (error < GIT_OK)
 		ref = NULL;
 
 	rugged_exception_check(error);

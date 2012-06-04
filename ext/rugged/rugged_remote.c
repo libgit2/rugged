@@ -59,8 +59,9 @@ static VALUE rb_git_remote__new(int argc, VALUE *argv, VALUE klass)
 		error = git_remote_new(
 			&remote,
 			repo,
+			NIL_P(rb_name) ? NULL : StringValueCStr(rb_name),
 			StringValueCStr(rb_url),
-			NIL_P(rb_name) ? NULL : StringValueCStr(rb_name)
+			NULL
 		);
 	} else {
 		error = git_remote_load(&remote, repo, url);
@@ -125,7 +126,7 @@ static VALUE rugged_rhead_new(git_remote_head *head)
 static int cb_remote__ls(git_remote_head *head, void *payload)
 {
 	rb_funcall((VALUE)payload, rb_intern("call"), 1, rugged_rhead_new(head));
-	return GIT_SUCCESS;
+	return GIT_OK;
 }
 
 static VALUE rb_git_remote_ls(VALUE self)
@@ -171,18 +172,15 @@ static VALUE rb_git_remote_download(VALUE self)
 {
 	int error;
 	git_remote *remote;
-	char *path;
-	VALUE rb_path;
+	git_off_t bytes = 0;
+	git_indexer_stats stats;
 
 	Data_Get_Struct(self, git_remote, remote);
 
-	error = git_remote_download(&path, remote);
+	error = git_remote_download(remote, &bytes, &stats);
 	rugged_exception_check(error);
 
-	rb_path = rugged_str_new2(path, NULL);
-	free(path);
-
-	return rb_path;
+	return Qnil;
 }
 
 static VALUE rb_git_remote_update_tips(VALUE self)
@@ -192,7 +190,8 @@ static VALUE rb_git_remote_update_tips(VALUE self)
 
 	Data_Get_Struct(self, git_remote, remote);
 
-	error = git_remote_update_tips(remote);
+	// TODO: Maybe allow passing down a block?
+	error = git_remote_update_tips(remote, NULL);
 	rugged_exception_check(error);
 
 	return Qnil;

@@ -161,7 +161,7 @@ static int rugged__treewalk_cb(const char *root, git_tree_entry *entry, void *pr
 		rugged_str_new2(root, NULL),
 		rb_git_treeentry_fromC(entry));
 
-	return GIT_SUCCESS;
+	return GIT_OK;
 }
 
 /*
