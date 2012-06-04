@@ -85,6 +85,8 @@ static inline VALUE rugged_owner(VALUE object)
 
 static inline void rugged_exception_check(int errorcode)
 {
+	const git_error *error;
+
 	if (errorcode < 0) {
 		switch(errorcode) {
 			case GIT_ENOTFOUND:
@@ -98,9 +100,15 @@ static inline void rugged_exception_check(int errorcode)
 				// this should probably never happen given we use ruby strings
 			case GIT_ERROR:
 			default:
-				if (errorcode < 0)
-					rb_raise(rb_eRuntimeError, "%s\n(error code %d)", giterr_last()->message, errorcode);
+				error = giterr_last();
+
+				if (error) {
+					rb_raise(rb_eRuntimeError, "%s\n(error code %d)", error->message, errorcode);
+					giterr_clear();
+				}
 		}
+	}
+}
 
 		giterr_clear();
 	}
