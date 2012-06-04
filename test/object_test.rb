@@ -8,7 +8,7 @@ context "Rugged::Object stuff" do
   end
 
   test "cannot lookup a non-existant object" do
-    assert_raise Rugged::Error do
+    assert_raise Rugged::OdbError do
       obj = @repo.lookup("a496071c1b46c854b31185ea97743be6a8774479")
     end
   end
