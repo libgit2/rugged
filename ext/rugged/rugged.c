@@ -180,6 +180,7 @@ void Init_rugged()
 	rb_define_module_function(rb_mRugged, "minimize_oid", rb_git_minimize_oid, -1);
 
 	Init_rugged_object();
+	Init_rugged_branch();
 	Init_rugged_commit();
 	Init_rugged_tree();
 	Init_rugged_tag();

@@ -46,6 +46,7 @@
  * Initialization functions 
  */
 void Init_rugged_object();
+void Init_rugged_branch();
 void Init_rugged_commit();
 void Init_rugged_tree();
 void Init_rugged_tag();

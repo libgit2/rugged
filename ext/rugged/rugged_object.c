@@ -92,12 +92,16 @@ git_object *rugged_object_load(git_repository *repo, VALUE object_value, git_oty
 
 	if (TYPE(object_value) == T_STRING) {
 		git_oid oid;
+		int oid_length = (int)RSTRING_LEN(object_value);
 		int error;
 
-		error = git_oid_fromstr(&oid, StringValueCStr(object_value));
+		error = git_oid_fromstrn(&oid, RSTRING_PTR(object_value), oid_length);
 		rugged_exception_check(error);
 
-		error = git_object_lookup(&object, repo, &oid, type);
+		if (oid_length < GIT_OID_HEXSZ)
+			error = git_object_lookup_prefix(&object, repo, &oid, oid_length, type);
+		else
+			error = git_object_lookup(&object, repo, &oid, type);
 		rugged_exception_check(error);
 
 	} else if (rb_obj_is_kind_of(object_value, rb_cRuggedObject)) {
