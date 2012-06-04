@@ -85,7 +85,7 @@ static inline VALUE rugged_owner(VALUE object)
 
 static inline void rugged_exception_check(int errorcode)
 {
-	if (errorcode < 0)
+	if (errorcode < 0) {
 		switch(errorcode) {
 			case GIT_ENOTFOUND:
 				// return nil instaed of raising, should this be handled outside of this function?
