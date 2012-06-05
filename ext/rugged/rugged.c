@@ -24,22 +24,29 @@
 
 #include "rugged.h"
 
+const char *RUGGED_ERROR_NAMES[] = {
+	NULL, /* GITERR_NOMEMORY, */
+	"OSError", /* GITERR_OS, */
+	"InvalidError", /* GITERR_INVALID, */
+	"ReferenceError", /* GITERR_REFERENCE, */
+	"ZlibError", /* GITERR_ZLIB, */
+	"RepositoryError", /* GITERR_REPOSITORY, */
+	"ConfigError", /* GITERR_CONFIG, */
+	"RegexError", /* GITERR_REGEX, */
+	"OdbError", /* GITERR_ODB, */
+	"IndexError", /* GITERR_INDEX, */
+	"ObjectError", /* GITERR_OBJECT, */
+	"NetworkError" /* GITERR_NET, */
+	"TagError", /* GITERR_TAG, */
+	"TreeError", /* GITERR_TREE, */
+	"IndexerError", /* GITERR_INDEXER, */
+};
+
+#define RUGGED_ERROR_COUNT ((sizeof(RUGGED_ERROR_NAMES)/sizeof(RUGGED_ERROR_NAMES[0])))
+
 VALUE rb_mRugged;
-VALUE rb_eRuggedError;
-VALUE rb_eRuggedOsError;
-VALUE rb_eRuggedInvalidError;
-VALUE rb_eRuggedRefError;
-VALUE rb_eRuggedZlibError;
-VALUE rb_eRuggedRepoError;
-VALUE rb_eRuggedConfigError;
-VALUE rb_eRuggedRegexError;
-VALUE rb_eRuggedOdbError;
-VALUE rb_eRuggedIndexError;
-VALUE rb_eRuggedObjError;
-VALUE rb_eRuggedNetError;
-VALUE rb_eRuggedTagError;
-VALUE rb_eRuggedTreeError;
-VALUE rb_eRuggedIndexerError;
+VALUE rb_eRuggedErrors[RUGGED_ERROR_COUNT];
+
 static VALUE rb_mShutdownHook;
 
 /*
@@ -188,88 +195,38 @@ static void cleanup_cb(void *unused)
 
 void rugged_exception_raise(int errorcode)
 {
-	VALUE err_klass;
+	VALUE err_klass = rb_eRuggedError;
 	VALUE err_obj;
 	const git_error *error;
 
 	error = giterr_last();
 
-	if (error) {
-		switch(error->klass) {
-			case GITERR_NOMEMORY:
-				err_klass = rb_eNoMemError;
-				break;
-			case GITERR_OS:
-				err_klass = rb_eRuggedOsError;
-				break;
-			case GITERR_INVALID:
-				err_klass = rb_eRuggedInvalidError;
-				break;
-			case GITERR_REFERENCE:
-				err_klass = rb_eRuggedRefError;
-				break;
-			case GITERR_ZLIB:
-				err_klass = rb_eRuggedZlibError;
-				break;
-			case GITERR_REPOSITORY:
-				err_klass = rb_eRuggedRepoError;
-				break;
-			case GITERR_CONFIG:
-				err_klass = rb_eRuggedConfigError;
-				break;
-			case GITERR_REGEX:
-				err_klass = rb_eRuggedRegexError;
-				break;
-			case GITERR_ODB:
-				err_klass = rb_eRuggedOdbError;
-				break;
-			case GITERR_INDEX:
-				err_klass = rb_eRuggedIndexError;
-				break;
-			case GITERR_OBJECT:
-				err_klass = rb_eRuggedObjError;
-				break;
-			case GITERR_NET:
-				err_klass = rb_eRuggedNetError;
-				break;
-			case GITERR_TAG:
-				err_klass = rb_eRuggedTagError;
-				break;
-			case GITERR_TREE:
-				err_klass = rb_eRuggedTreeError;
-				break;
-			case GITERR_INDEXER:
-				err_klass = rb_eRuggedIndexerError;
-				break;
-			default:
-				err_klass = rb_eRuggedError;
-		}
+	if (!error)
+		return;
 
-		err_obj = rb_exc_new2(err_klass, error->message);
-		giterr_clear();
-		rb_exc_raise(err_obj);
-	}
+	if (error->klass >= 0 && error->klass < RUGGED_ERROR_COUNT)
+		err_klass = rb_eRuggedErrors[error->klass];
+
+	err_obj = rb_exc_new2(err_klass, error->message);
+	giterr_clear();
+	rb_exc_raise(err_obj);
 }
 
 void Init_rugged()
 {
 	rb_mRugged = rb_define_module("Rugged");
 
-	rb_eRuggedError = rb_define_class_under(rb_mRugged, "Error", rb_eStandardError);
-	rb_eRuggedOsError = rb_define_class_under(rb_mRugged, "OsError", rb_eRuggedError);
-	rb_eRuggedInvalidError = rb_define_class_under(rb_mRugged, "InvalidError", rb_eRuggedError);
-	rb_eRuggedRefError = rb_define_class_under(rb_mRugged, "ReferenceError", rb_eRuggedError);
-	rb_eRuggedZlibError = rb_define_class_under(rb_mRugged, "ZlibError", rb_eRuggedError);
-	rb_eRuggedRepoError = rb_define_class_under(rb_mRugged, "RepositoryError", rb_eRuggedError);
-	rb_eRuggedConfigError = rb_define_class_under(rb_mRugged, "ConfigError", rb_eRuggedError);
-	rb_eRuggedRegexError = rb_define_class_under(rb_mRugged, "RegexError", rb_eRuggedError);
-	rb_eRuggedOdbError = rb_define_class_under(rb_mRugged, "OdbError", rb_eRuggedError);
-	rb_eRuggedIndexError = rb_define_class_under(rb_mRugged, "IndexError", rb_eRuggedError);
-	rb_eRuggedObjError = rb_define_class_under(rb_mRugged, "ObjectError", rb_eRuggedError);
-	rb_eRuggedNetError = rb_define_class_under(rb_mRugged, "NetworkError", rb_eRuggedError);
-	rb_eRuggedTagError = rb_define_class_under(rb_mRugged, "TagError", rb_eRuggedError);
-	rb_eRuggedTreeError = rb_define_class_under(rb_mRugged, "TreeError", rb_eRuggedError);
-	rb_eRuggedIndexerError = rb_define_class_under(rb_mRugged, "IndexerError", rb_eRuggedError);
+	/* Initialize the Error classes */
+	{
+		int i;
+
+		rb_eRuggedError = rb_define_class_under(rb_mRugged, "Error", rb_eStandardError);
+		rb_eRuggedErrors[0] = rb_eNoMemError;
+
+		for (i = 1; i < RUGGED_ERROR_COUNT; ++i) {
+			rb_eRuggedErrors[i] = rb_define_class_under(rb_mRugged, RUGGED_ERROR_NAMES[i], rb_eRuggedError);
+		}
+	}
 
 	rb_define_module_function(rb_mRugged, "hex_to_raw", rb_git_hex_to_raw, 1);
 	rb_define_module_function(rb_mRugged, "raw_to_hex", rb_git_raw_to_hex, 1);
