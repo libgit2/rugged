@@ -169,30 +169,8 @@ static inline void rugged_exception_check(int errorcode)
 	VALUE err_obj;
 	const git_error *error;
 
-	if (errorcode < 0) {
-		switch(errorcode) {
-			case GIT_ENOTFOUND:
-				// return nil instaed of raising, should this be handled outside of this function?
-			case GIT_EEXISTS:
-				// file already exists
-			case GIT_EAMBIGUOUS:
-				// oid passed wasn't specific enough
-			case GIT_EBUFS:
-				// buffer wasn't big enough, shouldn't be raise do ruby land
-				// this should probably never happen given we use ruby strings
-			case GIT_ERROR:
-				rugged_exception_raise(errorcode);
-				break;
-			default:
-				error = giterr_last();
-
-				if (error) {
-					err_obj = rb_exc_new2(rb_eRuggedError, error->message);
-					giterr_clear();
-					rb_exc_raise(err_obj);
-				}
-		}
-	}
+	if (errorcode < 0)
+		rugged_exception_raise(errorcode);
 }
 
 static inline int rugged_parse_bool(VALUE boolean)
