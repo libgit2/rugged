@@ -42,22 +42,6 @@
 
 #define CSTR2SYM(s) (ID2SYM(rb_intern((s))))
 
-extern VALUE rb_eRuggedError;
-extern VALUE rb_eRuggedOsError;
-extern VALUE rb_eRuggedInvalidError;
-extern VALUE rb_eRuggedRefError;
-extern VALUE rb_eRuggedZlibError;
-extern VALUE rb_eRuggedRepoError;
-extern VALUE rb_eRuggedConfigError;
-extern VALUE rb_eRuggedRegexError;
-extern VALUE rb_eRuggedOdbError;
-extern VALUE rb_eRuggedIndexError;
-extern VALUE rb_eRuggedObjError;
-extern VALUE rb_eRuggedNetError;
-extern VALUE rb_eRuggedTagError;
-extern VALUE rb_eRuggedTreeError;
-extern VALUE rb_eRuggedIndexerError;
-
 /*
  * Initialization functions
  */
