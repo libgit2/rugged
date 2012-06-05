@@ -103,9 +103,6 @@ extern void rugged_exception_raise(int errorcode);
 
 static inline void rugged_exception_check(int errorcode)
 {
-	VALUE err_obj;
-	const git_error *error;
-
 	if (errorcode < 0)
 		rugged_exception_raise(errorcode);
 }
