@@ -99,70 +99,7 @@ static inline VALUE rugged_owner(VALUE object)
 	rb_iv_get(object, "@owner");
 }
 
-static inline void rugged_exception_raise(int errorcode)
-{
-	VALUE err_klass;
-	VALUE err_obj;
-	const git_error *error;
-
-	error = giterr_last();
-
-	if (error) {
-		switch(error->klass) {
-			case GITERR_NOMEMORY:
-				err_klass = rb_eNoMemError;
-				break;
-			case GITERR_OS:
-				err_klass = rb_eRuggedOsError;
-				break;
-			case GITERR_INVALID:
-				err_klass = rb_eRuggedInvalidError;
-				break;
-			case GITERR_REFERENCE:
-				err_klass = rb_eRuggedRefError;
-				break;
-			case GITERR_ZLIB:
-				err_klass = rb_eRuggedZlibError;
-				break;
-			case GITERR_REPOSITORY:
-				err_klass = rb_eRuggedRepoError;
-				break;
-			case GITERR_CONFIG:
-				err_klass = rb_eRuggedConfigError;
-				break;
-			case GITERR_REGEX:
-				err_klass = rb_eRuggedRegexError;
-				break;
-			case GITERR_ODB:
-				err_klass = rb_eRuggedOdbError;
-				break;
-			case GITERR_INDEX:
-				err_klass = rb_eRuggedIndexError;
-				break;
-			case GITERR_OBJECT:
-				err_klass = rb_eRuggedObjError;
-				break;
-			case GITERR_NET:
-				err_klass = rb_eRuggedNetError;
-				break;
-			case GITERR_TAG:
-				err_klass = rb_eRuggedTagError;
-				break;
-			case GITERR_TREE:
-				err_klass = rb_eRuggedTreeError;
-				break;
-			case GITERR_INDEXER:
-				err_klass = rb_eRuggedIndexerError;
-				break;
-			default:
-				err_klass = rb_eRuggedError;
-		}
-
-		err_obj = rb_exc_new2(err_klass, error->message);
-		giterr_clear();
-		rb_exc_raise(err_obj);
-	}
-}
+extern void rugged_exception_raise(int errorcode);
 
 static inline void rugged_exception_check(int errorcode)
 {
