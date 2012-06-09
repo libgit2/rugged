@@ -2,17 +2,17 @@
  * The MIT License
  *
  * Copyright (c) 2011 GitHub, Inc
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -24,7 +24,30 @@
 
 #include "rugged.h"
 
+const char *RUGGED_ERROR_NAMES[] = {
+	NULL, /* GITERR_NOMEMORY, */
+	"OSError", /* GITERR_OS, */
+	"InvalidError", /* GITERR_INVALID, */
+	"ReferenceError", /* GITERR_REFERENCE, */
+	"ZlibError", /* GITERR_ZLIB, */
+	"RepositoryError", /* GITERR_REPOSITORY, */
+	"ConfigError", /* GITERR_CONFIG, */
+	"RegexError", /* GITERR_REGEX, */
+	"OdbError", /* GITERR_ODB, */
+	"IndexError", /* GITERR_INDEX, */
+	"ObjectError", /* GITERR_OBJECT, */
+	"NetworkError" /* GITERR_NET, */
+	"TagError", /* GITERR_TAG, */
+	"TreeError", /* GITERR_TREE, */
+	"IndexerError", /* GITERR_INDEXER, */
+};
+
+#define RUGGED_ERROR_COUNT ((sizeof(RUGGED_ERROR_NAMES)/sizeof(RUGGED_ERROR_NAMES[0])))
+
 VALUE rb_mRugged;
+VALUE rb_eRuggedError;
+VALUE rb_eRuggedErrors[RUGGED_ERROR_COUNT];
+
 static VALUE rb_mShutdownHook;
 
 /*
@@ -171,9 +194,40 @@ static void cleanup_cb(void *unused)
 	git_threads_shutdown();
 }
 
+void rugged_exception_raise(int errorcode)
+{
+	VALUE err_klass = rb_eRuggedError;
+	VALUE err_obj;
+	const git_error *error;
+
+	error = giterr_last();
+
+	if (!error)
+		return;
+
+	if (error->klass >= 0 && error->klass < RUGGED_ERROR_COUNT)
+		err_klass = rb_eRuggedErrors[error->klass];
+
+	err_obj = rb_exc_new2(err_klass, error->message);
+	giterr_clear();
+	rb_exc_raise(err_obj);
+}
+
 void Init_rugged()
 {
 	rb_mRugged = rb_define_module("Rugged");
+
+	/* Initialize the Error classes */
+	{
+		int i;
+
+		rb_eRuggedError = rb_define_class_under(rb_mRugged, "Error", rb_eStandardError);
+		rb_eRuggedErrors[0] = rb_eNoMemError;
+
+		for (i = 1; i < RUGGED_ERROR_COUNT; ++i) {
+			rb_eRuggedErrors[i] = rb_define_class_under(rb_mRugged, RUGGED_ERROR_NAMES[i], rb_eRuggedError);
+		}
+	}
 
 	rb_define_module_function(rb_mRugged, "hex_to_raw", rb_git_hex_to_raw, 1);
 	rb_define_module_function(rb_mRugged, "raw_to_hex", rb_git_raw_to_hex, 1);
