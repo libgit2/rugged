@@ -196,6 +196,41 @@ static VALUE rb_git_commit_parents_GET(VALUE self)
 
 /*
  *	call-seq:
+ *		commit.parent_oids -> [oid, ...]
+ *
+ *	Return the parent oid(s) of this commit as an array of oid String
+ *	objects. An array is always returned even when the commit has only
+ *	one or zero parents.
+ *
+ *		commit.parents #=> => ["2cb831a8aea28b2c1b9c63385585b864e4d3bad1", ...]
+ *		root.parents #=> []
+ */
+static VALUE rb_git_commit_parent_oids_GET(VALUE self)
+{
+	git_commit *commit;
+	const git_oid *parent_oid;
+	unsigned int n, parent_count;
+	VALUE ret_arr, owner;
+	int error;
+
+	Data_Get_Struct(self, git_commit, commit);
+	owner = rugged_owner(self);
+
+	parent_count = git_commit_parentcount(commit);
+	ret_arr = rb_ary_new2((long)parent_count);
+
+	for (n = 0; n < parent_count; n++) {
+		parent_oid = git_commit_parent_oid(commit, n);
+		if (parent_oid) {
+			rb_ary_push(ret_arr, rugged_create_oid(parent_oid));
+		}
+	}
+
+	return ret_arr;
+}
+
+/*
+ *	call-seq:
  *		Commit.create(repository, data = {}) -> oid
  *
  *	Write a new +Commit+ object to +repository+, with the given +data+
@@ -340,5 +375,6 @@ void Init_rugged_commit()
 	rb_define_method(rb_cRuggedCommit, "author", rb_git_commit_author_GET, 0);
 	rb_define_method(rb_cRuggedCommit, "tree", rb_git_commit_tree_GET, 0);
 	rb_define_method(rb_cRuggedCommit, "parents", rb_git_commit_parents_GET, 0);
+	rb_define_method(rb_cRuggedCommit, "parent_oids", rb_git_commit_parent_oids_GET, 0);
 }
 
