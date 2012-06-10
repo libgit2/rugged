@@ -162,6 +162,28 @@ static VALUE rb_git_commit_tree_GET(VALUE self)
 
 /*
  *	call-seq:
+ *		commit.tree_oid -> oid
+ *
+ *	Return the tree oid pointed at by this +commit+. The tree is
+ *	returned as a String object.
+ *
+ *		commit.tree #=> "f148106ca58764adc93ad4e2d6b1d168422b9796"
+ */
+static VALUE rb_git_commit_tree_oid_GET(VALUE self)
+{
+	git_commit *commit;
+	const git_oid *tree_oid;
+	int error;
+
+	Data_Get_Struct(self, git_commit, commit);
+
+	tree_oid = git_commit_tree_oid(commit);
+
+	return rugged_create_oid(tree_oid);
+}
+
+/*
+ *	call-seq:
  *		commit.parents -> [commit, ...]
  *
  *	Return the parent(s) of this commit as an array of +Rugged::Commit+
@@ -374,6 +396,7 @@ void Init_rugged_commit()
 	rb_define_method(rb_cRuggedCommit, "committer", rb_git_commit_committer_GET, 0);
 	rb_define_method(rb_cRuggedCommit, "author", rb_git_commit_author_GET, 0);
 	rb_define_method(rb_cRuggedCommit, "tree", rb_git_commit_tree_GET, 0);
+	rb_define_method(rb_cRuggedCommit, "tree_oid", rb_git_commit_tree_oid_GET, 0);
 	rb_define_method(rb_cRuggedCommit, "parents", rb_git_commit_parents_GET, 0);
 	rb_define_method(rb_cRuggedCommit, "parent_oids", rb_git_commit_parent_oids_GET, 0);
 }
