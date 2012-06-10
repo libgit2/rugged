@@ -21,4 +21,11 @@ context "Rugged::Tag tests" do
     assert_equal 1288114383, c[:time].to_i
     assert_equal "schacon@gmail.com", c[:email]
   end
+
+  test "can read the tag oid only" do
+    oid = "0c37a5391bbff43c37f0d0371823a5509eed5b1d"
+    obj = @repo.lookup(oid)
+
+    assert_equal "5b5b025afb0b4c913b4c338a42934a3863bf3644", obj.target_oid
+  end
 end

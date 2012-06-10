@@ -56,6 +56,28 @@ static VALUE rb_git_tag_target_GET(VALUE self)
 
 /*
  *	call-seq:
+ *		tag.target_oid -> oid
+ *
+ *	Return the oid pointed at by this tag, as a <tt>String</tt>
+ *	instance.
+ *
+ *		tag.target #=> "2cb831a8aea28b2c1b9c63385585b864e4d3bad1"
+ */
+static VALUE rb_git_tag_target_oid_GET(VALUE self)
+{
+	git_tag *tag;
+	const git_oid *target_oid;
+	int error;
+
+	Data_Get_Struct(self, git_tag, tag);
+
+	target_oid = git_tag_target_oid(tag);
+
+	return rugged_create_oid(target_oid);
+}
+
+/*
+ *	call-seq:
  *		tag.type -> t
  *
  *	Return a symbol representing the type of the objeced pointed at by
@@ -259,6 +281,7 @@ void Init_rugged_tag()
 	rb_define_method(rb_cRuggedTag, "message", rb_git_tag_message_GET, 0);
 	rb_define_method(rb_cRuggedTag, "name", rb_git_tag_name_GET, 0);
 	rb_define_method(rb_cRuggedTag, "target", rb_git_tag_target_GET, 0);
+	rb_define_method(rb_cRuggedTag, "target_oid", rb_git_tag_target_oid_GET, 0);
 	rb_define_method(rb_cRuggedTag, "target_type", rb_git_tag_target_type_GET, 0);
 	rb_define_method(rb_cRuggedTag, "tagger", rb_git_tag_tagger_GET, 0);
 }
