@@ -61,7 +61,7 @@ static VALUE rb_git_tag_target_GET(VALUE self)
  *	Return the oid pointed at by this tag, as a <tt>String</tt>
  *	instance.
  *
- *		tag.target #=> "2cb831a8aea28b2c1b9c63385585b864e4d3bad1"
+ *		tag.target_oid #=> "2cb831a8aea28b2c1b9c63385585b864e4d3bad1"
  */
 static VALUE rb_git_tag_target_oid_GET(VALUE self)
 {
