@@ -38,6 +38,21 @@ context "Rugged::Commit tests" do
     assert parents.include?("c47800c7266a2be04c571c04d5a6614691ea99bd")
   end
 
+  test "can list parent oids only" do
+    oid = "a4a7dce85cf63874e984719f4fdd239f5145052f"
+    obj = @repo.lookup(oid)
+    parents = obj.parent_oids
+    assert parents.include?("9fd738e8f7967c078dceed8190330fc8648ee56a")
+    assert parents.include?("c47800c7266a2be04c571c04d5a6614691ea99bd")
+  end
+
+  test "can read a tree oid only" do
+    oid = "8496071c1b46c854b31185ea97743be6a8774479"
+    obj = @repo.lookup(oid)
+
+    assert_equal obj.tree_oid, "181037049a54a1eb5fab404658a3a250b44335d7"
+  end
+
   test "can write new commit data" do
     person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
 
