@@ -6,8 +6,8 @@ Gem::Specification.new do |s|
   s.date              = Time.now.strftime('%Y-%m-%d')
   s.summary           = "Rugged is a Ruby binding to the libgit2 linkable library"
   s.homepage          = "http://github.com/libgit2/rugged"
-  s.email             = "schacon@gmail.com"
-  s.authors           = [ "Scott Chacon", "Vicent Marti" ]
+  s.email             = "libgit2@librelist.org"
+  s.authors           = ['GitHub, Inc']
   s.files             = %w( README.md Rakefile LICENSE )
   s.files             += Dir.glob("lib/**/*.rb")
   s.files             += Dir.glob("man/**/*")
