@@ -2,17 +2,17 @@
  * The MIT License
  *
  * Copyright (c) 2011 GitHub, Inc
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -35,7 +35,7 @@ VALUE rb_cRuggedTag;
  *
  *	Return the +object+ pointed at by this tag, as a <tt>Rugged::Object</tt>
  *	instance.
- *		
+ *
  *		tag.target #=> #<Rugged::Commit:0x108828918>
  */
 static VALUE rb_git_tag_target_GET(VALUE self)
@@ -52,6 +52,28 @@ static VALUE rb_git_tag_target_GET(VALUE self)
 	rugged_exception_check(error);
 
 	return rugged_object_new(owner, target);
+}
+
+/*
+ *	call-seq:
+ *		tag.target_oid -> oid
+ *
+ *	Return the oid pointed at by this tag, as a <tt>String</tt>
+ *	instance.
+ *
+ *		tag.target_oid #=> "2cb831a8aea28b2c1b9c63385585b864e4d3bad1"
+ */
+static VALUE rb_git_tag_target_oid_GET(VALUE self)
+{
+	git_tag *tag;
+	const git_oid *target_oid;
+	int error;
+
+	Data_Get_Struct(self, git_tag, tag);
+
+	target_oid = git_tag_target_oid(tag);
+
+	return rugged_create_oid(target_oid);
 }
 
 /*
@@ -259,6 +281,7 @@ void Init_rugged_tag()
 	rb_define_method(rb_cRuggedTag, "message", rb_git_tag_message_GET, 0);
 	rb_define_method(rb_cRuggedTag, "name", rb_git_tag_name_GET, 0);
 	rb_define_method(rb_cRuggedTag, "target", rb_git_tag_target_GET, 0);
+	rb_define_method(rb_cRuggedTag, "target_oid", rb_git_tag_target_oid_GET, 0);
 	rb_define_method(rb_cRuggedTag, "target_type", rb_git_tag_target_type_GET, 0);
 	rb_define_method(rb_cRuggedTag, "tagger", rb_git_tag_tagger_GET, 0);
 }
