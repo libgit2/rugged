@@ -232,11 +232,10 @@ static VALUE rb_git_commit_parent_oids_GET(VALUE self)
 	git_commit *commit;
 	const git_oid *parent_oid;
 	unsigned int n, parent_count;
-	VALUE ret_arr, owner;
+	VALUE ret_arr;
 	int error;
 
 	Data_Get_Struct(self, git_commit, commit);
-	owner = rugged_owner(self);
 
 	parent_count = git_commit_parentcount(commit);
 	ret_arr = rb_ary_new2((long)parent_count);
