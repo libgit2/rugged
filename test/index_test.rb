@@ -75,7 +75,7 @@ context "Rugged::Index reading stuff" do
   end
 
   test "can update entries" do
-    now = Time.now
+    now = Time.at Time.now.to_i
     e = @index.get_entry(0)
 
     e[:oid] = "12ea3153a78002a988bb92f4123e7e831fd1138a"
