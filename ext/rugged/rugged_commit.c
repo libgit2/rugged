@@ -224,8 +224,8 @@ static VALUE rb_git_commit_parents_GET(VALUE self)
  *	objects. An array is always returned even when the commit has only
  *	one or zero parents.
  *
- *		commit.parents #=> => ["2cb831a8aea28b2c1b9c63385585b864e4d3bad1", ...]
- *		root.parents #=> []
+ *		commit.parent_oids #=> => ["2cb831a8aea28b2c1b9c63385585b864e4d3bad1", ...]
+ *		root.parent_oids #=> []
  */
 static VALUE rb_git_commit_parent_oids_GET(VALUE self)
 {
