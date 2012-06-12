@@ -23,6 +23,7 @@
  */
 
 #include "rugged.h"
+#include <ctype.h>
 
 extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedObject;

@@ -166,7 +166,6 @@ static VALUE rb_git_config_delete(VALUE self, VALUE rb_key)
 {
 	git_config *config;
 	int error;
-	VALUE result;
 
 	Data_Get_Struct(self, git_config, config);
 	Check_Type(rb_key, T_STRING);

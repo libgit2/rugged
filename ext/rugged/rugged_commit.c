@@ -173,7 +173,6 @@ static VALUE rb_git_commit_tree_oid_GET(VALUE self)
 {
 	git_commit *commit;
 	const git_oid *tree_oid;
-	int error;
 
 	Data_Get_Struct(self, git_commit, commit);
 
@@ -233,7 +232,6 @@ static VALUE rb_git_commit_parent_oids_GET(VALUE self)
 	const git_oid *parent_oid;
 	unsigned int n, parent_count;
 	VALUE ret_arr;
-	int error;
 
 	Data_Get_Struct(self, git_commit, commit);
 

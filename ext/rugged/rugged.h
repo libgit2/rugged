@@ -80,7 +80,7 @@ static inline void rugged_set_owner(VALUE object, VALUE owner)
 
 static inline VALUE rugged_owner(VALUE object)
 {
-	rb_iv_get(object, "@owner");
+	return rb_iv_get(object, "@owner");
 }
 
 extern void rugged_exception_raise(int errorcode);
@@ -105,15 +105,9 @@ static inline int rugged_parse_bool(VALUE boolean)
 #	define rugged_str_new2(str, enc) rb_enc_str_new(str, strlen(str), enc)
 #	define rugged_str_ascii(str, len) rb_enc_str_new(str, len, rb_ascii8bit_encoding());
 
-static VALUE rugged_str_repoenc(const char *str, long len, VALUE rb_repo)
-{
-	VALUE rb_enc = rb_iv_get(rb_repo, "@encoding");
-	return rb_enc_str_new(str, len, NIL_P(rb_enc) ? NULL : rb_to_encoding(rb_enc));
-}
 #else
 #	define rugged_str_new(str, len, rb_enc)  rb_str_new(str, len)
 #	define rugged_str_new2(str, rb_enc) rb_str_new2(str)
-#	define rugged_str_repoenc(str, len, repo) rb_str_new(str, len)
 #	define rugged_str_ascii(str, len) rb_str_new(str, len)
 #endif
 

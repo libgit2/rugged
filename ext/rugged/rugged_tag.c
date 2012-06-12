@@ -67,7 +67,6 @@ static VALUE rb_git_tag_target_oid_GET(VALUE self)
 {
 	git_tag *tag;
 	const git_oid *target_oid;
-	int error;
 
 	Data_Get_Struct(self, git_tag, tag);
 
