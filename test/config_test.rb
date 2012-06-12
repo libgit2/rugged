@@ -2,7 +2,7 @@ require "test_helper"
 
 context "Rugged::Config tests" do
   setup do
-    @repo = Rugged::Repository.new(test_repo('testrepo.git'))
+    @repo = Rugged::Repository.new(temp_repo('testrepo.git'))
   end
 
   test "can read the config file from repo" do
