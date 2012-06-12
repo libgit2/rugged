@@ -42,7 +42,7 @@ const char *RUGGED_ERROR_NAMES[] = {
 	"IndexerError", /* GITERR_INDEXER, */
 };
 
-#define RUGGED_ERROR_COUNT ((sizeof(RUGGED_ERROR_NAMES)/sizeof(RUGGED_ERROR_NAMES[0])))
+#define RUGGED_ERROR_COUNT (int)((sizeof(RUGGED_ERROR_NAMES)/sizeof(RUGGED_ERROR_NAMES[0])))
 
 VALUE rb_mRugged;
 VALUE rb_eRuggedError;
@@ -67,7 +67,7 @@ static VALUE rb_git_hex_to_raw(VALUE self, VALUE hex)
 	Check_Type(hex, T_STRING);
 	rugged_exception_check(git_oid_fromstr(&oid, StringValueCStr(hex)));
 
-	return rugged_str_ascii(oid.id, 20);
+	return rugged_str_ascii((const char *)oid.id, 20);
 }
 
 /*
@@ -90,7 +90,7 @@ static VALUE rb_git_raw_to_hex(VALUE self, VALUE raw)
 	if (RSTRING_LEN(raw) != GIT_OID_RAWSZ)
 		rb_raise(rb_eTypeError, "Invalid buffer size for an OID");
 
-	git_oid_fromraw(&oid, RSTRING_PTR(raw));
+	git_oid_fromraw(&oid, (const unsigned char *)RSTRING_PTR(raw));
 	git_oid_fmt(out, &oid);
 
 	return rugged_str_new(out, 40, NULL);
