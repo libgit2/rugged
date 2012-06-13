@@ -54,6 +54,13 @@ module Rugged
       Rugged::Object.rev_parse(self, spec)
     end
 
+    # Look up a refspec.
+    #
+    # Returns the oid of the matched object as a String
+    def rev_parse_oid(spec)
+      Rugged::Object.rev_parse_oid(self, spec)
+    end
+
     # Look up a single reference by name.
     #
     # Example:

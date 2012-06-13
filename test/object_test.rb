@@ -36,4 +36,11 @@ context "Rugged::Object stuff" do
     obj = @repo.rev_parse("v1.0^1")
     assert "8496071c1b46c854b31185ea97743be6a8774479", obj.oid
   end
+
+  test "can lookup just an object's oid by refspec" do
+    oid = @repo.rev_parse_oid("v1.0")
+    assert "0c37a5391bbff43c37f0d0371823a5509eed5b1d", oid
+    obj = @repo.rev_parse_oid("v1.0^1")
+    assert "8496071c1b46c854b31185ea97743be6a8774479", oid
+  end
 end
