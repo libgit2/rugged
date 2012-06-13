@@ -1,42 +1,34 @@
-dir = File.dirname(File.expand_path(__FILE__))
-$LOAD_PATH.unshift dir + '/../lib'
 $TEST_DIR = File.dirname(File.expand_path(__FILE__))
 $TESTING = true
-require 'test/unit'
 require 'tempfile'
 require 'rubygems'
+require 'minitest/autorun'
 require 'rugged'
 require 'pp'
 
-##
-# test/spec/mini 3
-# http://gist.github.com/25455
-# chris@ozmm.org
-#
-def context(*args, &block)
-  return super unless (name = args.first) && block
-  require 'test/unit'
-  klass = Class.new(defined?(ActiveSupport::TestCase) ? ActiveSupport::TestCase : Test::Unit::TestCase) do
-    def self.test(name, &block)
-      define_method("test_#{name.gsub(/\W/,'_')}", &block) if block
+# backwards compat with test/spec/mini 3
+alias :context :describe
+
+module Rugged
+  class TestCase < MiniTest::Spec
+    class << self
+      # backwards compat with test/spec/mini 3
+      alias :setup :before
+      alias :teardown :after
+      alias :test :it
     end
-    def self.xtest(*args) end
-    def self.setup(&block) define_method(:setup, &block) end
-    def self.teardown(&block) define_method(:teardown, &block) end
+
+    # backwards compat with test/unit
+    alias :assert_not_nil :refute_nil
+    alias :assert_raise :assert_raises
   end
-  (class << klass; self end).send(:define_method, :name) { name.gsub(/\W/,'_') }
-  klass.class_eval &block
-  ($contexts ||= []) << klass # make sure klass doesn't get GC'd
-  klass
 end
 
-def testpath(path)
-  File.join($TEST_DIR, path)
-end
+MiniTest::Spec.register_spec_type(/./, Rugged::TestCase)
 
-def test_repo(repo)
+def temp_repo(repo)
   dir = temp_dir
-  repo_dir = testpath(File.join('fixtures', repo, '.'))
+  repo_dir = File.join($TEST_DIR, (File.join('fixtures', repo, '.')))
   `git clone #{repo_dir} #{dir}`
   dir
 end
