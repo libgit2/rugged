@@ -228,11 +228,11 @@ static VALUE rugged_object_rev_parse(VALUE klass, VALUE rb_repo, VALUE rb_spec, 
 
 	if (as_obj) {
 		return rugged_object_new(rb_repo, object);
-	} else {
-		ret = rugged_create_oid(git_object_id(object));
-		git_object_free(object);
-		return ret;
 	}
+
+	ret = rugged_create_oid(git_object_id(object));
+	git_object_free(object);
+	return ret;
 }
 
 VALUE rb_git_object_rev_parse(VALUE klass, VALUE rb_repo, VALUE rb_spec)
