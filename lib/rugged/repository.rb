@@ -47,6 +47,20 @@ module Rugged
       Rugged::Object.lookup(self, oid)
     end
 
+    # Look up an object by a revision string.
+    #
+    # Returns one of the four classes that inherit from Rugged::Object.
+    def rev_parse(spec)
+      Rugged::Object.rev_parse(self, spec)
+    end
+
+    # Look up an object by a revision string.
+    #
+    # Returns the oid of the matched object as a String
+    def rev_parse_oid(spec)
+      Rugged::Object.rev_parse_oid(self, spec)
+    end
+
     # Look up a single reference by name.
     #
     # Example:
