@@ -213,6 +213,7 @@ static VALUE rugged_object_rev_parse(VALUE klass, VALUE rb_repo, VALUE rb_spec, 
 	const char *spec;
 	int error;
 	git_repository *repo;
+	VALUE ret;
 
 	Check_Type(rb_spec, T_STRING);
 	spec = RSTRING_PTR(rb_spec);
@@ -225,10 +226,13 @@ static VALUE rugged_object_rev_parse(VALUE klass, VALUE rb_repo, VALUE rb_spec, 
 	error = git_revparse_single(&object, repo, spec);
 	rugged_exception_check(error);
 
-	if (as_obj)
+	if (as_obj) {
 		return rugged_object_new(rb_repo, object);
-	else
-		return rugged_create_oid(git_object_id(object));
+	} else {
+		ret = rugged_create_oid(git_object_id(object));
+		git_object_free(object);
+		return ret;
+	}
 }
 
 VALUE rb_git_object_rev_parse(VALUE klass, VALUE rb_repo, VALUE rb_spec)
