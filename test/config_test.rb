@@ -30,7 +30,7 @@ context "Rugged::Config tests" do
     assert_equal 'my value', config2['custom.value']
 
     content = File.read(File.join(@repo.path, 'config'))
-    assert_match /value = my value/, content
+    assert_match(/value = my value/, content)
   end
 
   test "can delete config values" do

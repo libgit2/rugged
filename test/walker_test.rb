@@ -56,7 +56,7 @@ context "Rugged::Walker stuff" do
 
   def revlist_with_sorting(sorting)
     data = do_sort sorting
-    oids = data.map {|a| a.oid[0,5] if a }.join('.')
+    data.map {|a| a.oid[0,5] if a }.join('.')
   end
 
   def is_toposorted(list)

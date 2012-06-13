@@ -16,12 +16,12 @@ context "Rugged::Repository stuff" do
   end
 
   test "fails to open unexisting repositories" do
-    assert_raise Rugged::OSError do
-      repo = Rugged::Repository.new("fakepath/123/")
+    assert_raises Rugged::OSError do
+      Rugged::Repository.new("fakepath/123/")
     end
 
-    assert_raise Rugged::RepositoryError do
-      repo = Rugged::Repository.new("/home/")
+    assert_raises Rugged::RepositoryError do
+      Rugged::Repository.new("/home/")
     end
   end
 
