@@ -99,7 +99,7 @@ context "Rugged::Index reading stuff" do
     e = new_index_entry
     @index << e
     assert_equal 3, @index.count
-    itr_test = @index.sort { |a, b| a[:oid] <=> b[:oid] }.map { |e| e[:path] }.join(':')
+    itr_test = @index.sort { |a, b| a[:oid] <=> b[:oid] }.map { |x| x[:path] }.join(':')
     assert_equal "README:new_path:new.txt", itr_test
   end
 end
@@ -129,7 +129,7 @@ context "Rugged::Index writing stuff" do
 
     index2 = Rugged::Index.new(@tmppath)
 
-    itr_test = index2.sort { |a, b| a[:oid] <=> b[:oid] }.map { |e| e[:path] }.join(':')
+    itr_test = index2.sort { |a, b| a[:oid] <=> b[:oid] }.map { |x| x[:path] }.join(':')
     assert_equal "README:else.txt:new_path:new.txt", itr_test
     assert_equal 4, index2.count
   end
