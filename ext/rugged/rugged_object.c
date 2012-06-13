@@ -2,17 +2,17 @@
  * The MIT License
  *
  * Copyright (c) 2011 GitHub, Inc
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -164,7 +164,7 @@ static git_otype class2otype(VALUE klass)
 
 	if (klass == rb_cRuggedTree)
 		return GIT_OBJ_TREE;
-	
+
 	return GIT_OBJ_BAD;
 }
 
@@ -207,6 +207,44 @@ VALUE rb_git_object_lookup(VALUE klass, VALUE rb_repo, VALUE rb_hex)
 	return rugged_object_new(rb_repo, object);
 }
 
+static VALUE rugged_object_rev_parse(VALUE klass, VALUE rb_repo, VALUE rb_spec, int as_obj)
+{
+	git_object *object;
+	const char *spec;
+	int error;
+	git_repository *repo;
+	VALUE ret;
+
+	Check_Type(rb_spec, T_STRING);
+	spec = RSTRING_PTR(rb_spec);
+
+	if (!rb_obj_is_instance_of(rb_repo, rb_cRuggedRepo))
+		rb_raise(rb_eTypeError, "Expecting a Rugged Repository");
+
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	error = git_revparse_single(&object, repo, spec);
+	rugged_exception_check(error);
+
+	if (as_obj) {
+		return rugged_object_new(rb_repo, object);
+	}
+
+	ret = rugged_create_oid(git_object_id(object));
+	git_object_free(object);
+	return ret;
+}
+
+VALUE rb_git_object_rev_parse(VALUE klass, VALUE rb_repo, VALUE rb_spec)
+{
+	return rugged_object_rev_parse(klass, rb_repo, rb_spec, 1);
+}
+
+VALUE rb_git_object_rev_parse_oid(VALUE klass, VALUE rb_repo, VALUE rb_spec)
+{
+	return rugged_object_rev_parse(klass, rb_repo, rb_spec, 0);
+}
+
 static VALUE rb_git_object_equal(VALUE self, VALUE other)
 {
 	git_object *a, *b;
@@ -247,6 +285,8 @@ void Init_rugged_object()
 {
 	rb_cRuggedObject = rb_define_class_under(rb_mRugged, "Object", rb_cObject);
 	rb_define_singleton_method(rb_cRuggedObject, "lookup", rb_git_object_lookup, 2);
+	rb_define_singleton_method(rb_cRuggedObject, "rev_parse", rb_git_object_rev_parse, 2);
+	rb_define_singleton_method(rb_cRuggedObject, "rev_parse_oid", rb_git_object_rev_parse_oid, 2);
 	rb_define_singleton_method(rb_cRuggedObject, "new", rb_git_object_lookup, 2);
 
 	rb_define_method(rb_cRuggedObject, "read_raw", rb_git_object_read_raw, 0);
