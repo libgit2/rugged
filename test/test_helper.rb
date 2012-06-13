@@ -1,6 +1,7 @@
 $TEST_DIR = File.dirname(File.expand_path(__FILE__))
 $TESTING = true
 require 'tempfile'
+require 'tmpdir'
 require 'rubygems'
 require 'minitest/autorun'
 require 'rugged'
@@ -34,11 +35,7 @@ def temp_repo(repo)
 end
 
 def temp_dir
-  file = Tempfile.new('dir')
-  dir = file.path
-  file.unlink
-  Dir.mkdir(dir)
-  dir
+  Dir.mktmpdir 'dir'
 end
 
 def rm_loose(oid)
