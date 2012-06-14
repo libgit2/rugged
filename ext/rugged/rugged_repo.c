@@ -136,6 +136,9 @@ static VALUE rugged_repo_new(VALUE klass, git_repository *repo)
 		rb_enc_from_encoding(rb_filesystem_encoding()));
 #endif
 
+	rb_iv_set(rb_repo, "@config", Qnil);
+	rb_iv_set(rb_repo, "@index", Qnil);
+
 	return rb_repo;
 }
 
