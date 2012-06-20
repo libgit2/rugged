@@ -688,8 +688,7 @@ static VALUE rb_git_repo_each_branch(int argc, VALUE *argv, VALUE self) {
   rugged_exception_check(error);
 
   for (i = 0; i < branches.count; ++i) {
-    VALUE result;
-    result = rb_yield(rb_str_new2(branches.strings[i]));
+    rb_yield(rb_str_new2(branches.strings[i]));
   }
 
   git_strarray_free(&branches);
