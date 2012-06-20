@@ -92,6 +92,8 @@ context "Rugged::Index reading stuff" do
     @index.add(e)
     new_e = @index[e[:path]]
 
+    # git only sets executable bit based on owner
+    e[:mode] = 33188
     assert_equal e, new_e
   end
 
