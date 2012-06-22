@@ -14,6 +14,12 @@ Rake::ExtensionTask.new('rugged') do |r|
   r.lib_dir = 'lib/rugged'
 end
 
+desc "checkout libgit2 source"
+task :checkout do
+  sh "git submodule update --init"
+end
+Rake::Task[:compile].prerequisites.insert(0, :checkout)
+
 task :embedded_clean do
   lib_path = File.expand_path '../ext/rugged/libgit2_embed.a', __FILE__
   system "rm #{lib_path}"
@@ -44,9 +50,9 @@ end
 begin
   require 'rdoc/task'
   Rake::RDocTask.new do |rdoc|
-      rdoc.rdoc_dir = 'rdoc'
-      rdoc.rdoc_files.include('ext/**/*.c')
-      rdoc.rdoc_files.include('lib/**/*.rb')
+    rdoc.rdoc_dir = 'rdoc'
+    rdoc.rdoc_files.include('ext/**/*.c')
+    rdoc.rdoc_files.include('lib/**/*.rb')
   end
 rescue LoadError
 end
