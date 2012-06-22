@@ -13,7 +13,12 @@ Gem::Specification.new do |s|
   s.files             += Dir.glob("man/**/*")
   s.files             += Dir.glob("test/**/*")
   s.files             += Dir.glob("ext/**/*.c") + Dir.glob("ext/**/*.h")
-  s.files             += ['ext/rugged/vendor/libgit2-dist.tar.gz']
+  s.files             += Dir.glob("vendor/libgit2/include/**/*.h")
+  s.files             += Dir.glob("vendor/libgit2/src/**/*.h")
+  s.files             += Dir.glob("vendor/libgit2/src/**/*.c")
+  s.files             += Dir.glob("vendor/libgit2/deps/**/*.h")
+  s.files             += Dir.glob("vendor/libgit2/deps/**/*.c")
+  s.files             += Dir.glob("vendor/libgit2/Makefile.embed")
   s.extensions        = ['ext/rugged/extconf.rb']
   s.description       = <<desc
 Rugged is a Ruby bindings to the libgit2 linkable C Git library. This is
