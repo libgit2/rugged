@@ -72,7 +72,7 @@ static VALUE rb_git_ref_packall(VALUE klass, VALUE rb_repo)
 
 static int ref_foreach__block(const char *ref_name, void *opaque)
 {
-	rb_funcall((VALUE)opaque, rb_intern("call"), 1, rugged_str_new2(ref_name, NULL));
+	rb_funcall((VALUE)opaque, rb_intern("call"), 1, rugged_str_new2(ref_name, rb_utf8_encoding()));
 	return GIT_OK;
 }
 
@@ -240,7 +240,7 @@ static VALUE rb_git_ref_target(VALUE self)
 	if (git_reference_type(ref) == GIT_REF_OID) {
 		return rugged_create_oid(git_reference_oid(ref));
 	} else {
-		return rugged_str_new2(git_reference_target(ref), NULL);
+		return rugged_str_new2(git_reference_target(ref), rb_utf8_encoding());
 	}
 }
 
@@ -351,7 +351,7 @@ static VALUE rb_git_ref_name(VALUE self)
 {
 	git_reference *ref;
 	UNPACK_REFERENCE(self, ref);
-	return rugged_str_new2(git_reference_name(ref), NULL);
+	return rugged_str_new2(git_reference_name(ref), rb_utf8_encoding());
 }
 
 /*
