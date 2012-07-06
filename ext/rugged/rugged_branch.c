@@ -150,6 +150,33 @@ static VALUE rb_git_branch_each(int argc, VALUE *argv, VALUE self)
 	return Qnil;
 }
 
+static VALUE rb_git_branch_move(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_repo, rb_old_branch_name, rb_new_branch_name, rb_force;
+	git_repository *repo = NULL;
+	int error, force;
+
+	rb_scan_args(argc, argv, "31", &rb_repo, &rb_old_branch_name, &rb_new_branch_name, &rb_force);
+
+	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo)) {
+		rb_raise(rb_eTypeError, "Expecting a Rugged::Repository instance");
+	}
+
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	Check_Type(rb_old_branch_name, T_STRING);
+	Check_Type(rb_new_branch_name, T_STRING);
+
+	if (!NIL_P(rb_force))
+		force = rugged_parse_bool(rb_force);
+
+	error = git_branch_move(repo, StringValueCStr(rb_old_branch_name), StringValueCStr(rb_new_branch_name), force);
+
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
 void Init_rugged_branch()
 {
 	rb_cRuggedBranch = rb_define_class_under(rb_mRugged, "Branch", rb_cObject);
@@ -157,4 +184,5 @@ void Init_rugged_branch()
 	rb_define_singleton_method(rb_cRuggedBranch, "each", rb_git_branch_each, -1);
 	rb_define_singleton_method(rb_cRuggedBranch, "delete", rb_git_branch_delete, -1);
 	rb_define_singleton_method(rb_cRuggedBranch, "create", rb_git_branch_create, -1);
+	rb_define_singleton_method(rb_cRuggedBranch, "move", rb_git_branch_move, -1);
 }
