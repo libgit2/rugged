@@ -8,13 +8,24 @@ context "Rugged::Branch.each" do
   end
 
   test "lists the names of all branches in a bare repository" do
-    list = Rugged::Branch.each(@repo).sort
     assert_equal [
       "master",
       "origin/HEAD",
       "origin/master",
       "origin/packed"
-    ], list
+    ], Rugged::Branch.each(@repo).sort
+  end
+
+  test "can list only local branches" do
+    assert_equal ["master"], Rugged::Branch.each(@repo, :local).sort
+  end
+
+  test "can list only remote branches" do
+    assert_equal [
+      "origin/HEAD",
+      "origin/master",
+      "origin/packed"
+    ], Rugged::Branch.each(@repo, :remote).sort
   end
 end
 
