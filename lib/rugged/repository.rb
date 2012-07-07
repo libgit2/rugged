@@ -122,7 +122,7 @@ module Rugged
     end
 
     def branches
-      Rugged::Branch.each(self).map { |name| Rugged::Branch.find(self, name) }
+      Rugged::Branch.each(self).map { |name| Rugged::Branch.lookup(self, name) }
     end
 
     def create_branch(name, sha_or_ref = "HEAD")
@@ -138,7 +138,7 @@ module Rugged
       end
 
       Branch.create(self, name, target)
-      Branch.find(self, name)
+      Branch.lookup(self, name)
     end
 
     # Get the content of a file at a specific revision.

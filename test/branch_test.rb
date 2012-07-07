@@ -29,14 +29,14 @@ context "Rugged::Branch.each" do
   end
 end
 
-context "Rugged::Branch.find" do
+context "Rugged::Branch.lookup" do
   setup do
     @path = temp_repo("testrepo.git")
     @repo = Rugged::Repository.new(@path)
   end
 
   test "can look up local branches" do
-    branch = Rugged::Branch.find(@repo, "master")
+    branch = Rugged::Branch.lookup(@repo, "master")
     refute_nil branch
 
     assert_equal "master", branch.name
@@ -45,7 +45,7 @@ context "Rugged::Branch.find" do
   end
 
   test "can look up a local branch by its canonical name" do
-    branch = Rugged::Branch.find(@repo, "refs/heads/master")
+    branch = Rugged::Branch.lookup(@repo, "refs/heads/master")
     refute_nil branch
 
     assert_equal "master", branch.name
@@ -54,7 +54,7 @@ context "Rugged::Branch.find" do
   end
 
   test "can look up remote branches" do
-    branch = Rugged::Branch.find(@repo, "origin/packed")
+    branch = Rugged::Branch.lookup(@repo, "origin/packed")
     refute_nil branch
 
     assert_equal "origin/packed", branch.name
@@ -63,7 +63,7 @@ context "Rugged::Branch.find" do
   end
 
   test "can look up a local branch by its canonical name" do
-    branch = Rugged::Branch.find(@repo, "refs/remotes/origin/packed")
+    branch = Rugged::Branch.lookup(@repo, "refs/remotes/origin/packed")
     refute_nil branch
 
     assert_equal "origin/packed", branch.name
@@ -75,7 +75,7 @@ context "Rugged::Branch.find" do
     new_branch = @repo.create_branch("Ångström", "5b5b025afb0b4c913b4c338a42934a3863bf3644")
     refute_nil new_branch
 
-    retrieved_branch = Rugged::Branch.find(@repo, "Ångström")
+    retrieved_branch = Rugged::Branch.lookup(@repo, "Ångström")
     refute_nil retrieved_branch
 
     assert_equal new_branch, retrieved_branch

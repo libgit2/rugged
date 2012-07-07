@@ -1,6 +1,6 @@
 module Rugged
   class Branch
-    def self.find(repo, name)
+    def self.lookup(repo, name)
       if name == "HEAD" || name.match(%r{^(refs/heads/|refs/remotes/)})
         ref = repo.ref(name)
       else
