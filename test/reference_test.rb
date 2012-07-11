@@ -1,4 +1,5 @@
-require "test_helper"
+# encoding: UTF-8
+require File.expand_path "../test_helper", __FILE__
 
 context "Rugged::Reference stuff" do
   setup do
@@ -8,11 +9,18 @@ context "Rugged::Reference stuff" do
 
   teardown do
     FileUtils.remove_entry_secure(@path + '/refs/heads/unit_test', true)
+    FileUtils.remove_entry_secure(@path + '/refs/heads/Ångström', true)
   end
 
   test "can list references" do
     refs = @repo.refs.map { |r| r.name.gsub("refs/", '') }.sort.join(':')
     assert_equal "heads/master:heads/packed:tags/v0.9:tags/v1.0", refs
+  end
+
+  test "can list references with non 7-bit ASCII characters" do
+    Rugged::Reference.create(@repo, "refs/heads/Ångström", "refs/heads/master")
+    refs = @repo.refs.map { |r| r.name.gsub("refs/", '') }.sort.join(':')
+    assert_equal "heads/master:heads/packed:heads/Ångström:tags/v0.9:tags/v1.0", refs
   end
 
   test "can list filtered references from regex" do
@@ -109,5 +117,30 @@ context "Rugged::Reference stuff" do
     assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", head.target
     assert_equal :direct, head.type
   end
+end
 
+context "Rugged::Reference#name" do
+  setup do
+    @path = temp_repo 'testrepo.git'
+    @repo = Rugged::Repository.new(@path)
+  end
+
+  it "returns the reference name with UTF-8 encoding" do
+    ref = Rugged::Reference.create(@repo, "refs/heads/Ångström", "refs/heads/master")
+    assert_equal "refs/heads/Ångström", ref.name
+  end
+end
+
+context "Rugged::Reference#target" do
+  setup do
+    @path = temp_repo 'testrepo.git'
+    @repo = Rugged::Repository.new(@path)
+  end
+
+  it "returns the reference target name with UTF-8 encoding" do
+    Rugged::Reference.create(@repo, "refs/heads/Ångström", "refs/heads/master")
+
+    ref = Rugged::Reference.create(@repo, "refs/heads/foobar", "refs/heads/Ångström")
+    assert_equal "refs/heads/Ångström", ref.target
+  end
 end
