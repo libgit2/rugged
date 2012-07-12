@@ -12,12 +12,8 @@ Gem::Specification.new do |s|
   s.files             += Dir.glob("lib/**/*.rb")
   s.files             += Dir.glob("man/**/*")
   s.files             += Dir.glob("test/**/*")
-  s.files             += Dir.glob("ext/**/*.c") + Dir.glob("ext/**/*.h")
-  s.files             += Dir.glob("vendor/libgit2/include/**/*.h")
-  s.files             += Dir.glob("vendor/libgit2/src/**/*.h")
-  s.files             += Dir.glob("vendor/libgit2/src/**/*.c")
-  s.files             += Dir.glob("vendor/libgit2/deps/**/*.h")
-  s.files             += Dir.glob("vendor/libgit2/deps/**/*.c")
+  s.files             += Dir.glob("ext/**/*.[ch]")
+  s.files             += Dir.glob("vendor/libgit2/{include,src,deps}/**/*.[ch]")
   s.files             += Dir.glob("vendor/libgit2/Makefile.embed")
   s.extensions        = ['ext/rugged/extconf.rb']
   s.description       = <<desc
