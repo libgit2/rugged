@@ -31,9 +31,6 @@ extern VALUE rb_cRuggedSignature;
 VALUE rb_cRuggedCommit;
 
 /*
- * Commit code
- */
-/*
  *	call-seq:
  *		commit.message -> msg
  *
@@ -51,7 +48,7 @@ static VALUE rb_git_commit_message_GET(VALUE self)
 	git_commit *commit;
 
 #ifdef HAVE_RUBY_ENCODING_H
-	rb_encoding *encoding = NULL;
+	rb_encoding *encoding = rb_utf8_encoding();
 	const char *encoding_name;
 #endif
 
