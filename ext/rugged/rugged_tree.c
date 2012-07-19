@@ -214,6 +214,7 @@ static VALUE rb_git_tree_walk(VALUE self, VALUE rb_mode)
 	return Qnil;
 }
 
+/*
 static VALUE rb_git_tree_subtree(VALUE self, VALUE rb_path)
 {
 	int error;
@@ -229,6 +230,21 @@ static VALUE rb_git_tree_subtree(VALUE self, VALUE rb_path)
 	rugged_exception_check(error);
 
 	return rugged_object_new(owner, (git_object *)subtree);
+}
+*/
+
+static VALUE rb_git_tree_path(VALUE self, VALUE rb_path)
+{
+  int error;
+  git_tree *tree;
+  git_tree_entry *entry;
+  Data_Get_Struct(self, git_tree, tree);
+  Check_Type(rb_path, T_STRING);
+
+  error = git_tree_entry_bypath(&entry, tree, StringValueCStr(rb_path));
+  rugged_exception_check(error);
+
+  return rb_git_treeentry_fromC(entry);
 }
 
 static void rb_git_treebuilder_free(git_treebuilder *bld)
@@ -372,7 +388,8 @@ void Init_rugged_tree()
 	rb_define_method(rb_cRuggedTree, "count", rb_git_tree_entrycount, 0);
 	rb_define_method(rb_cRuggedTree, "length", rb_git_tree_entrycount, 0);
 	rb_define_method(rb_cRuggedTree, "get_entry", rb_git_tree_get_entry, 1);
-	rb_define_method(rb_cRuggedTree, "get_subtree", rb_git_tree_subtree, 1);
+	/*rb_define_method(rb_cRuggedTree, "get_subtree", rb_git_tree_subtree, 1);*/
+	rb_define_method(rb_cRuggedTree, "path", rb_git_tree_path, 1);
 	rb_define_method(rb_cRuggedTree, "[]", rb_git_tree_get_entry, 1);
 	rb_define_method(rb_cRuggedTree, "each", rb_git_tree_each, 0);
 	rb_define_method(rb_cRuggedTree, "walk", rb_git_tree_walk, 1);
