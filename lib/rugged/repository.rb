@@ -129,11 +129,13 @@ module Rugged
     # Returns a String.
     def file_at(revision, path)
       tree = Rugged::Commit.lookup(self, revision).tree
-      subtree = tree.get_subtree(path)
-      blob_data = subtree.get_entry(File.basename path)
-      return nil unless blob_data
+	  begin
+		blob_data = tree.path(path)
+	  rescue Rugged::IndexerError
+        return nil
+	  end
       blob = Rugged::Blob.lookup(self, blob_data[:oid])
-      blob.content
+	  (blob.type == :blob) ? blob.content : nil
     end
   end
 end
