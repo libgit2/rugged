@@ -219,13 +219,17 @@ static VALUE rb_git_tree_path(VALUE self, VALUE rb_path)
   int error;
   git_tree *tree;
   git_tree_entry *entry;
+  VALUE rb_entry;
   Data_Get_Struct(self, git_tree, tree);
   Check_Type(rb_path, T_STRING);
 
   error = git_tree_entry_bypath(&entry, tree, StringValueCStr(rb_path));
   rugged_exception_check(error);
 
-  return rb_git_treeentry_fromC(entry);
+  rb_entry = rb_git_treeentry_fromC(entry);
+  git_tree_entry_free(entry);
+
+  return rb_entry;
 }
 
 static void rb_git_treebuilder_free(git_treebuilder *bld)
