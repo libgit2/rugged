@@ -1,0 +1,29 @@
+# Travis-CI Build for rugged
+# see travis-ci.org for details
+
+language: ruby
+
+# Ruby versions to test against
+rvm:
+  - 1.8.7
+  - 1.9.3
+  - rbx-18mode
+  - rbx-19mode
+
+# We need the config so the tests don't fail
+script:
+  - git config --global user.name 'The rugged tests are fragile'
+  - rake
+
+# Only watch the development branch
+branches:
+ only:
+   - development
+
+# Notify development list when needed
+notifications:
+ recipients:
+   - vicent@github.com
+ email:
+   on_success: change
+   on_failure: always
