@@ -542,6 +542,161 @@ static VALUE rb_git_repo_set_workdir(VALUE self, VALUE rb_workdir)
 
 /*
  *	call-seq:
+ *		repo.create_branch( name, target_oid, force = false)
+ *
+ *	Creates a branch named +name+ in +repo+, pointing at +target_oid+
+ *  Optionaly it orverwrite +branch+ if it is already existing
+ *  and that the creation has been forced (+force+ set to true)
+ *
+ *  Note that +target_oid+ should point either to a commit or
+ *  to a tag that can be dereferenced.
+ */
+static VALUE rb_git_repo_create_branch(int argc, VALUE* argv, VALUE self){
+  VALUE rb_name, rb_target, rb_force;
+	git_repository *repo;
+	git_oid oid, out_oid;
+  size_t length;
+  git_otype otype;
+  git_object *obj;
+	int error, force = 0;
+
+  rb_scan_args(argc, argv, "21", &rb_name, &rb_target, &rb_force);
+
+	Data_Get_Struct(self, git_repository, repo);
+	Check_Type(rb_name, T_STRING);
+	Check_Type(rb_target, T_STRING);
+
+  if (!NIL_P(rb_force))
+    force = rugged_parse_bool(rb_force);
+
+  error = git_oid_fromstr(&oid, StringValueCStr(rb_target));
+  rugged_exception_check(error);
+
+  error = git_object_lookup(&obj, repo, &oid, GIT_OBJ_ANY);
+  rugged_exception_check(error);
+
+  /*
+   * either a commit or a tag
+   */
+  otype = git_object_type(obj);
+  if ((otype != GIT_OBJ_COMMIT) && (otype != GIT_OBJ_TAG)) {
+    git_object_free(obj);
+    rb_raise(rb_eTypeError, "Target is neither a commit nor a tag");
+  }
+
+  error = git_branch_create(&out_oid, repo, StringValueCStr(rb_name), obj, force);
+  /*
+   * Object is useless now (in all cases) so let's free it.
+   * Note that git_object_free does not call giterr_set, so no chance
+   * it changes the error rugged_exception_check is looking at
+   */
+  git_object_free(obj);
+  rugged_exception_check(error);
+
+	return rugged_create_oid(&oid);
+}
+
+/*
+ *	call-seq:
+ *		repo.move_branch( old_branch, new_branch, force = false)
+ *
+ *  Renames +old_branch+ to +new_branch+. If +new_branch+ exists and +force+
+ *  is true, move +old_branch+ to +new_branch+, overwriting it.
+ */
+static VALUE rb_git_repo_move_branch(int argc, VALUE* argv, VALUE self){
+  VALUE rb_old_branch, rb_new_branch, rb_force;
+	git_repository *repo;
+	int error, force = 0;
+
+  rb_scan_args(argc, argv, "21", &rb_old_branch, &rb_new_branch, &rb_force);
+
+	Data_Get_Struct(self, git_repository, repo);
+	Check_Type(rb_old_branch, T_STRING);
+	Check_Type(rb_new_branch, T_STRING);
+
+  if (!NIL_P(rb_force))
+    force = rugged_parse_bool(rb_force);
+
+  error = git_branch_move( repo, StringValueCStr(rb_old_branch), StringValueCStr(rb_new_branch), force);
+  rugged_exception_check(error);
+
+	return Qnil;
+}
+
+/*
+ *	call-seq:
+ *		repo.delete_branch( name, type = :local)
+ *
+ * Deletes the branch +name+.
+ * +type+ of the branch can be either +:local+(default) or +:remote+
+ *
+ */
+static VALUE rb_git_repo_delete_branch(int argc, VALUE* argv, VALUE self){
+  VALUE rb_name, rb_type;
+	git_repository *repo;
+	int error, type = GIT_BRANCH_LOCAL;
+
+  rb_scan_args(argc, argv, "11", &rb_name, &rb_type);
+
+	Data_Get_Struct(self, git_repository, repo);
+	Check_Type(rb_name, T_STRING);
+
+  if (!NIL_P(rb_type)) {
+    Check_Type(rb_type, T_SYMBOL);
+    type = rugged_parse_branch_type(rb_type);
+  }
+
+  error = git_branch_delete( repo, StringValueCStr(rb_name), type);
+  rugged_exception_check(error);
+
+	return Qnil;
+}
+
+/*
+ *	call-seq:
+ *		repo.each_branch( type = nil, &block )
+ *
+ * Calls the block for each branch of the specified +type+, passing it the 
+ * branch name.
+ *
+ * +type+ can be:
+ *   * :local only local branches are considered
+ *   * :remote only remote branches are considered
+ *   * nil local and remote branches are considered
+ *
+ */
+static VALUE rb_git_repo_each_branch(int argc, VALUE *argv, VALUE self) {
+  VALUE rb_type;
+	git_repository *repo;
+  git_strarray branches;
+  unsigned int i;
+	int error, type = GIT_BRANCH_LOCAL | GIT_BRANCH_REMOTE;
+
+  rb_scan_args(argc, argv, "01", &rb_type);
+
+  if (!rb_block_given_p())
+    rb_raise(rb_eArgError, "Expected block");
+
+	Data_Get_Struct(self, git_repository, repo);
+
+  if (!NIL_P(rb_type)) {
+    Check_Type(rb_type, T_SYMBOL);
+    type = rugged_parse_branch_type(rb_type);
+  }
+
+  error = git_branch_list(&branches, repo, type);
+  rugged_exception_check(error);
+
+  for (i = 0; i < branches.count; ++i) {
+    rb_yield(rb_str_new2(branches.strings[i]));
+  }
+
+  git_strarray_free(&branches);
+
+	return Qnil;
+}
+/*
+ *	call-seq:
  *		Repository.discover(path = nil, across_fs = true) -> repository
  *
  *	Traverse +path+ upwards until a Git working directory with a +.git+
@@ -712,6 +867,11 @@ void Init_rugged_repo()
 	rb_define_method(rb_cRuggedRepo, "index=",  rb_git_repo_set_index,  1);
 	rb_define_method(rb_cRuggedRepo, "config",  rb_git_repo_get_config,  0);
 	rb_define_method(rb_cRuggedRepo, "config=",  rb_git_repo_set_config,  1);
+
+	rb_define_method(rb_cRuggedRepo, "create_branch",  rb_git_repo_create_branch, -1);
+	rb_define_method(rb_cRuggedRepo, "move_branch",  rb_git_repo_move_branch, -1);
+	rb_define_method(rb_cRuggedRepo, "delete_branch",  rb_git_repo_delete_branch, -1);
+	rb_define_method(rb_cRuggedRepo, "each_branch",  rb_git_repo_each_branch, -1);
 
 	rb_define_method(rb_cRuggedRepo, "bare?",  rb_git_repo_is_bare,  0);
 	rb_define_method(rb_cRuggedRepo, "empty?",  rb_git_repo_is_empty,  0);

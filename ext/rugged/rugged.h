@@ -39,6 +39,7 @@
 #include <assert.h>
 #include <git2.h>
 #include <git2/odb_backend.h>
+#include <git2/branch.h>
 
 #define CSTR2SYM(s) (ID2SYM(rb_intern((s))))
 
@@ -97,6 +98,20 @@ static inline int rugged_parse_bool(VALUE boolean)
 		rb_raise(rb_eTypeError, "Expected boolean value");
 
 	return boolean ? 1 : 0;
+}
+
+static inline int rugged_parse_branch_type(VALUE type) {
+  ID t;
+
+  Check_Type(type, T_SYMBOL);
+  t = SYM2ID(type);
+  if ( t == rb_intern("local")) {
+    return GIT_BRANCH_LOCAL;
+  } else if (t == rb_intern("remote")) {
+    return GIT_BRANCH_REMOTE;
+  } else {
+    rb_raise(rb_eTypeError, "Branch type should be either :local or :remote");
+  }
 }
 
 /* support for string encodings in 1.9 */
