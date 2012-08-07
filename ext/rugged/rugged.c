@@ -245,6 +245,7 @@ void Init_rugged()
 	Init_rugged_reference();
 	Init_rugged_config();
 	Init_rugged_remote();
+	Init_rugged_diff();
 
 	/* Constants */
 	rb_define_const(rb_mRugged, "SORT_NONE", INT2FIX(0));

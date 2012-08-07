@@ -27,6 +27,7 @@
 extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedObject;
 extern VALUE rb_cRuggedRepo;
+extern VALUE rb_cRuggedDiff;
 
 VALUE rb_cRuggedTree;
 VALUE rb_cRuggedTreeBuilder;
@@ -232,6 +233,26 @@ static VALUE rb_git_tree_path(VALUE self, VALUE rb_path)
   return rb_entry;
 }
 
+static VALUE rb_git_tree_diff(VALUE self, VALUE other)
+{
+	git_tree *tree, *other_tree;
+	git_diff_options opts = {0};
+	git_repository *repo;
+	git_diff_list *diff;
+	VALUE owner;
+	int error;
+
+	Data_Get_Struct(self, git_tree, tree);
+	Data_Get_Struct(other, git_tree, other_tree);
+	owner = rugged_owner(self);
+	Data_Get_Struct(owner, git_repository, repo);
+
+	error = git_diff_tree_to_tree(repo, &opts, tree, other_tree, &diff);
+	rugged_exception_check(error);
+
+	return rugged_diff_new(rb_cRuggedDiff, self, diff);
+}
+
 static void rb_git_treebuilder_free(git_treebuilder *bld)
 {
 	git_treebuilder_free(bld);
@@ -374,6 +395,7 @@ void Init_rugged_tree()
 	rb_define_method(rb_cRuggedTree, "length", rb_git_tree_entrycount, 0);
 	rb_define_method(rb_cRuggedTree, "get_entry", rb_git_tree_get_entry, 1);
 	rb_define_method(rb_cRuggedTree, "path", rb_git_tree_path, 1);
+	rb_define_method(rb_cRuggedTree, "diff", rb_git_tree_diff, 1);
 	rb_define_method(rb_cRuggedTree, "[]", rb_git_tree_get_entry, 1);
 	rb_define_method(rb_cRuggedTree, "each", rb_git_tree_each, 0);
 	rb_define_method(rb_cRuggedTree, "walk", rb_git_tree_walk, 1);

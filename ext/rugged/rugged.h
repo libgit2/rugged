@@ -56,6 +56,7 @@ void Init_rugged_revwalk();
 void Init_rugged_reference();
 void Init_rugged_config();
 void Init_rugged_remote();
+void Init_rugged_diff();
 
 VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE self);
 
@@ -66,6 +67,8 @@ VALUE rugged_signature_new(const git_signature *sig, const char *encoding_name);
 VALUE rugged_index_new(VALUE klass, VALUE owner, git_index *index);
 VALUE rugged_object_new(VALUE owner, git_object *object);
 VALUE rugged_config_new(VALUE klass, VALUE owner, git_config *cfg);
+VALUE rugged_diff_new(VALUE klass, VALUE owner, git_diff_list *diff);
+
 
 VALUE rugged_otype_new(git_otype t);
 git_otype rugged_otype_get(VALUE rb_type);
