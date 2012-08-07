@@ -29,6 +29,20 @@ context "Rugged::Branch.each" do
   end
 end
 
+context "Rugged::Branch#tip" do
+  setup do
+    @path = temp_repo("testrepo.git")
+    @repo = Rugged::Repository.new(@path)
+  end
+
+  test "returns the latest commit of the branch" do
+    tip = Rugged::Branch.lookup(@repo, "master").tip
+
+    assert_kind_of Rugged::Commit, tip
+    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", tip.oid
+  end
+end
+
 context "Rugged::Branch.lookup" do
   setup do
     @path = temp_repo("testrepo.git")
@@ -79,6 +93,34 @@ context "Rugged::Branch.lookup" do
     refute_nil retrieved_branch
 
     assert_equal new_branch, retrieved_branch
+  end
+end
+
+context "Rugged::Repository.delete" do
+  setup do
+    @path = temp_repo("testrepo.git")
+    @repo = Rugged::Repository.new(@path)
+  end
+
+  test "deletes a branch from the repository" do
+    @repo.create_branch("test_branch")
+    Rugged::Branch.delete(@repo, "test_branch")
+    assert_nil Rugged::Branch.lookup(@repo, "test_branch")
+  end
+end
+
+context "Rugged::Repository.move" do
+  setup do
+    @path = temp_repo("testrepo.git")
+    @repo = Rugged::Repository.new(@path)
+  end
+
+  test "renames a branch" do
+    @repo.create_branch("test_branch")
+
+    Rugged::Branch.move(@repo, "test_branch", "other_branch")
+    assert_nil Rugged::Branch.lookup(@repo, "test_branch")
+    refute_nil Rugged::Branch.lookup(@repo, "other_branch")
   end
 end
 
