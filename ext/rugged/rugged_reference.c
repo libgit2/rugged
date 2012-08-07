@@ -456,10 +456,17 @@ static VALUE reflog_entry_new(const git_reflog_entry *entry)
 		rugged_signature_new(git_reflog_entry_committer(entry), NULL)
 	);
 
-	rb_hash_aset(rb_entry,
-		CSTR2SYM("message"),
-		rugged_str_new2(git_reflog_entry_msg(entry), NULL)
-	);
+	if (git_reflog_entry_msg(entry) == NULL) {
+		rb_hash_aset(rb_entry,
+			CSTR2SYM("message"),
+			Qnil
+		);
+	} else {
+		rb_hash_aset(rb_entry,
+			CSTR2SYM("message"),
+			rugged_str_new2(git_reflog_entry_msg(entry), NULL)
+		);
+	}
 
 	return rb_entry;
 }
@@ -514,48 +521,47 @@ static VALUE rb_git_reflog(VALUE self)
 
 /*
  *	call-seq:
- *		reference.log!(old_oid, committer, message = nil)
+ *		reference.log!(committer, message = nil)
  *
  *	Log a modification for this reference to the reflog.
- *	+old_oid+ may be +nil+ for newly created references.
  */
-static VALUE rb_git_reflog_write(
-	VALUE self,
-	VALUE rb_oid_old,
-	VALUE rb_committer,
-	VALUE rb_message)
+static VALUE rb_git_reflog_write(int argc, VALUE *argv, VALUE self)
 {
 	git_reference *ref;
+	git_reflog *reflog;
 	int error;
+
+	VALUE rb_committer, rb_message;
+
 	git_signature *committer;
 	const char *message = NULL;
-	git_oid oid_old;
+	
+	git_oid oid;
 
 	UNPACK_REFERENCE(self, ref);
+
+	rb_scan_args(argc, argv, "11", &rb_committer, &rb_message);
 
 	if (!NIL_P(rb_message)) {
 		Check_Type(rb_message, T_STRING);
 		message = StringValueCStr(rb_message);
 	}
 
-	if (!NIL_P(rb_oid_old)) {
-		Check_Type(rb_oid_old, T_STRING);
-		error = git_oid_fromstr(&oid_old, StringValueCStr(rb_oid_old));
-		rugged_exception_check(error);
-	}
+	error = git_reflog_read(&reflog, ref);
+	rugged_exception_check(error);
 
 	committer = rugged_signature_get(rb_committer);
 
-	error = git_reflog_write(
-		ref,
-		NIL_P(rb_oid_old) ? NULL : &oid_old,
-		committer,
-		message
-	);
+	error = git_reflog_append(reflog, git_reference_oid(ref), committer, message);
+	rugged_exception_check(error);
+
+	error = git_reflog_write(reflog);
+	rugged_exception_check(error);
+
+	git_reflog_free(reflog);
 
 	git_signature_free(committer);
 
-	rugged_exception_check(error);
 	return Qnil;
 }
 
@@ -585,5 +591,5 @@ void Init_rugged_reference()
 
 	rb_define_method(rb_cRuggedReference, "packed?", rb_git_ref_packed, 0);
 	rb_define_method(rb_cRuggedReference, "log", rb_git_reflog, 0);
-	rb_define_method(rb_cRuggedReference, "log!", rb_git_reflog_write, 3);
+	rb_define_method(rb_cRuggedReference, "log!", rb_git_reflog_write, -1);
 }
