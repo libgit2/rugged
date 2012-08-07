@@ -534,7 +534,7 @@ static VALUE rb_git_repo_set_workdir(VALUE self, VALUE rb_workdir)
 	Check_Type(rb_workdir, T_STRING);
 
 	rugged_exception_check(
-		git_repository_set_workdir(repo, StringValueCStr(rb_workdir))
+		git_repository_set_workdir(repo, StringValueCStr(rb_workdir), 0)
 	);
 
 	return Qnil;
