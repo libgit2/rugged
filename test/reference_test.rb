@@ -144,3 +144,35 @@ context "Rugged::Reference#target" do
     assert_equal "refs/heads/Ångström", ref.target
   end
 end
+
+context "Rugged::Reference#log!" do
+  setup do
+    @path = temp_repo 'testrepo.git'
+    @repo = Rugged::Repository.new(@path)
+
+    @ref = Rugged::Reference.create(@repo, "refs/heads/test-reflog", "36060c58702ed4c2a40832c51758d5344201d89a")
+  end
+
+  it "creates reflog entries" do
+    @ref.log!({ :name => "foo", :email => "foo@bar", :time => Time.now })
+    @ref.log!({ :name => "foo", :email => "foo@bar", :time => Time.now }, "commit: bla bla")
+
+    reflog = @ref.log
+    assert_equal reflog.size, 2
+
+    assert_equal reflog[0][:oid_old], "0000000000000000000000000000000000000000"
+    assert_equal reflog[0][:oid_new], "36060c58702ed4c2a40832c51758d5344201d89a"
+    assert_equal reflog[0][:message], nil
+    assert_equal reflog[0][:committer][:name], "foo"
+    assert_equal reflog[0][:committer][:email], "foo@bar"
+    assert_kind_of Time, reflog[0][:committer][:time]
+
+    assert_equal reflog[1][:oid_old], "36060c58702ed4c2a40832c51758d5344201d89a"
+    assert_equal reflog[1][:oid_new], "36060c58702ed4c2a40832c51758d5344201d89a"
+    assert_equal reflog[1][:message], "commit: bla bla"
+    assert_equal reflog[1][:committer][:name], "foo"
+    assert_equal reflog[1][:committer][:email], "foo@bar"
+    assert_kind_of Time, reflog[1][:committer][:time]
+
+  end
+end
