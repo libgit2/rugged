@@ -191,7 +191,7 @@ static VALUE rb_git_remote_update_tips(VALUE self)
 	Data_Get_Struct(self, git_remote, remote);
 
 	// TODO: Maybe allow passing down a block?
-	error = git_remote_update_tips(remote, NULL);
+	error = git_remote_update_tips(remote);
 	rugged_exception_check(error);
 
 	return Qnil;
