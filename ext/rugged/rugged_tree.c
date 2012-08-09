@@ -155,7 +155,7 @@ static VALUE rb_git_tree_each(VALUE self)
 	return Qnil;
 }
 
-static int rugged__treewalk_cb(const char *root, git_tree_entry *entry, void *proc)
+static int rugged__treewalk_cb(const char *root, const git_tree_entry *entry, void *proc)
 {
 	rb_funcall((VALUE)proc, rb_intern("call"), 2,
 		rugged_str_new2(root, NULL),

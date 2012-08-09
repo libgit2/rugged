@@ -456,12 +456,7 @@ static VALUE reflog_entry_new(const git_reflog_entry *entry)
 		rugged_signature_new(git_reflog_entry_committer(entry), NULL)
 	);
 
-	if (git_reflog_entry_msg(entry) == NULL) {
-		rb_hash_aset(rb_entry,
-			CSTR2SYM("message"),
-			Qnil
-		);
-	} else {
+	if (git_reflog_entry_msg(entry) != NULL) {
 		rb_hash_aset(rb_entry,
 			CSTR2SYM("message"),
 			rugged_str_new2(git_reflog_entry_msg(entry), NULL)
