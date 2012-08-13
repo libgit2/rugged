@@ -147,15 +147,19 @@ static VALUE rb_git_diff_range_fromC(const git_diff_range *range)
 static int each_hunk_cb(void *data, git_diff_delta *delta, git_diff_range *range,
 			const char *header, size_t header_len)
 {
-	VALUE rb_hunk;
+	VALUE rb_hunk, rb_ary;
 
 	rb_hunk = rb_hash_new();
+	rb_ary = rb_ary_new2(2);
 
-	rb_hash_aset(rb_hunk, CSTR2SYM("delta"), rb_git_diff_delta_fromC(delta));
 	rb_hash_aset(rb_hunk, CSTR2SYM("range"), rb_git_diff_range_fromC(range));
 	rb_hash_aset(rb_hunk, CSTR2SYM("header"), rugged_str_new(header, header_len, NULL));
 
-	rb_yield(rb_hunk);
+	/* Push to the array so you can have { |delta, hunk| ... } in ruby */
+	rb_ary_push(rb_ary, rb_git_diff_delta_fromC(delta));
+	rb_ary_push(rb_ary, rb_hunk);
+
+	rb_yield(rb_ary);
 
 	return 0;
 }
