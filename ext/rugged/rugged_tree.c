@@ -44,7 +44,7 @@ static VALUE rb_git_treeentry_fromC(const git_tree_entry *entry)
 	rb_hash_aset(rb_entry, CSTR2SYM("name"), rugged_str_new2(git_tree_entry_name(entry), NULL));
 	rb_hash_aset(rb_entry, CSTR2SYM("oid"), rugged_create_oid(git_tree_entry_id(entry)));
 
-	rb_hash_aset(rb_entry, CSTR2SYM("attributes"), INT2FIX(git_tree_entry_attributes(entry)));
+	rb_hash_aset(rb_entry, CSTR2SYM("filemode"), INT2FIX(git_tree_entry_filemode(entry)));
 
 	switch(git_tree_entry_type(entry)) {
 		case GIT_OBJ_TREE:
@@ -96,9 +96,9 @@ static VALUE rb_git_tree_entrycount(VALUE self)
  *
  *	If the entry doesn't exist, +nil+ will be returned.
  *
- *		tree[3] #=> {:name => "foo.txt", :type => :blob, :oid => "d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f", :attributes => 0}
+ *		tree[3] #=> {:name => "foo.txt", :type => :blob, :oid => "d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f", :filemode => 0}
  *
- *		tree['bar.txt'] #=> {:name => "bar.txt", :type => :blob, :oid => "de5ba987198bcf2518885f0fc1350e5172cded78", :attributes => 0}
+ *		tree['bar.txt'] #=> {:name => "bar.txt", :type => :blob, :oid => "de5ba987198bcf2518885f0fc1350e5172cded78", :filemode => 0}
  *
  *		tree['baz.txt'] #=> nil
  */
@@ -132,8 +132,8 @@ static VALUE rb_git_tree_get_entry(VALUE self, VALUE entry_id)
  *
  *	generates:
  *
- *		{:name => "foo.txt", :type => :blob, :oid => "d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f", :attributes => 0}
- *		{:name => "bar.txt", :type => :blob, :oid => "de5ba987198bcf2518885f0fc1350e5172cded78", :attributes => 0}
+ *		{:name => "foo.txt", :type => :blob, :oid => "d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f", :filemode => 0}
+ *		{:name => "bar.txt", :type => :blob, :oid => "de5ba987198bcf2518885f0fc1350e5172cded78", :filemode => 0}
  *		...
  */
 static VALUE rb_git_tree_each(VALUE self)
@@ -298,7 +298,7 @@ static VALUE rb_git_treebuilder_insert(VALUE self, VALUE rb_entry)
 	Check_Type(rb_oid, T_STRING);
 	rugged_exception_check(git_oid_fromstr(&oid, StringValueCStr(rb_oid)));
 
-	rb_attr = rb_hash_aref(rb_entry, CSTR2SYM("attributes"));
+	rb_attr = rb_hash_aref(rb_entry, CSTR2SYM("filemode"));
 	Check_Type(rb_attr, T_FIXNUM);
 
 	error = git_treebuilder_insert(NULL,
