@@ -220,16 +220,20 @@ void rugged_exception_raise(int errorcode)
 	VALUE err_klass = rb_eRuggedError;
 	VALUE err_obj;
 	const git_error *error;
+	const char *message;
 
 	error = giterr_last();
 
-	if (!error)
-		return;
-
-	if (error->klass >= 0 && error->klass < RUGGED_ERROR_COUNT)
+	if (error && error->klass >= 0 && error->klass < RUGGED_ERROR_COUNT)
 		err_klass = rb_eRuggedErrors[error->klass];
 
-	err_obj = rb_exc_new2(err_klass, error->message);
+	if (error)
+		message = error->message;
+	else
+		message = "The library returned an error without setting a message";
+
+	err_obj = rb_exc_new2(err_klass, message);
+
 	giterr_clear();
 	rb_exc_raise(err_obj);
 }
