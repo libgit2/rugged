@@ -96,6 +96,13 @@ static VALUE rb_git_raw_to_hex(VALUE self, VALUE raw)
 	return rugged_str_new(out, 40, NULL);
 }
 
+/*
+ *	call-seq:
+ *		Rugged.prettify_message(message, strip_comments) -> clean_message
+ *
+ *	Process a commit or tag message into standard form, by stripping trailing spaces and
+ *	comments, and making sure that the message has a proper header line.
+ */
 static VALUE rb_git_prettify_message(VALUE self, VALUE rb_message, VALUE rb_strip_comments)
 {
 	char *message;
