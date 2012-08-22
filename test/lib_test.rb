@@ -37,4 +37,26 @@ context "Rugged::Lib stuff" do
     hex2 = raw.unpack("H*")[0]
     assert_equal hex1, hex2
   end
+
+  test "prettifies commit messages properly" do
+    message = <<-MESSAGE
+Testing this whole prettify business    
+
+with newlines and stuff  
+# take out this line haha
+# and this one
+
+not this one    
+MESSAGE
+  
+    clean_message = <<-MESSAGE
+Testing this whole prettify business
+
+with newlines and stuff
+
+not this one
+MESSAGE
+
+    assert_equal clean_message, Rugged::prettify_message(message, true)
+  end
 end

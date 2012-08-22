@@ -96,6 +96,27 @@ static VALUE rb_git_raw_to_hex(VALUE self, VALUE raw)
 	return rugged_str_new(out, 40, NULL);
 }
 
+static VALUE rb_git_prettify_message(VALUE self, VALUE rb_message, VALUE rb_strip_comments)
+{
+	char *message;
+	int strip_comments, message_len;
+	VALUE result;
+
+	Check_Type(rb_message, T_STRING);
+	strip_comments = rugged_parse_bool(rb_strip_comments);
+
+	message_len = (int)RSTRING_LEN(rb_message) + 2;
+	message = xmalloc(message_len);
+
+	message_len = git_message_prettify(message, message_len, StringValueCStr(rb_message), strip_comments);
+	rugged_exception_check(message_len);
+
+	result = rugged_str_new(message, message_len - 1, rb_utf8_encoding());
+	xfree(message);
+
+	return result;
+}
+
 static VALUE minimize_cb(VALUE rb_oid, git_oid_shorten *shortener)
 {
 	Check_Type(rb_oid, T_STRING);
@@ -232,6 +253,7 @@ void Init_rugged()
 	rb_define_module_function(rb_mRugged, "hex_to_raw", rb_git_hex_to_raw, 1);
 	rb_define_module_function(rb_mRugged, "raw_to_hex", rb_git_raw_to_hex, 1);
 	rb_define_module_function(rb_mRugged, "minimize_oid", rb_git_minimize_oid, -1);
+	rb_define_module_function(rb_mRugged, "prettify_message", rb_git_prettify_message, 2);
 
 	Init_rugged_object();
 	Init_rugged_commit();
