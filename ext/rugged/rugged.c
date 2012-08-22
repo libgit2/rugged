@@ -256,6 +256,7 @@ void Init_rugged()
 	rb_define_module_function(rb_mRugged, "prettify_message", rb_git_prettify_message, 2);
 
 	Init_rugged_object();
+	Init_rugged_branch();
 	Init_rugged_commit();
 	Init_rugged_tree();
 	Init_rugged_tag();
