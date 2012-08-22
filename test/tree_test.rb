@@ -58,7 +58,7 @@ context "Rugged::Tree tests" do
     entry = {:type => :blob,
              :name => "README.txt",
              :oid  => "1385f264afb75a56a5bec74243be9b367ba4ca08",
-             :attributes => 33188}
+             :filemode => 33188}
 
     builder = Rugged::Tree::Builder.new
     builder << entry
