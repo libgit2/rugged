@@ -1,6 +1,10 @@
 module Rugged
   class Commit
 
+    def self.prettify_message(msg, strip_comments = true)
+      Rugged::prettify_message(msg, strip_comments)
+    end
+
     def inspect
       "#<Rugged::Commit:#{object_id} {message: #{message.inspect}, tree: #{tree.inspect}, parents: #{parent_ids}>"
     end
