@@ -2,6 +2,8 @@
 require File.expand_path "../test_helper", __FILE__
 
 context "Rugged::Reference stuff" do
+  UNICODE_REF_NAME = "A\314\212ngstro\314\210m"
+
   setup do
     @path = File.dirname(__FILE__) + '/fixtures/testrepo.git'
     @repo = Rugged::Repository.new(@path)
@@ -9,7 +11,7 @@ context "Rugged::Reference stuff" do
 
   teardown do
     FileUtils.remove_entry_secure(@path + '/refs/heads/unit_test', true)
-    FileUtils.remove_entry_secure(@path + '/refs/heads/Ångström', true)
+    FileUtils.remove_entry_secure(@path + "/refs/heads/#{UNICODE_REF_NAME}", true)
   end
 
   test "can list references" do
@@ -18,10 +20,9 @@ context "Rugged::Reference stuff" do
   end
 
   test "can list references with non 7-bit ASCII characters" do
-    unicode_branch = "A\314\212ngstro\314\210m"
-    Rugged::Reference.create(@repo, "refs/heads/#{unicode_branch}", "refs/heads/master")
+    Rugged::Reference.create(@repo, "refs/heads/#{UNICODE_REF_NAME}", "refs/heads/master")
     refs = @repo.refs.map { |r| r.name.gsub("refs/", '') }.sort.join(':')
-    assert_equal "heads/#{unicode_branch}:heads/master:heads/packed:tags/v0.9:tags/v1.0", refs
+    assert_equal "heads/#{UNICODE_REF_NAME}:heads/master:heads/packed:tags/v0.9:tags/v1.0", refs
   end
 
   test "can list filtered references from regex" do
