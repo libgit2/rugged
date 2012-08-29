@@ -24,13 +24,6 @@
 
 #include "rugged.h"
 
-#define UNPACK_REFERENCE(_rb_obj, _rugged_obj) {\
-	if (DATA_PTR(_rb_obj) == NULL)\
-		rb_raise(rb_eRuntimeError,\
-			"This Git Reference has been deleted and no longer exists on the repository");\
-	Data_Get_Struct(_rb_obj, git_reference, _rugged_obj);\
-}
-
 extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedRepo;
 VALUE rb_cRuggedReference;
@@ -235,7 +228,7 @@ static VALUE rb_git_ref_target(VALUE self)
 {
 	git_reference *ref;
 
-	UNPACK_REFERENCE(self, ref);
+	RUGGED_UNPACK_REFERENCE(self, ref);
 
 	if (git_reference_type(ref) == GIT_REF_OID) {
 		return rugged_create_oid(git_reference_oid(ref));
@@ -265,7 +258,7 @@ static VALUE rb_git_ref_set_target(VALUE self, VALUE rb_target)
 	git_reference *ref;
 	int error;
 
-	UNPACK_REFERENCE(self, ref);
+	RUGGED_UNPACK_REFERENCE(self, ref);
 	Check_Type(rb_target, T_STRING);
 
 	if (git_reference_type(ref) == GIT_REF_OID) {
@@ -292,7 +285,7 @@ static VALUE rb_git_ref_set_target(VALUE self, VALUE rb_target)
 static VALUE rb_git_ref_type(VALUE self)
 {
 	git_reference *ref;
-	UNPACK_REFERENCE(self, ref);
+	RUGGED_UNPACK_REFERENCE(self, ref);
 	switch (git_reference_type(ref)) {
 		case GIT_REF_OID:
 			return CSTR2SYM("direct");
@@ -312,7 +305,7 @@ static VALUE rb_git_ref_type(VALUE self)
 static VALUE rb_git_ref_packed(VALUE self)
 {
 	git_reference *ref;
-	UNPACK_REFERENCE(self, ref);
+	RUGGED_UNPACK_REFERENCE(self, ref);
 
 	return git_reference_is_packed(ref) ? Qtrue : Qfalse;
 }
@@ -327,7 +320,7 @@ static VALUE rb_git_ref_reload(VALUE self)
 {
 	int error;
 	git_reference *ref;
-	UNPACK_REFERENCE(self, ref);
+	RUGGED_UNPACK_REFERENCE(self, ref);
 
 	error = git_reference_reload(ref);
 
@@ -350,7 +343,7 @@ static VALUE rb_git_ref_reload(VALUE self)
 static VALUE rb_git_ref_name(VALUE self)
 {
 	git_reference *ref;
-	UNPACK_REFERENCE(self, ref);
+	RUGGED_UNPACK_REFERENCE(self, ref);
 	return rugged_str_new2(git_reference_name(ref), rb_utf8_encoding());
 }
 
@@ -373,7 +366,7 @@ static VALUE rb_git_ref_resolve(VALUE self)
 	git_reference *resolved;
 	int error;
 
-	UNPACK_REFERENCE(self, ref);
+	RUGGED_UNPACK_REFERENCE(self, ref);
 
 	error = git_reference_resolve(&resolved, ref);
 	rugged_exception_check(error);
@@ -398,7 +391,7 @@ static VALUE rb_git_ref_rename(int argc, VALUE *argv, VALUE self)
 	VALUE rb_name, rb_force;
 	int error, force = 0;
 
-	UNPACK_REFERENCE(self, ref);
+	RUGGED_UNPACK_REFERENCE(self, ref);
 	rb_scan_args(argc, argv, "11", &rb_name, &rb_force);
 
 	Check_Type(rb_name, T_STRING);
@@ -427,7 +420,7 @@ static VALUE rb_git_ref_delete(VALUE self)
 	git_reference *ref;
 	int error;
 
-	UNPACK_REFERENCE(self, ref);
+	RUGGED_UNPACK_REFERENCE(self, ref);
 
 	error = git_reference_delete(ref);
 	rugged_exception_check(error);
@@ -495,7 +488,7 @@ static VALUE rb_git_reflog(VALUE self)
 	VALUE rb_log;
 	unsigned int i, ref_count;
 
-	UNPACK_REFERENCE(self, ref);
+	RUGGED_UNPACK_REFERENCE(self, ref);
 
 	error = git_reflog_read(&reflog, ref);
 	rugged_exception_check(error);
@@ -533,7 +526,7 @@ static VALUE rb_git_reflog_write(int argc, VALUE *argv, VALUE self)
 	
 	git_oid oid;
 
-	UNPACK_REFERENCE(self, ref);
+	RUGGED_UNPACK_REFERENCE(self, ref);
 
 	rb_scan_args(argc, argv, "11", &rb_committer, &rb_message);
 

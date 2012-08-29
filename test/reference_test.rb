@@ -18,9 +18,10 @@ context "Rugged::Reference stuff" do
   end
 
   test "can list references with non 7-bit ASCII characters" do
-    Rugged::Reference.create(@repo, "refs/heads/Ångström", "refs/heads/master")
+    unicode_branch = "A\314\212ngstro\314\210m"
+    Rugged::Reference.create(@repo, "refs/heads/#{unicode_branch}", "refs/heads/master")
     refs = @repo.refs.map { |r| r.name.gsub("refs/", '') }.sort.join(':')
-    assert_equal "heads/master:heads/packed:heads/Ångström:tags/v0.9:tags/v1.0", refs
+    assert_equal "heads/#{unicode_branch}:heads/master:heads/packed:tags/v0.9:tags/v1.0", refs
   end
 
   test "can list filtered references from regex" do

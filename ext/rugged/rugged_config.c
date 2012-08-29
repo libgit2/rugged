@@ -284,18 +284,18 @@ static VALUE rb_git_config_to_hash(VALUE self)
 
 /*
  *	call-seq:
- *		Config.open_global() -> new_config
+ *		Config.global() -> new_config
  *
- *	Open the global config file as a new +Rugged::Config+ object.
+ *	Open the default global config file as a new +Rugged::Config+ object.
  *	An exception will be raised if the global config file doesn't
  *	exist.
  */
-static VALUE rb_git_config_open_global(VALUE klass)
+static VALUE rb_git_config_open_default(VALUE klass)
 {
 	git_config *cfg;
 	int error;
 
-	error = git_config_open_global(&cfg);
+	error = git_config_open_default(&cfg);
 	rugged_exception_check(error);
 
 	return rugged_config_new(klass, Qnil, cfg);
@@ -308,7 +308,9 @@ void Init_rugged_config()
 	 */
 	rb_cRuggedConfig = rb_define_class_under(rb_mRugged, "Config", rb_cObject);
 	rb_define_singleton_method(rb_cRuggedConfig, "new", rb_git_config_new, 1);
-	rb_define_singleton_method(rb_cRuggedConfig, "open_global", rb_git_config_open_global, 0);
+
+	rb_define_singleton_method(rb_cRuggedConfig, "global", rb_git_config_open_default, 0);
+	rb_define_singleton_method(rb_cRuggedConfig, "open_global", rb_git_config_open_default, 0);
 
 	rb_define_method(rb_cRuggedConfig, "delete", rb_git_config_delete, 1);
 

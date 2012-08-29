@@ -122,7 +122,7 @@ module Rugged
     end
 
     def branches
-      Rugged::Branch.each(self).map { |name| Rugged::Branch.lookup(self, name) }
+      Rugged::Branch.each(self)
     end
 
     def create_branch(name, sha_or_ref = "HEAD")
@@ -138,7 +138,6 @@ module Rugged
       end
 
       Branch.create(self, name, target)
-      Branch.lookup(self, name)
     end
 
     # Get the content of a file at a specific revision.
@@ -149,13 +148,13 @@ module Rugged
     # Returns a String.
     def file_at(revision, path)
       tree = Rugged::Commit.lookup(self, revision).tree
-	  begin
-		blob_data = tree.path(path)
-	  rescue Rugged::IndexerError
+      begin
+        blob_data = tree.path(path)
+      rescue Rugged::IndexerError
         return nil
-	  end
+      end
       blob = Rugged::Blob.lookup(self, blob_data[:oid])
-	  (blob.type == :blob) ? blob.content : nil
+      (blob.type == :blob) ? blob.content : nil
     end
   end
 end

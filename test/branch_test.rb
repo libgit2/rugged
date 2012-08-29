@@ -1,7 +1,7 @@
 # encoding: UTF-8
 require "test_helper"
 
-context "Rugged::Branch.each" do
+context "Rugged::Branch.each_name" do
   setup do
     @path = temp_repo("testrepo.git")
     @repo = Rugged::Repository.new(@path)
@@ -12,20 +12,20 @@ context "Rugged::Branch.each" do
       "master",
       "origin/HEAD",
       "origin/master",
-      "origin/packed"
-    ], Rugged::Branch.each(@repo).sort
+      "origin/packed",
+    ], Rugged::Branch.each_name(@repo).sort
   end
 
   test "can list only local branches" do
-    assert_equal ["master"], Rugged::Branch.each(@repo, :local).sort
+    assert_equal ["master"], Rugged::Branch.each_name(@repo, :local).sort
   end
 
   test "can list only remote branches" do
     assert_equal [
       "origin/HEAD",
       "origin/master",
-      "origin/packed"
-    ], Rugged::Branch.each(@repo, :remote).sort
+      "origin/packed",
+    ], Rugged::Branch.each_name(@repo, :remote).sort
   end
 end
 
@@ -58,26 +58,8 @@ context "Rugged::Branch.lookup" do
     assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", branch.tip.oid
   end
 
-  test "can look up a local branch by its canonical name" do
-    branch = Rugged::Branch.lookup(@repo, "refs/heads/master")
-    refute_nil branch
-
-    assert_equal "master", branch.name
-    assert_equal "refs/heads/master", branch.canonical_name
-    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", branch.tip.oid
-  end
-
   test "can look up remote branches" do
-    branch = Rugged::Branch.lookup(@repo, "origin/packed")
-    refute_nil branch
-
-    assert_equal "origin/packed", branch.name
-    assert_equal "refs/remotes/origin/packed", branch.canonical_name
-    assert_equal "41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9", branch.tip.oid
-  end
-
-  test "can look up a local branch by its canonical name" do
-    branch = Rugged::Branch.lookup(@repo, "refs/remotes/origin/packed")
+    branch = Rugged::Branch.lookup(@repo, "origin/packed", :remote)
     refute_nil branch
 
     assert_equal "origin/packed", branch.name
@@ -103,8 +85,8 @@ context "Rugged::Repository.delete" do
   end
 
   test "deletes a branch from the repository" do
-    @repo.create_branch("test_branch")
-    Rugged::Branch.delete(@repo, "test_branch")
+    branch = @repo.create_branch("test_branch")
+    branch.delete!
     assert_nil Rugged::Branch.lookup(@repo, "test_branch")
   end
 end
@@ -116,9 +98,10 @@ context "Rugged::Repository.move" do
   end
 
   test "renames a branch" do
-    @repo.create_branch("test_branch")
+    branch = @repo.create_branch("test_branch")
 
-    Rugged::Branch.move(@repo, "test_branch", "other_branch")
+    branch.move('other_branch')
+
     assert_nil Rugged::Branch.lookup(@repo, "test_branch")
     refute_nil Rugged::Branch.lookup(@repo, "other_branch")
   end
@@ -144,16 +127,17 @@ context "Rugged::Repository#create_branch" do
   end
 
   test "can create branches with non 7-bit ASCII names" do
-    new_branch = @repo.create_branch("Ångström", "5b5b025afb0b4c913b4c338a42934a3863bf3644")
+    branch_name = "A\314\212ngstro\314\210m"
+    new_branch = @repo.create_branch(branch_name, "5b5b025afb0b4c913b4c338a42934a3863bf3644")
 
     refute_nil new_branch
-    assert_equal "Ångström", new_branch.name
-    assert_equal "refs/heads/Ångström", new_branch.canonical_name
+    assert_equal branch_name, new_branch.name
+    assert_equal "refs/heads/#{branch_name}", new_branch.canonical_name
 
     refute_nil new_branch.tip
     assert_equal "5b5b025afb0b4c913b4c338a42934a3863bf3644", new_branch.tip.oid
 
-    refute_nil @repo.branches.find { |p| p.name == "Ångström" }
+    refute_nil @repo.branches.find { |p| p.name == branch_name }
   end
 
   test "can create a new branch with an abbreviated sha" do
