@@ -285,6 +285,7 @@ static VALUE rb_git_config_to_hash(VALUE self)
 /*
  *	call-seq:
  *		Config.global() -> new_config
+ *		Config.open_global() -> new_config
  *
  *	Open the default global config file as a new +Rugged::Config+ object.
  *	An exception will be raised if the global config file doesn't

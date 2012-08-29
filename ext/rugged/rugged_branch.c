@@ -52,6 +52,22 @@ static int parse_branch_type(VALUE rb_filter)
 	}
 }
 
+/*
+ *	call-seq:
+ *		Branch.create(repository, name, target, force = false) -> branch
+ *
+ *	Create a new branch in +repository+, with the given +name+, and pointing
+ *	to the +target+.
+ *
+ *	+name+ needs to be a branch name, not an absolute reference path
+ *	(e.g. 'development' instead of '/refs/heads/development')
+ *
+ *	+target+ needs to be an existing object (of any type) in the given +repository+.
+ *
+ *	If +force+ is +true+, any existing branches will be overwritten.
+ *
+ *	Returns a Rugged::Branch object with the newly created branch.
+ */
 static VALUE rb_git_branch_create(int argc, VALUE *argv, VALUE self)
 {
 	git_reference *branch;
@@ -85,6 +101,20 @@ static VALUE rb_git_branch_create(int argc, VALUE *argv, VALUE self)
 	return rugged_branch_new(rb_repo, branch);
 }
 
+/*
+ *	call-seq:
+ *		Branch.lookup(repository, name, branch_type = :local) -> branch
+ *
+ *	Lookup a branch in +repository+, with the given +name+.
+ *
+ *	+name+ needs to be a branch name, not an absolute reference path
+ *	(e.g. 'development' instead of '/refs/heads/development')
+ *
+ *	+branch_type+ specifies whether the looked up branch is a local branch
+ *	or a remote one. It defaults to looking up local branches.
+ *
+ *	Returns the looked up branch, or +nil+ if the branch doesn't exist.
+ */
 static VALUE rb_git_branch_lookup(int argc, VALUE *argv, VALUE self)
 {
 	git_reference *branch;
@@ -116,6 +146,13 @@ static VALUE rb_git_branch_lookup(int argc, VALUE *argv, VALUE self)
 	return rugged_branch_new(rb_repo, branch);
 }
 
+/*
+ *	call-seq:
+ *		branch.delete!
+ *
+ *	Remove a branch from the repository. The branch object will become invalidated
+ *	and won't be able to be used for any other operations.
+ */
 static VALUE rb_git_branch_delete(VALUE self)
 {
 	git_reference *branch = NULL;
@@ -187,16 +224,53 @@ static VALUE each_branch(int argc, VALUE *argv, VALUE self, int branch_names_onl
 	return Qnil;
 }
 
+/*
+ *	call-seq:
+ *		Branch.each_name(repository, filter = :all) { |branch_name| block }
+ *		Branch.each_name(repository, filter = :all) -> Iterator
+ *
+ *	Iterate through the names of the branches in +repository+. Iteration can be
+ *	optionally filtered to yield only +:local+ or +:remote+ branches.
+ *
+ *	The given block will be called once with the name of each branch as a +String+.
+ *	If no block is given, an iterator will be returned.
+ */
 static VALUE rb_git_branch_each_name(int argc, VALUE *argv, VALUE self)
 {
 	return each_branch(argc, argv, self, 1);
 }
 
+
+/*
+ *	call-seq:
+ *		Branch.each(repository, filter = :all) { |branch| block }
+ *		Branch.each(repository, filter = :all) -> Iterator
+ *
+ *	Iterate through the branches in +repository+. Iteration can be
+ *	optionally filtered to yield only +:local+ or +:remote+ branches.
+ *
+ *	The given block will be called once with a +Rugged::Branch+ object
+ *	for each branch in the repository. If no block is given, an iterator
+ *	will be returned.
+ */
 static VALUE rb_git_branch_each(int argc, VALUE *argv, VALUE self)
 {
 	return each_branch(argc, argv, self, 0);
 }
 
+/*
+ *	call-seq:
+ *		branch.move(new_name, force = false)
+ *		branch.rename(new_name, force = false)
+ *
+ *	Rename a branch to +new_name+.
+ *
+ *	+new_name+ needs to be a branch name, not an absolute reference path
+ *	(e.g. 'development' instead of '/refs/heads/development')
+ *
+ *	If +force+ is +true+, the branch will be renamed even if a branch
+ *	with +new_name+ already exists.
+ */
 static VALUE rb_git_branch_move(int argc, VALUE *argv, VALUE self)
 {
 	VALUE rb_new_branch_name, rb_force;
