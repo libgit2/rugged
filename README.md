@@ -196,7 +196,7 @@ tree.count
 tree[0]           # or...
 tree.first        # or...
 tree.get_entry(0)
-# => {:type=>:blob, :oid=>"99e7edb53db9355f10c6f2dfaa5a183f205d93bf", :attributes=>33188, :name=>".gitignore"}
+# => {:type=>:blob, :oid=>"99e7edb53db9355f10c6f2dfaa5a183f205d93bf", :filemode=>33188, :name=>".gitignore"}
 ```
 
 The tree object is an Enumerable, so you can also do stuff like this:
@@ -219,7 +219,7 @@ You can also write trees with the `TreeBuilder`:
 entry = {:type => :blob,
          :name => "README.txt",
          :oid  => "1385f264afb75a56a5bec74243be9b367ba4ca08",
-         :attributes => 33188}
+         :filemode => 33188}
 
 builder = Rugged::Tree::Builder.new
 builder << entry
