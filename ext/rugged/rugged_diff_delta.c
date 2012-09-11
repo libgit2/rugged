@@ -24,7 +24,6 @@
 
 #include "rugged.h"
 
-extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedDiff;
 VALUE rb_cRuggedDiffDelta;
 
