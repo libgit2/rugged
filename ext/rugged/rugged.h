@@ -66,6 +66,7 @@ void Init_rugged_notes();
 void Init_rugged_settings();
 void Init_rugged_diff();
 void Init_rugged_diff_delta();
+void Init_rugged_diff_hunk();
 
 VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE self);
 
@@ -79,6 +80,7 @@ VALUE rugged_object_new(VALUE owner, git_object *object);
 VALUE rugged_ref_new(VALUE klass, VALUE owner, git_reference *ref);
 VALUE rugged_diff_new(VALUE klass, VALUE owner, rugged_diff *diff);
 VALUE rugged_diff_delta_new(VALUE owner, git_diff_delta *delta);
+VALUE rugged_diff_hunk_new(VALUE owner, const char *header, size_t header_len, git_diff_range *range);
 
 VALUE rugged_otype_new(git_otype t);
 git_otype rugged_otype_get(VALUE rb_type);

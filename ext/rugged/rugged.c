@@ -336,6 +336,7 @@ void Init_rugged()
 	Init_rugged_settings();
 	Init_rugged_diff();
 	Init_rugged_diff_delta();
+	Init_rugged_diff_hunk();
 
 	/* Constants */
 	rb_define_const(rb_mRugged, "SORT_NONE", INT2FIX(0));
