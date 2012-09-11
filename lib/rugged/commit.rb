@@ -34,7 +34,7 @@ module Rugged
         :parents => parents,
       }
     end
-    
+
     def parent_ids
       parents.map { |parent| parent.oid }
     end
