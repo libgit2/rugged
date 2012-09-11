@@ -102,8 +102,6 @@ static VALUE rb_git_diff_each_delta(VALUE self)
     rb_yield(rugged_diff_delta_new(self, delta));
   }
 
-  /* FIXME: figure out when to free diff->iter...? */
-
   return Qnil;
 }
 
