@@ -14,6 +14,10 @@ module Rugged
       def inspect
         "#<#{self.class.name}:#{object_id} {header: #{header.inspect}, range: #{range.inspect}>"
       end
+
+      def lines
+        Enumerator.new(self, :each_line)
+      end
     end
   end
 end
