@@ -70,7 +70,7 @@ static VALUE rb_git_libgit2_version(VALUE self)
 	git_libgit2_version(&major, &minor, &rev);
 
 	// We return an array of three elements to represent the version components
-	return rb_ary_new3(3, INT2NUM(major), INT2NUM(minor), INT2NUM(rev)); 
+	return rb_ary_new3(3, INT2NUM(major), INT2NUM(minor), INT2NUM(rev));
 }
 
 /*
@@ -313,7 +313,7 @@ void Init_rugged()
 	}
 
 	rb_define_module_function(rb_mRugged, "libgit2_version", rb_git_libgit2_version, 0);
-	rb_define_module_function(rb_mRugged, "capabilities", rb_git_capabilities, 0);  
+	rb_define_module_function(rb_mRugged, "capabilities", rb_git_capabilities, 0);
 	rb_define_module_function(rb_mRugged, "hex_to_raw", rb_git_hex_to_raw, 1);
 	rb_define_module_function(rb_mRugged, "raw_to_hex", rb_git_raw_to_hex, 1);
 	rb_define_module_function(rb_mRugged, "minimize_oid", rb_git_minimize_oid, -1);
@@ -334,6 +334,8 @@ void Init_rugged()
 	Init_rugged_remote();
 	Init_rugged_notes();
 	Init_rugged_settings();
+	Init_rugged_diff();
+	Init_rugged_diff_delta();
 
 	/* Constants */
 	rb_define_const(rb_mRugged, "SORT_NONE", INT2FIX(0));
