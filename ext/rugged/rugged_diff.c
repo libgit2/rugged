@@ -78,6 +78,19 @@ static VALUE rb_git_diff_patch_GET(VALUE self)
   return str;
 }
 
+static VALUE rb_git_diff_merge(VALUE self, VALUE rb_other)
+{
+  rugged_diff *diff;
+  rugged_diff *other;
+
+  Data_Get_Struct(self, rugged_diff, diff);
+  Data_Get_Struct(self, rugged_diff, other);
+
+  git_diff_merge(diff->diff, other->diff);
+
+  return self;
+}
+
 static VALUE rb_git_diff_each_delta(VALUE self)
 {
   rugged_diff *diff;
@@ -110,5 +123,6 @@ void Init_rugged_diff()
   rb_cRuggedDiff = rb_define_class_under(rb_mRugged, "Diff", rb_cObject);
 
   rb_define_method(rb_cRuggedDiff, "patch", rb_git_diff_patch_GET, 0);
+  rb_define_method(rb_cRuggedDiff, "merge!", rb_git_diff_merge, 1);
   rb_define_method(rb_cRuggedDiff, "each_delta", rb_git_diff_each_delta, 0);
 }
