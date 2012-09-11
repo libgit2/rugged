@@ -1,6 +1,9 @@
 module Rugged
   class Diff
     class Hunk
+      include Enumerable
+      alias each each_line
+
       attr_accessor :header
 
       attr_accessor :range
