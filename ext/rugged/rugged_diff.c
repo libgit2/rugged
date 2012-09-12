@@ -27,7 +27,6 @@
 extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedDiffFile;
 VALUE rb_cRuggedDiff;
-static ID id_write;
 
 static void rb_git_diff__free(rugged_diff *diff)
 {
@@ -86,7 +85,7 @@ static int diff_write_cb(void *data, git_diff_delta *delta, git_diff_range *rang
   VALUE str;
 
   str = rugged_str_new(line, line_len, NULL);
-  rb_funcall(*io, id_write, 1, str);
+  rb_io_write(*io, str);
 
   return 0;
 }
@@ -101,7 +100,7 @@ static VALUE rb_git_diff_write_patch(VALUE self, VALUE io)
 {
   rugged_diff *diff;
 
-  if (!rb_respond_to(io, id_write))
+  if (!rb_respond_to(io, rb_intern("write")))
     rb_raise(rb_eArgError, "Expected io to respond to \"write\"");
 
   Data_Get_Struct(self, rugged_diff, diff);
@@ -153,8 +152,6 @@ static VALUE rb_git_diff_each_delta(VALUE self)
 
 void Init_rugged_diff()
 {
-  id_write = rb_intern("write");
-
   rb_cRuggedDiff = rb_define_class_under(rb_mRugged, "Diff", rb_cObject);
 
   rb_define_method(rb_cRuggedDiff, "patch", rb_git_diff_patch_GET, 0);
