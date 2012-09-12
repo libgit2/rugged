@@ -62,8 +62,6 @@ static int diff_print_cb(void *data, git_diff_delta *delta, git_diff_range *rang
  *    diff.patch -> patch
  *
  *  Return a string containing the diff in patch form.
- *
- *
  */
 static VALUE rb_git_diff_patch_GET(VALUE self)
 {
