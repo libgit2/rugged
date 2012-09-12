@@ -60,6 +60,7 @@ static int diff_print_cb(void *data, git_diff_delta *delta, git_diff_range *rang
 /*
  *  call-seq:
  *    diff.patch -> patch
+ *    diff.patch(:compact => true) -> compact_patch
  *
  *  Return a string containing the diff in patch form.
  */
@@ -103,6 +104,7 @@ static int diff_write_cb(void *data, git_diff_delta *delta, git_diff_range *rang
 /*
  *  call-seq:
  *    diff.write_patch(io)
+ *    diff.write_patch(io, :compact => true)
  *
  *  Write a patch directly to an object which responds to "write".
  */
