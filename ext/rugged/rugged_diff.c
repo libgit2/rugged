@@ -63,15 +63,27 @@ static int diff_print_cb(void *data, git_diff_delta *delta, git_diff_range *rang
  *
  *  Return a string containing the diff in patch form.
  */
-static VALUE rb_git_diff_patch_GET(VALUE self)
+static VALUE rb_git_diff_patch_GET(int argc, VALUE *argv, VALUE self)
 {
   rugged_diff *diff;
   VALUE str;
+  VALUE rb_opts;
+  VALUE compact;
+
+  rb_scan_args(argc, argv, "01", &rb_opts);
 
   str = rugged_str_new(NULL, 0, NULL);
   Data_Get_Struct(self, rugged_diff, diff);
 
-  git_diff_print_patch(diff->diff, &str, diff_print_cb);
+  if (!NIL_P(rb_opts)) {
+    Check_Type(rb_opts, T_HASH);
+    if (rb_hash_aref(rb_opts, CSTR2SYM("compact")) == Qtrue)
+      git_diff_print_compact(diff->diff, &str, diff_print_cb);
+    else
+      git_diff_print_patch(diff->diff, &str, diff_print_cb);
+  } else {
+    git_diff_print_patch(diff->diff, &str, diff_print_cb);
+  }
 
   return str;
 }
@@ -94,16 +106,28 @@ static int diff_write_cb(void *data, git_diff_delta *delta, git_diff_range *rang
  *
  *  Write a patch directly to an object which responds to "write".
  */
-static VALUE rb_git_diff_write_patch(VALUE self, VALUE io)
+static VALUE rb_git_diff_write_patch(int argc, VALUE *argv, VALUE self)
 {
   rugged_diff *diff;
+  VALUE rb_io;
+  VALUE rb_opts;
 
-  if (!rb_respond_to(io, rb_intern("write")))
+  rb_scan_args(argc, argv, "11", &rb_io, &rb_opts);
+
+  if (!rb_respond_to(rb_io, rb_intern("write")))
     rb_raise(rb_eArgError, "Expected io to respond to \"write\"");
 
   Data_Get_Struct(self, rugged_diff, diff);
 
-  git_diff_print_patch(diff->diff, &io, diff_write_cb);
+  if (!NIL_P(rb_opts)) {
+    Check_Type(rb_opts, T_HASH);
+    if (rb_hash_aref(rb_opts, CSTR2SYM("compact")) == Qtrue)
+      git_diff_print_compact(diff->diff, &rb_io, diff_write_cb);
+    else
+      git_diff_print_patch(diff->diff, &rb_io, diff_write_cb);
+  } else {
+    git_diff_print_patch(diff->diff, &rb_io, diff_write_cb);
+  }
 
   return Qnil;
 }
@@ -152,8 +176,8 @@ void Init_rugged_diff()
 {
   rb_cRuggedDiff = rb_define_class_under(rb_mRugged, "Diff", rb_cObject);
 
-  rb_define_method(rb_cRuggedDiff, "patch", rb_git_diff_patch_GET, 0);
-  rb_define_method(rb_cRuggedDiff, "write_patch", rb_git_diff_write_patch, 1);
+  rb_define_method(rb_cRuggedDiff, "patch", rb_git_diff_patch_GET, -1);
+  rb_define_method(rb_cRuggedDiff, "write_patch", rb_git_diff_write_patch, -1);
   rb_define_method(rb_cRuggedDiff, "merge!", rb_git_diff_merge, 1);
   rb_define_method(rb_cRuggedDiff, "each_delta", rb_git_diff_each_delta, 0);
 }
