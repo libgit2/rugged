@@ -4,6 +4,9 @@ module Rugged
       include Enumerable
       alias each each_hunk
 
+      alias size hunk_count
+      alias count hunk_count
+
       attr_accessor :owner
       alias diff owner
 
