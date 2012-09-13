@@ -4,6 +4,9 @@ module Rugged
       include Enumerable
       alias each each_line
 
+      alias size line_count
+      alias count line_count
+
       attr_accessor :header
 
       attr_accessor :range

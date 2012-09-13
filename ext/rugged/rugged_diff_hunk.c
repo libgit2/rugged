@@ -76,9 +76,28 @@ static VALUE rb_git_diff_hunk_each_line(VALUE self)
   return Qnil;
 }
 
+static VALUE rb_git_diff_hunk_line_count(VALUE self)
+{
+  git_diff_delta *delta;
+  rugged_diff *diff;
+  int num_lines = 0;
+  VALUE rb_diff;
+  VALUE rb_hunk;
+
+  rb_hunk = rugged_owner(self);
+  rb_diff = rugged_owner(rb_hunk);
+  Data_Get_Struct(rb_diff, rugged_diff, diff);
+
+  num_lines = git_diff_iterator_num_lines_in_hunk(diff->iter);
+  rugged_exception_check(num_lines);
+
+  return INT2FIX(num_lines);
+}
+
 void Init_rugged_diff_hunk()
 {
   rb_cRuggedDiffHunk = rb_define_class_under(rb_cRuggedDiff, "Hunk", rb_cObject);
 
   rb_define_method(rb_cRuggedDiffHunk, "each_line", rb_git_diff_hunk_each_line, 0);
+  rb_define_method(rb_cRuggedDiffHunk, "line_count", rb_git_diff_hunk_line_count, 0);
 }
