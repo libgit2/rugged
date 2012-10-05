@@ -126,7 +126,7 @@ these methods should be useful in their derived classes.
 ```ruby
 obj = repo.lookup(sha)
 obj.oid  # object sha
-obj.type [OBJ_COMMIT, OBJ_TREE, OBJ_BLOB, OBJ_TAG]
+obj.type # One of :commit, :tree, :blob or :tag
 
 robj = obj.read_raw
 str  = robj.data
