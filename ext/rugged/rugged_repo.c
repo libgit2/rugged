@@ -199,6 +199,35 @@ static VALUE rb_git_repo_init_at(VALUE klass, VALUE path, VALUE rb_is_bare)
 	return rugged_repo_new(klass, repo);
 }
 
+/*
+ *	call-seq:
+ *		Rugged::Repository.clone_repo(url, target_path) -> repository
+ *
+ *	Clone a Git repository from the remote at +url+ into the given
+ *	local +target_path+ and return a Repository object pointing to
+ *	the freshly cloned repository's <tt>.git</tt> directory.
+ *
+ *		Rugged::Repository.clone("git://github.com/libgit2/libgit2.git", "~/libgit2")
+ */
+static VALUE rb_git_repo_clone(VALUE klass, VALUE url, VALUE target_path)
+{ /* TODO: Bare repos | Progress block | Exception docs */
+	git_repository *repo;
+	int error;
+
+	Check_Type(url, T_STRING);
+	Check_Type(target_path, T_STRING);
+
+	error = git_clone(&repo,
+			  StringValueCStr(url),
+			  StringValueCStr(target_path),
+			  NULL, /* TODO: Fetch stats for Ruby block */
+			  NULL, /* Not documented */
+			  NULL /* Not documented */);
+	rugged_exception_check(error);
+
+	return rugged_repo_new(klass, repo);
+}
+
 #define RB_GIT_REPO_OWNED_GET(_klass, _object) \
 	VALUE rb_data = rb_iv_get(self, "@" #_object); \
 	if (NIL_P(rb_data)) { \
@@ -696,6 +725,7 @@ void Init_rugged_repo()
 	rb_define_singleton_method(rb_cRuggedRepo, "hash",   rb_git_repo_hash,  2);
 	rb_define_singleton_method(rb_cRuggedRepo, "hash_file",   rb_git_repo_hashfile,  2);
 	rb_define_singleton_method(rb_cRuggedRepo, "init_at", rb_git_repo_init_at, 2);
+	rb_define_singleton_method(rb_cRuggedRepo, "clone_repo", rb_git_repo_clone, 2);
 	rb_define_singleton_method(rb_cRuggedRepo, "discover", rb_git_repo_discover, -1);
 
 	rb_define_method(rb_cRuggedRepo, "exists?", rb_git_repo_exists, 1);

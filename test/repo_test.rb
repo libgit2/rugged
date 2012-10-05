@@ -3,7 +3,7 @@ require 'base64'
 
 context "Rugged::Repository stuff" do
   setup do
-    @path = File.dirname(__FILE__) + '/fixtures/testrepo.git/'
+    @path = test_repo_path("testrepo.git")
     @repo = Rugged::Repository.new(@path)
 
     @test_content = "my test data\n"
@@ -137,6 +137,21 @@ context "Rugged::Repository stuff" do
   test "garbage collection methods don't crash" do
     Rugged::Repository.new(@path)
     ObjectSpace.garbage_collect
+  end
+
+  test "can successfully clone a repository" do
+    Dir.mktmpdir("clone-target-dir") do |tmpdir|
+    repo = Rugged::Repository.clone_repo("file://#@path", tmpdir)
+      assert "36060c58702ed4c2a40832c51758d5344201d89a", repo.last_commit.oid
+      assert repo.lookup("8496071c1b46c854b31185ea97743be6a8774479").kind_of?(Rugged::Commit)
+
+      ref = repo.ref('refs/heads/master')
+      assert ref.kind_of?(Rugged::Reference)
+      assert_equal 'refs/heads/master', ref.name
+
+      refs = repo.refs
+      assert_equal 4, refs.length
+    end
   end
 
 end

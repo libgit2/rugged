@@ -25,10 +25,13 @@ module Rugged
 
     private
 
+    def test_repo_path(repo)
+      File.join(TEST_DIR, (File.join('fixtures', repo, '.')))
+    end
+
     def temp_repo(repo)
       dir = Dir.mktmpdir 'dir'
-      repo_dir = File.join(TEST_DIR, (File.join('fixtures', repo, '.')))
-      `git clone #{repo_dir} #{dir}`
+      `git clone #{test_repo_path(repo)} #{dir}`
       dir
     end
 
