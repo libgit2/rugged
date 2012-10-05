@@ -28,6 +28,7 @@ extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedIndex;
 extern VALUE rb_cRuggedConfig;
 extern VALUE rb_cRuggedBackend;
+extern VALUE rb_cRuggedObject;
 
 VALUE rb_cRuggedRepo;
 VALUE rb_cRuggedOdbObject;
@@ -569,6 +570,50 @@ static VALUE rb_git_repo_set_workdir(VALUE self, VALUE rb_workdir)
 	return Qnil;
 }
 
+static VALUE rb_git_repo_checkout_head(VALUE self)
+{
+  git_repository *repo;
+  int error;
+
+  error = git_checkout_head(repo, NULL, NULL); /* TODO: Progress access for block */
+  rugged_exception_check(error);
+
+  return Qnil;
+}
+
+static VALUE rb_git_repo_checkout_index(VALUE self)
+{
+  git_repository *repo;
+  int error;
+
+  error = git_checkout_index(repo, NULL, NULL); /* TODO: Progress access for block */
+  rugged_exception_check(error);
+
+  return Qnil;
+}
+
+static VALUE rb_git_repo_checkout_tree(VALUE self, VALUE target)
+{
+  git_repository *repo;
+  int error;
+  git_object *treeish;
+  git_index *index;
+
+  Data_Get_Struct(self, git_repository, repo);
+
+  if (!rb_obj_is_kind_of(target, rb_cRuggedObject))
+    rb_raise(rb_eTypeError, "Expected argument #1 to be a Rugged::Object (a commit, a tag or a tree)!");
+  Data_Get_Struct(target, git_object, treeish);
+
+  /* Update the index */
+  error = git_checkout_tree(repo, treeish, NULL, NULL); /* TODO: Progress access for block */
+  rugged_exception_check(error);
+
+  /* TODO: Update the HEAD pointer -- detached HEAD? */
+
+  return Qnil;
+}
+
 /*
  *	call-seq:
  *		Repository.discover(path = nil, across_fs = true) -> repository
@@ -748,6 +793,10 @@ void Init_rugged_repo()
 
 	rb_define_method(rb_cRuggedRepo, "head_detached?",  rb_git_repo_head_detached,  0);
 	rb_define_method(rb_cRuggedRepo, "head_orphan?",  rb_git_repo_head_orphan,  0);
+
+	rb_define_method(rb_cRuggedRepo, "checkout_tree", rb_git_repo_checkout_tree, 1);
+	rb_define_method(rb_cRuggedRepo, "checkout_head", rb_git_repo_checkout_head, 0);
+	rb_define_method(rb_cRuggedRepo, "checkout_index", rb_git_repo_checkout_index, 0);
 
 	rb_cRuggedOdbObject = rb_define_class_under(rb_mRugged, "OdbObject", rb_cObject);
 	rb_define_method(rb_cRuggedOdbObject, "data",  rb_git_odbobj_data,  0);
