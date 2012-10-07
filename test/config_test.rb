@@ -17,7 +17,7 @@ context "Rugged::Config tests" do
   end
 
   test "can read the global config file" do
-    config = Rugged::Config.open_global
+    config = Rugged::Config.global
     assert_not_nil config['user.name']
     assert_nil config['core.bare']
   end

@@ -67,6 +67,7 @@ VALUE rugged_signature_new(const git_signature *sig, const char *encoding_name);
 VALUE rugged_index_new(VALUE klass, VALUE owner, git_index *index);
 VALUE rugged_object_new(VALUE owner, git_object *object);
 VALUE rugged_config_new(VALUE klass, VALUE owner, git_config *cfg);
+VALUE rugged_ref_new(VALUE klass, VALUE owner, git_reference *ref);
 
 VALUE rugged_otype_new(git_otype t);
 git_otype rugged_otype_get(VALUE rb_type);
@@ -117,6 +118,13 @@ static inline VALUE rugged_create_oid(const git_oid *oid)
 	char out[40];
 	git_oid_fmt(out, oid);
 	return rugged_str_new(out, 40, NULL);
+}
+
+#define RUGGED_UNPACK_REFERENCE(_rb_obj, _rugged_obj) {\
+	if (DATA_PTR(_rb_obj) == NULL)\
+		rb_raise(rb_eRuntimeError,\
+			"This Git Reference has been deleted and no longer exists on the repository");\
+	Data_Get_Struct(_rb_obj, git_reference, _rugged_obj);\
 }
 
 #endif

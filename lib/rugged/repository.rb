@@ -107,24 +107,34 @@ module Rugged
       Rugged::Reference.each(self)
     end
 
-    # All of the tags in the repository.
+    # All the tags in the repository.
     #
     # Returns an Enumerable::Enumerator containing all the String tag names.
     def tags(pattern="")
       Rugged::Tag.each(self, pattern)
     end
 
-    # All of the remotes in the repository.
+    # All the remotes in the repository.
     #
     # Returns an Enumerable::Enumerator containing all the String remote names.
     def remotes
       Rugged::Remote.each(self)
     end
 
+    # All the branches in the repository
+    #
+    # Returns an Enumerable::Enumerator containing Rugged::Branch objects
     def branches
-      Rugged::Branch.each(self).map { |name| Rugged::Branch.lookup(self, name) }
+      Rugged::Branch.each(self)
     end
 
+    # Create a new branch in the repository
+    #
+    # name - The name of the branch (without a full reference path)
+    # sha_or_ref - The target of the branch; either a String representing
+    # an OID or a reference name, or a Rugged::Object instance.
+    #
+    # Returns a Rugged::Branch object
     def create_branch(name, sha_or_ref = "HEAD")
       case sha_or_ref
       when Rugged::Object
@@ -138,7 +148,6 @@ module Rugged
       end
 
       Branch.create(self, name, target)
-      Branch.lookup(self, name)
     end
 
     # Get the content of a file at a specific revision.
@@ -149,13 +158,13 @@ module Rugged
     # Returns a String.
     def file_at(revision, path)
       tree = Rugged::Commit.lookup(self, revision).tree
-	  begin
-		blob_data = tree.path(path)
-	  rescue Rugged::IndexerError
+      begin
+        blob_data = tree.path(path)
+      rescue Rugged::IndexerError
         return nil
-	  end
+      end
       blob = Rugged::Blob.lookup(self, blob_data[:oid])
-	  (blob.type == :blob) ? blob.content : nil
+      (blob.type == :blob) ? blob.content : nil
     end
   end
 end
