@@ -42,6 +42,11 @@
 
 #define CSTR2SYM(s) (ID2SYM(rb_intern((s))))
 
+typedef struct {
+	git_diff_list *diff;
+	git_diff_iterator *iter;
+} rugged_diff;
+
 /*
  * Initialization functions
  */
@@ -57,6 +62,10 @@ void Init_rugged_revwalk();
 void Init_rugged_reference();
 void Init_rugged_config();
 void Init_rugged_remote();
+void Init_rugged_diff();
+void Init_rugged_diff_delta();
+void Init_rugged_diff_hunk();
+void Init_rugged_diff_line();
 
 VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE self);
 
@@ -68,6 +77,10 @@ VALUE rugged_index_new(VALUE klass, VALUE owner, git_index *index);
 VALUE rugged_object_new(VALUE owner, git_object *object);
 VALUE rugged_config_new(VALUE klass, VALUE owner, git_config *cfg);
 VALUE rugged_ref_new(VALUE klass, VALUE owner, git_reference *ref);
+VALUE rugged_diff_new(VALUE klass, VALUE owner, rugged_diff *diff);
+VALUE rugged_diff_delta_new(VALUE owner, git_diff_delta *delta);
+VALUE rugged_diff_hunk_new(VALUE owner, const char *header, size_t header_len, git_diff_range *range);
+VALUE rugged_diff_line_new(VALUE owner, const char line_origin, const char *content, size_t content_len);
 
 VALUE rugged_otype_new(git_otype t);
 git_otype rugged_otype_get(VALUE rb_type);
