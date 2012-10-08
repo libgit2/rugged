@@ -140,7 +140,8 @@ module Rugged
       when Rugged::Object
         target = sha_or_ref.oid
       else
-        if (ref = Rugged::Reference.lookup(self, sha_or_ref))
+        if Rugged::Reference.valid?(sha_or_ref)
+          ref = Rugged::Reference.lookup(self, sha_or_ref)
           target = ref.resolve.target
         else
           target = Rugged::Commit.lookup(self, sha_or_ref)
