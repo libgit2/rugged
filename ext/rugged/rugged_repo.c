@@ -128,6 +128,52 @@ void rb_git_repo__free(git_repository *repo)
 	git_repository_free(repo);
 }
 
+/* Helper function used by the checkout_* methods to parse the argument hash.
+ * Takes the hash (ruby_opts) and a git_checkout_opts struct to fill with the results
+ * of the parsing process. */
+static void rb_git__parse_checkout_options(const VALUE* ruby_opts, git_checkout_opts* p_opts)
+{
+  VALUE opts_strategy;
+  VALUE opts_disable_filters;
+  VALUE opts_dir_mode;
+  VALUE opts_file_mode;
+  VALUE opts_file_open_flags;
+  git_strarray paths;
+
+  opts_strategy        = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("strategy")));
+  opts_disable_filters = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("disable_filters")));
+  opts_dir_mode        = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("dir_mode")));
+  opts_file_mode       = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("file_mode")));
+  opts_file_open_flags = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("file_open_flags")));
+
+  /* Convert the Ruby hash values to C stuff */
+  p_opts->disable_filters = RTEST(opts_disable_filters); /* not set = nil = 0 = libgit2 default */
+  p_opts->dir_mode        = TYPE(opts_dir_mode)        == T_FIXNUM ? FIX2INT(opts_dir_mode)        : 0755 /* libgit2 default */;
+  p_opts->file_mode       = TYPE(opts_file_mode)       == T_FIXNUM ? FIX2INT(opts_file_mode)       : 0644 /* libgit2 default */;
+  p_opts->file_open_flags = TYPE(opts_file_open_flags) == T_FIXNUM ? FIX2INT(opts_file_open_flags) : O_CREAT | O_TRUNC | O_WRONLY /* libgit2 default */;
+
+  if (TYPE(opts_strategy) == T_ARRAY){
+    p_opts->checkout_strategy = 0; /* Ensure we start with a clean slate */
+
+    /* Now OR-in all requested flags */
+    if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("default"))))
+      p_opts->checkout_strategy |= GIT_CHECKOUT_DEFAULT;
+    if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("overwrite_modified"))))
+      p_opts->checkout_strategy |= GIT_CHECKOUT_OVERWRITE_MODIFIED;
+    if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("create_missing"))))
+      p_opts->checkout_strategy |= GIT_CHECKOUT_CREATE_MISSING;
+    if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("remove_untracked"))))
+      p_opts->checkout_strategy |=  GIT_CHECKOUT_REMOVE_UNTRACKED;
+  }
+  else
+    p_opts->checkout_strategy = GIT_CHECKOUT_DEFAULT; /* libgit2 default (for some unknown reason libgit2 segfaults with its own default value) */
+
+  /* Set other options (segfaults without) */
+  paths.count            = 0; /* 0 means checking out ALL files */
+  p_opts->paths          = paths; /* tricky, the default value segfaults; see `paths.count=0' above. */
+  p_opts->notify_payload = NULL; /* default value */
+}
+
 static VALUE rugged_repo_new(VALUE klass, git_repository *repo)
 {
 	VALUE rb_repo = Data_Wrap_Struct(klass, NULL, &rb_git_repo__free, repo);
@@ -203,31 +249,60 @@ static VALUE rb_git_repo_init_at(VALUE klass, VALUE path, VALUE rb_is_bare)
 
 /*
  *	call-seq:
- *		Rugged::Repository.clone_repo(url, target_path) -> repository
+ *		Rugged::Repository.clone_repo(url, target_path [, opts = {} ]) -> repository
  *
  *	Clone a Git repository from the remote at +url+ into the given
  *	local +target_path+ and return a Repository object pointing to
  *	the freshly cloned repository's <tt>.git</tt> directory.
  *
+ *	After the cloning has completed, Rugged immediately checks out the branch
+ *	pointed to by the remote HEAD. To suppress this, you can add the option
+ *	<tt>:bare</tt> to the +opts+ hash, which (as the name indicates)
+ *	will cause a bare repository to be created. Other than that,
+ *	+opts+ will be passed on to the checkout operation, so see
+ *	#checkout_index for possible values you can assign to +opts+.
+ *
  *		Rugged::Repository.clone("git://github.com/libgit2/libgit2.git", "~/libgit2")
  */
-static VALUE rb_git_repo_clone(VALUE klass, VALUE url, VALUE target_path)
-{ /* TODO: Bare repos | Progress block | Exception docs */
+static VALUE rb_git_repo_clone(int argc, VALUE argv[], VALUE self)
+{
+  VALUE url;
+  VALUE target_path;
+  VALUE ruby_opts;
 	git_repository *repo;
 	int error;
 
-	Check_Type(url, T_STRING);
-	Check_Type(target_path, T_STRING);
+  rb_scan_args(argc, argv, "21", &url, &target_path, &ruby_opts);
+  if (TYPE(ruby_opts) != T_HASH)
+    ruby_opts = rb_hash_new(); /* Assume empty hash of none given */
 
-	error = git_clone(&repo,
-			  StringValueCStr(url),
-			  StringValueCStr(target_path),
-			  NULL, /* TODO: Fetch stats for Ruby block */
-			  NULL, /* Not documented */
-			  NULL /* Not documented */);
+  if (RTEST(rb_hash_aref(ruby_opts, ID2SYM(rb_intern("bare"))))) {
+    error = git_clone_bare(&repo,
+                           StringValueCStr(url),
+                           StringValueCStr(target_path),
+                           NULL); /* TODO: Stats for block */
+  }
+  else {
+    /* Clone the options hash, so we can safely remove :bare from
+     * it in order to pass it on to the checkout operation. */
+    VALUE checkout_opts = rb_obj_dup(ruby_opts);
+    rb_hash_delete(checkout_opts, ID2SYM(rb_intern("bare")));
+
+    /* Parse the checkout options */
+    git_checkout_opts opts;
+    rb_git__parse_checkout_options(&ruby_opts, &opts);
+
+    error = git_clone(&repo,
+                      StringValueCStr(url),
+                      StringValueCStr(target_path),
+                      NULL, /* TODO: Fetch stats for Ruby block */
+                      NULL, /* TODO: Checkout stats for Ruby block */
+                      &opts);
+  }
+
 	rugged_exception_check(error);
 
-	return rugged_repo_new(klass, repo);
+	return rugged_repo_new(self, repo);
 }
 
 #define RB_GIT_REPO_OWNED_GET(_klass, _object) \
@@ -571,52 +646,6 @@ static VALUE rb_git_repo_set_workdir(VALUE self, VALUE rb_workdir)
 	return Qnil;
 }
 
-/* Helper function used by the checkout_* methods to parse the argument hash.
- * Takes the hash (ruby_opts) and a git_checkout_opts struct to fill with the results
- * of the parsing process. */
-static void rb_git__parse_checkout_options(const VALUE* ruby_opts, git_checkout_opts* p_opts)
-{
-  VALUE opts_strategy;
-  VALUE opts_disable_filters;
-  VALUE opts_dir_mode;
-  VALUE opts_file_mode;
-  VALUE opts_file_open_flags;
-  git_strarray paths;
-
-  opts_strategy        = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("strategy")));
-  opts_disable_filters = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("disable_filters")));
-  opts_dir_mode        = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("dir_mode")));
-  opts_file_mode       = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("file_mode")));
-  opts_file_open_flags = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("file_open_flags")));
-
-  /* Convert the Ruby hash values to C stuff */
-  p_opts->disable_filters = RTEST(opts_disable_filters); /* not set = nil = 0 = libgit2 default */
-  p_opts->dir_mode        = TYPE(opts_dir_mode)        == T_FIXNUM ? FIX2INT(opts_dir_mode)        : 0755 /* libgit2 default */;
-  p_opts->file_mode       = TYPE(opts_file_mode)       == T_FIXNUM ? FIX2INT(opts_file_mode)       : 0644 /* libgit2 default */;
-  p_opts->file_open_flags = TYPE(opts_file_open_flags) == T_FIXNUM ? FIX2INT(opts_file_open_flags) : O_CREAT | O_TRUNC | O_WRONLY /* libgit2 default */;
-
-  if (TYPE(opts_strategy) == T_ARRAY){
-    p_opts->checkout_strategy = 0; /* Ensure we start with a clean slate */
-
-    /* Now OR-in all requested flags */
-    if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("default"))))
-      p_opts->checkout_strategy |= GIT_CHECKOUT_DEFAULT;
-    if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("overwrite_modified"))))
-      p_opts->checkout_strategy |= GIT_CHECKOUT_OVERWRITE_MODIFIED;
-    if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("create_missing"))))
-      p_opts->checkout_strategy |= GIT_CHECKOUT_CREATE_MISSING;
-    if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("remove_untracked"))))
-      p_opts->checkout_strategy |=  GIT_CHECKOUT_REMOVE_UNTRACKED;
-  }
-  else
-    p_opts->checkout_strategy = GIT_CHECKOUT_DEFAULT; /* libgit2 default (for some unknown reason libgit2 segfaults with its own default value) */
-
-  /* Set other options (segfaults without) */
-  paths.count            = 0; /* 0 means checking out ALL files */
-  p_opts->paths          = paths; /* tricky, the default value segfaults; see `paths.count=0' above. */
-  p_opts->notify_payload = NULL; /* default value */
-}
-
 /*
  * call-seq:
  *   repo.checkout_index( [ opts = {} ] )
@@ -903,7 +932,7 @@ void Init_rugged_repo()
 	rb_define_singleton_method(rb_cRuggedRepo, "hash",   rb_git_repo_hash,  2);
 	rb_define_singleton_method(rb_cRuggedRepo, "hash_file",   rb_git_repo_hashfile,  2);
 	rb_define_singleton_method(rb_cRuggedRepo, "init_at", rb_git_repo_init_at, 2);
-	rb_define_singleton_method(rb_cRuggedRepo, "clone_repo", rb_git_repo_clone, 2);
+	rb_define_singleton_method(rb_cRuggedRepo, "clone_repo", rb_git_repo_clone, -1); /* Cannot name it ::clone b/c Ruby already has a method with this name */
 	rb_define_singleton_method(rb_cRuggedRepo, "discover", rb_git_repo_discover, -1);
 
 	rb_define_method(rb_cRuggedRepo, "exists?", rb_git_repo_exists, 1);
