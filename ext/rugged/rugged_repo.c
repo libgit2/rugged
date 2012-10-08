@@ -571,23 +571,106 @@ static VALUE rb_git_repo_set_workdir(VALUE self, VALUE rb_workdir)
 	return Qnil;
 }
 
+/* Helper function used by the checkout_* methods to parse the argument hash.
+ * Takes the hash (ruby_opts) and a git_checkout_opts struct to fill with the results
+ * of the parsing process. */
+static void rb_git__parse_checkout_options(const VALUE* ruby_opts, git_checkout_opts* p_opts)
+{
+  VALUE opts_strategy;
+  VALUE opts_disable_filters;
+  VALUE opts_dir_mode;
+  VALUE opts_file_mode;
+  VALUE opts_file_open_flags;
+  git_strarray paths;
+
+  opts_strategy        = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("strategy")));
+  opts_disable_filters = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("disable_filters")));
+  opts_dir_mode        = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("dir_mode")));
+  opts_file_mode       = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("file_mode")));
+  opts_file_open_flags = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("file_open_flags")));
+
+  /* Convert the Ruby hash values to C stuff */
+  p_opts->disable_filters = RTEST(opts_disable_filters); /* not set = nil = 0 = libgit2 default */
+  p_opts->dir_mode        = TYPE(opts_dir_mode)        == T_FIXNUM ? FIX2INT(opts_dir_mode)        : 0755 /* libgit2 default */;
+  p_opts->file_mode       = TYPE(opts_file_mode)       == T_FIXNUM ? FIX2INT(opts_file_mode)       : 0644 /* libgit2 default */;
+  p_opts->file_open_flags = TYPE(opts_file_open_flags) == T_FIXNUM ? FIX2INT(opts_file_open_flags) : O_CREAT | O_TRUNC | O_WRONLY /* libgit2 default */;
+
+  if (TYPE(opts_strategy) == T_ARRAY){
+    p_opts->checkout_strategy = 0; /* Ensure we start with a clean slate */
+
+    /* Now OR-in all requested flags */
+    if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("default"))))
+      p_opts->checkout_strategy |= GIT_CHECKOUT_DEFAULT;
+    if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("overwrite_modified"))))
+      p_opts->checkout_strategy |= GIT_CHECKOUT_OVERWRITE_MODIFIED;
+    if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("create_missing"))))
+      p_opts->checkout_strategy |= GIT_CHECKOUT_CREATE_MISSING;
+    if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("remove_untracked"))))
+      p_opts->checkout_strategy |=  GIT_CHECKOUT_REMOVE_UNTRACKED;
+  }
+  else
+    p_opts->checkout_strategy = GIT_CHECKOUT_DEFAULT; /* libgit2 default (for some unknown reason libgit2 segfaults with its own default value) */
+
+  /* Set other options (segfaults without) */
+  paths.count            = 0; /* 0 means checking out ALL files */
+  p_opts->paths          = paths; /* tricky, the default value segfaults; see `paths.count=0' above. */
+  p_opts->notify_payload = NULL; /* default value */
+}
+
+/*
+ * call-seq:
+ *   repo.checkout_index( [ opts = {} ] )
+ *
+ * Writes the files in the index ("staging area") out to the working
+ * tree. Does not update the HEAD pointer.
+ *
+ * +opts+ is a hash which can take the following values:
+ * [:strategy (<tt>[:default]</tt>)]
+ *   Defines how to exactly check out the given +treeish+. This is an
+ *   array containing one or more of the following symbols:
+ *   [:default]            Don't overwrite anything.
+ *   [:overwrite_modified] Overwrite files already there.
+ *   [:create_missing]     If a file is in the index, but not in the worktree, copy it nevertheless to the work tree.
+ *   [:remove_untracked]   Delete files from the working tree not checked into Git.
+ * [:disable_filters (0)]
+ *   Not documented by libgit2.
+ * [:dir_mode (0755)]
+ *   Not documented by libgit2.
+ * [:file_mode (0664)]
+ *   Not documented by libgit2.
+ * [:file_open_flags (<tt>IO::CREAT | IO::TRUNC | IO::WRONLY</tt>)]
+ *   Not documented by libgit2.
+ */
+static VALUE rb_git_repo_checkout_index(int argc, VALUE argv[], VALUE self)
+{
+  VALUE target;
+  VALUE ruby_opts;
+  git_repository *repo;
+  int error;
+  git_checkout_opts opts;
+
+  Data_Get_Struct(self, git_repository, repo);
+
+  /* Grab the options hash */
+  rb_scan_args(argc, argv, "1:", &target, &ruby_opts);
+  if (TYPE(ruby_opts) != T_HASH)
+    ruby_opts = rb_hash_new(); /* If not passed, assume an empty hash */
+
+  /* Parse the wealth of options and collect the results in `opts' */
+  rb_git__parse_checkout_options(&ruby_opts, &opts);
+
+  error = git_checkout_index(repo, &opts, NULL); /* TODO: Progress access for block */
+  rugged_exception_check(error);
+
+  return Qnil;
+}
+
 static VALUE rb_git_repo_checkout_head(VALUE self)
 {
   git_repository *repo;
   int error;
 
   error = git_checkout_head(repo, NULL, NULL); /* TODO: Progress access for block */
-  rugged_exception_check(error);
-
-  return Qnil;
-}
-
-static VALUE rb_git_repo_checkout_index(VALUE self)
-{
-  git_repository *repo;
-  int error;
-
-  error = git_checkout_index(repo, NULL, NULL); /* TODO: Progress access for block */
   rugged_exception_check(error);
 
   return Qnil;
@@ -611,83 +694,30 @@ static VALUE rb_git_repo_checkout_index(VALUE self)
  *   head = Rugged::Reference.lookup(repo, "HEAD")
  *   head.target = ref.name
  *
- * +opts+ is a hash which can take the following values:
- * [:strategy (<tt>[:default]</tt>)]
- *   Defines how to exactly check out the given +treeish+. This is an
- *   array containing one or more of the following symbols:
- *   [:default]            Read +treeish+ into the index. You should always include this.
- *   [:overwrite_modified] Write files out to the working tree, overwriting files.
- *   [:create_missing]     Write files out to the working tree, creating files that are not there yet.
- *   [:remove_untracked]   Write files out to the working tree and remove all files not checked into Git.
- * [:disable_filters (0)]
- *   Not documented by libgit2.
- * [:dir_mode (0755)]
- *   Not documented by libgit2.
- * [:file_mode (0664)]
- *   Not documented by libgit2.
- * [:file_open_flags (<tt>IO::CREAT | IO::TRUNC | IO::WRONLY</tt>)]
- *   Not documented by libgit2.
+ * See #checkout_tree for the values you can pass via +opts+.
  */
 static VALUE rb_git_repo_checkout_tree(VALUE argc, VALUE argv[], VALUE self)
 { /* NOTE: Checking out a tree is the same as pushing a tree onto the index (read-tree) and then checking out the index (checkout-index) */
   VALUE target;
   VALUE ruby_opts;
-  VALUE opts_strategy;
-  VALUE opts_disable_filters;
-  VALUE opts_dir_mode;
-  VALUE opts_file_mode;
-  VALUE opts_file_open_flags;
-
   git_repository *repo;
   int error;
   git_object *treeish;
-  git_index *index;
   git_checkout_opts opts;
-  git_strarray ary;
 
   Data_Get_Struct(self, git_repository, repo);
 
-  /* Grab the Ruby hash values */
+  /* Grab the options hash */
   rb_scan_args(argc, argv, "1:", &target, &ruby_opts);
   if (TYPE(ruby_opts) != T_HASH)
     ruby_opts = rb_hash_new(); /* If not passed, assume an empty hash */
-
-  opts_strategy = rb_hash_aref(ruby_opts, ID2SYM(rb_intern("strategy")));
-  opts_disable_filters = rb_hash_aref(ruby_opts, ID2SYM(rb_intern("disable_filters")));
-  opts_dir_mode = rb_hash_aref(ruby_opts, ID2SYM(rb_intern("dir_mode")));
-  opts_file_mode = rb_hash_aref(ruby_opts, ID2SYM(rb_intern("file_mode")));
-  opts_file_open_flags = rb_hash_aref(ruby_opts, ID2SYM(rb_intern("file_open_flags")));
 
   if (!rb_obj_is_kind_of(target, rb_cRuggedObject))
     rb_raise(rb_eTypeError, "Expected argument #1 to be a Rugged::Object (a commit, a tag or a tree)!");
   Data_Get_Struct(target, git_object, treeish);
 
-  /* Convert the Ruby hash values to C stuff */
-  opts.disable_filters = RTEST(opts_disable_filters); /* not set = nil = 0 = libgit2 default */
-  opts.dir_mode = TYPE(opts_dir_mode) == T_FIXNUM ? FIX2NUM(opts_dir_mode) : 0755 /* libgit2 default */;
-  opts.file_mode = TYPE(opts_file_mode) == T_FIXNUM ? FIX2NUM(opts_file_mode) : 0644 /* libgit2 default */;
-  opts.file_open_flags = TYPE(opts_file_open_flags) == T_FIXNUM ? FIX2NUM(opts_file_open_flags) : O_CREAT | O_TRUNC | O_WRONLY /* libgit2 default */;
-
-  if (TYPE(opts_strategy) == T_ARRAY){
-    opts.checkout_strategy = 0; /* Ensure we start with a clean slate */
-
-    /* Now OR-in all requested flags */
-    if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("default"))))
-      opts.checkout_strategy |= GIT_CHECKOUT_DEFAULT;
-    if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("overwrite_modified"))))
-      opts.checkout_strategy |= GIT_CHECKOUT_OVERWRITE_MODIFIED;
-    if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("create_missing"))))
-      opts.checkout_strategy |= GIT_CHECKOUT_CREATE_MISSING;
-    if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("remove_untracked"))))
-      opts.checkout_strategy |=  GIT_CHECKOUT_REMOVE_UNTRACKED;
-  }
-  else
-    opts.checkout_strategy = GIT_CHECKOUT_DEFAULT; /* libgit2 default (for some unknown reason libgit2 segfaults with its own default value) */
-
-  /* Set other options (segfaults without) */
-  ary.count = 0; /* 0 means checking out ALL files */
-  opts.notify_payload = NULL; /* default value */
-  opts.paths = ary; /* tricky, the default value segfaults; see `ary.count=0' above. */
+  /* Parse the wealth of options and collect the results in `opts' */
+  rb_git__parse_checkout_options(&ruby_opts, &opts);
 
   /* Update the index */
   error = git_checkout_tree(repo, treeish, &opts, NULL); /* TODO: Progress access for block */
