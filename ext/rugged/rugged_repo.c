@@ -643,7 +643,6 @@ static void rb_git__parse_checkout_options(const VALUE* ruby_opts, git_checkout_
  */
 static VALUE rb_git_repo_checkout_index(int argc, VALUE argv[], VALUE self)
 {
-  VALUE target;
   VALUE ruby_opts;
   git_repository *repo;
   int error;
@@ -652,25 +651,47 @@ static VALUE rb_git_repo_checkout_index(int argc, VALUE argv[], VALUE self)
   Data_Get_Struct(self, git_repository, repo);
 
   /* Grab the options hash */
-  rb_scan_args(argc, argv, "1:", &target, &ruby_opts);
+  rb_scan_args(argc, argv, "01", &ruby_opts);
   if (TYPE(ruby_opts) != T_HASH)
     ruby_opts = rb_hash_new(); /* If not passed, assume an empty hash */
 
   /* Parse the wealth of options and collect the results in `opts' */
   rb_git__parse_checkout_options(&ruby_opts, &opts);
 
+  /* Checkout operation */
   error = git_checkout_index(repo, &opts, NULL); /* TODO: Progress access for block */
   rugged_exception_check(error);
 
   return Qnil;
 }
 
-static VALUE rb_git_repo_checkout_head(VALUE self)
+/*
+ * call-seq:
+ *   repo.checkout_head( [ opts = {} ] )
+ *
+ * Updates files in the index and the working tree to match the commit pointed
+ * at by HEAD.
+ *
+ * See #checkout_index for a description of the values you can assign
+ * to +opts+.
+ */
+static VALUE rb_git_repo_checkout_head(int argc, VALUE argv[], VALUE self)
 {
+  VALUE ruby_opts;
   git_repository *repo;
   int error;
+  git_checkout_opts opts;
 
-  error = git_checkout_head(repo, NULL, NULL); /* TODO: Progress access for block */
+  /* Grab the options hash */
+  rb_scan_args(argc, argv, "01", &ruby_opts);
+  if (TYPE(ruby_opts) != T_HASH)
+    ruby_opts = rb_hash_new(); /* If not passed, assume an empty hash */
+
+  /* Parse the wealth of options and collect the results in `opts' */
+  rb_git__parse_checkout_options(&ruby_opts, &opts);
+
+  /* Checkout operation */
+  error = git_checkout_head(repo, &opts, NULL); /* TODO: Progress access for block */
   rugged_exception_check(error);
 
   return Qnil;
@@ -694,7 +715,8 @@ static VALUE rb_git_repo_checkout_head(VALUE self)
  *   head = Rugged::Reference.lookup(repo, "HEAD")
  *   head.target = ref.name
  *
- * See #checkout_tree for the values you can pass via +opts+.
+ * See #checkout_index for the values you can pass via +opts+. +treeish+ may be
+ * a real Tree instance, a Commit or a Tag object.
  */
 static VALUE rb_git_repo_checkout_tree(VALUE argc, VALUE argv[], VALUE self)
 { /* NOTE: Checking out a tree is the same as pushing a tree onto the index (read-tree) and then checking out the index (checkout-index) */
@@ -708,7 +730,7 @@ static VALUE rb_git_repo_checkout_tree(VALUE argc, VALUE argv[], VALUE self)
   Data_Get_Struct(self, git_repository, repo);
 
   /* Grab the options hash */
-  rb_scan_args(argc, argv, "1:", &target, &ruby_opts);
+  rb_scan_args(argc, argv, "11", &target, &ruby_opts);
   if (TYPE(ruby_opts) != T_HASH)
     ruby_opts = rb_hash_new(); /* If not passed, assume an empty hash */
 
@@ -905,9 +927,9 @@ void Init_rugged_repo()
 	rb_define_method(rb_cRuggedRepo, "head_detached?",  rb_git_repo_head_detached,  0);
 	rb_define_method(rb_cRuggedRepo, "head_orphan?",  rb_git_repo_head_orphan,  0);
 
+	rb_define_method(rb_cRuggedRepo, "checkout_index", rb_git_repo_checkout_index, -1);
+	rb_define_method(rb_cRuggedRepo, "checkout_head", rb_git_repo_checkout_head, -1);
 	rb_define_method(rb_cRuggedRepo, "checkout_tree", rb_git_repo_checkout_tree, -1);
-	rb_define_method(rb_cRuggedRepo, "checkout_head", rb_git_repo_checkout_head, 0);
-	rb_define_method(rb_cRuggedRepo, "checkout_index", rb_git_repo_checkout_index, 0);
 
 	rb_cRuggedOdbObject = rb_define_class_under(rb_mRugged, "OdbObject", rb_cObject);
 	rb_define_method(rb_cRuggedOdbObject, "data",  rb_git_odbobj_data,  0);
