@@ -593,8 +593,51 @@ static VALUE rb_git_repo_checkout_index(VALUE self)
   return Qnil;
 }
 
-static VALUE rb_git_repo_checkout_tree(VALUE self, VALUE target)
+/*
+ * call-seq:
+ *   repo.checkout_tree(treeish [, opts = {}])
+ *
+ * Reads the tree pointed to by +treeish+ into the index and if requested,
+ * writes the index out to the working tree afterwards. Note this method
+ * does *not* update the HEAD pointer, so you probably want to do this
+ * afterwards:
+ *
+ *   # Checkout the branch "yourbranch"
+ *   ref = Rugged::Reference.new(repo, "refs/heads/yourbranch")
+ *   commit = Rugged::Commit.lookup(repo, ref.target)
+ *   repo.checkout_tree(commit, strategy: [:overwrite_modified, :create_missing, :remove_untracked])
+ *
+ *   # Update the HEAD pointer to point to "yourbranch"
+ *   head = Rugged::Reference.lookup(repo, "HEAD")
+ *   head.target = ref.name
+ *
+ * +opts+ is a hash which can take the following values:
+ * [:strategy (<tt>[:default]</tt>)]
+ *   Defines how to exactly check out the given +treeish+. This is an
+ *   array containing one or more of the following symbols:
+ *   [:default]            Read +treeish+ into the index. You should always include this.
+ *   [:overwrite_modified] Write files out to the working tree, overwriting files.
+ *   [:create_missing]     Write files out to the working tree, creating files that are not there yet.
+ *   [:remove_untracked]   Write files out to the working tree and remove all files not checked into Git.
+ * [:disable_filters (0)]
+ *   Not documented by libgit2.
+ * [:dir_mode (0755)]
+ *   Not documented by libgit2.
+ * [:file_mode (0664)]
+ *   Not documented by libgit2.
+ * [:file_open_flags (<tt>IO::CREAT | IO::TRUNC | IO::WRONLY</tt>)]
+ *   Not documented by libgit2.
+ */
+static VALUE rb_git_repo_checkout_tree(VALUE argc, VALUE argv[], VALUE self)
 { /* NOTE: Checking out a tree is the same as pushing a tree onto the index (read-tree) and then checking out the index (checkout-index) */
+  VALUE target;
+  VALUE ruby_opts;
+  VALUE opts_strategy;
+  VALUE opts_disable_filters;
+  VALUE opts_dir_mode;
+  VALUE opts_file_mode;
+  VALUE opts_file_open_flags;
+
   git_repository *repo;
   int error;
   git_object *treeish;
@@ -604,27 +647,51 @@ static VALUE rb_git_repo_checkout_tree(VALUE self, VALUE target)
 
   Data_Get_Struct(self, git_repository, repo);
 
+  /* Grab the Ruby hash values */
+  rb_scan_args(argc, argv, "1:", &target, &ruby_opts);
+  if (TYPE(ruby_opts) != T_HASH)
+    ruby_opts = rb_hash_new(); /* If not passed, assume an empty hash */
+
+  opts_strategy = rb_hash_aref(ruby_opts, ID2SYM(rb_intern("strategy")));
+  opts_disable_filters = rb_hash_aref(ruby_opts, ID2SYM(rb_intern("disable_filters")));
+  opts_dir_mode = rb_hash_aref(ruby_opts, ID2SYM(rb_intern("dir_mode")));
+  opts_file_mode = rb_hash_aref(ruby_opts, ID2SYM(rb_intern("file_mode")));
+  opts_file_open_flags = rb_hash_aref(ruby_opts, ID2SYM(rb_intern("file_open_flags")));
+
   if (!rb_obj_is_kind_of(target, rb_cRuggedObject))
     rb_raise(rb_eTypeError, "Expected argument #1 to be a Rugged::Object (a commit, a tag or a tree)!");
   Data_Get_Struct(target, git_object, treeish);
 
-  /* Set the checkout options */
-  /* TODO: Hand these options to the user's control */
+  /* Convert the Ruby hash values to C stuff */
+  opts.disable_filters = RTEST(opts_disable_filters); /* not set = nil = 0 = libgit2 default */
+  opts.dir_mode = TYPE(opts_dir_mode) == T_FIXNUM ? FIX2NUM(opts_dir_mode) : 0755 /* libgit2 default */;
+  opts.file_mode = TYPE(opts_file_mode) == T_FIXNUM ? FIX2NUM(opts_file_mode) : 0644 /* libgit2 default */;
+  opts.file_open_flags = TYPE(opts_file_open_flags) == T_FIXNUM ? FIX2NUM(opts_file_open_flags) : O_CREAT | O_TRUNC | O_WRONLY /* libgit2 default */;
+
+  if (TYPE(opts_strategy) == T_ARRAY){
+    opts.checkout_strategy = 0; /* Ensure we start with a clean slate */
+
+    /* Now OR-in all requested flags */
+    if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("default"))))
+      opts.checkout_strategy |= GIT_CHECKOUT_DEFAULT;
+    if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("overwrite_modified"))))
+      opts.checkout_strategy |= GIT_CHECKOUT_OVERWRITE_MODIFIED;
+    if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("create_missing"))))
+      opts.checkout_strategy |= GIT_CHECKOUT_CREATE_MISSING;
+    if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("remove_untracked"))))
+      opts.checkout_strategy |=  GIT_CHECKOUT_REMOVE_UNTRACKED;
+  }
+  else
+    opts.checkout_strategy = GIT_CHECKOUT_DEFAULT; /* libgit2 default (for some unknown reason libgit2 segfaults with its own default value) */
+
+  /* Set other options (segfaults without) */
   ary.count = 0; /* 0 means checking out ALL files */
-  opts.checkout_strategy = GIT_CHECKOUT_OVERWRITE_MODIFIED | GIT_CHECKOUT_CREATE_MISSING | GIT_CHECKOUT_REMOVE_UNTRACKED;
-  opts.disable_filters = 0; /* default value */
-  opts.dir_mode = 0755; /* default value */
-  opts.file_mode = 0644; /* default value */
-  opts.file_open_flags = O_CREAT | O_TRUNC | O_WRONLY; /* default value */
   opts.notify_payload = NULL; /* default value */
   opts.paths = ary; /* tricky, the default value segfaults; see `ary.count=0' above. */
 
   /* Update the index */
   error = git_checkout_tree(repo, treeish, &opts, NULL); /* TODO: Progress access for block */
   rugged_exception_check(error);
-
-  /* TODO: Update the HEAD pointer -- detached HEAD? */
-
   return Qnil;
 }
 
@@ -808,7 +875,7 @@ void Init_rugged_repo()
 	rb_define_method(rb_cRuggedRepo, "head_detached?",  rb_git_repo_head_detached,  0);
 	rb_define_method(rb_cRuggedRepo, "head_orphan?",  rb_git_repo_head_orphan,  0);
 
-	rb_define_method(rb_cRuggedRepo, "checkout_tree", rb_git_repo_checkout_tree, 1);
+	rb_define_method(rb_cRuggedRepo, "checkout_tree", rb_git_repo_checkout_tree, -1);
 	rb_define_method(rb_cRuggedRepo, "checkout_head", rb_git_repo_checkout_head, 0);
 	rb_define_method(rb_cRuggedRepo, "checkout_index", rb_git_repo_checkout_index, 0);
 
