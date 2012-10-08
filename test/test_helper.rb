@@ -1,5 +1,6 @@
 require 'tempfile'
 require 'tmpdir'
+require "fileutils"
 require 'rubygems'
 require 'minitest/autorun'
 require 'rugged'

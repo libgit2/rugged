@@ -140,17 +140,27 @@ context "Rugged::Repository stuff" do
   end
 
   test "can successfully clone a repository" do
-    Dir.mktmpdir("clone-target-dir") do |tmpdir|
-    repo = Rugged::Repository.clone_repo("file://#@path", tmpdir)
-      assert "36060c58702ed4c2a40832c51758d5344201d89a", repo.last_commit.oid
-      assert repo.lookup("8496071c1b46c854b31185ea97743be6a8774479").kind_of?(Rugged::Commit)
+    # Remote clone
+    tmpdir = Dir.mktmpdir("clone-target-dir")
+    begin
+      repo = Rugged::Repository.clone_repo("git://github.com/libgit2/libgit2.git", tmpdir)
+      assert_kind_of Rugged::Commit, repo.lookup("1a628100534a315bd00361fc3d32df671923c107")
+    ensure
+      FileUtils.rm_rf(tmpdir)
+    end
 
-      ref = repo.ref('refs/heads/master')
-      assert ref.kind_of?(Rugged::Reference)
-      assert_equal 'refs/heads/master', ref.name
+    # Local clone
+    skip "libgit2 currently doesn't support the file:// protocol." # Remove this when libgit2 adds file://.
+    tmpdir = Dir.mktmpdir("clone-target-dir")
+    begin
+      repo = Rugged::Repository.clone_repo("file://#@path", tmpdir)
+      assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", repo.last_commit.oid
+      assert_kind_of Rugged::Commit repo.lookup("8496071c1b46c854b31185ea97743be6a8774479")
 
       refs = repo.refs
       assert_equal 4, refs.length
+    ensure
+      FileUtils.rm_rf(tmpdir)
     end
   end
 
