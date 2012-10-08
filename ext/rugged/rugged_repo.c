@@ -22,6 +22,7 @@
  * THE SOFTWARE.
  */
 
+#include <fcntl.h>
 #include "rugged.h"
 
 extern VALUE rb_mRugged;
@@ -593,11 +594,13 @@ static VALUE rb_git_repo_checkout_index(VALUE self)
 }
 
 static VALUE rb_git_repo_checkout_tree(VALUE self, VALUE target)
-{
+{ /* NOTE: Checking out a tree is the same as pushing a tree onto the index (read-tree) and then checking out the index (checkout-index) */
   git_repository *repo;
   int error;
   git_object *treeish;
   git_index *index;
+  git_checkout_opts opts;
+  git_strarray ary;
 
   Data_Get_Struct(self, git_repository, repo);
 
@@ -605,8 +608,19 @@ static VALUE rb_git_repo_checkout_tree(VALUE self, VALUE target)
     rb_raise(rb_eTypeError, "Expected argument #1 to be a Rugged::Object (a commit, a tag or a tree)!");
   Data_Get_Struct(target, git_object, treeish);
 
+  /* Set the checkout options */
+  /* TODO: Hand these options to the user's control */
+  ary.count = 0; /* 0 means checking out ALL files */
+  opts.checkout_strategy = GIT_CHECKOUT_OVERWRITE_MODIFIED | GIT_CHECKOUT_CREATE_MISSING | GIT_CHECKOUT_REMOVE_UNTRACKED;
+  opts.disable_filters = 0; /* default value */
+  opts.dir_mode = 0755; /* default value */
+  opts.file_mode = 0644; /* default value */
+  opts.file_open_flags = O_CREAT | O_TRUNC | O_WRONLY; /* default value */
+  opts.notify_payload = NULL; /* default value */
+  opts.paths = ary; /* tricky, the default value segfaults; see `ary.count=0' above. */
+
   /* Update the index */
-  error = git_checkout_tree(repo, treeish, NULL, NULL); /* TODO: Progress access for block */
+  error = git_checkout_tree(repo, treeish, &opts, NULL); /* TODO: Progress access for block */
   rugged_exception_check(error);
 
   /* TODO: Update the HEAD pointer -- detached HEAD? */
