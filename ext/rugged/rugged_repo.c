@@ -247,6 +247,70 @@ static VALUE rb_git_repo_init_at(VALUE klass, VALUE path, VALUE rb_is_bare)
 	return rugged_repo_new(klass, repo);
 }
 
+/* Helper struct used to pass information to
+ * the nonblocking clone functions. Thank MRI for
+ * requiring this. The parameters are those required
+ * for the libgit2 clone functions; p_opts is not used for
+ * bare cloning. */
+struct _clone_params {
+  git_repository** pp_repo;
+  git_checkout_opts* p_opts;
+  char* url;
+  char* target_path;
+
+  /* This value will automatically be set by the nonblocking
+   * cloning functions. Setting it is meaningless, but after
+   * rb_thread_blocking_region returns this is set to the
+   * return value of the git_clone* functions. */
+  int git_error;
+};
+
+/* Runs the git-clone operation without the GVL. `params' is a pointer
+ * to a _clone_params struct. Called by rb_git_repo_clone(). */
+static VALUE rb_git_repo__nonblocking_clone(void* p_params)
+{
+  struct _clone_params* p_clone_params = (struct _clone_params*) p_params;
+  int error;
+
+  error = git_clone(p_clone_params->pp_repo,
+                    p_clone_params->url,
+                    p_clone_params->target_path,
+                    NULL, /* Can't call back to Ruby for fetch stats without dirty hacks */
+                    NULL, /* Can't call back to Ruby for checkout stats without dirty hacks */
+                    p_clone_params->p_opts);
+  p_clone_params->git_error = error;
+
+  return Qnil;
+}
+
+/* Runs the git-clone --bare operation without the GVL. `params' is a pointer
+ * to a _clone_params struct. Called by rb_git_repo_clone(). */
+static VALUE rb_git_repo__nonblocking_clone_bare(void* p_params)
+{
+  struct _clone_params* p_clone_params = (struct _clone_params*) p_params;
+  int error;
+
+  error = git_clone_bare(p_clone_params->pp_repo,
+                         p_clone_params->url,
+                         p_clone_params->target_path,
+                         NULL);
+  p_clone_params->git_error = error;
+
+  return Qnil;
+}
+
+/* Currently libgit2 has no way to abort a running clone
+ * operation. If one is added, this function should be
+ * adjusted apropriately. `p_param' is a pointer to
+ * a _clone_params struct (but beware; depending on the
+ * abortion time, the pp_repo parameter may not be fully
+ * initialised). Called by rb_git_repo_clone(). */
+static void rb_git_repo__abort_clone(void* p_param)
+{
+  /* struct _clone_params* p_repo = (struct _clone_params*) p_param; */
+  return; /* Yes, this currently DOES NOTHING. See comments above. */
+}
+
 /*
  *	call-seq:
  *		Rugged::Repository.clone_repo(url, target_path [, opts = {} ]) -> repository
@@ -262,25 +326,35 @@ static VALUE rb_git_repo_init_at(VALUE klass, VALUE path, VALUE rb_is_bare)
  *	+opts+ will be passed on to the checkout operation, so see
  *	#checkout_index for possible values you can assign to +opts+.
  *
- *		Rugged::Repository.clone("git://github.com/libgit2/libgit2.git", "~/libgit2")
+ *	This method releases the GVL during the clone operation.
+ *
+ *		Rugged::Repository.clone_repo("git://github.com/libgit2/libgit2.git", "~/libgit2")
+ *		Rugged::Repository.clone_repo("git://github.com/libgit2/libgit2.git", "~/libgit2.git", bare: true)
  */
 static VALUE rb_git_repo_clone(int argc, VALUE argv[], VALUE self)
 {
   VALUE url;
   VALUE target_path;
   VALUE ruby_opts;
-	git_repository *repo;
+	git_repository *p_repo;
 	int error;
+	struct _clone_params clone_params;
 
   rb_scan_args(argc, argv, "21", &url, &target_path, &ruby_opts);
   if (TYPE(ruby_opts) != T_HASH)
     ruby_opts = rb_hash_new(); /* Assume empty hash of none given */
 
+  clone_params.pp_repo     = &p_repo;
+  clone_params.url         = StringValueCStr(url);
+  clone_params.target_path = StringValueCStr(target_path);
+
   if (RTEST(rb_hash_aref(ruby_opts, ID2SYM(rb_intern("bare"))))) {
-    error = git_clone_bare(&repo,
-                           StringValueCStr(url),
-                           StringValueCStr(target_path),
-                           NULL); /* TODO: Stats for block */
+    clone_params.p_opts = NULL; /* Not required for bare clone */
+
+    rb_thread_blocking_region(rb_git_repo__nonblocking_clone_bare,
+                              &clone_params,
+                              rb_git_repo__abort_clone,
+                              &clone_params);
   }
   else {
     /* Clone the options hash, so we can safely remove :bare from
@@ -291,18 +365,18 @@ static VALUE rb_git_repo_clone(int argc, VALUE argv[], VALUE self)
     /* Parse the checkout options */
     git_checkout_opts opts;
     rb_git__parse_checkout_options(&ruby_opts, &opts);
+    clone_params.p_opts = &opts;
 
-    error = git_clone(&repo,
-                      StringValueCStr(url),
-                      StringValueCStr(target_path),
-                      NULL, /* TODO: Fetch stats for Ruby block */
-                      NULL, /* TODO: Checkout stats for Ruby block */
-                      &opts);
+    rb_thread_blocking_region(rb_git_repo__nonblocking_clone,
+                              &clone_params,
+                              rb_git_repo__abort_clone,
+                              &clone_params);
+
   }
 
-	rugged_exception_check(error);
+	rugged_exception_check(clone_params.git_error);
 
-	return rugged_repo_new(self, repo);
+	return rugged_repo_new(self, p_repo);
 }
 
 #define RB_GIT_REPO_OWNED_GET(_klass, _object) \
