@@ -88,20 +88,20 @@ context "Rugged::Repository stuff" do
   test "can return all refs" do
     refs = @repo.refs
 
-    assert_equal 4, refs.length
+    assert_equal 5, refs.length
   end
 
   test "can return all refs that match" do
     refs = @repo.refs 'refs/heads'
 
-    assert_equal 2, refs.length
+    assert_equal 3, refs.length
   end
 
   test "can return the names of all refs" do
     refs = @repo.ref_names
 
     refs.each {|name| assert name.kind_of?(String)}
-    assert_equal 4, refs.count
+    assert_equal 5, refs.count
   end
 
   test "can return all tags" do
@@ -171,6 +171,42 @@ context "Rugged::Repository stuff" do
     ensure
       FileUtils.rm_rf(tmpdir)
     end
+  end
+
+  test "can checkout back and fourth" do
+    # Clone the test repo and set up the remote-tracking branch new-file
+    # (checkout doesn't do tracking)
+    repo_path            = temp_repo("testrepo.git")
+    `cd '#{repo_path}' && git branch new-file refs/remotes/origin/new-file`
+
+    repo                 = Rugged::Repository.new(repo_path)
+    path_to_file         = File.join(repo_path, "another_file.txt") # This file is in the new-file branch
+    path_to_file2        = File.join(repo_path, "stuf")
+    new_file             = Rugged::Reference.lookup(repo, "refs/heads/new-file")
+    master               = Rugged::Reference.lookup(repo, "refs/heads/master")
+    
+    last_new_file_commit = Rugged::Commit.lookup(repo, new_file.target)
+    last_master_commit   = Rugged::Commit.lookup(repo, master.target)
+
+    File.open(path_to_file2, "w"){|f| f.write("more stuff")}
+    assert !File.file?(path_to_file)
+    repo.checkout_tree(last_new_file_commit, strategy: [:default, :overwrite_modified, :create_missing, :remove_untracked])
+    assert File.file?(path_to_file)
+    assert !File.file?(path_to_file2) # :remove_untracked
+    repo.checkout_tree(last_master_commit, strategy: [:default, :overwrite_modified, :create_missing, :remove_untracked])
+    assert !File.file?(path_to_file)
+    repo.checkout_tree(last_new_file_commit, strategy: [:default, :overwrite_modified, :remove_untracked])
+    assert !File.file?(path_to_file) # :create_missing ommited
+    repo.checkout_tree(last_master_commit, strategy: [:default, :overwrite_modified, :create_missing, :remove_untracked])
+    File.open(path_to_file2, "w"){|f| f.write("more stuff")}
+    repo.checkout_tree(last_new_file_commit, strategy: [:default, :overwrite_modified])
+    assert File.file?(path_to_file2) # :remove_untracked ommited
+    File.open(path_to_file, "w"){|f| f.write("Modified this file.")}
+    repo.checkout_tree(last_master_commit, strategy: [:default, :create_missing])
+    assert_equal("Modified this file.", File.read(path_to_file)) # :overwrite_modified ommited
+
+    skip "libgit2 currently segfaults on git_checkout_tree() without a strategy (i.e. only :default)"
+    assert_nil repo.checkout_tree(last_new_file_commit)
   end
 
 end

@@ -12,6 +12,7 @@ context "Rugged::Branch.each_name" do
       "master",
       "origin/HEAD",
       "origin/master",
+      "origin/new-file",
       "origin/packed",
     ], Rugged::Branch.each_name(@repo).sort
   end
@@ -24,6 +25,7 @@ context "Rugged::Branch.each_name" do
     assert_equal [
       "origin/HEAD",
       "origin/master",
+      "origin/new-file",
       "origin/packed",
     ], Rugged::Branch.each_name(@repo, :remote).sort
   end
