@@ -172,59 +172,53 @@ context "Rugged::Repository stuff" do
       FileUtils.rm_rf(tmpdir)
     end
   end
+end
+
+context "Repository checkouts" do
+
+  setup do
+    @repo_path             = temp_repo("testrepo.git")
+    `cd '#@repo_path' && git branch new-file refs/remotes/origin/new-file` # checkout doesn't do tracking (without this, we cannot checkout a remote branch however)
+    @repo                  = Rugged::Repository.new(@repo_path)
+    @path_to_branched_file = File.join(@repo_path, "another_file.txt") # This file only exists in the new-file branch
+    @path_to_other_file    = File.join(@repo_path, "stuff")            # This file doesn't exist in any branch
+    @last_master_commit    = Rugged::Commit.lookup(@repo, Rugged::Reference.lookup(@repo, "refs/heads/master").target)
+    @last_new_file_commit  = Rugged::Commit.lookup(@repo, Rugged::Reference.lookup(@repo, "refs/heads/new-file").target)
+  end
 
   test "can checkout back and fourth" do
-    # Clone the test repo and set up the remote-tracking branch new-file
-    # (checkout doesn't do tracking)
-    repo_path            = temp_repo("testrepo.git")
-    `cd '#{repo_path}' && git branch new-file refs/remotes/origin/new-file`
+    File.open(@path_to_other_file, "w"){|f| f.write("more stuff")}
+    assert !File.file?(@path_to_branched_file)
 
-    repo                 = Rugged::Repository.new(repo_path)
-    path_to_file         = File.join(repo_path, "another_file.txt") # This file is in the new-file branch
-    path_to_file2        = File.join(repo_path, "stuff")
-    new_file             = Rugged::Reference.lookup(repo, "refs/heads/new-file")
-    master               = Rugged::Reference.lookup(repo, "refs/heads/master")
-    
-    last_new_file_commit = Rugged::Commit.lookup(repo, new_file.target)
-    last_master_commit   = Rugged::Commit.lookup(repo, master.target)
+    @repo.checkout_tree(@last_new_file_commit, strategy: [:default, :overwrite_modified, :create_missing, :remove_untracked])
+    assert File.file?(@path_to_branched_file)
+    assert !File.file?(@path_to_other_file) # :remove_untracked
 
-    File.open(path_to_file2, "w"){|f| f.write("more stuff")}
-    assert !File.file?(path_to_file)
-    repo.checkout_tree(last_new_file_commit, strategy: [:default, :overwrite_modified, :create_missing, :remove_untracked])
-    assert File.file?(path_to_file)
-    assert !File.file?(path_to_file2) # :remove_untracked
-    repo.checkout_tree(last_master_commit, strategy: [:default, :overwrite_modified, :create_missing, :remove_untracked])
-    assert !File.file?(path_to_file)
-    repo.checkout_tree(last_new_file_commit, strategy: [:default, :overwrite_modified, :remove_untracked])
-    assert !File.file?(path_to_file) # :create_missing ommited
-    repo.checkout_tree(last_master_commit, strategy: [:default, :overwrite_modified, :create_missing, :remove_untracked])
-    File.open(path_to_file2, "w"){|f| f.write("more stuff")}
-    repo.checkout_tree(last_new_file_commit, strategy: [:default, :overwrite_modified])
-    assert File.file?(path_to_file2) # :remove_untracked ommited
-    File.open(path_to_file, "w"){|f| f.write("Modified this file.")}
-    repo.checkout_tree(last_master_commit, strategy: [:default, :create_missing])
-    assert_equal("Modified this file.", File.read(path_to_file)) # :overwrite_modified ommited
+    @repo.checkout_tree(@last_master_commit, strategy: [:default, :overwrite_modified, :create_missing, :remove_untracked])
+    assert !File.file?(@path_to_branched_file)
 
-    assert_nil repo.checkout_tree(last_new_file_commit)
+    @repo.checkout_tree(@last_new_file_commit, strategy: [:default, :overwrite_modified, :remove_untracked])
+    assert !File.file?(@path_to_branched_file) # :create_missing ommited
+    @repo.checkout_tree(@last_master_commit, strategy: [:default, :overwrite_modified, :create_missing, :remove_untracked])
+
+    File.open(@path_to_other_file, "w"){|f| f.write("more stuff")}
+    @repo.checkout_tree(@last_new_file_commit, strategy: [:default, :overwrite_modified])
+    assert File.file?(@path_to_other_file) # :remove_untracked ommited
+
+    File.open(@path_to_branched_file, "w"){|f| f.write("Modified this file.")}
+    @repo.checkout_tree(@last_master_commit, strategy: [:default, :create_missing])
+    assert_equal("Modified this file.", File.read(@path_to_branched_file)) # :overwrite_modified ommited
+
+    assert_nil @repo.checkout_tree(@last_new_file_commit)
   end
 
   test "can checkout the index" do
-    # Clone the test repo and set up the remote-tracking branch new-file
-    # (checkout doesn't do tracking)
-    repo_path            = temp_repo("testrepo.git")
-    `cd '#{repo_path}' && git branch new-file refs/remotes/origin/new-file`
-
-    repo                 = Rugged::Repository.new(repo_path)
-    new_file             = Rugged::Reference.lookup(repo, "refs/heads/new-file")
-    last_new_file_commit = Rugged::Commit.lookup(repo, new_file.target)
-    path_to_file         = File.join(repo_path, "another_file.txt") # This file is in the new-file branch
-
     # Read the new-file branch's latest commit's tree into the index, then check
     # it out removing anything not related to that tree.
-    assert !File.file?(path_to_file)
-    `cd '#{repo_path}' && git read-tree #{last_new_file_commit.tree_oid}`
-    assert_nil repo.checkout_index(strategy: [:default, :overwrite_modified, :create_missing, :remove_untracked])
-    assert File.file?(path_to_file)
+    assert !File.file?(@path_to_branched_file)
+    `cd '#@repo_path' && git read-tree #{@last_new_file_commit.tree_oid}`
+    assert_nil @repo.checkout_index(strategy: [:default, :overwrite_modified, :create_missing, :remove_untracked])
+    assert File.file?(@path_to_branched_file)
   end
 
 end
