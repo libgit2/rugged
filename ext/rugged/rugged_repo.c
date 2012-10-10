@@ -247,15 +247,14 @@ static VALUE rb_git_repo_init_at(VALUE klass, VALUE path, VALUE rb_is_bare)
 }
 
 /* Helper struct used to pass information to
- * the nonblocking clone functions. Thank MRI for
- * requiring this. The parameters are those required
- * for the libgit2 clone functions; p_opts is not used for
- * bare cloning. */
+ * the nonblocking clone functions. The parameters are those
+ * required for the libgit2 clone functions; p_opts is not
+ * used for bare cloning. */
 struct _clone_params {
-  git_repository** pp_repo;
-  git_checkout_opts* p_opts;
-  char* url;
-  char* target_path;
+  git_repository** pp_repo;  /* This will get assigned the cloned repo object */
+  git_checkout_opts* p_opts; /* Options for the checkout after the clone (if not bare) */
+  char* url;                 /* URL of the remote host with protocol prefix */
+  char* target_path;         /* path where to clone to */
 
   /* This value will automatically be set by the nonblocking
    * cloning functions. Setting it is meaningless, but after
@@ -341,7 +340,7 @@ static VALUE rb_git_repo_clone(int argc, VALUE argv[], VALUE self)
 
   rb_scan_args(argc, argv, "21", &url, &target_path, &ruby_opts);
   if (TYPE(ruby_opts) != T_HASH)
-    ruby_opts = rb_hash_new(); /* Assume empty hash of none given */
+    ruby_opts = rb_hash_new(); /* Assume empty hash if none given */
 
   clone_params.pp_repo     = &p_repo;
   clone_params.url         = StringValueCStr(url);
@@ -803,7 +802,7 @@ static VALUE rb_git_repo_checkout_head(int argc, VALUE argv[], VALUE self)
  * call-seq:
  *   repo.checkout_tree(treeish [, opts = {}])
  *
- * Reads the tree pointed to by +treeish+ into the index and if requested,
+ * Reads the tree pointed to by +treeish+ into the index and
  * writes the index out to the working tree afterwards. Note this method
  * does *not* update the HEAD pointer, so you probably want to do this
  * afterwards:
