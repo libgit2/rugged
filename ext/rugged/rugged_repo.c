@@ -138,7 +138,9 @@ static void rb_git__parse_checkout_options(const VALUE* ruby_opts, git_checkout_
   VALUE opts_dir_mode;
   VALUE opts_file_mode;
   VALUE opts_file_open_flags;
-  git_strarray paths;
+
+  /* Ensure we have a clean slate to work from */
+  memset(p_opts, 0, sizeof(*p_opts));
 
   opts_strategy        = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("strategy")));
   opts_disable_filters = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("disable_filters")));
@@ -147,13 +149,17 @@ static void rb_git__parse_checkout_options(const VALUE* ruby_opts, git_checkout_
   opts_file_open_flags = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("file_open_flags")));
 
   /* Convert the Ruby hash values to C stuff */
-  p_opts->disable_filters = RTEST(opts_disable_filters); /* not set = nil = 0 = libgit2 default */
-  p_opts->dir_mode        = TYPE(opts_dir_mode)        == T_FIXNUM ? FIX2INT(opts_dir_mode)        : 0755 /* libgit2 default */;
-  p_opts->file_mode       = TYPE(opts_file_mode)       == T_FIXNUM ? FIX2INT(opts_file_mode)       : 0644 /* libgit2 default */;
-  p_opts->file_open_flags = TYPE(opts_file_open_flags) == T_FIXNUM ? FIX2INT(opts_file_open_flags) : O_CREAT | O_TRUNC | O_WRONLY /* libgit2 default */;
+  if (RTEST(opts_disable_filters))
+    p_opts->disable_filters = true;
+  if (TYPE(opts_dir_mode) == T_FIXNUM)
+    p_opts->dir_mode = FIX2INT(opts_dir_mode);
+  if (TYPE(opts_file_mode) == T_FIXNUM)
+    p_opts->file_mode = FIX2INT(opts_file_mode);
+  if (TYPE(opts_file_open_flags) == T_FIXNUM)
+    p_opts->file_open_flags = FIX2INT(opts_file_open_flags);
 
   if (TYPE(opts_strategy) == T_ARRAY){
-    p_opts->checkout_strategy = 0; /* Ensure we start with a clean slate */
+    p_opts->checkout_strategy = 0;
 
     /* Now OR-in all requested flags */
     if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("default"))))
@@ -165,13 +171,6 @@ static void rb_git__parse_checkout_options(const VALUE* ruby_opts, git_checkout_
     if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("remove_untracked"))))
       p_opts->checkout_strategy |=  GIT_CHECKOUT_REMOVE_UNTRACKED;
   }
-  else
-    p_opts->checkout_strategy = GIT_CHECKOUT_DEFAULT; /* libgit2 default (for some unknown reason libgit2 segfaults with its own default value) */
-
-  /* Set other options (segfaults without) */
-  paths.count            = 0; /* 0 means checking out ALL files */
-  p_opts->paths          = paths; /* tricky, the default value segfaults; see `paths.count=0' above. */
-  p_opts->notify_payload = NULL; /* default value */
 }
 
 static VALUE rugged_repo_new(VALUE klass, git_repository *repo)

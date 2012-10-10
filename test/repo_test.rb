@@ -205,7 +205,6 @@ context "Rugged::Repository stuff" do
     repo.checkout_tree(last_master_commit, strategy: [:default, :create_missing])
     assert_equal("Modified this file.", File.read(path_to_file)) # :overwrite_modified ommited
 
-    skip "libgit2 currently segfaults on git_checkout_tree() without a strategy (i.e. only :default)"
     assert_nil repo.checkout_tree(last_new_file_commit)
   end
 
