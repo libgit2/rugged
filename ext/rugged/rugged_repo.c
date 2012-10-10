@@ -782,6 +782,8 @@ static VALUE rb_git_repo_checkout_head(int argc, VALUE argv[], VALUE self)
   int error;
   git_checkout_opts opts;
 
+  Data_Get_Struct(self, git_repository, repo);
+
   /* Grab the options hash */
   rb_scan_args(argc, argv, "01", &ruby_opts);
   if (TYPE(ruby_opts) != T_HASH)

@@ -221,4 +221,11 @@ context "Repository checkouts" do
     assert File.file?(@path_to_branched_file)
   end
 
+  test "can checkout the HEAD" do
+    File.open(@path_to_other_file, "w"){|f| f.write("This stuff is to be discarded.")}
+    # Now reset the working direcory
+    assert_nil @repo.checkout_head(strategy: [:default, :remove_untracked])
+    assert !File.file?(@path_to_other_file)
+  end
+
 end
