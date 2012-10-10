@@ -181,7 +181,7 @@ context "Rugged::Repository stuff" do
 
     repo                 = Rugged::Repository.new(repo_path)
     path_to_file         = File.join(repo_path, "another_file.txt") # This file is in the new-file branch
-    path_to_file2        = File.join(repo_path, "stuf")
+    path_to_file2        = File.join(repo_path, "stuff")
     new_file             = Rugged::Reference.lookup(repo, "refs/heads/new-file")
     master               = Rugged::Reference.lookup(repo, "refs/heads/master")
     
@@ -206,6 +206,25 @@ context "Rugged::Repository stuff" do
     assert_equal("Modified this file.", File.read(path_to_file)) # :overwrite_modified ommited
 
     assert_nil repo.checkout_tree(last_new_file_commit)
+  end
+
+  test "can checkout the index" do
+    # Clone the test repo and set up the remote-tracking branch new-file
+    # (checkout doesn't do tracking)
+    repo_path            = temp_repo("testrepo.git")
+    `cd '#{repo_path}' && git branch new-file refs/remotes/origin/new-file`
+
+    repo                 = Rugged::Repository.new(repo_path)
+    new_file             = Rugged::Reference.lookup(repo, "refs/heads/new-file")
+    last_new_file_commit = Rugged::Commit.lookup(repo, new_file.target)
+    path_to_file         = File.join(repo_path, "another_file.txt") # This file is in the new-file branch
+
+    # Read the new-file branch's latest commit's tree into the index, then check
+    # it out removing anything not related to that tree.
+    assert !File.file?(path_to_file)
+    `cd '#{repo_path}' && git read-tree #{last_new_file_commit.tree_oid}`
+    assert_nil repo.checkout_index(strategy: [:default, :overwrite_modified, :create_missing, :remove_untracked])
+    assert File.file?(path_to_file)
   end
 
 end

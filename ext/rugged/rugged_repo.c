@@ -150,7 +150,7 @@ static void rb_git__parse_checkout_options(const VALUE* ruby_opts, git_checkout_
 
   /* Convert the Ruby hash values to C stuff */
   if (RTEST(opts_disable_filters))
-    p_opts->disable_filters = true;
+    p_opts->disable_filters = 1; /* boolean */
   if (TYPE(opts_dir_mode) == T_FIXNUM)
     p_opts->dir_mode = FIX2INT(opts_dir_mode);
   if (TYPE(opts_file_mode) == T_FIXNUM)
@@ -335,7 +335,6 @@ static VALUE rb_git_repo_clone(int argc, VALUE argv[], VALUE self)
   VALUE target_path;
   VALUE ruby_opts;
 	git_repository *p_repo;
-	int error;
 	struct _clone_params clone_params;
 
   rb_scan_args(argc, argv, "21", &url, &target_path, &ruby_opts);
