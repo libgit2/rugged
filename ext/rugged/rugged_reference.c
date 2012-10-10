@@ -169,6 +169,22 @@ static VALUE rb_git_ref_exist(VALUE klass, VALUE rb_repo, VALUE rb_name)
 }
 
 /*
+ * call-seq:
+ *   Reference.valid?(name) -> true or false
+ *
+ * Checks whether the given string is a well-formed reference
+ * name. Note this just checks the syntax, no semantic checks
+ * are performed.
+ */
+static VALUE rb_git_ref_valid(VALUE self, VALUE rb_str)
+{
+  if (git_reference_is_valid_name(StringValueCStr(rb_str)))
+    return Qtrue;
+  else
+    return Qfalse;
+}
+
+/*
  *	call-seq:
  *		Reference.create(repository, name, oid, force = false) -> new_ref
  *		Reference.create(repository, name, target, force = false) -> new_ref
@@ -561,6 +577,7 @@ void Init_rugged_reference()
 	rb_define_singleton_method(rb_cRuggedReference, "lookup", rb_git_ref_lookup, 2);
 	rb_define_singleton_method(rb_cRuggedReference, "exist?", rb_git_ref_exist, 2);
 	rb_define_singleton_method(rb_cRuggedReference, "exists?", rb_git_ref_exist, 2);
+  rb_define_singleton_method(rb_cRuggedReference, "valid?", rb_git_ref_valid, 1);
 	rb_define_singleton_method(rb_cRuggedReference, "create", rb_git_ref_create, -1);
 	rb_define_singleton_method(rb_cRuggedReference, "pack_all", rb_git_ref_packall, 1);
 	rb_define_singleton_method(rb_cRuggedReference, "each", rb_git_ref_each, -1);

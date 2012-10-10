@@ -65,6 +65,13 @@ context "Rugged::Reference stuff" do
     assert !exists
   end
 
+  test "recognises valid/invalid reference names" do
+    assert Rugged::Reference.valid?("refs/heads/master")
+    assert Rugged::Reference.valid?("HEAD")
+    assert Rugged::Reference.valid?("refs/heads/n0n3x15t4nt") # Only syntax check
+    assert !Rugged::Reference.valid?("5b5b025afb0b4c913b4c338a42934a3863bf3644") # Commits are no valid reference *names*
+  end
+
   test "can open packed reference" do
     ref = Rugged::Reference.lookup(@repo, "refs/heads/packed")
     assert_equal "41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9", ref.target
