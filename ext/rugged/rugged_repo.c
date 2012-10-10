@@ -22,7 +22,6 @@
  * THE SOFTWARE.
  */
 
-#include <fcntl.h>
 #include "rugged.h"
 
 extern VALUE rb_mRugged;
@@ -133,44 +132,44 @@ void rb_git_repo__free(git_repository *repo)
  * of the parsing process. */
 static void rb_git__parse_checkout_options(const VALUE* ruby_opts, git_checkout_opts* p_opts)
 {
-  VALUE opts_strategy;
-  VALUE opts_disable_filters;
-  VALUE opts_dir_mode;
-  VALUE opts_file_mode;
-  VALUE opts_file_open_flags;
+	VALUE opts_strategy;
+	VALUE opts_disable_filters;
+	VALUE opts_dir_mode;
+	VALUE opts_file_mode;
+	VALUE opts_file_open_flags;
 
-  /* Ensure we have a clean slate to work from */
-  memset(p_opts, 0, sizeof(*p_opts));
+	/* Ensure we have a clean slate to work from */
+	memset(p_opts, 0, sizeof(*p_opts));
 
-  opts_strategy        = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("strategy")));
-  opts_disable_filters = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("disable_filters")));
-  opts_dir_mode        = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("dir_mode")));
-  opts_file_mode       = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("file_mode")));
-  opts_file_open_flags = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("file_open_flags")));
+	opts_strategy        = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("strategy")));
+	opts_disable_filters = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("disable_filters")));
+	opts_dir_mode        = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("dir_mode")));
+	opts_file_mode       = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("file_mode")));
+	opts_file_open_flags = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("file_open_flags")));
 
-  /* Convert the Ruby hash values to C stuff */
-  if (RTEST(opts_disable_filters))
-    p_opts->disable_filters = 1; /* boolean */
-  if (TYPE(opts_dir_mode) == T_FIXNUM)
-    p_opts->dir_mode = FIX2INT(opts_dir_mode);
-  if (TYPE(opts_file_mode) == T_FIXNUM)
-    p_opts->file_mode = FIX2INT(opts_file_mode);
-  if (TYPE(opts_file_open_flags) == T_FIXNUM)
-    p_opts->file_open_flags = FIX2INT(opts_file_open_flags);
+	/* Convert the Ruby hash values to C stuff */
+	if (RTEST(opts_disable_filters))
+		p_opts->disable_filters = 1; /* boolean */
+	if (TYPE(opts_dir_mode) == T_FIXNUM)
+		p_opts->dir_mode = FIX2INT(opts_dir_mode);
+	if (TYPE(opts_file_mode) == T_FIXNUM)
+		p_opts->file_mode = FIX2INT(opts_file_mode);
+	if (TYPE(opts_file_open_flags) == T_FIXNUM)
+		p_opts->file_open_flags = FIX2INT(opts_file_open_flags);
 
-  if (TYPE(opts_strategy) == T_ARRAY){
-    p_opts->checkout_strategy = 0;
+	if (TYPE(opts_strategy) == T_ARRAY){
+		p_opts->checkout_strategy = 0;
 
-    /* Now OR-in all requested flags */
-    if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("default"))))
-      p_opts->checkout_strategy |= GIT_CHECKOUT_DEFAULT;
-    if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("overwrite_modified"))))
-      p_opts->checkout_strategy |= GIT_CHECKOUT_OVERWRITE_MODIFIED;
-    if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("create_missing"))))
-      p_opts->checkout_strategy |= GIT_CHECKOUT_CREATE_MISSING;
-    if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("remove_untracked"))))
-      p_opts->checkout_strategy |=  GIT_CHECKOUT_REMOVE_UNTRACKED;
-  }
+		/* Now OR-in all requested flags */
+		if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("default"))))
+			p_opts->checkout_strategy |= GIT_CHECKOUT_DEFAULT;
+		if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("overwrite_modified"))))
+			p_opts->checkout_strategy |= GIT_CHECKOUT_OVERWRITE_MODIFIED;
+		if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("create_missing"))))
+			p_opts->checkout_strategy |= GIT_CHECKOUT_CREATE_MISSING;
+		if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("remove_untracked"))))
+			p_opts->checkout_strategy |=	GIT_CHECKOUT_REMOVE_UNTRACKED;
+	}
 }
 
 static VALUE rugged_repo_new(VALUE klass, git_repository *repo)
@@ -191,7 +190,7 @@ static VALUE rugged_repo_new(VALUE klass, git_repository *repo)
 
 /*
  *	call-seq:
- *		Rugged::Repository.new(path) -> repository
+ *		new(path) -> repository
  *
  *	Open a Git repository in the given +path+ and return a +Repository+ object
  *	representing it. An exception will be thrown if +path+ doesn't point to a
@@ -219,7 +218,7 @@ static VALUE rb_git_repo_new(VALUE klass, VALUE rb_path)
 
 /*
  *	call-seq:
- *		Rugged::Repository.init_at(path, is_bare) -> repository
+ *		init_at(path, is_bare) -> repository
  *
  *	Initialize a Git repository in +path+. This implies creating all the
  *	necessary files on the FS, or re-initializing an already existing
@@ -251,50 +250,50 @@ static VALUE rb_git_repo_init_at(VALUE klass, VALUE path, VALUE rb_is_bare)
  * required for the libgit2 clone functions; p_opts is not
  * used for bare cloning. */
 struct _clone_params {
-  git_repository** pp_repo;  /* This will get assigned the cloned repo object */
-  git_checkout_opts* p_opts; /* Options for the checkout after the clone (if not bare) */
-  char* url;                 /* URL of the remote host with protocol prefix */
-  char* target_path;         /* path where to clone to */
+	git_repository** pp_repo;	 /* This will get assigned the cloned repo object */
+	git_checkout_opts* p_opts; /* Options for the checkout after the clone (if not bare) */
+	char* url;                 /* URL of the remote host with protocol prefix */
+	char* target_path;         /* path where to clone to */
 
-  /* This value will automatically be set by the nonblocking
-   * cloning functions. Setting it is meaningless, but after
-   * rb_thread_blocking_region returns this is set to the
-   * return value of the git_clone* functions. */
-  int git_error;
+	/* This value will automatically be set by the nonblocking
+	 * cloning functions. Setting it is meaningless, but after
+	 * rb_thread_blocking_region returns this is set to the
+	 * return value of the git_clone* functions. */
+	int git_error;
 };
 
 /* Runs the git-clone operation without the GVL. `params' is a pointer
  * to a _clone_params struct. Called by rb_git_repo_clone(). */
 static VALUE rb_git_repo__nonblocking_clone(void* p_params)
 {
-  struct _clone_params* p_clone_params = (struct _clone_params*) p_params;
-  int error;
+	struct _clone_params* p_clone_params = (struct _clone_params*) p_params;
+	int error;
 
-  error = git_clone(p_clone_params->pp_repo,
-                    p_clone_params->url,
-                    p_clone_params->target_path,
-                    NULL, /* Can't call back to Ruby for fetch stats without dirty hacks */
-                    NULL, /* Can't call back to Ruby for checkout stats without dirty hacks */
-                    p_clone_params->p_opts);
-  p_clone_params->git_error = error;
+	error = git_clone(	p_clone_params->pp_repo,
+											p_clone_params->url,
+											p_clone_params->target_path,
+											NULL, /* Can't call back to Ruby for fetch stats without dirty hacks */
+											NULL, /* Can't call back to Ruby for checkout stats without dirty hacks */
+											p_clone_params->p_opts);
+	p_clone_params->git_error = error;
 
-  return Qnil;
+	return Qnil;
 }
 
 /* Runs the git-clone --bare operation without the GVL. `params' is a pointer
  * to a _clone_params struct. Called by rb_git_repo_clone(). */
 static VALUE rb_git_repo__nonblocking_clone_bare(void* p_params)
 {
-  struct _clone_params* p_clone_params = (struct _clone_params*) p_params;
-  int error;
+	struct _clone_params* p_clone_params = (struct _clone_params*) p_params;
+	int error;
 
-  error = git_clone_bare(p_clone_params->pp_repo,
-                         p_clone_params->url,
-                         p_clone_params->target_path,
-                         NULL);
-  p_clone_params->git_error = error;
+	error = git_clone_bare(	p_clone_params->pp_repo,
+													p_clone_params->url,
+													p_clone_params->target_path,
+													NULL);
+	p_clone_params->git_error = error;
 
-  return Qnil;
+	return Qnil;
 }
 
 /* Currently libgit2 has no way to abort a running clone
@@ -305,13 +304,13 @@ static VALUE rb_git_repo__nonblocking_clone_bare(void* p_params)
  * initialised). Called by rb_git_repo_clone(). */
 static void rb_git_repo__abort_clone(void* p_param)
 {
-  /* struct _clone_params* p_repo = (struct _clone_params*) p_param; */
-  return; /* Yes, this currently DOES NOTHING. See comments above. */
+	/* struct _clone_params* p_repo = (struct _clone_params*) p_param; */
+	return; /* Yes, this currently DOES NOTHING. See comments above. */
 }
 
 /*
  *	call-seq:
- *		Rugged::Repository.clone_repo(url, target_path [, opts = {} ]) -> repository
+ *		clone_repo(url, target_path [, opts = {} ]) -> repository
  *
  *	Clone a Git repository from the remote at +url+ into the given
  *	local +target_path+ and return a Repository object pointing to
@@ -331,45 +330,45 @@ static void rb_git_repo__abort_clone(void* p_param)
  */
 static VALUE rb_git_repo_clone(int argc, VALUE argv[], VALUE self)
 {
-  VALUE url;
-  VALUE target_path;
-  VALUE ruby_opts;
+	VALUE url;
+	VALUE target_path;
+	VALUE ruby_opts;
 	git_repository *p_repo;
 	struct _clone_params clone_params;
 
-  rb_scan_args(argc, argv, "21", &url, &target_path, &ruby_opts);
-  if (TYPE(ruby_opts) != T_HASH)
-    ruby_opts = rb_hash_new(); /* Assume empty hash if none given */
+	rb_scan_args(argc, argv, "21", &url, &target_path, &ruby_opts);
+	if (TYPE(ruby_opts) != T_HASH)
+		ruby_opts = rb_hash_new(); /* Assume empty hash if none given */
 
-  clone_params.pp_repo     = &p_repo;
-  clone_params.url         = StringValueCStr(url);
-  clone_params.target_path = StringValueCStr(target_path);
+	clone_params.pp_repo		 = &p_repo;
+	clone_params.url				 = StringValueCStr(url);
+	clone_params.target_path = StringValueCStr(target_path);
 
-  if (RTEST(rb_hash_aref(ruby_opts, ID2SYM(rb_intern("bare"))))) {
-    clone_params.p_opts = NULL; /* Not required for bare clone */
+	if (RTEST(rb_hash_aref(ruby_opts, ID2SYM(rb_intern("bare"))))) {
+		clone_params.p_opts = NULL; /* Not required for bare clone */
 
-    rb_thread_blocking_region(rb_git_repo__nonblocking_clone_bare,
-                              &clone_params,
-                              rb_git_repo__abort_clone,
-                              &clone_params);
+		rb_thread_blocking_region(	rb_git_repo__nonblocking_clone_bare,
+																&clone_params,
+																rb_git_repo__abort_clone,
+																&clone_params);
   }
   else {
-    /* Clone the options hash, so we can safely remove :bare from
-     * it in order to pass it on to the checkout operation. */
-    VALUE checkout_opts = rb_obj_dup(ruby_opts);
-    rb_hash_delete(checkout_opts, ID2SYM(rb_intern("bare")));
+		/* Clone the options hash, so we can safely remove :bare from
+		 * it in order to pass it on to the checkout operation. */
+		VALUE checkout_opts = rb_obj_dup(ruby_opts);
+		rb_hash_delete(checkout_opts, ID2SYM(rb_intern("bare")));
 
-    /* Parse the checkout options */
-    git_checkout_opts opts;
-    rb_git__parse_checkout_options(&ruby_opts, &opts);
-    clone_params.p_opts = &opts;
+		/* Parse the checkout options */
+		git_checkout_opts opts;
+		rb_git__parse_checkout_options(&ruby_opts, &opts);
+		clone_params.p_opts = &opts;
 
-    rb_thread_blocking_region(rb_git_repo__nonblocking_clone,
-                              &clone_params,
-                              rb_git_repo__abort_clone,
-                              &clone_params);
+		rb_thread_blocking_region(	rb_git_repo__nonblocking_clone,
+																&clone_params,
+																rb_git_repo__abort_clone,
+																&clone_params);
 
-  }
+	}
 
 	rugged_exception_check(clone_params.git_error);
 
