@@ -347,10 +347,15 @@ static VALUE rb_git_repo_clone(int argc, VALUE argv[], VALUE self)
 	if (RTEST(rb_hash_aref(ruby_opts, ID2SYM(rb_intern("bare"))))) {
 		clone_params.p_opts = NULL; /* Not required for bare clone */
 
+#if RUBY_VERSION_MAJOR == 1 && RUBY_VERSION_MINOR == 8
+		/* Poor 1.8 guys, you cannot have concurrency */
+		rb_git_repo_nonblocking_clone_bare(&clone_params);
+#else
 		rb_thread_blocking_region(	rb_git_repo__nonblocking_clone_bare,
 																&clone_params,
 																rb_git_repo__abort_clone,
 																&clone_params);
+#endif
   }
   else {
 		/* Clone the options hash, so we can safely remove :bare from
@@ -363,11 +368,15 @@ static VALUE rb_git_repo_clone(int argc, VALUE argv[], VALUE self)
 		rb_git__parse_checkout_options(&ruby_opts, &opts);
 		clone_params.p_opts = &opts;
 
+#if RUBY_VERSION_MAJOR == 1 && RUBY_VERSION_MINOR == 8
+		/* Poor 1.8 guys, you cannot have concurrency */
+		rb_git_grepo__nonblocking_clone(&clone_params);
+#else
 		rb_thread_blocking_region(	rb_git_repo__nonblocking_clone,
 																&clone_params,
 																rb_git_repo__abort_clone,
 																&clone_params);
-
+#endif
 	}
 
 	rugged_exception_check(clone_params.git_error);
