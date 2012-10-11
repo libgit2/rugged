@@ -41,4 +41,12 @@ else
   end
 end
 
+print("checking whether we're compiling for Ruby >= 1.9... ")
+if RUBY_VERSION >= "1.9"
+  $CFLAGS += " -DUSING_RUBY_19"
+  puts "yes"
+else
+  puts "no"
+end
+
 create_makefile("rugged/rugged")

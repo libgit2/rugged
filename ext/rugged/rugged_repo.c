@@ -23,7 +23,6 @@
  */
 
 #include "rugged.h"
-#include <ruby/version.h>
 
 extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedIndex;
@@ -348,14 +347,14 @@ static VALUE rb_git_repo_clone(int argc, VALUE argv[], VALUE self)
 	if (RTEST(rb_hash_aref(ruby_opts, ID2SYM(rb_intern("bare"))))) {
 		clone_params.p_opts = NULL; /* Not required for bare clone */
 
-#if RUBY_VERSION_MAJOR == 1 && RUBY_VERSION_MINOR == 8
-		/* Poor 1.8 guys, you cannot have concurrency */
-		rb_git_repo__nonblocking_clone_bare(&clone_params);
-#else
+#ifdef USING_RUBY_19
 		rb_thread_blocking_region(	rb_git_repo__nonblocking_clone_bare,
 																&clone_params,
 																rb_git_repo__abort_clone,
 																&clone_params);
+#else
+		/* Poor 1.8 guys, you cannot have concurrency */
+		rb_git_repo__nonblocking_clone_bare(&clone_params);
 #endif
   }
   else {
@@ -369,14 +368,14 @@ static VALUE rb_git_repo_clone(int argc, VALUE argv[], VALUE self)
 		rb_git__parse_checkout_options(&ruby_opts, &opts);
 		clone_params.p_opts = &opts;
 
-#if RUBY_VERSION_MAJOR == 1 && RUBY_VERSION_MINOR == 8
-		/* Poor 1.8 guys, you cannot have concurrency */
-		rb_git_repo__nonblocking_clone(&clone_params);
-#else
+#ifdef USING_RUBY_19
 		rb_thread_blocking_region(	rb_git_repo__nonblocking_clone,
 																&clone_params,
 																rb_git_repo__abort_clone,
 																&clone_params);
+#else
+		/* Poor 1.8 guys, you cannot have concurrency */
+		rb_git_repo__nonblocking_clone(&clone_params);
 #endif
 	}
 
