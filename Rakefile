@@ -16,7 +16,9 @@ end
 
 desc "checkout libgit2 source"
 task :checkout do
-  sh "git submodule update --init"
+  if !ENV['LIBGIT2_DEV']
+    sh "git submodule update --init"
+  end
 end
 Rake::Task[:compile].prerequisites.insert(0, :checkout)
 
