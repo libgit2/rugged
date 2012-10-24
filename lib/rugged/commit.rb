@@ -6,7 +6,7 @@ module Rugged
     end
 
     def inspect
-      "#<Rugged::Commit:#{object_id} {message: #{message.inspect}, tree: #{tree.inspect}, parents: #{parent_ids}>"
+      "#<Rugged::Commit:#{object_id} {message: #{message.inspect}, tree: #{tree.inspect}, parents: #{parent_oids}>"
     end
 
     # The time when this commit was made effective. This is the same value
@@ -25,10 +25,6 @@ module Rugged
         :tree => tree,
         :parents => parents,
       }
-    end
-    
-    def parent_ids
-      parents.map { |parent| parent.oid }
     end
 
     def modify(new_args, update_ref=nil)
