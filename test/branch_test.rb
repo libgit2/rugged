@@ -208,19 +208,19 @@ context "Rugged::Repository#create_branch" do
   end
 
   test "can not create a new branch from an unknown branch" do
-    assert_raises Rugged::InvalidError do
+    assert_raises Rugged::ReferenceError do
       @repo.create_branch("test_branch", "i_do_not_exist")
     end
   end
 
   test "can not create a new branch from an unknown commit" do
-    assert_raises Rugged::OdbError do
+    assert_raises Rugged::ReferenceError do
       @repo.create_branch("test_branch", "dd15de908706711b51b7acb24faab726d2b3cb16")
     end
   end
 
   test "can not create a new branch from a non canonical branch name" do
-    assert_raises Rugged::InvalidError do
+    assert_raises Rugged::ReferenceError do
       @repo.create_branch("test_branch", "packed")
     end
   end
