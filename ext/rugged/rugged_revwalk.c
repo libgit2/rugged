@@ -106,7 +106,7 @@ static VALUE rb_git_walker_each(VALUE self)
 		rb_yield(rugged_object_new(rugged_owner(self), (git_object *)commit));
 	}
 
-	if (error != GIT_REVWALKOVER)
+	if (error != GIT_ITEROVER)
 		rugged_exception_check(error);
 
 	return Qnil;
