@@ -404,6 +404,30 @@ VALUE rb_git_index_writetree(VALUE self)
 	return rugged_create_oid(&tree_oid);
 }
 
+/*
+ *	call-seq:
+ *		index.read_tree(tree)
+ *
+ *      Clear the current index and start the index again on top of +tree+
+ *
+ *      Further index operations (+add+, +update+, +remove+, etc) will
+ *      be considered changes on top of +tree+.
+ */
+VALUE rb_git_index_readtree(VALUE self, VALUE rb_tree)
+{
+	git_index *index;
+	git_tree *tree;
+	int error;
+
+	Data_Get_Struct(self, git_index, index);
+	Data_Get_Struct(rb_tree, git_tree, tree);
+
+	error = git_index_read_tree(index, tree, NULL);
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
 void Init_rugged_index()
 {
 	/*
@@ -431,6 +455,7 @@ void Init_rugged_index()
 
 	rb_define_method(rb_cRuggedIndex, "remove", rb_git_index_remove, 1);
 	rb_define_method(rb_cRuggedIndex, "write_tree", rb_git_index_writetree, 0);
+	rb_define_method(rb_cRuggedIndex, "read_tree", rb_git_index_readtree, 1);
 
 	rb_define_singleton_method(rb_cRuggedIndex, "index_pack", rb_git_indexer, 1);
 
