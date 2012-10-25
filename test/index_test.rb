@@ -184,3 +184,34 @@ context "Rugged::Index with working directory" do
     assert_equal e[:mode], 33199
   end
 end
+
+
+context "Rugged::Index with Rugged::Repository" do
+  setup do
+    @path = temp_repo("testrepo.git")
+    @repo = Rugged::Repository.new(@path)
+    @index = @repo.index
+  end
+
+  test "idempotent read_tree/write_tree" do
+    head_sha = Rugged::Reference.lookup(@repo,'HEAD').resolve.target
+    tree = @repo.lookup(head_sha).tree
+    @index.read_tree(tree)
+
+    index_tree_sha = @index.write_tree
+    index_tree = @repo.lookup(index_tree_sha)
+    assert_equal tree.oid, index_tree.oid
+  end
+
+
+  test "build tree from index on non-HEAD branch" do
+    head_sha = Rugged::Reference.lookup(@repo,'refs/remotes/origin/packed').resolve.target
+    tree = @repo.lookup(head_sha).tree
+    @index.read_tree(tree)
+    @index.remove('second.txt')
+
+    new_tree_sha = @index.write_tree
+    assert head_sha != new_tree_sha
+    assert_nil @repo.lookup(new_tree_sha)['second.txt']
+  end
+end
