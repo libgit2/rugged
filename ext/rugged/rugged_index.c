@@ -422,7 +422,7 @@ VALUE rb_git_index_readtree(VALUE self, VALUE rb_tree)
 	Data_Get_Struct(self, git_index, index);
 	Data_Get_Struct(rb_tree, git_tree, tree);
 
-	error = git_index_read_tree(index, tree, NULL);
+	error = git_index_read_tree(index, tree);
 	rugged_exception_check(error);
 
 	return Qnil;
