@@ -172,12 +172,10 @@ static VALUE rb_git_remote_download(VALUE self)
 {
 	int error;
 	git_remote *remote;
-	git_off_t bytes = 0;
-	git_indexer_stats stats;
 
 	Data_Get_Struct(self, git_remote, remote);
 
-	error = git_remote_download(remote, &bytes, &stats);
+	error = git_remote_download(remote, NULL, NULL);
 	rugged_exception_check(error);
 
 	return Qnil;
