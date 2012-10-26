@@ -1,4 +1,4 @@
-require './lib/rugged/version'
+require './lib/rugged/version' unless defined?(Rugged::Version)
 
 Gem::Specification.new do |s|
   s.name              = "rugged"
