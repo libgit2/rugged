@@ -29,7 +29,7 @@ VALUE rb_cRuggedIndex;
 
 static void rb_git_indexentry_toC(git_index_entry *entry, VALUE rb_entry);
 static VALUE rb_git_indexentry_fromC(git_index_entry *entry);
-static VALUE rb_git_unmerged_fromC(const git_index_entry_unmerged *entry);
+static VALUE rb_git_reuc_fromC(const git_index_reuc_entry *entry);
 
 /*
  * Index
@@ -109,23 +109,44 @@ static VALUE rb_git_index_count(VALUE self)
 	return INT2FIX(git_index_entrycount(index));
 }
 
-static VALUE rb_git_index_count_unmerged(VALUE self)
+
+static VALUE rb_git_index_get(int argc, VALUE *argv, VALUE self)
 {
 	git_index *index;
+	git_index_entry *entry = NULL;
+
+	int error;
+
+	VALUE rb_entry, rb_stage;
+
 	Data_Get_Struct(self, git_index, index);
-	return INT2FIX(git_index_entrycount_unmerged(index));
-}
 
-static VALUE rb_git_index_get(VALUE self, VALUE entry)
-{
-	git_index *index;
-	Data_Get_Struct(self, git_index, index);
+	rb_scan_args(argc, argv, "11", &rb_entry, &rb_stage);
 
-	if (TYPE(entry) == T_STRING)
-		entry = INT2FIX(git_index_find(index, StringValueCStr(entry)));
+	if (TYPE(rb_entry) == T_STRING) {
+		int stage = 0;
 
-	Check_Type(entry, T_FIXNUM);
-	return rb_git_indexentry_fromC(git_index_get(index, FIX2INT(entry)));
+		if (!NIL_P(rb_stage)) {
+			Check_Type(rb_stage, T_FIXNUM);
+			stage = FIX2INT(rb_stage);
+		}
+
+		entry = git_index_get_bypath(index, StringValueCStr(rb_entry), stage);
+	}
+
+	else if (TYPE(rb_entry) == T_FIXNUM) {
+		if (argc > 1) {
+			rb_raise(rb_eArgError,
+				"Too many arguments when trying to lookup entry by index");
+		}
+
+		entry = git_index_get_byindex(index, FIX2INT(rb_entry));
+	} else {
+		rb_raise(rb_eArgError,
+			"Invalid type for `entry`: expected String or Fixnum");
+	}
+
+	return entry ? rb_git_indexentry_fromC(entry) : Qnil;
 }
 
 static VALUE rb_git_index_each(VALUE self)
@@ -140,7 +161,7 @@ static VALUE rb_git_index_each(VALUE self)
 
 	count = git_index_entrycount(index);
 	for (i = 0; i < count; ++i) {
-		git_index_entry *entry = git_index_get(index, i);
+		git_index_entry *entry = git_index_get_byindex(index, i);
 		if (entry)
 			rb_yield(rb_git_indexentry_fromC(entry));
 	}
@@ -148,61 +169,47 @@ static VALUE rb_git_index_each(VALUE self)
 	return Qnil;
 }
 
-static VALUE rb_git_index_get_unmerged(VALUE self, VALUE entry)
+static VALUE rb_git_index_remove(int argc, VALUE *argv, VALUE self)
 {
 	git_index *index;
+	int error, stage = 0;
+
+	VALUE rb_entry, rb_stage;
+
 	Data_Get_Struct(self, git_index, index);
 
-	if (TYPE(entry) == T_STRING)
-		return rb_git_unmerged_fromC(git_index_get_unmerged_bypath(index, StringValueCStr(entry)));
+	if (rb_scan_args(argc, argv, "11", &rb_entry, &rb_stage) > 1) {
+		Check_Type(rb_stage, T_FIXNUM);
+		stage = FIX2INT(rb_stage);
+	}
 
-	if (TYPE(entry) == T_FIXNUM)
-		return rb_git_unmerged_fromC(git_index_get_unmerged_byindex(index, FIX2INT(entry)));
+	Check_Type(rb_entry, T_STRING);
 
-	rb_raise(rb_eTypeError, "Expecting a path name or index for unmerged entries");
-}
-
-static VALUE rb_git_index_remove(VALUE self, VALUE entry)
-{
-	git_index *index;
-	int error;
-	Data_Get_Struct(self, git_index, index);
-
-	if (TYPE(entry) == T_STRING)
-		entry = INT2FIX(git_index_find(index, StringValueCStr(entry)));
-
-	Check_Type(entry, T_FIXNUM);
-	
-	error = git_index_remove(index, FIX2INT(entry));
+	error = git_index_remove(index, StringValueCStr(rb_entry), stage);
 	rugged_exception_check(error);
 
 	return Qnil;
 }
 
-static VALUE rb_git_index_add(int argc, VALUE *argv, VALUE self)
+static VALUE rb_git_index_add(VALUE self, VALUE rb_entry)
 {
 	git_index *index;
-	int error;
-	VALUE rb_entry, rb_stage;
-
-	rb_scan_args(argc, argv, "11", &rb_entry, &rb_stage);
+	int error = 0;
 
 	Data_Get_Struct(self, git_index, index);
 
 	if (TYPE(rb_entry) == T_HASH) {
 		git_index_entry entry;
-		if (argc > 1)
-			rb_raise(rb_eTypeError,
-				"Wrong number or arguments (only an Index Entry is expected");
 
 		rb_git_indexentry_toC(&entry, rb_entry);
-		error = git_index_add2(index, &entry);
-	} else if (TYPE(rb_entry) == T_STRING) {
-		int stage = 0;
-		if (!NIL_P(rb_stage))
-			stage = NUM2INT(rb_stage);
-		error = git_index_add(index, StringValueCStr(rb_entry), stage);
-	} else {
+		error = git_index_add(index, &entry);
+	}
+	
+	else if (TYPE(rb_entry) == T_STRING) {
+		error = git_index_add_from_workdir(index, StringValueCStr(rb_entry));
+	}
+	
+	else {
 		rb_raise(rb_eTypeError, 
 			"Expecting a hash defining an Index Entry or a path to a file in the repository");
 	}
@@ -210,60 +217,6 @@ static VALUE rb_git_index_add(int argc, VALUE *argv, VALUE self)
 	rugged_exception_check(error);
 	return Qnil;
 }
-
-static VALUE rb_git_index_append(int argc, VALUE *argv, VALUE self)
-{
-	git_index *index;
-	int error;
-	VALUE rb_entry, rb_stage;
-
-	rb_scan_args(argc, argv, "11", &rb_entry, &rb_stage);
-
-	Data_Get_Struct(self, git_index, index);
-
-	if (TYPE(rb_entry) == T_HASH) {
-		git_index_entry entry;
-		rb_git_indexentry_toC(&entry, rb_entry);
-		error = git_index_append2(index, &entry);
-	} else if (TYPE(rb_entry) == T_STRING) {
-		Check_Type(rb_stage, T_FIXNUM);
-		error = git_index_append(index, StringValueCStr(rb_entry), FIX2INT(rb_stage));
-	} else {
-		rb_raise(rb_eTypeError,
-			"Expecting a hash defining an Index Entry or a path to a file in the repository");
-	}
-
-	rugged_exception_check(error);
-	return Qnil;
-}
-
-
-/*
- * Index Entry
- */
-static VALUE rb_git_unmerged_fromC(const git_index_entry_unmerged *entry)
-{
-	int i;
-	VALUE rb_entry, rb_modes, rb_oids;
-
-	if (!entry)
-		return Qnil;
-
-	rb_modes = rb_ary_new2(3);
-	rb_oids = rb_ary_new2(3);
-	for (i = 0; i < 3; ++i) {
-		rb_ary_push(rb_modes, INT2FIX(entry->mode[i]));
-		rb_ary_push(rb_oids, rugged_create_oid(&entry->oid[i]));
-	}
-
-	rb_entry = rb_hash_new();
-	rb_hash_aset(rb_entry, CSTR2SYM("path"), rugged_str_new2(entry->path, NULL));
-	rb_hash_aset(rb_entry, CSTR2SYM("oids"), rb_oids);
-	rb_hash_aset(rb_entry, CSTR2SYM("modes"), rb_modes);
-
-	return rb_entry;
-}
-
 
 
 static VALUE rb_git_indexentry_fromC(git_index_entry *entry)
@@ -301,39 +254,59 @@ static VALUE rb_git_indexentry_fromC(git_index_entry *entry)
 	return rb_entry;
 }
 
+static inline unsigned int
+default_entry_value(VALUE rb_entry, const char *key)
+{
+	VALUE val = rb_hash_aref(rb_entry, CSTR2SYM(key));
+	if (NIL_P(val))
+		return 0;
+
+	Check_Type(val, T_FIXNUM);
+	return FIX2INT(val);
+}
+
 static void rb_git_indexentry_toC(git_index_entry *entry, VALUE rb_entry)
 {
 	VALUE val;
 
 	Check_Type(rb_entry, T_HASH);
 
-#define GET_ENTRY_VAL(v, t) \
-	rb_hash_aref(rb_entry, CSTR2SYM(v)); \
-	Check_Type(val, t);
-
-	val = GET_ENTRY_VAL("path", T_STRING);
+	val = rb_hash_aref(rb_entry, CSTR2SYM("path"));
+	Check_Type(val, T_STRING);
 	entry->path = StringValueCStr(val);
 
-	val = GET_ENTRY_VAL("oid", T_STRING);
-	rugged_exception_check(git_oid_fromstr(&entry->oid, StringValueCStr(val)));
+	val = rb_hash_aref(rb_entry, CSTR2SYM("oid"));
+	Check_Type(val, T_STRING);
+	rugged_exception_check(
+		git_oid_fromstr(&entry->oid, StringValueCStr(val))
+	);
 
-	val = GET_ENTRY_VAL("dev", T_FIXNUM);
-	entry->dev = FIX2INT(val);
+	entry->dev = default_entry_value(rb_entry, "dev");
+	entry->ino = default_entry_value(rb_entry, "ino");
+	entry->mode = default_entry_value(rb_entry, "mode");
+	entry->gid = default_entry_value(rb_entry, "gid");
+	entry->uid = default_entry_value(rb_entry, "uid");
+	entry->file_size = (git_off_t)default_entry_value(rb_entry, "file_size");
 
-	val = GET_ENTRY_VAL("ino", T_FIXNUM);
-	entry->ino = FIX2INT(val);
+	if ((val = rb_hash_aref(rb_entry, CSTR2SYM("mtime"))) != Qnil) {
+		if (!rb_obj_is_kind_of(val, rb_cTime))
+			rb_raise(rb_eTypeError, ":mtime must be a Time instance");
 
-	val = GET_ENTRY_VAL("mode", T_FIXNUM);
-	entry->mode = FIX2INT(val);
+		entry->mtime.seconds = NUM2INT(rb_funcall(val, rb_intern("to_i"), 0));
+		entry->mtime.nanoseconds = NUM2INT(rb_funcall(val, rb_intern("usec"), 0)) * 1000;
+	} else {
+		entry->mtime.seconds = entry->mtime.nanoseconds = 0;
+	}
 
-	val = GET_ENTRY_VAL("gid", T_FIXNUM);
-	entry->gid = FIX2INT(val);
+	if ((val = rb_hash_aref(rb_entry, CSTR2SYM("ctime"))) != Qnil) {
+		if (!rb_obj_is_kind_of(val, rb_cTime))
+			rb_raise(rb_eTypeError, ":ctime must be a Time instance");
 
-	val = GET_ENTRY_VAL("uid", T_FIXNUM);
-	entry->uid = FIX2INT(val);
-
-	val = GET_ENTRY_VAL("file_size", T_FIXNUM);
-	entry->file_size = FIX2INT(val);
+		entry->ctime.seconds = NUM2INT(rb_funcall(val, rb_intern("to_i"), 0));
+		entry->ctime.nanoseconds = NUM2INT(rb_funcall(val, rb_intern("usec"), 0)) * 1000;
+	} else {
+		entry->ctime.seconds = entry->ctime.nanoseconds = 0;
+	}
 
 	entry->flags = 0x0;
 	entry->flags_extended = 0x0;
@@ -350,21 +323,9 @@ static void rb_git_indexentry_toC(git_index_entry *entry, VALUE rb_entry)
 		entry->flags &= ~GIT_IDXENTRY_VALID;
 		if (rugged_parse_bool(val))
 			entry->flags |= GIT_IDXENTRY_VALID;
-	} /* TODO: always valid by default? */
-
-	val = rb_hash_aref(rb_entry, CSTR2SYM("mtime"));
-	if (!rb_obj_is_kind_of(val, rb_cTime))
-		rb_raise(rb_eTypeError, ":mtime must be a Time instance");
-	entry->mtime.seconds = NUM2INT(rb_funcall(val, rb_intern("to_i"), 0));
-	entry->mtime.nanoseconds = NUM2INT(rb_funcall(val, rb_intern("usec"), 0)) * 1000;
-
-	val = rb_hash_aref(rb_entry, CSTR2SYM("ctime"));
-	if (!rb_obj_is_kind_of(val, rb_cTime))
-		rb_raise(rb_eTypeError, ":ctime must be a Time instance");
-	entry->ctime.seconds = NUM2INT(rb_funcall(val, rb_intern("to_i"), 0));
-	entry->ctime.nanoseconds = NUM2INT(rb_funcall(val, rb_intern("usec"), 0)) * 1000;
-
-#undef GET_ENTRY_VAL
+	} else {
+		entry->flags |= GIT_IDXENTRY_VALID;
+	}
 }
 
 VALUE rb_git_indexer(VALUE self, VALUE rb_packfile_path)
@@ -437,23 +398,19 @@ void Init_rugged_index()
 	rb_define_singleton_method(rb_cRuggedIndex, "new", rb_git_index_new, 1);
 
 	rb_define_method(rb_cRuggedIndex, "count", rb_git_index_count, 0);
-	rb_define_method(rb_cRuggedIndex, "count_unmerged", rb_git_index_count_unmerged, 0);
 	rb_define_method(rb_cRuggedIndex, "reload", rb_git_index_read, 0);
 	rb_define_method(rb_cRuggedIndex, "clear", rb_git_index_clear, 0);
 	rb_define_method(rb_cRuggedIndex, "write", rb_git_index_write, 0);
-	rb_define_method(rb_cRuggedIndex, "uniq!", rb_git_index_uniq, 0);
-	rb_define_method(rb_cRuggedIndex, "get_entry", rb_git_index_get, 1);
-	rb_define_method(rb_cRuggedIndex, "get_unmerged", rb_git_index_get_unmerged, 1);
-	rb_define_method(rb_cRuggedIndex, "[]", rb_git_index_get, 1);
+	rb_define_method(rb_cRuggedIndex, "get", rb_git_index_get, -1);
+	rb_define_method(rb_cRuggedIndex, "[]", rb_git_index_get, -1);
 	rb_define_method(rb_cRuggedIndex, "each", rb_git_index_each, 0);
 
-	rb_define_method(rb_cRuggedIndex, "add", rb_git_index_add, -1);
-	rb_define_method(rb_cRuggedIndex, "update", rb_git_index_add, -1);
+	rb_define_method(rb_cRuggedIndex, "add", rb_git_index_add, 1);
+	rb_define_method(rb_cRuggedIndex, "update", rb_git_index_add, 1);
+	rb_define_method(rb_cRuggedIndex, "<<", rb_git_index_add, 1);
 
-	rb_define_method(rb_cRuggedIndex, "append", rb_git_index_append, -1);
-	rb_define_method(rb_cRuggedIndex, "<<", rb_git_index_append, -1);
+	rb_define_method(rb_cRuggedIndex, "remove", rb_git_index_remove, -1);
 
-	rb_define_method(rb_cRuggedIndex, "remove", rb_git_index_remove, 1);
 	rb_define_method(rb_cRuggedIndex, "write_tree", rb_git_index_writetree, 0);
 	rb_define_method(rb_cRuggedIndex, "read_tree", rb_git_index_readtree, 1);
 
