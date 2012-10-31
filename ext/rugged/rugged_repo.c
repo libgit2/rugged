@@ -272,8 +272,8 @@ static VALUE rb_git_repo__nonblocking_clone(void* p_params)
 	error = git_clone(	p_clone_params->pp_repo,
 											p_clone_params->url,
 											p_clone_params->target_path,
-											NULL, /* Can't call back to Ruby for fetch stats without dirty hacks */
-											NULL, /* Can't call back to Ruby for checkout stats without dirty hacks */
+											NULL, /* TODO: Progress block */
+											NULL, /* TODO: Progress block */
 											p_clone_params->p_opts);
 	p_clone_params->git_error = error;
 
@@ -290,7 +290,7 @@ static VALUE rb_git_repo__nonblocking_clone_bare(void* p_params)
 	error = git_clone_bare(	p_clone_params->pp_repo,
 													p_clone_params->url,
 													p_clone_params->target_path,
-													NULL);
+													NULL, NULL); /* TODO: Progress block */
 	p_clone_params->git_error = error;
 
 	return Qnil;
@@ -767,7 +767,7 @@ static VALUE rb_git_repo_checkout_index(int argc, VALUE argv[], VALUE self)
   rb_git__parse_checkout_options(&ruby_opts, &opts);
 
   /* Checkout operation */
-  error = git_checkout_index(repo, &opts, NULL); /* TODO: Progress access for block */
+  error = git_checkout_index(repo, &opts);
   rugged_exception_check(error);
 
   return Qnil;
@@ -801,7 +801,7 @@ static VALUE rb_git_repo_checkout_head(int argc, VALUE argv[], VALUE self)
   rb_git__parse_checkout_options(&ruby_opts, &opts);
 
   /* Checkout operation */
-  error = git_checkout_head(repo, &opts, NULL); /* TODO: Progress access for block */
+  error = git_checkout_head(repo, &opts);
   rugged_exception_check(error);
 
   return Qnil;
@@ -852,7 +852,7 @@ static VALUE rb_git_repo_checkout_tree(VALUE argc, VALUE argv[], VALUE self)
   rb_git__parse_checkout_options(&ruby_opts, &opts);
 
   /* Update the index */
-  error = git_checkout_tree(repo, treeish, &opts, NULL); /* TODO: Progress access for block */
+  error = git_checkout_tree(repo, treeish, &opts);
   rugged_exception_check(error);
   return Qnil;
 }
