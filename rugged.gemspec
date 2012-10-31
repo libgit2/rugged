@@ -1,4 +1,5 @@
-require './lib/rugged/version'
+$:.push File.expand_path("../lib", __FILE__)
+require 'rugged/version'
 
 Gem::Specification.new do |s|
   s.name              = "rugged"

@@ -45,12 +45,12 @@ context "Rugged::Index reading stuff" do
   end
 
   test "can remove entries from the index" do
-    @index.remove 0
+    @index.remove 'new.txt'
     assert_equal 1, @index.count
   end
 
   test "can get all data from an entry" do
-    e = @index.get_entry(0)
+    e = @index[0]
     assert_equal 'README', e[:path]
     assert_equal '1385f264afb75a56a5bec74243be9b367ba4ca08', e[:oid]
     assert_equal 1273360380, e[:mtime].to_i
@@ -64,7 +64,7 @@ context "Rugged::Index reading stuff" do
     assert_equal false, e[:valid]
     assert_equal 0, e[:stage]
 
-    e = @index.get_entry(1)
+    e = @index[1]
     assert_equal 'new.txt', e[:path]
     assert_equal 'fa49b077972391ad58037050f2a75f74e3671e92', e[:oid]
   end
@@ -76,7 +76,7 @@ context "Rugged::Index reading stuff" do
 
   test "can update entries" do
     now = Time.at Time.now.to_i
-    e = @index.get_entry(0)
+    e = @index[0]
 
     e[:oid] = "12ea3153a78002a988bb92f4123e7e831fd1138a"
     e[:mtime] = now
@@ -90,10 +90,8 @@ context "Rugged::Index reading stuff" do
     e[:stage] = 3
 
     @index.add(e)
-    new_e = @index[e[:path]]
+    new_e = @index.get e[:path], 3
 
-    # git only sets executable bit based on owner
-    e[:mode] = 33188
     assert_equal e, new_e
   end
 
@@ -156,14 +154,14 @@ context "Rugged::Index with working directory" do
     @index.write
 
     index2 = Rugged::Index.new(@tmppath + '/.git/index')
-    assert_equal index2.get_entry(0)[:path], 'test.txt'
+    assert_equal index2[0][:path], 'test.txt'
   end
 
   test "can reload the index" do
     File.open(File.join(@tmppath, 'test.txt'), 'w') do |f|
       f.puts "test content"
     end
-    @index.add('test.txt', 2)
+    @index.add('test.txt')
     @index.write
 
     sleep(1) # we need this sleep to sync at the FS level
@@ -171,7 +169,7 @@ context "Rugged::Index with working directory" do
 
     rindex = Rugged::Index.new(File.join(@tmppath, '/.git/index'))
     e = rindex['test.txt']
-    assert_equal 2, e[:stage]
+    assert_equal 0, e[:stage]
 
     rindex << new_index_entry
     rindex.write
@@ -180,7 +178,38 @@ context "Rugged::Index with working directory" do
     @index.reload
     assert_equal 2, @index.count
 
-    e = @index['new_path']
+    e = @index.get 'new_path', 3
     assert_equal e[:mode], 33199
+  end
+end
+
+
+context "Rugged::Index with Rugged::Repository" do
+  setup do
+    @path = temp_repo("testrepo.git")
+    @repo = Rugged::Repository.new(@path)
+    @index = @repo.index
+  end
+
+  test "idempotent read_tree/write_tree" do
+    head_sha = Rugged::Reference.lookup(@repo,'HEAD').resolve.target
+    tree = @repo.lookup(head_sha).tree
+    @index.read_tree(tree)
+
+    index_tree_sha = @index.write_tree
+    index_tree = @repo.lookup(index_tree_sha)
+    assert_equal tree.oid, index_tree.oid
+  end
+
+
+  test "build tree from index on non-HEAD branch" do
+    head_sha = Rugged::Reference.lookup(@repo,'refs/remotes/origin/packed').resolve.target
+    tree = @repo.lookup(head_sha).tree
+    @index.read_tree(tree)
+    @index.remove('second.txt')
+
+    new_tree_sha = @index.write_tree
+    assert head_sha != new_tree_sha
+    assert_nil @repo.lookup(new_tree_sha)['second.txt']
   end
 end
