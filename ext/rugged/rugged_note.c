@@ -26,6 +26,7 @@
 
 extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedRepo;
+extern VALUE rb_cRuggedReference;
 VALUE rb_cRuggedNote;
 
 void rb_git_note__free(git_note *note)
@@ -120,10 +121,44 @@ static VALUE rb_git_note_message_GET(VALUE self)
 	return rugged_str_ascii(message, strlen(message));
 }
 
+/*
+ *	call-seq:
+ *		Note.default_ref(repository) -> reference
+ *
+ *	Get the default notes reference for a +repository+:
+ *
+ *	Returns a new <tt>Rugged::Reference</tt> object.
+ *
+ *		Rugged::Note.default_ref(repo).name #=> "refs/notes/commits"
+ */
+static VALUE rb_git_note_default_ref_GET(VALUE klass, VALUE rb_repo )
+{
+	git_repository *repo = NULL;
+	git_reference *notes_ref;
+	const char * ref_name;
+	int error;
+
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	rugged_exception_check(
+		git_note_default_ref(&ref_name, repo)
+	);
+
+	error = git_reference_lookup(&notes_ref, repo, ref_name);
+	if (error == GIT_ENOTFOUND)
+		return Qnil;
+	else
+		rugged_exception_check(error);
+
+	return rugged_ref_new(rb_cRuggedReference, rb_repo, notes_ref);
+}
+
 void Init_rugged_note()
 {
 	rb_cRuggedNote = rb_define_class_under(rb_mRugged, "Note", rb_cObject);
 	rb_define_singleton_method(rb_cRuggedNote, "lookup", rb_git_note_lookup, -1);
+	rb_define_singleton_method(rb_cRuggedNote, "default_ref", rb_git_note_default_ref_GET, 1);
 
 	rb_define_method(rb_cRuggedNote, "message", rb_git_note_message_GET, 0);
 }
