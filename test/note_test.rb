@@ -19,4 +19,11 @@ describe 'Rugged::Note' do
 
     assert_kind_of Rugged::Note, note
   end
+
+  test 'can read note message' do
+    oid = "36060c58702ed4c2a40832c51758d5344201d89a"
+    note = Rugged::Note.lookup(@repo, oid)
+
+    assert_equal "note text\n", note.message
+  end
 end

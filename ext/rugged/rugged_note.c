@@ -85,8 +85,45 @@ static VALUE rb_git_note_lookup(int argc, VALUE *argv, VALUE klass)
 	return rugged_note_new(klass, rb_repo, note);
 }
 
+/*
+ *	call-seq:
+ *		note.message -> msg
+ *
+ *	Return the message of this +note+. This includes the full body of the
+ *	message.
+ *
+ *		note.message #=> "Build status: success"
+ */
+static VALUE rb_git_note_message_GET(VALUE self)
+{
+	git_note *note;
+	const char *message;
+
+	Data_Get_Struct(self, git_note, note);
+	message = git_note_message(note);
+
+	/*
+	 * the note object is just a blob, normally it should be human readable
+	 * and in unicode like annotated tag's message,
+	 * but since git allows attaching any blob as a note message
+	 * we're just making sure this works for everyone and it doesn't
+	 * reencode things it shouldn't.
+	 *
+	 * since we don't really ever know the encoding of a blob
+	 * lets default to the binary encoding (ascii-8bit)
+	 * If there is a way to tell, we should just pass 0/null here instead
+	 *
+	 * we're skipping the use of STR_NEW because we don't want our string to
+	 * eventually end up converted to Encoding.default_internal because this
+	 * string could very well be binary data
+	 */
+	return rugged_str_ascii(message, strlen(message));
+}
+
 void Init_rugged_note()
 {
 	rb_cRuggedNote = rb_define_class_under(rb_mRugged, "Note", rb_cObject);
 	rb_define_singleton_method(rb_cRuggedNote, "lookup", rb_git_note_lookup, -1);
+
+	rb_define_method(rb_cRuggedNote, "message", rb_git_note_message_GET, 0);
 }
