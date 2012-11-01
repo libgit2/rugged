@@ -1,4 +1,5 @@
 require "test_helper"
+require 'net/http'
 
 context "Rugged::Tag tests" do
   setup do
@@ -7,6 +8,12 @@ context "Rugged::Tag tests" do
   end
 
   test "is able to connect to the remote" do
+    begin
+      Net::HTTP.new('github.com').head('/')
+    rescue SocketError => msg
+      skip "github is not reachable: #{msg}"
+    end
+
     remote = Rugged::Remote.new(@repo, "git://github.com/libgit2/libgit2.git")
 
     remote.connect(:fetch) do |r|
