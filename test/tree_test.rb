@@ -2,8 +2,8 @@ require "test_helper"
 
 context "Rugged::Tree tests" do
   setup do
-    path = File.dirname(__FILE__) + '/fixtures/testrepo.git/'
-    @repo = Rugged::Repository.new(path)
+    @path = File.dirname(__FILE__) + '/fixtures/testrepo.git/'
+    @repo = Rugged::Repository.new(@path)
     @oid = "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b"
     @tree = @repo.lookup(@oid)
   end
@@ -65,6 +65,8 @@ context "Rugged::Tree tests" do
     sha = builder.write(@repo)
     obj = @repo.lookup(sha)
     assert_equal 38, obj.read_raw.len
+
+    rm_loose(sha)
   end
 
 end
