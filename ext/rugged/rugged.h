@@ -101,6 +101,14 @@ static inline int rugged_parse_bool(VALUE boolean)
 	return boolean ? 1 : 0;
 }
 
+extern VALUE rb_cRuggedRepo;
+
+static inline void rugged_check_repo(VALUE rb_repo)
+{
+	if (!rb_obj_is_instance_of(rb_repo, rb_cRuggedRepo))
+		rb_raise(rb_eTypeError, "Expecting a Rugged Repository");
+}
+
 /* support for string encodings in 1.9 */
 #ifdef HAVE_RUBY_ENCODING_H
 #	define rugged_str_new(str, len, enc) rb_enc_str_new(str, len, enc)

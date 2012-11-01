@@ -164,9 +164,6 @@ context "Rugged::Index with working directory" do
     @index.add('test.txt')
     @index.write
 
-    sleep(1) # we need this sleep to sync at the FS level
-    # most FSs have 1s granularity on mtimes
-
     rindex = Rugged::Index.new(File.join(@tmppath, '/.git/index'))
     e = rindex['test.txt']
     assert_equal 0, e[:stage]
