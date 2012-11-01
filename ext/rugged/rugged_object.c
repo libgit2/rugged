@@ -190,8 +190,7 @@ VALUE rb_git_object_lookup(VALUE klass, VALUE rb_repo, VALUE rb_hex)
 	Check_Type(rb_hex, T_STRING);
 	oid_length = (int)RSTRING_LEN(rb_hex);
 
-	if (!rb_obj_is_instance_of(rb_repo, rb_cRuggedRepo))
-		rb_raise(rb_eTypeError, "Expecting a Rugged Repository");
+	rugged_check_repo(rb_repo);
 
 	if (oid_length > GIT_OID_HEXSZ)
 		rb_raise(rb_eTypeError, "The given OID is too long");
@@ -222,8 +221,7 @@ static VALUE rugged_object_rev_parse(VALUE klass, VALUE rb_repo, VALUE rb_spec, 
 	Check_Type(rb_spec, T_STRING);
 	spec = RSTRING_PTR(rb_spec);
 
-	if (!rb_obj_is_instance_of(rb_repo, rb_cRuggedRepo))
-		rb_raise(rb_eTypeError, "Expecting a Rugged Repository");
+	rugged_check_repo(rb_repo);
 
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
