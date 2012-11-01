@@ -172,8 +172,7 @@ static VALUE rb_git_blob_create(VALUE self, VALUE rb_repo, VALUE rb_buffer)
 	git_repository *repo;
 
 	Check_Type(rb_buffer, T_STRING);
-	if (!rb_obj_is_instance_of(rb_repo, rb_cRuggedRepo))
-		rb_raise(rb_eTypeError, "Expecting a Rugged Repository");
+	rugged_check_repo(rb_repo);
 
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
@@ -199,8 +198,7 @@ static VALUE rb_git_blob_writefile(VALUE self, VALUE rb_repo, VALUE rb_path)
 	git_repository *repo;
 
 	Check_Type(rb_path, T_STRING);
-	if (!rb_obj_is_instance_of(rb_repo, rb_cRuggedRepo))
-		rb_raise(rb_eTypeError, "Expecting a Rugged Repository");
+	rugged_check_repo(rb_repo);
 
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
