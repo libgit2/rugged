@@ -254,6 +254,7 @@ struct _clone_params {
 	git_checkout_opts* p_opts; /* Options for the checkout after the clone (if not bare) */
 	char* url;                 /* URL of the remote host with protocol prefix */
 	char* target_path;         /* path where to clone to */
+	int block_given;          /* set to 1 if the clone method got a block passed, 0 otherwise (this information would be lost without GVL otherwise) */
 
 	/* This value will automatically be set by the nonblocking
 	 * cloning functions. Setting it is meaningless, but after
@@ -262,35 +263,66 @@ struct _clone_params {
 	int git_error;
 };
 
-/* Runs the git-clone operation without the GVL. `params' is a pointer
+/* Callback function passed to libgit2 when the clone functions
+ * are called with a block. */
+void rb_git_repo__transfer_callback(const git_transfer_progress* stats, void* payload)
+{
+	rb_yield_values(	4,
+										UINT2NUM(stats->total_objects),
+										UINT2NUM(stats->indexed_objects),
+										UINT2NUM(stats->received_objects),
+										LONG2NUM(stats->received_bytes));
+}
+
+/* Runs the git-clone operation with or without the GVL. `params' is a pointer
  * to a _clone_params struct. Called by rb_git_repo_clone(). */
-static VALUE rb_git_repo__nonblocking_clone(void* p_params)
+static VALUE rb_git_repo__internal_clone(void* p_params)
 {
 	struct _clone_params* p_clone_params = (struct _clone_params*) p_params;
 	int error;
 
-	error = git_clone(	p_clone_params->pp_repo,
-											p_clone_params->url,
-											p_clone_params->target_path,
-											NULL, /* TODO: Progress block */
-											NULL, /* TODO: Progress block */
-											p_clone_params->p_opts);
+	if (p_clone_params->block_given) {
+		error = git_clone(	p_clone_params->pp_repo,
+												p_clone_params->url,
+												p_clone_params->target_path,
+												rb_git_repo__transfer_callback,
+												NULL,
+												p_clone_params->p_opts);
+
+	}
+	else { /* In 1.9 we're running without the GVL here */
+		error = git_clone(	p_clone_params->pp_repo,
+												p_clone_params->url,
+												p_clone_params->target_path,
+												NULL, NULL,
+												p_clone_params->p_opts);
+	}
 	p_clone_params->git_error = error;
 
 	return Qnil;
 }
 
-/* Runs the git-clone --bare operation without the GVL. `params' is a pointer
+/* Runs the git-clone --bare operation with or without the GVL. `params' is a pointer
  * to a _clone_params struct. Called by rb_git_repo_clone(). */
-static VALUE rb_git_repo__nonblocking_clone_bare(void* p_params)
+static VALUE rb_git_repo__internal_clone_bare(void* p_params)
 {
 	struct _clone_params* p_clone_params = (struct _clone_params*) p_params;
 	int error;
 
-	error = git_clone_bare(	p_clone_params->pp_repo,
-													p_clone_params->url,
-													p_clone_params->target_path,
-													NULL, NULL); /* TODO: Progress block */
+	if (p_clone_params->block_given){
+		error = git_clone_bare(	p_clone_params->pp_repo,
+														p_clone_params->url,
+														p_clone_params->target_path,
+														rb_git_repo__transfer_callback,
+														NULL);
+	}
+	else { /* In 1.9 we're running without the GVL here */
+		error = git_clone_bare(	p_clone_params->pp_repo,
+														p_clone_params->url,
+														p_clone_params->target_path,
+														NULL, NULL);
+	}
+
 	p_clone_params->git_error = error;
 
 	return Qnil;
@@ -311,6 +343,7 @@ static void rb_git_repo__abort_clone(void* p_param)
 /*
  *	call-seq:
  *		clone_repo(url, target_path [, opts = {} ]) -> repository
+ *		clone_rpeo(url, target_path [, opts = {} ]){|total_objects, indexed_objects, received_objects, received_bytes| ...}
  *
  *	Clone a Git repository from the remote at +url+ into the given
  *	local +target_path+ and return a Repository object pointing to
@@ -323,10 +356,16 @@ static void rb_git_repo__abort_clone(void* p_param)
  *	+opts+ will be passed on to the checkout operation, so see
  *	#checkout_index for possible values you can assign to +opts+.
  *
- *	This method releases the GVL during the clone operation.
+ *	If a block is given, it gets passed statistics about the fetching process
+ *	(all values are integers).
+ *
+ *	If no block is given, this method releases the GVL during the clone operation.
  *
  *		Rugged::Repository.clone_repo("git://github.com/libgit2/libgit2.git", "~/libgit2")
  *		Rugged::Repository.clone_repo("git://github.com/libgit2/libgit2.git", "~/libgit2.git", bare: true)
+ *		Rugged::Repository.clone_repo("git://github.com/libgit2/libgit2.git", "~/libgit2", strategy: [:default, :overwrite_modified, :create_missing]) do |total, indexed, received_objs, bytes|
+ *			print "\rReceived #{received_objs}/#{total} (indexed #{indexed}, #{bytes} bytes)"
+ *		end
  */
 static VALUE rb_git_repo_clone(int argc, VALUE argv[], VALUE self)
 {
@@ -340,43 +379,54 @@ static VALUE rb_git_repo_clone(int argc, VALUE argv[], VALUE self)
 	if (TYPE(ruby_opts) != T_HASH)
 		ruby_opts = rb_hash_new(); /* Assume empty hash if none given */
 
-	clone_params.pp_repo		 = &p_repo;
-	clone_params.url				 = StringValueCStr(url);
+	clone_params.pp_repo     = &p_repo;
+	clone_params.url         = StringValueCStr(url);
 	clone_params.target_path = StringValueCStr(target_path);
 
 	if (RTEST(rb_hash_aref(ruby_opts, ID2SYM(rb_intern("bare"))))) {
 		clone_params.p_opts = NULL; /* Not required for bare clone */
 
+		if (rb_block_given_p()) {
+			/* If a block was given, we cannot release the GVL due to callback */
+			clone_params.block_given = 1;
+			rb_git_repo__internal_clone_bare(&clone_params);
+		}
+		else { /* No block given -- release the GVL if possible */
+			clone_params.block_given = 0;
 #ifdef USING_RUBY_19
-		rb_thread_blocking_region(	rb_git_repo__nonblocking_clone_bare,
-																&clone_params,
-																rb_git_repo__abort_clone,
-																&clone_params);
+			rb_thread_blocking_region(	rb_git_repo__internal_clone_bare,
+																	&clone_params,
+																	rb_git_repo__abort_clone,
+																	&clone_params);
 #else
-		/* Poor 1.8 guys, you cannot have concurrency */
-		rb_git_repo__nonblocking_clone_bare(&clone_params);
+			/* Poor 1.8 guys, you cannot have concurrency */
+			rb_git_repo__internal_clone_bare(&clone_params);
 #endif
-  }
-  else {
-		/* Clone the options hash, so we can safely remove :bare from
-		 * it in order to pass it on to the checkout operation. */
-		VALUE checkout_opts = rb_obj_dup(ruby_opts);
-		rb_hash_delete(checkout_opts, ID2SYM(rb_intern("bare")));
-
+		}
+	}
+	else { /* Full non-bare clone requested */
 		/* Parse the checkout options */
 		git_checkout_opts opts;
 		rb_git__parse_checkout_options(&ruby_opts, &opts);
 		clone_params.p_opts = &opts;
 
+		if (rb_block_given_p()) {
+			/* If a block was given, we cannot release the GVL due to callback */
+			clone_params.block_given =1;
+			rb_git_repo__internal_clone(&clone_params);
+		}
+		else { /* No block given -- release GVL if possible */
+			clone_params.block_given = 0;
 #ifdef USING_RUBY_19
-		rb_thread_blocking_region(	rb_git_repo__nonblocking_clone,
-																&clone_params,
-																rb_git_repo__abort_clone,
-																&clone_params);
+			rb_thread_blocking_region(	rb_git_repo__internal_clone,
+																	&clone_params,
+																	rb_git_repo__abort_clone,
+																	&clone_params);
 #else
-		/* Poor 1.8 guys, you cannot have concurrency */
-		rb_git_repo__nonblocking_clone(&clone_params);
+			/* Poor 1.8 guys, you cannot have concurrency */
+			rb_git_repo__internal_clone(&clone_params);
 #endif
+		}
 	}
 
 	rugged_exception_check(clone_params.git_error);
