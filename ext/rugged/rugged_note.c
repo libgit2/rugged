@@ -154,6 +154,27 @@ static VALUE rb_git_note_default_ref_GET(VALUE klass, VALUE rb_repo )
 	return rugged_ref_new(rb_cRuggedReference, rb_repo, notes_ref);
 }
 
+/*
+ *	call-seq:
+ *		note.oid -> oid
+ *
+ *	Return the oid of the note object, as a <tt>String</tt>
+ *	instance.
+ *
+ *		note.oid #=> "94eca2de348d5f672faf56b0decafa5937e3235e"
+ */
+static VALUE rb_git_note_oid_GET(VALUE self)
+{
+	git_note *note;
+	const git_oid *oid;
+
+	Data_Get_Struct(self, git_note, note);
+
+	oid = git_note_oid(note);
+
+	return rugged_create_oid(oid);
+}
+
 void Init_rugged_note()
 {
 	rb_cRuggedNote = rb_define_class_under(rb_mRugged, "Note", rb_cObject);
@@ -161,4 +182,5 @@ void Init_rugged_note()
 	rb_define_singleton_method(rb_cRuggedNote, "default_ref", rb_git_note_default_ref_GET, 1);
 
 	rb_define_method(rb_cRuggedNote, "message", rb_git_note_message_GET, 0);
+	rb_define_method(rb_cRuggedNote, "oid", rb_git_note_oid_GET, 0);
 }

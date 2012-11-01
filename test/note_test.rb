@@ -25,6 +25,12 @@ describe 'Rugged::Note' do
     assert_equal 'refs/notes/commits', default_ref.name
   end
 
+  test 'can read notes oid' do
+    oid = "36060c58702ed4c2a40832c51758d5344201d89a"
+    note = Rugged::Note.lookup(@repo, oid, 'refs/notes/commits')
+    assert_equal '94eca2de348d5f672faf56b0decafa5937e3235e', note.oid
+  end
+
   test 'can read note message' do
     oid = "36060c58702ed4c2a40832c51758d5344201d89a"
     note = Rugged::Note.lookup(@repo, oid)
