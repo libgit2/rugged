@@ -86,3 +86,35 @@ context 'Rugged::Note.create' do
     end
   end
 end
+
+context 'Rugged::Note.remove!' do
+  setup do
+    @path = temp_repo('testrepo.git')
+    @repo = Rugged::Repository.new(@path)
+  end
+
+  test 'can remove a note from object' do
+
+    person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
+
+    oid = "8496071c1b46c854b31185ea97743be6a8774479"
+    message ="This is the note message\n\nThis note is created from Rugged"
+
+    Rugged::Note.create(@repo,
+      :message => message,
+      :committer => person,
+      :author => person,
+      :ref => 'refs/notes/test',
+      :oid => oid
+    )
+
+    assert Rugged::Note.remove!(@repo,
+      :oid=> oid,
+      :committer => person,
+      :author => person,
+      :ref => 'refs/notes/test'
+    )
+
+    assert_nil Rugged::Note.lookup(@repo, oid, 'refs/notes/test')
+  end
+end

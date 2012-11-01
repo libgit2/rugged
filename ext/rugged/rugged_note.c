@@ -266,10 +266,95 @@ cleanup:
 	return rugged_create_oid(&note_oid);
 }
 
+/*
+ *	call-seq:
+ *		Note.remove!(repository, data = {}) -> boolean
+ *
+ *	Removes a +Note+ from +repository+, with the given +data+
+ *	arguments, passed as a +Hash+:
+ *
+ *	- +:oid+: the OID if the git object to remove the note from
+ *	- +:committer+: a hash with the signature for the committer
+ *	- +:author+: a hash with the signature for the author
+ *	- +:ref+: (optional): cannonical name of the reference to use, defaults to "refs/notes/commits"
+ *
+ *	When the note is successfully removed +true+ will be
+ *	returned as a +Boolean+.
+ *
+ *		author = {:email=>"tanoku@gmail.com", :time=>Time.now, :name=>"Vicent Mart\303\255"}
+ *
+ *		Rugged::Note.remove!(repo,
+ *		        :oid       => '8496071c1b46c854b31185ea97743be6a8774479',
+ *			:author    => author,
+ *			:committer => author,
+ *			:ref       => 'refs/notes/builds'
+ *			)
+ */
+static VALUE rb_git_note_remove(VALUE self, VALUE rb_repo, VALUE rb_data)
+{
+	VALUE rb_ref, rb_oid, rb_message;
+	git_repository *repo = NULL;
+	const char *notes_ref = NULL;
+
+	git_signature *author, *committer;
+
+	git_object *target = NULL;
+	git_oid oid;
+	int error = 0;
+
+	Check_Type(rb_data, T_HASH);
+
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	rb_ref = rb_hash_aref(rb_data, CSTR2SYM("ref"));
+
+	if (!NIL_P(rb_ref)) {
+		Check_Type(rb_ref, T_STRING);
+		notes_ref = StringValueCStr(rb_ref);
+	}
+
+	committer = rugged_signature_get(
+		rb_hash_aref(rb_data, CSTR2SYM("committer"))
+	);
+
+	author = rugged_signature_get(
+		rb_hash_aref(rb_data, CSTR2SYM("author"))
+	);
+
+	rb_oid = rb_hash_aref(rb_data, CSTR2SYM("oid"));
+
+	error = git_oid_fromstr(&oid, StringValueCStr(rb_oid));
+	if (error < GIT_OK)
+		goto cleanup;
+
+	error = git_object_lookup(&target, repo, &oid, GIT_OBJ_ANY);
+	if (error < GIT_OK)
+		goto cleanup;
+
+	error = git_note_remove(
+			repo,
+			notes_ref,
+			author,
+			committer,
+			&oid);
+
+
+cleanup:
+	git_signature_free(author);
+	git_signature_free(committer);
+
+	rugged_exception_check(error);
+
+	return Qtrue;
+}
+
+
 void Init_rugged_note()
 {
 	rb_cRuggedNote = rb_define_class_under(rb_mRugged, "Note", rb_cObject);
 	rb_define_singleton_method(rb_cRuggedNote, "create", rb_git_note_create, 2);
+	rb_define_singleton_method(rb_cRuggedNote, "remove!", rb_git_note_remove, 2);
 	rb_define_singleton_method(rb_cRuggedNote, "lookup", rb_git_note_lookup, -1);
 	rb_define_singleton_method(rb_cRuggedNote, "default_ref", rb_git_note_default_ref_GET, 1);
 
