@@ -88,7 +88,7 @@ context "Rugged::Repository stuff" do
   test "can return all refs" do
     refs = @repo.refs
 
-    assert_equal 4, refs.length
+    assert_equal 5, refs.length
   end
 
   test "can return all refs that match" do
@@ -101,7 +101,7 @@ context "Rugged::Repository stuff" do
     refs = @repo.ref_names
 
     refs.each {|name| assert name.kind_of?(String)}
-    assert_equal 4, refs.count
+    assert_equal 5, refs.count
   end
 
   test "can return all tags" do

@@ -16,13 +16,13 @@ context "Rugged::Reference stuff" do
 
   test "can list references" do
     refs = @repo.refs.map { |r| r.name.gsub("refs/", '') }.sort.join(':')
-    assert_equal "heads/master:heads/packed:tags/v0.9:tags/v1.0", refs
+    assert_equal "heads/master:heads/packed:notes/commits:tags/v0.9:tags/v1.0", refs
   end
 
   test "can list references with non 7-bit ASCII characters" do
     Rugged::Reference.create(@repo, "refs/heads/#{UNICODE_REF_NAME}", "refs/heads/master")
     refs = @repo.refs.map { |r| r.name.gsub("refs/", '') }.sort.join(':')
-    assert_equal "heads/#{UNICODE_REF_NAME}:heads/master:heads/packed:tags/v0.9:tags/v1.0", refs
+    assert_equal "heads/#{UNICODE_REF_NAME}:heads/master:heads/packed:notes/commits:tags/v0.9:tags/v1.0", refs
   end
 
   test "can list filtered references from regex" do
