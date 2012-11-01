@@ -57,6 +57,7 @@ void Init_rugged_revwalk();
 void Init_rugged_reference();
 void Init_rugged_config();
 void Init_rugged_remote();
+void Init_rugged_notes();
 
 VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE self);
 
