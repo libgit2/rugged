@@ -94,14 +94,6 @@ static VALUE rb_git_index_write(VALUE self)
 	return Qnil;
 }
 
-static VALUE rb_git_index_uniq(VALUE self)
-{
-	git_index *index;
-	Data_Get_Struct(self, git_index, index);
-	git_index_uniq(index);
-	return Qnil;
-}
-
 static VALUE rb_git_index_count(VALUE self)
 {
 	git_index *index;
