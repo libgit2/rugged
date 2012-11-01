@@ -38,3 +38,51 @@ describe 'Rugged::Note' do
     assert_equal "note text\n", note.message
   end
 end
+
+context 'Rugged::Note.create' do
+  setup do
+    @path = temp_repo('testrepo.git')
+    @repo = Rugged::Repository.new(@path)
+  end
+
+  test 'can create a note' do
+    person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
+
+    oid = "8496071c1b46c854b31185ea97743be6a8774479"
+    message ="This is the note message\n\nThis note is created from Rugged"
+
+    note_oid = Rugged::Note.create(@repo,
+      :message => message,
+      :committer => person,
+      :author => person,
+      :ref => 'refs/notes/test',
+      :oid => oid
+    )
+
+    assert_equal '38c3a690c474d8dcdb13088205a464a60312eec4', note_oid
+    # note is actually a blob
+    blob = @repo.lookup(note_oid)
+    assert_equal blob.oid, note_oid
+    assert_equal blob.content, message
+    assert_equal blob.type, :blob
+
+    note = Rugged::Note.lookup(@repo, oid, 'refs/notes/test')
+    assert_equal note.oid, note_oid
+    assert_equal note.message, message
+  end
+
+  test 'cant create note with missing oid' do
+    person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
+    message ="This is the note message\n\nThis note is created from Rugged"
+    oid = "9496071c1b46c854b31185ea97743be6a8774479"
+    assert_raises Rugged::OdbError do
+      Rugged::Note.create(@repo,
+        :message => message,
+        :committer => person,
+        :author => person,
+        :ref => 'refs/notes/test',
+        :oid => oid
+      )
+    end
+  end
+end
