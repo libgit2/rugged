@@ -90,7 +90,7 @@ static VALUE rb_git_index_write(VALUE self)
 
 	error = git_index_write(index);
 	rugged_exception_check(error);
-		
+
 	return Qnil;
 }
 
@@ -196,11 +196,11 @@ static VALUE rb_git_index_add(VALUE self, VALUE rb_entry)
 		rb_git_indexentry_toC(&entry, rb_entry);
 		error = git_index_add(index, &entry);
 	}
-	
+
 	else if (TYPE(rb_entry) == T_STRING) {
 		error = git_index_add_from_workdir(index, StringValueCStr(rb_entry));
 	}
-	
+
 	else {
 		rb_raise(rb_eTypeError, 
 			"Expecting a hash defining an Index Entry or a path to a file in the repository");
@@ -384,7 +384,7 @@ VALUE rb_git_index_readtree(VALUE self, VALUE rb_tree)
 void Init_rugged_index()
 {
 	/*
-	 * Index 
+	 * Index
 	 */
 	rb_cRuggedIndex = rb_define_class_under(rb_mRugged, "Index", rb_cObject);
 	rb_define_singleton_method(rb_cRuggedIndex, "new", rb_git_index_new, 1);
