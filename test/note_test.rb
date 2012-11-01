@@ -37,6 +37,17 @@ describe 'Rugged::Note' do
 
     assert_equal "note text\n", note.message
   end
+
+  test 'can iterate over notes' do
+    Rugged::Note.each(@repo) do |note_blob, annotated_object|
+      assert_equal "note text\n", note_blob.content
+      assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", annotated_object.oid
+    end
+  end
+
+  test 'can return enumerator' do
+    assert_kind_of Enumerator, Rugged::Note.each(@repo)
+  end
 end
 
 context 'Rugged::Note.create' do

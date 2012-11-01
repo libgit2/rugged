@@ -349,6 +349,71 @@ cleanup:
 	return Qtrue;
 }
 
+static int cb_note__each(git_note_data *note_data, void *payload)
+{
+	VALUE rb_repo = (VALUE)payload;
+
+	git_object *annotated_object;
+	git_object *note_blob;
+
+	git_repository *repo;
+
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	rugged_exception_check(
+		git_object_lookup(&annotated_object, repo, &note_data->annotated_object_oid, GIT_OBJ_ANY)
+	);
+
+	rugged_exception_check(
+		git_object_lookup(&note_blob, repo, &note_data->blob_oid, GIT_OBJ_BLOB)
+	);
+
+	rb_yield_values(2,
+			rugged_object_new(rb_repo, note_blob),
+			rugged_object_new(rb_repo, annotated_object)
+	);
+	return GIT_OK;
+}
+
+/*
+ *	call-seq:
+ *		Note.each(repository, notes_ref = "refs/notes/commits") { |note_blob, annotated_object| block }
+ *		Note.each(repository, notes_ref = "refs/notes/commits") -> an_enumerator
+ *
+ *	Call the given block once for each note_blob/annotated_object pair in +repository+
+ *	- +notes_ref+: (optional): cannonical name of the reference to use defaults to "refs/notes/commits"
+ *
+ *	If no block is given, an +Enumerator+ is returned.
+ *              Rugged::Note.each(@repo) do |note_blob, annotated_object|
+ *			puts "#{note_blob.oid} => #{annotated_object.oid}"
+ *		end
+ */
+static VALUE rb_git_note_each(int argc, VALUE *argv, VALUE klass)
+{
+	git_repository *repo;
+	const char *notes_ref = NULL;
+	int error;
+
+	VALUE rb_repo, rb_notes_ref;
+
+	rb_scan_args(argc, argv, "11", &rb_repo, &rb_notes_ref);
+
+	if (!rb_block_given_p()) {
+		return rb_funcall(klass, rb_intern("to_enum"), 3, CSTR2SYM("each"), rb_repo, rb_notes_ref);
+	}
+
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	if (!NIL_P(rb_notes_ref)){
+		Check_Type(rb_notes_ref, T_STRING);
+		notes_ref = StringValueCStr(rb_notes_ref);
+	}
+
+	error = git_note_foreach(repo, notes_ref, &cb_note__each, (void *)rb_repo);
+	rugged_exception_check(error);
+	return Qnil;
+}
 
 void Init_rugged_note()
 {
@@ -357,6 +422,7 @@ void Init_rugged_note()
 	rb_define_singleton_method(rb_cRuggedNote, "remove!", rb_git_note_remove, 2);
 	rb_define_singleton_method(rb_cRuggedNote, "lookup", rb_git_note_lookup, -1);
 	rb_define_singleton_method(rb_cRuggedNote, "default_ref", rb_git_note_default_ref_GET, 1);
+	rb_define_singleton_method(rb_cRuggedNote, "each", rb_git_note_each, -1);
 
 	rb_define_method(rb_cRuggedNote, "message", rb_git_note_message_GET, 0);
 	rb_define_method(rb_cRuggedNote, "oid", rb_git_note_oid_GET, 0);
