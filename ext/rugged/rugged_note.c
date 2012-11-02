@@ -49,7 +49,7 @@ VALUE rugged_note_new(VALUE klass, VALUE owner, git_note *note)
  *	- +oid+: the OID of the git object to read the note from
  *	- +notes_ref+: (optional): cannonical name of the reference to use, defaults to "refs/notes/commits"
  *
- *	Returns a new <tt>Rugged::Note</tt> object.
+ *	Returns a new Rugged::Note object.
  */
 static VALUE rb_git_note_lookup(int argc, VALUE *argv, VALUE klass)
 {
@@ -127,7 +127,7 @@ static VALUE rb_git_note_message_GET(VALUE self)
  *
  *	Get the default notes reference for a +repository+:
  *
- *	Returns a new <tt>Rugged::Reference</tt> object.
+ *	Returns a new Rugged::Reference object.
  *
  *		Rugged::Note.default_ref(repo).name #=> "refs/notes/commits"
  */
