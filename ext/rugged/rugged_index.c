@@ -330,6 +330,7 @@ static VALUE rb_git_indexer(VALUE self, VALUE rb_packfile_path)
 {
 	int error;
 	git_indexer *indexer;
+	git_transfer_progress stats;
 	VALUE rb_oid;
 
 	Check_Type(rb_packfile_path, T_STRING);
@@ -337,7 +338,7 @@ static VALUE rb_git_indexer(VALUE self, VALUE rb_packfile_path)
 	error = git_indexer_new(&indexer, StringValueCStr(rb_packfile_path));
 	rugged_exception_check(error);
 
-	error = git_indexer_run(indexer, NULL);
+	error = git_indexer_run(indexer, &stats);
 	rugged_exception_check(error);
 
 	error = git_indexer_write(indexer);

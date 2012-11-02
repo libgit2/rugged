@@ -22,7 +22,8 @@ end
 
 context "Rugged::Index reading stuff" do
   setup do
-    path = File.dirname(__FILE__) + '/fixtures/testrepo.git/index'
+    @repo_path = File.dirname(__FILE__) + '/fixtures/testrepo.git/'
+    path = @repo_path + 'index'
     @index = Rugged::Index.new(path)
   end
 
@@ -102,6 +103,12 @@ context "Rugged::Index reading stuff" do
     itr_test = @index.sort { |a, b| a[:oid] <=> b[:oid] }.map { |x| x[:path] }.join(':')
     assert_equal "README:new_path:new.txt", itr_test
   end
+
+  test "can read the index from a packfile" do
+    pack_path = @repo_path + 'objects/pack/pack-d7c6adf9f61318f041845b01440d09aa7a91e1b5.pack'
+    assert_equal 'd7c6adf9f61318f041845b01440d09aa7a91e1b5', Rugged::Index.index_pack(pack_path)
+  end
+
 end
 
 context "Rugged::Index writing stuff" do
