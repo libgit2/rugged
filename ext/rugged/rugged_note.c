@@ -201,7 +201,7 @@ static VALUE rb_git_note_oid_GET(VALUE self)
  *			:ref       => 'refs/notes/builds'
  *			)
  */
-static VALUE rb_git_note_create(VALUE self, VALUE rb_repo, VALUE rb_data)
+static VALUE rb_git_note_create(VALUE klass, VALUE rb_repo, VALUE rb_data)
 {
 	VALUE rb_ref, rb_oid, rb_message;
 	git_repository *repo = NULL;
@@ -290,7 +290,7 @@ cleanup:
  *			:ref       => 'refs/notes/builds'
  *			)
  */
-static VALUE rb_git_note_remove(VALUE self, VALUE rb_repo, VALUE rb_data)
+static VALUE rb_git_note_remove(VALUE klass, VALUE rb_repo, VALUE rb_data)
 {
 	VALUE rb_ref, rb_oid, rb_message;
 	git_repository *repo = NULL;
