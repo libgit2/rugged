@@ -44,6 +44,14 @@ describe 'Rugged::Note' do
       assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", annotated_object.oid
     end
   end
+
+  test 'can print out pretty note info' do
+    oid = "36060c58702ed4c2a40832c51758d5344201d89a"
+    note = Rugged::Note.lookup(@repo, oid)
+
+    assert_includes note.inspect, "note text"
+
+  end
 end
 
 context 'Rugged::Note.create' do
