@@ -52,6 +52,10 @@ context 'Rugged::Note.create' do
     @repo = Rugged::Repository.new(@path)
   end
 
+  teardown do
+    FileUtils.remove_entry_secure(@path)
+  end
+
   test 'can create a note' do
     person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
 
@@ -98,6 +102,10 @@ context 'Rugged::Note.remove!' do
   setup do
     @path = temp_repo('testrepo.git')
     @repo = Rugged::Repository.new(@path)
+  end
+
+  teardown do
+    FileUtils.remove_entry_secure(@path)
   end
 
   test 'can remove a note from object' do
