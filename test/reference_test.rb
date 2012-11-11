@@ -1,53 +1,53 @@
 # encoding: UTF-8
 require File.expand_path "../test_helper", __FILE__
 
-context "Rugged::Reference stuff" do
+describe Rugged::Reference do
   UNICODE_REF_NAME = "A\314\212ngstro\314\210m"
 
-  setup do
+  before do
     @path = File.dirname(__FILE__) + '/fixtures/testrepo.git'
     @repo = Rugged::Repository.new(@path)
   end
 
-  teardown do
+  after do
     FileUtils.remove_entry_secure(@path + '/refs/heads/unit_test', true)
     FileUtils.remove_entry_secure(@path + "/refs/heads/#{UNICODE_REF_NAME}", true)
   end
 
-  test "can list references" do
+  it "can list references" do
     refs = @repo.refs.map { |r| r.name.gsub("refs/", '') }.sort.join(':')
     assert_equal "heads/master:heads/packed:tags/v0.9:tags/v1.0", refs
   end
 
-  test "can list references with non 7-bit ASCII characters" do
+  it "can list references with non 7-bit ASCII characters" do
     Rugged::Reference.create(@repo, "refs/heads/#{UNICODE_REF_NAME}", "refs/heads/master")
     refs = @repo.refs.map { |r| r.name.gsub("refs/", '') }.sort.join(':')
     assert_equal "heads/#{UNICODE_REF_NAME}:heads/master:heads/packed:tags/v0.9:tags/v1.0", refs
   end
 
-  test "can list filtered references from regex" do
+  it "can list filtered references from regex" do
     refs = @repo.refs(/tags/).map { |r| r.name.gsub("refs/", '') }.sort.join(':')
     assert_equal "tags/v0.9:tags/v1.0", refs
   end
 
-  test "can list filtered references from string" do
+  it "can list filtered references from string" do
     refs = @repo.refs('0.9').map { |r| r.name.gsub("refs/", '') }.sort.join(':')
     assert_equal "tags/v0.9", refs
   end
 
-  test "can open reference" do
+  it "can open reference" do
     ref = Rugged::Reference.lookup(@repo, "refs/heads/master")
     assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", ref.target
     assert_equal :direct, ref.type
     assert_equal "refs/heads/master", ref.name
   end
 
-  test "will return nil for an invalid reference" do
+  it "will return nil for an invalid reference" do
     ref = Rugged::Reference.lookup(@repo, "lol/wut")
     assert_equal nil, ref
   end
 
-  test "can get a reflog" do
+  it "can get a reflog" do
     ref = Rugged::Reference.lookup(@repo, "refs/heads/master")
     log = ref.log
     e =  log[1]
@@ -57,7 +57,7 @@ context "Rugged::Reference stuff" do
     assert_equal e[:committer][:email], "schacon@gmail.com"
   end
 
-  test "can check for the existence of a reference" do
+  it "can check for the existence of a reference" do
     exists = Rugged::Reference.exist?(@repo, "refs/heads/master")
     assert exists
 
@@ -65,14 +65,14 @@ context "Rugged::Reference stuff" do
     assert !exists
   end
 
-  test "can open packed reference" do
+  it "can open packed reference" do
     ref = Rugged::Reference.lookup(@repo, "refs/heads/packed")
     assert_equal "41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9", ref.target
     assert_equal :direct, ref.type
     assert_equal "refs/heads/packed", ref.name
   end
 
-  test "can create reference from symbolic reference" do
+  it "can create reference from symbolic reference" do
     ref = Rugged::Reference.create(@repo, "refs/heads/unit_test", "refs/heads/master")
     assert_equal "refs/heads/master", ref.target
     assert_equal :symbolic, ref.type
@@ -80,7 +80,7 @@ context "Rugged::Reference stuff" do
     ref.delete!
   end
 
-  test "can create reference from oid" do
+  it "can create reference from oid" do
     ref = Rugged::Reference.create(@repo, "refs/heads/unit_test", "36060c58702ed4c2a40832c51758d5344201d89a")
     assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", ref.target
     assert_equal :direct, ref.type
@@ -88,7 +88,7 @@ context "Rugged::Reference stuff" do
     ref.delete!
   end
 
-  test "can rename ref" do
+  it "can rename ref" do
     ref = Rugged::Reference.create(@repo, "refs/heads/unit_test", "36060c58702ed4c2a40832c51758d5344201d89a")
     assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", ref.target
     assert_equal :direct, ref.type
@@ -99,7 +99,7 @@ context "Rugged::Reference stuff" do
     ref.delete!
   end
 
-  test "can set target on reference" do
+  it "can set target on reference" do
     ref = Rugged::Reference.create(@repo, "refs/heads/unit_test", "36060c58702ed4c2a40832c51758d5344201d89a")
     assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", ref.target
     assert_equal :direct, ref.type
@@ -110,7 +110,7 @@ context "Rugged::Reference stuff" do
     ref.delete!
   end
 
-  test "can resolve head" do
+  it "can resolve head" do
     ref = Rugged::Reference.lookup(@repo, "HEAD")
     assert_equal "refs/heads/master", ref.target
     assert_equal :symbolic, ref.type
@@ -119,62 +119,64 @@ context "Rugged::Reference stuff" do
     assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", head.target
     assert_equal :direct, head.type
   end
+
+
+  describe "reference target" do
+    before do
+      @path = temp_repo 'testrepo.git'
+      @repo = Rugged::Repository.new(@path)
+    end
+
+    it "returns the reference target name with UTF-8 encoding" do
+      Rugged::Reference.create(@repo, "refs/heads/Ångström", "refs/heads/master")
+
+      ref = Rugged::Reference.create(@repo, "refs/heads/foobar", "refs/heads/Ångström")
+      assert_equal "refs/heads/Ångström", ref.target
+    end
+  end
+
+  describe "reference logging" do
+    before do
+      @path = temp_repo 'testrepo.git'
+      @repo = Rugged::Repository.new(@path)
+
+      @ref = Rugged::Reference.create(@repo, "refs/heads/test-reflog", "36060c58702ed4c2a40832c51758d5344201d89a")
+    end
+
+    it "creates reflog entries" do
+      @ref.log!({ :name => "foo", :email => "foo@bar", :time => Time.now })
+      @ref.log!({ :name => "foo", :email => "foo@bar", :time => Time.now }, "commit: bla bla")
+
+      reflog = @ref.log
+      assert_equal reflog.size, 2
+
+      assert_equal reflog[0][:oid_old], "0000000000000000000000000000000000000000"
+      assert_equal reflog[0][:oid_new], "36060c58702ed4c2a40832c51758d5344201d89a"
+      assert_equal reflog[0][:message], nil
+      assert_equal reflog[0][:committer][:name], "foo"
+      assert_equal reflog[0][:committer][:email], "foo@bar"
+      assert_kind_of Time, reflog[0][:committer][:time]
+
+      assert_equal reflog[1][:oid_old], "36060c58702ed4c2a40832c51758d5344201d89a"
+      assert_equal reflog[1][:oid_new], "36060c58702ed4c2a40832c51758d5344201d89a"
+      assert_equal reflog[1][:message], "commit: bla bla"
+      assert_equal reflog[1][:committer][:name], "foo"
+      assert_equal reflog[1][:committer][:email], "foo@bar"
+      assert_kind_of Time, reflog[1][:committer][:time]
+
+    end
+  end
+
+  describe "reference name" do
+    before do
+      @path = temp_repo 'testrepo.git'
+      @repo = Rugged::Repository.new(@path)
+    end
+
+    it "returns the reference name with UTF-8 encoding" do
+      ref = Rugged::Reference.create(@repo, "refs/heads/Ångström", "refs/heads/master")
+      assert_equal "refs/heads/Ångström", ref.name
+    end
+  end
 end
 
-context "Rugged::Reference#name" do
-  setup do
-    @path = temp_repo 'testrepo.git'
-    @repo = Rugged::Repository.new(@path)
-  end
-
-  it "returns the reference name with UTF-8 encoding" do
-    ref = Rugged::Reference.create(@repo, "refs/heads/Ångström", "refs/heads/master")
-    assert_equal "refs/heads/Ångström", ref.name
-  end
-end
-
-context "Rugged::Reference#target" do
-  setup do
-    @path = temp_repo 'testrepo.git'
-    @repo = Rugged::Repository.new(@path)
-  end
-
-  it "returns the reference target name with UTF-8 encoding" do
-    Rugged::Reference.create(@repo, "refs/heads/Ångström", "refs/heads/master")
-
-    ref = Rugged::Reference.create(@repo, "refs/heads/foobar", "refs/heads/Ångström")
-    assert_equal "refs/heads/Ångström", ref.target
-  end
-end
-
-context "Rugged::Reference#log!" do
-  setup do
-    @path = temp_repo 'testrepo.git'
-    @repo = Rugged::Repository.new(@path)
-
-    @ref = Rugged::Reference.create(@repo, "refs/heads/test-reflog", "36060c58702ed4c2a40832c51758d5344201d89a")
-  end
-
-  it "creates reflog entries" do
-    @ref.log!({ :name => "foo", :email => "foo@bar", :time => Time.now })
-    @ref.log!({ :name => "foo", :email => "foo@bar", :time => Time.now }, "commit: bla bla")
-
-    reflog = @ref.log
-    assert_equal reflog.size, 2
-
-    assert_equal reflog[0][:oid_old], "0000000000000000000000000000000000000000"
-    assert_equal reflog[0][:oid_new], "36060c58702ed4c2a40832c51758d5344201d89a"
-    assert_equal reflog[0][:message], nil
-    assert_equal reflog[0][:committer][:name], "foo"
-    assert_equal reflog[0][:committer][:email], "foo@bar"
-    assert_kind_of Time, reflog[0][:committer][:time]
-
-    assert_equal reflog[1][:oid_old], "36060c58702ed4c2a40832c51758d5344201d89a"
-    assert_equal reflog[1][:oid_new], "36060c58702ed4c2a40832c51758d5344201d89a"
-    assert_equal reflog[1][:message], "commit: bla bla"
-    assert_equal reflog[1][:committer][:name], "foo"
-    assert_equal reflog[1][:committer][:email], "foo@bar"
-    assert_kind_of Time, reflog[1][:committer][:time]
-
-  end
-end

@@ -1,14 +1,14 @@
 require "test_helper"
 
-context "Rugged::Tree tests" do
-  setup do
+describe Rugged::Tree do
+  before do
     @path = File.dirname(__FILE__) + '/fixtures/testrepo.git/'
     @repo = Rugged::Repository.new(@path)
     @oid = "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b"
     @tree = @repo.lookup(@oid)
   end
 
-  test "can read the tree data" do
+  it "can read the tree data" do
     assert_equal @oid, @tree.oid
     assert_equal :tree, @tree.type
     assert_equal 3, @tree.count
@@ -16,7 +16,7 @@ context "Rugged::Tree tests" do
     assert_equal "fa49b077972391ad58037050f2a75f74e3671e92", @tree[1][:oid]
   end
 
-  test "can read the tree entry data" do
+  it "can read the tree entry data" do
     bent = @tree[0]
     tent = @tree[2]
 
@@ -30,7 +30,7 @@ context "Rugged::Tree tests" do
     assert_equal :tree, @repo.lookup(tent[:oid]).type
   end
 
-  test "can iterate over the tree" do
+  it "can iterate over the tree" do
     enum_test = @tree.sort { |a, b| a[:oid] <=> b[:oid] }.map { |e| e[:name] }.join(':')
     assert_equal "README:subdir:new.txt", enum_test
 
@@ -38,23 +38,23 @@ context "Rugged::Tree tests" do
     assert enum.kind_of? Enumerable
   end
 
-  test "can walk the tree, yielding only trees" do
+  it "can walk the tree, yielding only trees" do
     @tree.walk_trees {|root, entry| assert_equal :tree, entry[:type]}
   end
 
-  test "can walk the tree, yielding only blobs" do
+  it "can walk the tree, yielding only blobs" do
     @tree.walk_blobs {|root, entry| assert_equal :blob, entry[:type]}
   end
 
-  test "can iterate over the subtrees a tree" do
+  it "can iterate over the subtrees a tree" do
     @tree.each_tree {|tree| assert_equal :tree, tree[:type]}
   end
 
-  test "can iterate over the subtrees a tree" do
+  it "can iterate over the subtrees a tree" do
     @tree.each_blob {|tree| assert_equal :blob, tree[:type]}
   end
 
-  test "can write the tree data" do
+  it "can write the tree data" do
     entry = {:type => :blob,
              :name => "README.txt",
              :oid  => "1385f264afb75a56a5bec74243be9b367ba4ca08",
