@@ -168,7 +168,8 @@ Rugged::Commit.create(r,
 	:message => "Hello world\n\n",
 	:committer => author,
 	:parents => ["2cb831a8aea28b2c1b9c63385585b864e4d3bad1"],
-	:tree => some_tree) #=> "f148106ca58764adc93ad4e2d6b1d168422b9796"
+	:tree => some_tree,
+	:update_ref => "HEAD") #=> "f148106ca58764adc93ad4e2d6b1d168422b9796"
 ```
 
 ### Tag Objects
