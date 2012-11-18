@@ -92,7 +92,7 @@ static VALUE rb_git_tag_target_type_GET(VALUE self)
 	git_tag *tag;
 	Data_Get_Struct(self, git_tag, tag);
 
-	return rugged_otype_new(git_tag_type(tag));
+	return rugged_otype_new(git_tag_target_type(tag));
 }
 
 /*
