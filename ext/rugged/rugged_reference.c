@@ -498,7 +498,7 @@ static VALUE rb_git_reflog(VALUE self)
 
 	for (i = 0; i < ref_count; ++i) {
 		const git_reflog_entry *entry =
-			git_reflog_entry_byindex(reflog, i);
+			git_reflog_entry_byindex(reflog, ref_count - i - 1);
 
 		rb_ary_push(rb_log, reflog_entry_new(entry));
 	}
