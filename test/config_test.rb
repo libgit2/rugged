@@ -2,7 +2,12 @@ require "test_helper"
 
 describe Rugged::Config do
   before do
-    @repo = Rugged::Repository.new(temp_repo('testrepo.git'))
+    @path = temp_repo('testrepo.git')
+    @repo = Rugged::Repository.new(@path)
+  end
+
+  after do
+    destroy_temp_repo(@path)
   end
 
   it "can read the config file from repo" do
