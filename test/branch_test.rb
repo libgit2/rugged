@@ -2,12 +2,16 @@
 require "test_helper"
 
 describe Rugged::Branch do
+  before do
+    @path = temp_repo("testrepo.git")
+    @repo = Rugged::Repository.new(@path)
+  end
+
+  after do
+    destroy_temp_repo(@path)
+  end
 
   describe "Rugged::Branch.each_name" do
-    before do
-      @path = temp_repo("testrepo.git")
-      @repo = Rugged::Repository.new(@path)
-    end
 
     it "lists the names of all branches in a bare repository" do
       assert_equal [
@@ -32,10 +36,6 @@ describe Rugged::Branch do
   end
 
   describe "Rugged::Branch#tip" do
-    before do
-      @path = temp_repo("testrepo.git")
-      @repo = Rugged::Repository.new(@path)
-    end
 
     it "returns the latest commit of the branch" do
       tip = Rugged::Branch.lookup(@repo, "master").tip
@@ -46,10 +46,6 @@ describe Rugged::Branch do
   end
 
   describe "Rugged::Branch.lookup" do
-    before do
-      @path = temp_repo("testrepo.git")
-      @repo = Rugged::Repository.new(@path)
-    end
 
     it "can look up local branches" do
       branch = Rugged::Branch.lookup(@repo, "master")
@@ -81,10 +77,6 @@ describe Rugged::Branch do
   end
 
   describe "Rugged::Branch.delete" do
-    before do
-      @path = temp_repo("testrepo.git")
-      @repo = Rugged::Repository.new(@path)
-    end
 
     it "deletes a branch from the repository" do
       branch = @repo.create_branch("test_branch")
@@ -94,10 +86,6 @@ describe Rugged::Branch do
   end
 
   describe "Rugged::Branch.move" do
-    before do
-      @path = temp_repo("testrepo.git")
-      @repo = Rugged::Repository.new(@path)
-    end
 
     it "renames a branch" do
       branch = @repo.create_branch("test_branch")
@@ -110,10 +98,6 @@ describe Rugged::Branch do
   end
 
   describe "Rugged::Repository#create_branch" do
-    before do
-      @path = temp_repo("testrepo.git")
-      @repo = Rugged::Repository.new(@path)
-    end
 
     it "can create a new branch" do
       new_branch = @repo.create_branch("test_branch", "5b5b025afb0b4c913b4c338a42934a3863bf3644")

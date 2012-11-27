@@ -190,6 +190,10 @@ describe Rugged::Index do
       @index = @repo.index
     end
 
+    after do
+      destroy_temp_repo(@path)
+    end
+
     it "idempotent read_tree/write_tree" do
       head_sha = Rugged::Reference.lookup(@repo,'HEAD').resolve.target
       tree = @repo.lookup(head_sha).tree
