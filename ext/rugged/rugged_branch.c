@@ -62,7 +62,7 @@ static int parse_branch_type(VALUE rb_filter)
  *	+name+ needs to be a branch name, not an absolute reference path
  *	(e.g. 'development' instead of '/refs/heads/development')
  *
- *	+target+ needs to be an existing object (of any type) in the given +repository+.
+ *	+target+ needs to be an existing commit in the given +repository+.
  *
  *	If +force+ is +true+, any existing branches will be overwritten.
  *
@@ -71,7 +71,7 @@ static int parse_branch_type(VALUE rb_filter)
 static VALUE rb_git_branch_create(int argc, VALUE *argv, VALUE self)
 {
 	git_reference *branch;
-	git_object *target = NULL;
+	git_commit *target = NULL;
 	git_repository *repo = NULL;
 	int error, force = 0;
 
@@ -87,14 +87,14 @@ static VALUE rb_git_branch_create(int argc, VALUE *argv, VALUE self)
 
 	Check_Type(rb_name, T_STRING);
 
-	target = rugged_object_load(repo, rb_target, GIT_OBJ_ANY);
+	target = (git_commit *)rugged_object_load(repo, rb_target, GIT_OBJ_COMMIT);
 
 	if (!NIL_P(rb_force)) {
 		force = rugged_parse_bool(rb_force);
 	}
 
 	error = git_branch_create(&branch, repo, StringValueCStr(rb_name), target, force);
-	git_object_free(target);
+	git_commit_free(target);
 
 	rugged_exception_check(error);
 

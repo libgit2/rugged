@@ -170,7 +170,7 @@ static VALUE rb_git_config_delete(VALUE self, VALUE rb_key)
 	Data_Get_Struct(self, git_config, config);
 	Check_Type(rb_key, T_STRING);
 
-	error = git_config_delete(config, StringValueCStr(rb_key));
+	error = git_config_delete_entry(config, StringValueCStr(rb_key));
 	if (error == GIT_ENOTFOUND)
 		return Qfalse;
 

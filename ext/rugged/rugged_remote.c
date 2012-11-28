@@ -93,9 +93,9 @@ static VALUE rb_git_remote_connect(VALUE self, VALUE rb_direction)
 	id_direction = SYM2ID(rb_direction);
 
 	if (id_direction == rb_intern("fetch"))
-		direction = GIT_DIR_FETCH;
+		direction = GIT_DIRECTION_FETCH;
 	else if (id_direction == rb_intern("push"))
-		direction = GIT_DIR_PUSH;
+		direction = GIT_DIRECTION_PUSH;
 	else
 		rb_raise(rb_eTypeError,
 			"Invalid remote direction. Expected `:fetch` or `:push`");
