@@ -144,7 +144,6 @@ static VALUE rugged_repo_new(VALUE klass, git_repository *repo)
 
 static void set_repository_options(git_repository *repo, VALUE rb_options)
 {
-	git_odb *odb = NULL;
 	int error = 0;
 
 	if (NIL_P(rb_options))
@@ -152,12 +151,14 @@ static void set_repository_options(git_repository *repo, VALUE rb_options)
 
 	Check_Type(rb_options, T_HASH);
 
+	/* Check for `:alternates` */
 	{
+		git_odb *odb = NULL;
 		VALUE rb_alternates = rb_hash_aref(rb_options, CSTR2SYM("alternates"));
 		int i;
 
 		if (!NIL_P(rb_alternates)) {
-			Check_Type(rb_options, T_ARRAY);
+			Check_Type(rb_alternates, T_ARRAY);
 
 			error = git_repository_odb(&odb, repo);
 			rugged_exception_check(error);
@@ -193,7 +194,9 @@ static void set_repository_options(git_repository *repo, VALUE rb_options)
  *
  *	+options+ is an optional hash with the following keys:
  *
- *		+:alternates+: +Array+ with a list of alternate 
+ *	- +:alternates+: +Array+ with a list of alternate object folders, e.g.
+ *
+ *		Rugged::Repository.new(path, :alternates => ['./other/repo/.git/objects'])
  */
 static VALUE rb_git_repo_new(int argc, VALUE *argv, VALUE klass)
 {
@@ -729,6 +732,42 @@ static VALUE rb_git_repo_status(int argc, VALUE *argv, VALUE self)
 	return Qnil;
 }
 
+static int rugged__each_id_cb(const git_oid *id, void *payload)
+{
+	rb_yield(rugged_create_oid(id));
+	return 0;
+}
+
+/*
+ *	call-seq:
+ *		repo.each_id { |id| block }
+ *		repo.each_id -> Iterator
+ *
+ *	Call the given +block+ once with every object ID found in +repo+
+ *	and all its alternates. Object IDs are passed as 40-character
+ *	strings.
+ */
+static VALUE rb_git_repo_each_id(VALUE self)
+{
+	git_repository *repo;
+	git_odb *odb;
+	int error;
+
+	if (!rb_block_given_p())
+		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_id"));
+
+	Data_Get_Struct(self, git_repository, repo);
+
+	error = git_repository_odb(&odb, repo);
+	rugged_exception_check(error);
+
+	error = git_odb_foreach(odb, &rugged__each_id_cb, NULL);
+	git_odb_free(odb);
+
+	rugged_exception_check(error);
+	return Qnil;
+}
+
 void Init_rugged_repo()
 {
 	rb_cRuggedRepo = rb_define_class_under(rb_mRugged, "Repository", rb_cObject);
@@ -744,6 +783,8 @@ void Init_rugged_repo()
 
 	rb_define_method(rb_cRuggedRepo, "read",   rb_git_repo_read,   1);
 	rb_define_method(rb_cRuggedRepo, "write",  rb_git_repo_write,  2);
+	rb_define_method(rb_cRuggedRepo, "each_id",  rb_git_repo_each_id,  0);
+
 	rb_define_method(rb_cRuggedRepo, "path",  rb_git_repo_path, 0);
 	rb_define_method(rb_cRuggedRepo, "workdir",  rb_git_repo_workdir, 0);
 	rb_define_method(rb_cRuggedRepo, "workdir=",  rb_git_repo_set_workdir, 1);
