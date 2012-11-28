@@ -251,8 +251,10 @@ void Init_rugged()
 
 		rb_eRuggedError = rb_define_class_under(rb_mRugged, "Error", rb_eStandardError);
 		rb_eRuggedErrors[0] = rb_eNoMemError;
+		rb_eRuggedErrors[1] = rb_eIOError;
+		rb_eRuggedErrors[2] = rb_eArgError;
 
-		for (i = 1; i < RUGGED_ERROR_COUNT; ++i) {
+		for (i = 3; i < RUGGED_ERROR_COUNT; ++i) {
 			rb_eRuggedErrors[i] = rb_define_class_under(rb_mRugged, RUGGED_ERROR_NAMES[i], rb_eRuggedError);
 		}
 	}

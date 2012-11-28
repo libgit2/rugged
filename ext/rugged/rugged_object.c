@@ -102,15 +102,17 @@ git_object *rugged_object_load(git_repository *repo, VALUE object_value, git_oty
 			error = git_object_lookup_prefix(&object, repo, &oid, oid_length, type);
 		else
 			error = git_object_lookup(&object, repo, &oid, type);
+
 		rugged_exception_check(error);
 
 	} else if (rb_obj_is_kind_of(object_value, rb_cRuggedObject)) {
 		Data_Get_Struct(object_value, git_object, object);
 
 		if (type != GIT_OBJ_ANY && git_object_type(object) != type)
-			rb_raise(rb_eTypeError, "Object is not of the required type");
+			rb_raise(rb_eArgError, "Object is not of the required type");
 	} else {
-		rb_raise(rb_eTypeError, "Invalid GIT object; an object reference must be a SHA1 id or an object itself");
+		rb_raise(rb_eTypeError,
+			"Invalid GIT object; an object reference must be a SHA1 id or an object itself");
 	}
 
 	assert(object);

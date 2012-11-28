@@ -16,7 +16,7 @@ describe Rugged::Repository do
   end
 
   it "fails to open unexisting repositories" do
-    assert_raises Rugged::OSError do
+    assert_raises IOError do
       Rugged::Repository.new("fakepath/123/")
     end
 
@@ -139,4 +139,14 @@ describe Rugged::Repository do
     ObjectSpace.garbage_collect
   end
 
+  it "can enumerate all objects in the odb" do
+    assert_equal 30, @repo.each_id.to_a.length
+  end
+
+  it "can load alternates" do
+    alt_path = File.dirname(__FILE__) + '/fixtures/alternate/objects'
+    repo = Rugged::Repository.new(@path, :alternates => [alt_path])
+    assert_equal 33, repo.each_id.to_a.length
+    assert repo.read('146ae76773c91e3b1d00cf7a338ec55ae58297e2')
+  end
 end

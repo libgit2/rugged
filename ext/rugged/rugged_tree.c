@@ -67,6 +67,7 @@ static VALUE rb_git_treeentry_fromC(const git_tree_entry *entry)
 /*
  * Rugged Tree
  */
+
 /*
  *	call-seq:
  *		tree.count -> count
@@ -139,7 +140,7 @@ static VALUE rb_git_tree_get_entry(VALUE self, VALUE entry_id)
 static VALUE rb_git_tree_each(VALUE self)
 {
 	git_tree *tree;
-	unsigned int i, count;
+	size_t i, count;
 	Data_Get_Struct(self, git_tree, tree);
 
 	if (!rb_block_given_p())
@@ -206,9 +207,9 @@ static VALUE rb_git_tree_walk(VALUE self, VALUE rb_mode)
 		mode = GIT_TREEWALK_POST;
 	else
 		rb_raise(rb_eTypeError,
-			"Invalid iteration mode. Expected `:preorder` or `:postorder`");
+				"Invalid iteration mode. Expected `:preorder` or `:postorder`");
 
-	error = git_tree_walk(tree, &rugged__treewalk_cb, mode, (void *)rb_block_proc());
+	error = git_tree_walk(tree, mode, &rugged__treewalk_cb, (void *)rb_block_proc());
 	rugged_exception_check(error);
 
 	return Qnil;
@@ -216,20 +217,20 @@ static VALUE rb_git_tree_walk(VALUE self, VALUE rb_mode)
 
 static VALUE rb_git_tree_path(VALUE self, VALUE rb_path)
 {
-  int error;
-  git_tree *tree;
-  git_tree_entry *entry;
-  VALUE rb_entry;
-  Data_Get_Struct(self, git_tree, tree);
-  Check_Type(rb_path, T_STRING);
+	int error;
+	git_tree *tree;
+	git_tree_entry *entry;
+	VALUE rb_entry;
+	Data_Get_Struct(self, git_tree, tree);
+	Check_Type(rb_path, T_STRING);
 
-  error = git_tree_entry_bypath(&entry, tree, StringValueCStr(rb_path));
-  rugged_exception_check(error);
+	error = git_tree_entry_bypath(&entry, tree, StringValueCStr(rb_path));
+	rugged_exception_check(error);
 
-  rb_entry = rb_git_treeentry_fromC(entry);
-  git_tree_entry_free(entry);
+	rb_entry = rb_git_treeentry_fromC(entry);
+	git_tree_entry_free(entry);
 
-  return rb_entry;
+	return rb_entry;
 }
 
 static void rb_git_treebuilder_free(git_treebuilder *bld)

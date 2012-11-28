@@ -28,7 +28,7 @@ extern VALUE rb_mRugged;
 VALUE rb_cRuggedIndex;
 
 static void rb_git_indexentry_toC(git_index_entry *entry, VALUE rb_entry);
-static VALUE rb_git_indexentry_fromC(git_index_entry *entry);
+static VALUE rb_git_indexentry_fromC(const git_index_entry *entry);
 static VALUE rb_git_reuc_fromC(const git_index_reuc_entry *entry);
 
 /*
@@ -111,7 +111,7 @@ static VALUE rb_git_index_count(VALUE self)
 static VALUE rb_git_index_get(int argc, VALUE *argv, VALUE self)
 {
 	git_index *index;
-	git_index_entry *entry = NULL;
+	const git_index_entry *entry = NULL;
 
 	int error;
 
@@ -157,9 +157,9 @@ static VALUE rb_git_index_each(VALUE self)
 	if (!rb_block_given_p())
 		return rb_funcall(self, rb_intern("to_enum"), 0);
 
-	count = git_index_entrycount(index);
+	count = (unsigned int)git_index_entrycount(index);
 	for (i = 0; i < count; ++i) {
-		git_index_entry *entry = git_index_get_byindex(index, i);
+		const git_index_entry *entry = git_index_get_byindex(index, i);
 		if (entry)
 			rb_yield(rb_git_indexentry_fromC(entry));
 	}
@@ -217,7 +217,7 @@ static VALUE rb_git_index_add(VALUE self, VALUE rb_entry)
 }
 
 
-static VALUE rb_git_indexentry_fromC(git_index_entry *entry)
+static VALUE rb_git_indexentry_fromC(const git_index_entry *entry)
 {
 	VALUE rb_entry, rb_mtime, rb_ctime;
 	unsigned int valid, stage;
