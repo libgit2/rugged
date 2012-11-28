@@ -51,8 +51,8 @@ describe Rugged::Reference do
     ref = Rugged::Reference.lookup(@repo, "refs/heads/master")
     log = ref.log
     e =  log[1]
-    assert_equal e[:oid_old], "8496071c1b46c854b31185ea97743be6a8774479"
-    assert_equal e[:oid_new], "5b5b025afb0b4c913b4c338a42934a3863bf3644"
+    assert_equal e[:id_old], "8496071c1b46c854b31185ea97743be6a8774479"
+    assert_equal e[:id_new], "5b5b025afb0b4c913b4c338a42934a3863bf3644"
     assert_equal e[:message], "commit: another commit"
     assert_equal e[:committer][:email], "schacon@gmail.com"
   end
@@ -150,15 +150,15 @@ describe Rugged::Reference do
       reflog = @ref.log
       assert_equal reflog.size, 2
 
-      assert_equal reflog[0][:oid_old], "0000000000000000000000000000000000000000"
-      assert_equal reflog[0][:oid_new], "36060c58702ed4c2a40832c51758d5344201d89a"
+      assert_equal reflog[0][:id_old], "0000000000000000000000000000000000000000"
+      assert_equal reflog[0][:id_new], "36060c58702ed4c2a40832c51758d5344201d89a"
       assert_equal reflog[0][:message], nil
       assert_equal reflog[0][:committer][:name], "foo"
       assert_equal reflog[0][:committer][:email], "foo@bar"
       assert_kind_of Time, reflog[0][:committer][:time]
 
-      assert_equal reflog[1][:oid_old], "36060c58702ed4c2a40832c51758d5344201d89a"
-      assert_equal reflog[1][:oid_new], "36060c58702ed4c2a40832c51758d5344201d89a"
+      assert_equal reflog[1][:id_old], "36060c58702ed4c2a40832c51758d5344201d89a"
+      assert_equal reflog[1][:id_new], "36060c58702ed4c2a40832c51758d5344201d89a"
       assert_equal reflog[1][:message], "commit: bla bla"
       assert_equal reflog[1][:committer][:name], "foo"
       assert_equal reflog[1][:committer][:email], "foo@bar"
