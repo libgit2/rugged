@@ -142,9 +142,43 @@ static VALUE rugged_repo_new(VALUE klass, git_repository *repo)
 	return rb_repo;
 }
 
+static void set_repository_options(git_repository *repo, VALUE rb_options)
+{
+	git_odb *odb = NULL;
+	int error = 0;
+
+	if (NIL_P(rb_options))
+		return;
+
+	Check_Type(rb_options, T_HASH);
+
+	{
+		VALUE rb_alternates = rb_hash_aref(rb_options, CSTR2SYM("alternates"));
+		int i;
+
+		if (!NIL_P(rb_alternates)) {
+			Check_Type(rb_options, T_ARRAY);
+
+			error = git_repository_odb(&odb, repo);
+			rugged_exception_check(error);
+
+			for (i = 0; !error && i < RARRAY_LEN(rb_alternates); ++i) {
+				VALUE alt = rb_ary_entry(rb_alternates, i);
+				Check_Type(alt, T_STRING);
+				/* TODO: this leaks when alt != STRING */
+
+				error = git_odb_add_disk_alternate(odb, StringValueCStr(alt));
+			}
+
+			git_odb_free(odb);
+			rugged_exception_check(error);
+		}
+	}
+}
+
 /*
  *	call-seq:
- *		Rugged::Repository.new(path) -> repository
+ *		Rugged::Repository.new(path, options = {}) -> repository
  *
  *	Open a Git repository in the given +path+ and return a +Repository+ object
  *	representing it. An exception will be thrown if +path+ doesn't point to a
@@ -156,16 +190,23 @@ static VALUE rugged_repo_new(VALUE klass, git_repository *repo)
  *	instead.
  *
  *		Rugged::Repository.new('~/test/.git') #=> #<Rugged::Repository:0x108849488>
+ *
+ *	+options+ is an optional hash with the following keys:
+ *
+ *		+:alternates+: +Array+ with a list of alternate 
  */
-static VALUE rb_git_repo_new(VALUE klass, VALUE rb_path)
+static VALUE rb_git_repo_new(int argc, VALUE *argv, VALUE klass)
 {
 	git_repository *repo;
 	int error = 0;
+	VALUE rb_path, rb_options;
 
+	rb_scan_args(argc, argv, "11", &rb_path, &rb_options);
 	Check_Type(rb_path, T_STRING);
 
 	error = git_repository_open(&repo, StringValueCStr(rb_path));
 	rugged_exception_check(error);
+	set_repository_options(repo, rb_options);
 
 	return rugged_repo_new(klass, repo);
 }
@@ -692,7 +733,7 @@ void Init_rugged_repo()
 {
 	rb_cRuggedRepo = rb_define_class_under(rb_mRugged, "Repository", rb_cObject);
 
-	rb_define_singleton_method(rb_cRuggedRepo, "new", rb_git_repo_new, 1);
+	rb_define_singleton_method(rb_cRuggedRepo, "new", rb_git_repo_new, -1);
 	rb_define_singleton_method(rb_cRuggedRepo, "hash",   rb_git_repo_hash,  2);
 	rb_define_singleton_method(rb_cRuggedRepo, "hash_file",   rb_git_repo_hashfile,  2);
 	rb_define_singleton_method(rb_cRuggedRepo, "init_at", rb_git_repo_init_at, 2);
