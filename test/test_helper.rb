@@ -19,6 +19,10 @@ module Rugged
       dir
     end
 
+    def destroy_temp_repo(path)
+      FileUtils.remove_entry_secure(path)
+    end
+
     def rm_loose(oid)
       base_path = File.join(@path, "objects", oid[0, 2])
 

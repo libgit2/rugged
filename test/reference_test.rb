@@ -127,6 +127,10 @@ describe Rugged::Reference do
       @repo = Rugged::Repository.new(@path)
     end
 
+    after do
+      destroy_temp_repo(@path)
+    end
+
     it "returns the reference target name with UTF-8 encoding" do
       Rugged::Reference.create(@repo, "refs/heads/Ångström", "refs/heads/master")
 
@@ -141,6 +145,10 @@ describe Rugged::Reference do
       @repo = Rugged::Repository.new(@path)
 
       @ref = Rugged::Reference.create(@repo, "refs/heads/test-reflog", "36060c58702ed4c2a40832c51758d5344201d89a")
+    end
+
+    after do
+      destroy_temp_repo(@path)
     end
 
     it "creates reflog entries" do
@@ -171,6 +179,10 @@ describe Rugged::Reference do
     before do
       @path = temp_repo 'testrepo.git'
       @repo = Rugged::Repository.new(@path)
+    end
+
+    after do
+      destroy_temp_repo(@path)
     end
 
     it "returns the reference name with UTF-8 encoding" do
