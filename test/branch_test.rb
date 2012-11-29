@@ -182,13 +182,13 @@ describe Rugged::Branch do
     end
 
     it "can not create a new branch from a tree" do
-      assert_raises ArgumentError do
+      assert_raises ArgumentError, Rugged::InvalidError do
         @repo.create_branch("test_branch", Rugged::Tree.lookup(@repo, "f60079018b664e4e79329a7ef9559c8d9e0378d1"))
       end
      end
 
     it "can not create a new branch from a blob" do
-      assert_raises ArgumentError do
+      assert_raises ArgumentError, Rugged::InvalidError do
         @repo.create_branch("test_branch", Rugged::Blob.lookup(@repo, "1385f264afb75a56a5bec74243be9b367ba4ca08"))
       end
     end

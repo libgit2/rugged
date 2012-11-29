@@ -16,7 +16,7 @@ describe Rugged::Repository do
   end
 
   it "fails to open unexisting repositories" do
-    assert_raises IOError do
+    assert_raises IOError, Rugged::OSError do
       Rugged::Repository.new("fakepath/123/")
     end
 

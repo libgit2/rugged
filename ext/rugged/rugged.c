@@ -25,7 +25,7 @@
 #include "rugged.h"
 
 const char *RUGGED_ERROR_NAMES[] = {
-	NULL, /* GITERR_NOMEMORY, */
+	"NoMemError", /* GITERR_NOMEMORY, */
 	"OSError", /* GITERR_OS, */
 	"InvalidError", /* GITERR_INVALID, */
 	"ReferenceError", /* GITERR_REFERENCE, */
@@ -250,9 +250,10 @@ void Init_rugged()
 		int i;
 
 		rb_eRuggedError = rb_define_class_under(rb_mRugged, "Error", rb_eStandardError);
-		rb_eRuggedErrors[0] = rb_eNoMemError;
-		rb_eRuggedErrors[1] = rb_eIOError;
-		rb_eRuggedErrors[2] = rb_eArgError;
+
+		rb_eRuggedErrors[0] = rb_define_class_under(rb_mRugged, RUGGED_ERROR_NAMES[0], rb_eNoMemError);
+		rb_eRuggedErrors[1] = rb_define_class_under(rb_mRugged, RUGGED_ERROR_NAMES[1], rb_eIOError);
+		rb_eRuggedErrors[2] = rb_define_class_under(rb_mRugged, RUGGED_ERROR_NAMES[2], rb_eArgError);
 
 		for (i = 3; i < RUGGED_ERROR_COUNT; ++i) {
 			rb_eRuggedErrors[i] = rb_define_class_under(rb_mRugged, RUGGED_ERROR_NAMES[i], rb_eRuggedError);
