@@ -482,9 +482,8 @@ static VALUE rb_git_repo_write(VALUE self, VALUE rb_buffer, VALUE rub_type)
 	type = rugged_otype_get(rub_type);
 
 	error = git_odb_open_wstream(&stream, odb, RSTRING_LEN(rb_buffer), type);
-	rugged_exception_check(error);
-
 	git_odb_free(odb);
+	rugged_exception_check(error);
 
 	error = stream->write(stream, RSTRING_PTR(rb_buffer), RSTRING_LEN(rb_buffer));
 	rugged_exception_check(error);
