@@ -39,9 +39,21 @@ describe Rugged::Repository do
     assert_equal :commit, rawobj.type
   end
 
+  it "can read an object's headers from the db" do
+    hash = @repo.read_header("8496071c1b46c854b31185ea97743be6a8774479")
+    assert_equal 172, hash[:len]
+    assert_equal :commit, hash[:type]
+  end
+
   it "checks that reading fails on unexisting objects" do
     assert_raises Rugged::OdbError do
       @repo.read("a496071c1b46c854b31185ea97743be6a8774471")
+    end
+  end
+
+  it "checks that reading headers fails on unexisting objects" do
+    assert_raises Rugged::OdbError do
+      @repo.read_header("a496071c1b46c854b31185ea97743be6a8774471")
     end
   end
 
