@@ -114,9 +114,8 @@ VALUE rugged_raw_read(git_repository *repo, const git_oid *oid)
 	rugged_exception_check(error);
 
 	error = git_odb_read(&obj, odb, oid);
-	rugged_exception_check(error);
-
 	git_odb_free(odb);
+	rugged_exception_check(error);
 
 	return Data_Wrap_Struct(rb_cRuggedOdbObject, NULL, rb_git__odbobj_free, obj);
 }
@@ -134,9 +133,8 @@ VALUE rugged_raw_read_header(git_repository *repo, const git_oid *oid)
 	rugged_exception_check(error);
 
 	error = git_odb_read_header(&len, &type, odb, oid);
-	rugged_exception_check(error);
-
 	git_odb_free(odb);
+	rugged_exception_check(error);
 
 	rb_hash = rb_hash_new();
 	rb_hash_aset(rb_hash, CSTR2SYM("type"), CSTR2SYM(git_object_type2string(type)));
