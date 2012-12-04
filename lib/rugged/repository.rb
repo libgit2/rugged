@@ -166,13 +166,13 @@ module Rugged
       Branch.create(self, name, target)
     end
 
-    # Get the content of a file at a specific revision.
+    # Get the blob at a path for a specific revision.
     #
     # revision - The String SHA1.
     # path     - The String file path.
     #
     # Returns a String.
-    def file_at(revision, path)
+    def blob_at(revision, path)
       tree = Rugged::Commit.lookup(self, revision).tree
       begin
         blob_data = tree.path(path)
@@ -180,7 +180,7 @@ module Rugged
         return nil
       end
       blob = Rugged::Blob.lookup(self, blob_data[:oid])
-      (blob.type == :blob) ? blob.content : nil
+      (blob.type == :blob) ? blob : nil
     end
   end
 end
