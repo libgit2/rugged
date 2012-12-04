@@ -130,8 +130,8 @@ context "Rugged::Repository stuff" do
 
   test "can access a file" do
     sha = '36060c58702ed4c2a40832c51758d5344201d89a'
-    content = @repo.file_at(sha, 'new.txt')
-    assert_equal "new file\n", content
+    blob = @repo.blob_at(sha, 'new.txt')
+    assert_equal "new file\n", blob.content
   end
 
   test "garbage collection methods don't crash" do
