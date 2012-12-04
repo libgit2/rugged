@@ -98,7 +98,7 @@ object = repo.read('a0ae5566e3c8a3bddffab21022056f0b5e03ef07')
 object.len
 # => 237
 object.data
-# => "tree 76f23f186076fc291742816721ea8c3e95567241\nparent 8e3c5c52b8f29da0adc7e8be8a037cbeaea6de6b\nauthor Vicent Mart\303\255 <tanoku@gmail.com> 1333859005 +0200\ncommitter Vicent Mart\303\255 <tanoku@gmail.com> 1333859005 +0200\n\nAdd `Repository#file_at`\n"
+# => "tree 76f23f186076fc291742816721ea8c3e95567241\nparent 8e3c5c52b8f29da0adc7e8be8a037cbeaea6de6b\nauthor Vicent Mart\303\255 <tanoku@gmail.com> 1333859005 +0200\ncommitter Vicent Mart\303\255 <tanoku@gmail.com> 1333859005 +0200\n\nAdd `Repository#blob_at`\n"
 object.type
 # => :commit
 ```
@@ -143,7 +143,7 @@ commit = repo.lookup('a0ae5566e3c8a3bddffab21022056f0b5e03ef07')
 # => #<Rugged::Commit:2245304380>
 
 commit.message
-# => "Add `Repository#file_at`\n"
+# => "Add `Repository#blob_at`\n"
 
 commit.time
 # => Sat Apr 07 21:23:25 -0700 2012
