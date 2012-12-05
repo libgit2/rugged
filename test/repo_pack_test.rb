@@ -20,5 +20,11 @@ describe Rugged::Repository do
       assert_equal 230, rawobj.len
       assert_equal :commit, rawobj.type
     end
+
+    it "can read a packed object's headers from the db" do
+      hash = @repo.read_header("41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9")
+      assert_equal 230, hash[:len]
+      assert_equal :commit, hash[:type]
+    end
   end
 end
