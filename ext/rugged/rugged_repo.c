@@ -120,29 +120,6 @@ VALUE rugged_raw_read(git_repository *repo, const git_oid *oid)
 	return Data_Wrap_Struct(rb_cRuggedOdbObject, NULL, rb_git__odbobj_free, obj);
 }
 
-VALUE rugged_raw_read_header(git_repository *repo, const git_oid *oid)
-{
-	git_odb *odb;
-	git_otype type;
-	size_t len;
-	VALUE rb_hash;
-
-	int error;
-
-	error = git_repository_odb(&odb, repo);
-	rugged_exception_check(error);
-
-	error = git_odb_read_header(&len, &type, odb, oid);
-	git_odb_free(odb);
-	rugged_exception_check(error);
-
-	rb_hash = rb_hash_new();
-	rb_hash_aset(rb_hash, CSTR2SYM("type"), CSTR2SYM(git_object_type2string(type)));
-	rb_hash_aset(rb_hash, CSTR2SYM("len"), INT2FIX(len));
-
-	return rb_hash;
-}
-
 void rb_git_repo__free(git_repository *repo)
 {
 	git_repository_free(repo);
@@ -396,6 +373,10 @@ static VALUE rb_git_repo_read_header(VALUE self, VALUE hex)
 {
 	git_repository *repo;
 	git_oid oid;
+	git_odb *odb;
+	git_otype type;
+	size_t len;
+	VALUE rb_hash;
 	int error;
 
 	Data_Get_Struct(self, git_repository, repo);
@@ -404,8 +385,20 @@ static VALUE rb_git_repo_read_header(VALUE self, VALUE hex)
 	error = git_oid_fromstr(&oid, StringValueCStr(hex));
 	rugged_exception_check(error);
 
-	return rugged_raw_read_header(repo, &oid);
+	error = git_repository_odb(&odb, repo);
+	rugged_exception_check(error);
+
+	error = git_odb_read_header(&len, &type, odb, &oid);
+	git_odb_free(odb);
+	rugged_exception_check(error);
+
+	rb_hash = rb_hash_new();
+	rb_hash_aset(rb_hash, CSTR2SYM("type"), CSTR2SYM(git_object_type2string(type)));
+	rb_hash_aset(rb_hash, CSTR2SYM("len"), INT2FIX(len));
+
+	return rb_hash;
 }
+
 /*
  *	call-seq:
  *		Repository.hash(buffer, type) -> oid
