@@ -44,9 +44,7 @@ static VALUE rb_git_remote__new(int argc, VALUE *argv, VALUE klass)
 	rb_scan_args(argc, argv, "21", &rb_repo, &rb_url, &rb_name);
 
 	Check_Type(rb_url, T_STRING);
-
-	if (!rb_obj_is_instance_of(rb_repo, rb_cRuggedRepo))
-		rb_raise(rb_eTypeError, "Expecting a Rugged Repository");
+	rugged_check_repo(rb_repo);
 
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
@@ -95,9 +93,9 @@ static VALUE rb_git_remote_connect(VALUE self, VALUE rb_direction)
 	id_direction = SYM2ID(rb_direction);
 
 	if (id_direction == rb_intern("fetch"))
-		direction = GIT_DIR_FETCH;
+		direction = GIT_DIRECTION_FETCH;
 	else if (id_direction == rb_intern("push"))
-		direction = GIT_DIR_PUSH;
+		direction = GIT_DIRECTION_PUSH;
 	else
 		rb_raise(rb_eTypeError,
 			"Invalid remote direction. Expected `:fetch` or `:push`");

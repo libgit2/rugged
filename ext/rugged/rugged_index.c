@@ -28,14 +28,14 @@ extern VALUE rb_mRugged;
 VALUE rb_cRuggedIndex;
 
 static void rb_git_indexentry_toC(git_index_entry *entry, VALUE rb_entry);
-static VALUE rb_git_indexentry_fromC(git_index_entry *entry);
+static VALUE rb_git_indexentry_fromC(const git_index_entry *entry);
 static VALUE rb_git_reuc_fromC(const git_index_reuc_entry *entry);
 
 /*
  * Index
  */
 
-void rb_git_index__free(git_index *index)
+static void rb_git_index__free(git_index *index)
 {
 	git_index_free(index);
 }
@@ -47,14 +47,20 @@ VALUE rugged_index_new(VALUE klass, VALUE owner, git_index *index)
 	return rb_index;
 }
 
-static VALUE rb_git_index_new(VALUE klass, VALUE path)
+static VALUE rb_git_index_new(int argc, VALUE *argv, VALUE klass)
 {
 	git_index *index;
 	int error;
 
-	Check_Type(path, T_STRING);
+	VALUE rb_path;
+	const char *path = NULL;
 
-	error = git_index_open(&index, StringValueCStr(path));
+	if (rb_scan_args(argc, argv, "01", &rb_path) == 1) {
+		Check_Type(rb_path, T_STRING);
+		path = StringValueCStr(rb_path);
+	}
+
+	error = git_index_open(&index, path);
 	rugged_exception_check(error);
 
 	return rugged_index_new(klass, Qnil, index);
@@ -90,15 +96,7 @@ static VALUE rb_git_index_write(VALUE self)
 
 	error = git_index_write(index);
 	rugged_exception_check(error);
-		
-	return Qnil;
-}
 
-static VALUE rb_git_index_uniq(VALUE self)
-{
-	git_index *index;
-	Data_Get_Struct(self, git_index, index);
-	git_index_uniq(index);
 	return Qnil;
 }
 
@@ -113,7 +111,7 @@ static VALUE rb_git_index_count(VALUE self)
 static VALUE rb_git_index_get(int argc, VALUE *argv, VALUE self)
 {
 	git_index *index;
-	git_index_entry *entry = NULL;
+	const git_index_entry *entry = NULL;
 
 	int error;
 
@@ -159,9 +157,9 @@ static VALUE rb_git_index_each(VALUE self)
 	if (!rb_block_given_p())
 		return rb_funcall(self, rb_intern("to_enum"), 0);
 
-	count = git_index_entrycount(index);
+	count = (unsigned int)git_index_entrycount(index);
 	for (i = 0; i < count; ++i) {
-		git_index_entry *entry = git_index_get_byindex(index, i);
+		const git_index_entry *entry = git_index_get_byindex(index, i);
 		if (entry)
 			rb_yield(rb_git_indexentry_fromC(entry));
 	}
@@ -204,11 +202,11 @@ static VALUE rb_git_index_add(VALUE self, VALUE rb_entry)
 		rb_git_indexentry_toC(&entry, rb_entry);
 		error = git_index_add(index, &entry);
 	}
-	
+
 	else if (TYPE(rb_entry) == T_STRING) {
 		error = git_index_add_from_workdir(index, StringValueCStr(rb_entry));
 	}
-	
+
 	else {
 		rb_raise(rb_eTypeError, 
 			"Expecting a hash defining an Index Entry or a path to a file in the repository");
@@ -219,7 +217,7 @@ static VALUE rb_git_index_add(VALUE self, VALUE rb_entry)
 }
 
 
-static VALUE rb_git_indexentry_fromC(git_index_entry *entry)
+static VALUE rb_git_indexentry_fromC(const git_index_entry *entry)
 {
 	VALUE rb_entry, rb_mtime, rb_ctime;
 	unsigned int valid, stage;
@@ -328,7 +326,7 @@ static void rb_git_indexentry_toC(git_index_entry *entry, VALUE rb_entry)
 	}
 }
 
-VALUE rb_git_indexer(VALUE self, VALUE rb_packfile_path)
+static VALUE rb_git_indexer(VALUE self, VALUE rb_packfile_path)
 {
 	int error;
 	git_indexer *indexer;
@@ -351,17 +349,26 @@ VALUE rb_git_indexer(VALUE self, VALUE rb_packfile_path)
 	return rb_oid;
 }
 
-VALUE rb_git_index_writetree(VALUE self)
+static VALUE rb_git_index_writetree(int argc, VALUE *argv, VALUE self)
 {
 	git_index *index;
 	git_oid tree_oid;
 	int error;
+	VALUE rb_repo;
 
 	Data_Get_Struct(self, git_index, index);
 
-	error = git_tree_create_fromindex(&tree_oid, index);
-	rugged_exception_check(error);
+	if (rb_scan_args(argc, argv, "01", &rb_repo) == 1) {
+		git_repository *repo = NULL;
+		rugged_check_repo(rb_repo);
+		Data_Get_Struct(rb_repo, git_repository, repo);
+		error = git_index_write_tree_to(&tree_oid, index, repo);
+	}
+	else {
+		error = git_index_write_tree(&tree_oid, index);
+	}
 
+	rugged_exception_check(error);
 	return rugged_create_oid(&tree_oid);
 }
 
@@ -374,7 +381,7 @@ VALUE rb_git_index_writetree(VALUE self)
  *      Further index operations (+add+, +update+, +remove+, etc) will
  *      be considered changes on top of +tree+.
  */
-VALUE rb_git_index_readtree(VALUE self, VALUE rb_tree)
+static VALUE rb_git_index_readtree(VALUE self, VALUE rb_tree)
 {
 	git_index *index;
 	git_tree *tree;
@@ -392,10 +399,10 @@ VALUE rb_git_index_readtree(VALUE self, VALUE rb_tree)
 void Init_rugged_index()
 {
 	/*
-	 * Index 
+	 * Index
 	 */
 	rb_cRuggedIndex = rb_define_class_under(rb_mRugged, "Index", rb_cObject);
-	rb_define_singleton_method(rb_cRuggedIndex, "new", rb_git_index_new, 1);
+	rb_define_singleton_method(rb_cRuggedIndex, "new", rb_git_index_new, -1);
 
 	rb_define_method(rb_cRuggedIndex, "count", rb_git_index_count, 0);
 	rb_define_method(rb_cRuggedIndex, "reload", rb_git_index_read, 0);
@@ -411,7 +418,7 @@ void Init_rugged_index()
 
 	rb_define_method(rb_cRuggedIndex, "remove", rb_git_index_remove, -1);
 
-	rb_define_method(rb_cRuggedIndex, "write_tree", rb_git_index_writetree, 0);
+	rb_define_method(rb_cRuggedIndex, "write_tree", rb_git_index_writetree, -1);
 	rb_define_method(rb_cRuggedIndex, "read_tree", rb_git_index_readtree, 1);
 
 	rb_define_singleton_method(rb_cRuggedIndex, "index_pack", rb_git_indexer, 1);

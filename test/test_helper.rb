@@ -1,3 +1,5 @@
+require 'rubygems'
+
 require 'tempfile'
 require 'tmpdir'
 require "fileutils"
@@ -7,23 +9,9 @@ require 'minitest/autorun'
 require 'rugged'
 require 'pp'
 
-# backwards compat with test/spec/mini 3
-alias :context :describe
-
 module Rugged
   class TestCase < MiniTest::Spec
     TEST_DIR = File.dirname(File.expand_path(__FILE__))
-
-    class << self
-      # backwards compat with test/spec/mini 3
-      alias :setup :before
-      alias :teardown :after
-      alias :test :it
-    end
-
-    # backwards compat with test/unit
-    alias :assert_not_nil :refute_nil
-    alias :assert_raise :assert_raises
 
     private
 
@@ -35,6 +23,10 @@ module Rugged
       dir = Dir.mktmpdir 'dir'
       `git clone #{test_repo_path(repo)} #{dir}`
       dir
+    end
+
+    def destroy_temp_repo(path)
+      FileUtils.remove_entry_secure(path)
     end
 
     def rm_loose(oid)

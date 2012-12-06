@@ -102,15 +102,17 @@ git_object *rugged_object_load(git_repository *repo, VALUE object_value, git_oty
 			error = git_object_lookup_prefix(&object, repo, &oid, oid_length, type);
 		else
 			error = git_object_lookup(&object, repo, &oid, type);
+
 		rugged_exception_check(error);
 
 	} else if (rb_obj_is_kind_of(object_value, rb_cRuggedObject)) {
 		Data_Get_Struct(object_value, git_object, object);
 
 		if (type != GIT_OBJ_ANY && git_object_type(object) != type)
-			rb_raise(rb_eTypeError, "Object is not of the required type");
+			rb_raise(rb_eArgError, "Object is not of the required type");
 	} else {
-		rb_raise(rb_eTypeError, "Invalid GIT object; an object reference must be a SHA1 id or an object itself");
+		rb_raise(rb_eTypeError,
+			"Invalid GIT object; an object reference must be a SHA1 id or an object itself");
 	}
 
 	assert(object);
@@ -190,8 +192,7 @@ VALUE rb_git_object_lookup(VALUE klass, VALUE rb_repo, VALUE rb_hex)
 	Check_Type(rb_hex, T_STRING);
 	oid_length = (int)RSTRING_LEN(rb_hex);
 
-	if (!rb_obj_is_instance_of(rb_repo, rb_cRuggedRepo))
-		rb_raise(rb_eTypeError, "Expecting a Rugged Repository");
+	rugged_check_repo(rb_repo);
 
 	if (oid_length > GIT_OID_HEXSZ)
 		rb_raise(rb_eTypeError, "The given OID is too long");
@@ -222,8 +223,7 @@ static VALUE rugged_object_rev_parse(VALUE klass, VALUE rb_repo, VALUE rb_spec, 
 	Check_Type(rb_spec, T_STRING);
 	spec = RSTRING_PTR(rb_spec);
 
-	if (!rb_obj_is_instance_of(rb_repo, rb_cRuggedRepo))
-		rb_raise(rb_eTypeError, "Expecting a Rugged Repository");
+	rugged_check_repo(rb_repo);
 
 	Data_Get_Struct(rb_repo, git_repository, repo);
 

@@ -159,23 +159,23 @@ static VALUE rb_git_commit_tree_GET(VALUE self)
 
 /*
  *	call-seq:
- *		commit.tree_oid -> oid
+ *		commit.tree_id -> oid
  *
  *	Return the tree oid pointed at by this +commit+. The tree is
  *	returned as a String object.
  *
- *		commit.tree #=> "f148106ca58764adc93ad4e2d6b1d168422b9796"
+ *		commit.tree_id #=> "f148106ca58764adc93ad4e2d6b1d168422b9796"
  */
-static VALUE rb_git_commit_tree_oid_GET(VALUE self)
+static VALUE rb_git_commit_tree_id_GET(VALUE self)
 {
 	git_commit *commit;
-	const git_oid *tree_oid;
+	const git_oid *tree_id;
 
 	Data_Get_Struct(self, git_commit, commit);
 
-	tree_oid = git_commit_tree_oid(commit);
+	tree_id = git_commit_tree_id(commit);
 
-	return rugged_create_oid(tree_oid);
+	return rugged_create_oid(tree_id);
 }
 
 /*
@@ -214,19 +214,19 @@ static VALUE rb_git_commit_parents_GET(VALUE self)
 
 /*
  *	call-seq:
- *		commit.parent_oids -> [oid, ...]
+ *		commit.parent_ids -> [oid, ...]
  *
  *	Return the parent oid(s) of this commit as an array of oid String
  *	objects. An array is always returned even when the commit has only
  *	one or zero parents.
  *
- *		commit.parent_oids #=> => ["2cb831a8aea28b2c1b9c63385585b864e4d3bad1", ...]
- *		root.parent_oids #=> []
+ *		commit.parent_ids #=> => ["2cb831a8aea28b2c1b9c63385585b864e4d3bad1", ...]
+ *		root.parent_ids #=> []
  */
-static VALUE rb_git_commit_parent_oids_GET(VALUE self)
+static VALUE rb_git_commit_parent_ids_GET(VALUE self)
 {
 	git_commit *commit;
-	const git_oid *parent_oid;
+	const git_oid *parent_id;
 	unsigned int n, parent_count;
 	VALUE ret_arr;
 
@@ -236,9 +236,9 @@ static VALUE rb_git_commit_parent_oids_GET(VALUE self)
 	ret_arr = rb_ary_new2((long)parent_count);
 
 	for (n = 0; n < parent_count; n++) {
-		parent_oid = git_commit_parent_oid(commit, n);
-		if (parent_oid) {
-			rb_ary_push(ret_arr, rugged_create_oid(parent_oid));
+		parent_id = git_commit_parent_id(commit, n);
+		if (parent_id) {
+			rb_ary_push(ret_arr, rugged_create_oid(parent_id));
 		}
 	}
 
@@ -390,8 +390,12 @@ void Init_rugged_commit()
 	rb_define_method(rb_cRuggedCommit, "committer", rb_git_commit_committer_GET, 0);
 	rb_define_method(rb_cRuggedCommit, "author", rb_git_commit_author_GET, 0);
 	rb_define_method(rb_cRuggedCommit, "tree", rb_git_commit_tree_GET, 0);
-	rb_define_method(rb_cRuggedCommit, "tree_oid", rb_git_commit_tree_oid_GET, 0);
+
+	rb_define_method(rb_cRuggedCommit, "tree_id", rb_git_commit_tree_id_GET, 0);
+	rb_define_method(rb_cRuggedCommit, "tree_oid", rb_git_commit_tree_id_GET, 0);
+
 	rb_define_method(rb_cRuggedCommit, "parents", rb_git_commit_parents_GET, 0);
-	rb_define_method(rb_cRuggedCommit, "parent_oids", rb_git_commit_parent_oids_GET, 0);
+	rb_define_method(rb_cRuggedCommit, "parent_ids", rb_git_commit_parent_ids_GET, 0);
+	rb_define_method(rb_cRuggedCommit, "parent_oids", rb_git_commit_parent_ids_GET, 0);
 }
 
