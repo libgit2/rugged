@@ -18,6 +18,7 @@ describe Rugged::Branch do
         "master",
         "origin/HEAD",
         "origin/master",
+        "origin/new-file",
         "origin/packed",
       ], Rugged::Branch.each_name(@repo).sort
     end
@@ -30,6 +31,7 @@ describe Rugged::Branch do
       assert_equal [
         "origin/HEAD",
         "origin/master",
+        "origin/new-file",
         "origin/packed",
       ], Rugged::Branch.each_name(@repo, :remote).sort
     end

@@ -162,12 +162,35 @@ static void rb_git__parse_checkout_options(const VALUE* ruby_opts, git_checkout_
 		/* Now OR-in all requested flags */
 		if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("default"))))
 			p_opts->checkout_strategy |= GIT_CHECKOUT_DEFAULT;
-		if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("overwrite_modified"))))
-			p_opts->checkout_strategy |= GIT_CHECKOUT_OVERWRITE_MODIFIED;
-		if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("create_missing"))))
-			p_opts->checkout_strategy |= GIT_CHECKOUT_CREATE_MISSING;
+		if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("update_unmodified"))))
+			p_opts->checkout_strategy |= GIT_CHECKOUT_UPDATE_UNMODIFIED;
+		if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("update_missing"))))
+			p_opts->checkout_strategy |= GIT_CHECKOUT_UPDATE_MISSING;
+		if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("safe"))))
+			p_opts->checkout_strategy |= GIT_CHECKOUT_SAFE;
+		if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("update_modified"))))
+			p_opts->checkout_strategy |= GIT_CHECKOUT_UPDATE_MODIFIED;
+		if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("update_untracked"))))
+			p_opts->checkout_strategy |=	GIT_CHECKOUT_UPDATE_UNTRACKED;
+		if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("force"))))
+			p_opts->checkout_strategy |=	GIT_CHECKOUT_FORCE;
+		if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("allow_conflicts"))))
+			p_opts->checkout_strategy |=	GIT_CHECKOUT_ALLOW_CONFLICTS;
 		if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("remove_untracked"))))
 			p_opts->checkout_strategy |=	GIT_CHECKOUT_REMOVE_UNTRACKED;
+		if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("update_only"))))
+			p_opts->checkout_strategy |=	GIT_CHECKOUT_UPDATE_ONLY;
+		// The following options are not yet implemented in libgit2 as of 3368c520
+		if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("skip_unmerged"))))
+			p_opts->checkout_strategy |=	GIT_CHECKOUT_SKIP_UNMERGED;
+		if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("use_ours"))))
+			p_opts->checkout_strategy |=	GIT_CHECKOUT_USE_OURS;
+		if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("use_theirs"))))
+			p_opts->checkout_strategy |=	GIT_CHECKOUT_USE_THEIRS;
+		if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("update_submodules"))))
+			p_opts->checkout_strategy |=	GIT_CHECKOUT_UPDATE_SUBMODULES;
+		if (rb_ary_includes(opts_strategy, ID2SYM(rb_intern("update_submodules_if_changed"))))
+			p_opts->checkout_strategy |=	GIT_CHECKOUT_UPDATE_SUBMODULES_IF_CHANGED;
 	}
 }
 
@@ -328,17 +351,18 @@ static VALUE rb_git_repo__internal_clone(void* p_params)
 		error = git_clone(	p_clone_params->pp_repo,
 												p_clone_params->url,
 												p_clone_params->target_path,
+												p_clone_params->p_opts,
 												rb_git_repo__transfer_callback,
-												NULL,
-												p_clone_params->p_opts);
+												NULL);
 
 	}
 	else { /* In 1.9 we're running without the GVL here */
 		error = git_clone(	p_clone_params->pp_repo,
 												p_clone_params->url,
 												p_clone_params->target_path,
-												NULL, NULL,
-												p_clone_params->p_opts);
+												p_clone_params->p_opts,
+												NULL, NULL);
+
 	}
 	p_clone_params->git_error = error;
 
@@ -449,7 +473,7 @@ static VALUE rb_git_repo_clone(int argc, VALUE argv[], VALUE self)
 	}
 	else { /* Full non-bare clone requested */
 		/* Parse the checkout options */
-		git_checkout_opts opts;
+		git_checkout_opts opts = GIT_CHECKOUT_OPTS_INIT;
 		rb_git__parse_checkout_options(&ruby_opts, &opts);
 		clone_params.p_opts = &opts;
 
@@ -876,7 +900,7 @@ static VALUE rb_git_repo_checkout_index(int argc, VALUE argv[], VALUE self)
   VALUE ruby_opts;
   git_repository *repo;
   int error;
-  git_checkout_opts opts;
+  git_checkout_opts opts = GIT_CHECKOUT_OPTS_INIT;
 
   Data_Get_Struct(self, git_repository, repo);
 
@@ -889,7 +913,7 @@ static VALUE rb_git_repo_checkout_index(int argc, VALUE argv[], VALUE self)
   rb_git__parse_checkout_options(&ruby_opts, &opts);
 
   /* Checkout operation */
-  error = git_checkout_index(repo, &opts);
+  error = git_checkout_index(repo, NULL, &opts);
   rugged_exception_check(error);
 
   return Qnil;
@@ -910,7 +934,7 @@ static VALUE rb_git_repo_checkout_head(int argc, VALUE argv[], VALUE self)
   VALUE ruby_opts;
   git_repository *repo;
   int error;
-  git_checkout_opts opts;
+  git_checkout_opts opts = GIT_CHECKOUT_OPTS_INIT;
 
   Data_Get_Struct(self, git_repository, repo);
 
@@ -950,14 +974,14 @@ static VALUE rb_git_repo_checkout_head(int argc, VALUE argv[], VALUE self)
  * See #checkout_index for the values you can pass via +opts+. +treeish+ may be
  * a real Tree instance, a Commit or a Tag object.
  */
-static VALUE rb_git_repo_checkout_tree(VALUE argc, VALUE argv[], VALUE self)
+static VALUE rb_git_repo_checkout_tree(int argc, VALUE argv[], VALUE self)
 { /* NOTE: Checking out a tree is the same as pushing a tree onto the index (read-tree) and then checking out the index (checkout-index) */
   VALUE target;
   VALUE ruby_opts;
   git_repository *repo;
   int error;
   git_object *treeish;
-  git_checkout_opts opts;
+  git_checkout_opts opts = GIT_CHECKOUT_OPTS_INIT;
 
   Data_Get_Struct(self, git_repository, repo);
 
