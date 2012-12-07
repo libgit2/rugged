@@ -134,23 +134,21 @@ void rb_git_repo__free(git_repository *repo)
  * Takes the hash (ruby_opts) and a git_checkout_opts struct to fill with the results
  * of the parsing process. Be sure to use GIT_CHECKOUT_OPTS_INIT for initialising
  * `p_opts'. */
-static void rb_git__parse_checkout_options(const VALUE* ruby_opts, git_checkout_opts* p_opts)
+static void rb_git__parse_checkout_options(const VALUE* ruby_opts, git_checkout_opts* p_opts, VALUE* p_progress_cb, VALUE* p_conflict_cb)
 {
 	VALUE opts_strategy;
 	VALUE opts_disable_filters;
 	VALUE opts_dir_mode;
 	VALUE opts_file_mode;
 	VALUE opts_file_open_flags;
-	VALUE opts_progress_callback;
-	VALUE opts_conflict_callback;
 
 	opts_strategy						= rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("strategy")));
 	opts_disable_filters		= rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("disable_filters")));
 	opts_dir_mode						= rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("dir_mode")));
 	opts_file_mode					= rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("file_mode")));
 	opts_file_open_flags		= rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("file_open_flags")));
-	opts_progress_callback	= rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("progress_cb")));
-	opts_conflict_callback	= rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("conflict_cb")));
+	*p_progress_cb	= rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("progress_cb")));
+	*p_conflict_cb	= rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("conflict_cb")));
 
 	/* Convert the Ruby hash values to C stuff */
 	if (RTEST(opts_disable_filters))
@@ -161,12 +159,12 @@ static void rb_git__parse_checkout_options(const VALUE* ruby_opts, git_checkout_
 		p_opts->file_mode = FIX2INT(opts_file_mode);
 	if (TYPE(opts_file_open_flags) == T_FIXNUM)
 		p_opts->file_open_flags = FIX2INT(opts_file_open_flags);
-	if (RTEST(opts_progress_callback)) {
-		p_opts->progress_payload = &opts_progress_callback;
+	if (RTEST(*p_progress_cb)) {
+		p_opts->progress_payload = p_progress_cb;
 		p_opts->progress_cb = rb_git_repo__progress_callback;
 	}
-	if (RTEST(opts_conflict_callback)) {
-		p_opts->conflict_payload = &opts_conflict_callback;
+	if (RTEST(*p_conflict_cb)) {
+		p_opts->conflict_payload = p_conflict_cb;
 		p_opts->conflict_cb = rb_git_repo__conflict_callback;
 	}
 
@@ -380,11 +378,8 @@ int rb_git_repo__conflict_callback(const char* conflicting_path, const git_oid* 
 												UINT2NUM(index_mode),
 												UINT2NUM(wd_mode));
 
-	/* Any fixnum value is assumed to be the result the user wants to
-	 * pass to libgit2 here. If we don't get a fixnum, assume no value
-	 * should be returned, which is 0 in this case. */
-	if (TYPE(result) == T_FIXNUM)
-		return NUM2INT(result);
+	if (RTEST(result))
+		return 1;
 	else
 		return 0;
 }
@@ -396,10 +391,18 @@ void rb_git_repo__progress_callback(const char* path, size_t completed_steps, si
 {
 	VALUE* p_ruby_lambda = (VALUE*)payload;
 
-	rb_funcall(	*p_ruby_lambda, rb_intern("call"), 3,
-							rb_str_new2(path),
-							LONG2NUM(completed_steps),
-							LONG2NUM(total_steps));
+	if (path) {
+		rb_funcall(	*p_ruby_lambda, rb_intern("call"), 3,
+								rb_str_new2(path),
+								LONG2NUM(completed_steps),
+								LONG2NUM(total_steps));
+	}
+	else {
+		rb_funcall(	*p_ruby_lambda, rb_intern("call"), 3,
+								Qnil,
+								LONG2NUM(completed_steps),
+								LONG2NUM(total_steps));
+	}
 }
 
 /* Runs the git-clone operation with or without the GVL. `params' is a pointer
@@ -563,6 +566,8 @@ static VALUE rb_git_repo_clone(int argc, VALUE argv[], VALUE self)
 	VALUE target_path;
 	VALUE ruby_opts;
 	VALUE transfer_callback = Qnil;
+	VALUE progress_callback = Qnil;
+	VALUE conflict_callback = Qnil;
 	git_repository *p_repo;
 	git_checkout_opts checkout_opts = GIT_CHECKOUT_OPTS_INIT;
 	struct _clone_params clone_params = DEFAULT_CLONE_PARAMS;
@@ -577,7 +582,7 @@ static VALUE rb_git_repo_clone(int argc, VALUE argv[], VALUE self)
 	clone_params.target_path = StringValueCStr(target_path);
 
 	/* Parse the checkout options */
-	rb_git__parse_checkout_options(&ruby_opts, &checkout_opts);
+	rb_git__parse_checkout_options(&ruby_opts, &checkout_opts, &progress_callback, &conflict_callback);
 	clone_params.p_opts = &checkout_opts;
 
 	/* Check if we got any of the three callbacks that would prevent us
@@ -1064,12 +1069,25 @@ static VALUE rb_git_repo_set_workdir(VALUE self, VALUE rb_workdir)
  *   Not documented by libgit2.
  * [:file_open_flags (<tt>IO::CREAT | IO::TRUNC | IO::WRONLY</tt>)]
  *   Not documented by libgit2.
+ * [:progress_cb]
+ *   This callback is invoked during the checkout process and gets passed the
+ *   path to the file currently being checked out, the number of completed steps,
+ *   and the number of total steps.
+ * [:conflict_cb]
+ *   Whenever the checkout algorithm encounters a file that it isn't allowed
+ *   to check out using the policies outlined in :strategy, this callback is
+ *   invoked. It gets passed the path to the conflicting file, the OID
+ *   of the object in the index (as a hex-encoded string), the entry's mode
+ *   in the index and the mode in the working directory. A return value of
+ *   anything Ruby considers to be true will abort the checkout operation.
  */
 static VALUE rb_git_repo_checkout_index(int argc, VALUE argv[], VALUE self)
 {
-  VALUE ruby_opts;
-  git_repository *repo;
-  int error;
+	VALUE ruby_opts;
+	VALUE progress_callback = Qnil;
+	VALUE conflict_callback = Qnil;
+	git_repository *repo;
+	int error;
   git_checkout_opts opts = GIT_CHECKOUT_OPTS_INIT;
 
   Data_Get_Struct(self, git_repository, repo);
@@ -1080,7 +1098,7 @@ static VALUE rb_git_repo_checkout_index(int argc, VALUE argv[], VALUE self)
     ruby_opts = rb_hash_new(); /* If not passed, assume an empty hash */
 
   /* Parse the wealth of options and collect the results in `opts' */
-  rb_git__parse_checkout_options(&ruby_opts, &opts);
+  rb_git__parse_checkout_options(&ruby_opts, &opts, &progress_callback, &conflict_callback);
 
   /* Checkout operation */
   error = git_checkout_index(repo, NULL, &opts);
@@ -1101,8 +1119,10 @@ static VALUE rb_git_repo_checkout_index(int argc, VALUE argv[], VALUE self)
  */
 static VALUE rb_git_repo_checkout_head(int argc, VALUE argv[], VALUE self)
 {
-  VALUE ruby_opts;
-  git_repository *repo;
+	VALUE ruby_opts;
+	VALUE progress_callback = Qnil;
+	VALUE conflict_callback = Qnil;
+	git_repository *repo;
   int error;
   git_checkout_opts opts = GIT_CHECKOUT_OPTS_INIT;
 
@@ -1114,7 +1134,7 @@ static VALUE rb_git_repo_checkout_head(int argc, VALUE argv[], VALUE self)
     ruby_opts = rb_hash_new(); /* If not passed, assume an empty hash */
 
   /* Parse the wealth of options and collect the results in `opts' */
-  rb_git__parse_checkout_options(&ruby_opts, &opts);
+  rb_git__parse_checkout_options(&ruby_opts, &opts, &progress_callback, &conflict_callback);
 
   /* Checkout operation */
   error = git_checkout_head(repo, &opts);
@@ -1146,9 +1166,11 @@ static VALUE rb_git_repo_checkout_head(int argc, VALUE argv[], VALUE self)
  */
 static VALUE rb_git_repo_checkout_tree(int argc, VALUE argv[], VALUE self)
 { /* NOTE: Checking out a tree is the same as pushing a tree onto the index (read-tree) and then checking out the index (checkout-index) */
-  VALUE target;
-  VALUE ruby_opts;
-  git_repository *repo;
+	VALUE target;
+	VALUE ruby_opts;
+	VALUE progress_callback = Qnil;
+	VALUE conflict_callback = Qnil;
+	git_repository *repo;
   int error;
   git_object *treeish;
   git_checkout_opts opts = GIT_CHECKOUT_OPTS_INIT;
@@ -1165,7 +1187,7 @@ static VALUE rb_git_repo_checkout_tree(int argc, VALUE argv[], VALUE self)
   Data_Get_Struct(target, git_object, treeish);
 
   /* Parse the wealth of options and collect the results in `opts' */
-  rb_git__parse_checkout_options(&ruby_opts, &opts);
+  rb_git__parse_checkout_options(&ruby_opts, &opts, &progress_callback, &conflict_callback);
 
   /* Update the index */
   error = git_checkout_tree(repo, treeish, &opts);
