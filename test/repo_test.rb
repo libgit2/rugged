@@ -175,7 +175,7 @@ describe Rugged::Repository do
     # Bare repository
     tmpdir = Dir.mktmpdir("clone-target-dir")
     begin
-      repo = Rugged::Repository.clone_repo("git://github.com/libgit2/libgit2.git", tmpdir, :bare => true)
+      repo = Rugged::Repository.clone_repo_bare("git://github.com/libgit2/libgit2.git", tmpdir)
       assert_kind_of Rugged::Commit, repo.lookup("1a628100534a315bd00361fc3d32df671923c107")
     ensure
       FileUtils.rm_rf(tmpdir)

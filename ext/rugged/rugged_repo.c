@@ -33,6 +33,10 @@ extern VALUE rb_cRuggedObject;
 VALUE rb_cRuggedRepo;
 VALUE rb_cRuggedOdbObject;
 
+int rb_git_repo__conflict_callback(	const char* conflicting_path, const git_oid* index_oid,
+																		unsigned int index_mode, unsigned int wd_mode, void* payload);
+void rb_git_repo__progress_callback(const char* path, size_t completed_steps, size_t total_steps, void* payload);
+
 /*
  *	call-seq:
  *		odb_obj.oid -> hex_oid
@@ -128,7 +132,8 @@ void rb_git_repo__free(git_repository *repo)
 
 /* Helper function used by the checkout_* methods to parse the argument hash.
  * Takes the hash (ruby_opts) and a git_checkout_opts struct to fill with the results
- * of the parsing process. */
+ * of the parsing process. Be sure to use GIT_CHECKOUT_OPTS_INIT for initialising
+ * `p_opts'. */
 static void rb_git__parse_checkout_options(const VALUE* ruby_opts, git_checkout_opts* p_opts)
 {
 	VALUE opts_strategy;
@@ -136,15 +141,16 @@ static void rb_git__parse_checkout_options(const VALUE* ruby_opts, git_checkout_
 	VALUE opts_dir_mode;
 	VALUE opts_file_mode;
 	VALUE opts_file_open_flags;
+	VALUE opts_progress_callback;
+	VALUE opts_conflict_callback;
 
-	/* Ensure we have a clean slate to work from */
-	memset(p_opts, 0, sizeof(*p_opts));
-
-	opts_strategy        = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("strategy")));
-	opts_disable_filters = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("disable_filters")));
-	opts_dir_mode        = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("dir_mode")));
-	opts_file_mode       = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("file_mode")));
-	opts_file_open_flags = rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("file_open_flags")));
+	opts_strategy						= rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("strategy")));
+	opts_disable_filters		= rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("disable_filters")));
+	opts_dir_mode						= rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("dir_mode")));
+	opts_file_mode					= rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("file_mode")));
+	opts_file_open_flags		= rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("file_open_flags")));
+	opts_progress_callback	= rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("progress_cb")));
+	opts_conflict_callback	= rb_hash_aref(*ruby_opts, ID2SYM(rb_intern("conflict_cb")));
 
 	/* Convert the Ruby hash values to C stuff */
 	if (RTEST(opts_disable_filters))
@@ -155,6 +161,14 @@ static void rb_git__parse_checkout_options(const VALUE* ruby_opts, git_checkout_
 		p_opts->file_mode = FIX2INT(opts_file_mode);
 	if (TYPE(opts_file_open_flags) == T_FIXNUM)
 		p_opts->file_open_flags = FIX2INT(opts_file_open_flags);
+	if (RTEST(opts_progress_callback)) {
+		p_opts->progress_payload = &opts_progress_callback;
+		p_opts->progress_cb = rb_git_repo__progress_callback;
+	}
+	if (RTEST(opts_conflict_callback)) {
+		p_opts->conflict_payload = &opts_conflict_callback;
+		p_opts->conflict_cb = rb_git_repo__conflict_callback;
+	}
 
 	if (TYPE(opts_strategy) == T_ARRAY){
 		p_opts->checkout_strategy = 0;
@@ -314,13 +328,15 @@ static VALUE rb_git_repo_init_at(VALUE klass, VALUE path, VALUE rb_is_bare)
 /* Helper struct used to pass information to
  * the nonblocking clone functions. The parameters are those
  * required for the libgit2 clone functions; p_opts is not
- * used for bare cloning. */
+ * used for bare cloning. On allocation, please set a default
+ * value of DEFAULT_CLONE_PARAMS so that default values get
+ * initialised correctly. */
 struct _clone_params {
-	git_repository** pp_repo;	 /* This will get assigned the cloned repo object */
-	git_checkout_opts* p_opts; /* Options for the checkout after the clone (if not bare) */
-	char* url;                 /* URL of the remote host with protocol prefix */
-	char* target_path;         /* path where to clone to */
-	int block_given;          /* set to 1 if the clone method got a block passed, 0 otherwise (this information would be lost without GVL otherwise) */
+	git_repository** pp_repo;			/* This will get assigned the cloned repo object */
+	git_checkout_opts* p_opts;		/* Options for the checkout after the clone (not used for bare clones) */
+	char* url;										/* URL of the remote host with protocol prefix */
+	char* target_path;				 		/* path where to clone to */
+	VALUE* p_ruby_transfer_proc;	/* The block passed to Repo::clone, if any (NULL otherwise) */
 
 	/* This value will automatically be set by the nonblocking
 	 * cloning functions. Setting it is meaningless, but after
@@ -329,15 +345,61 @@ struct _clone_params {
 	int git_error;
 };
 
+/* Safely initialize a _clone_params struct by assigning this on allocation */
+const struct _clone_params DEFAULT_CLONE_PARAMS = {
+	NULL, NULL, NULL, NULL, NULL, 0
+};
+
 /* Callback function passed to libgit2 when the clone functions
- * are called with a block. */
+ * are called with a block. `payload' is the block passed to Repo::clone
+ * as a Proc. */
 void rb_git_repo__transfer_callback(const git_transfer_progress* stats, void* payload)
 {
-	rb_yield_values(	4,
-										UINT2NUM(stats->total_objects),
-										UINT2NUM(stats->indexed_objects),
-										UINT2NUM(stats->received_objects),
-										LONG2NUM(stats->received_bytes));
+	VALUE* p_ruby_transfer_cb_proc = (VALUE*)payload;
+	rb_funcall(	*p_ruby_transfer_cb_proc, rb_intern("call"), 4,
+							UINT2NUM(stats->total_objects),
+							UINT2NUM(stats->indexed_objects),
+							UINT2NUM(stats->received_objects),
+							LONG2NUM(stats->received_bytes));
+}
+
+/* Callback function passed to libgit2 when the checkout functions
+ * determine a conflict and a conflict callback was specified.
+ * `payload' is the ruby lambda for the callback. */
+int rb_git_repo__conflict_callback(const char* conflicting_path, const git_oid* index_oid,
+																	 unsigned int index_mode, unsigned int wd_mode, void* payload)
+{
+	VALUE result;
+	VALUE* p_ruby_lambda = (VALUE*)payload;
+	char oid_str[GIT_OID_HEXSZ + 1];
+
+	git_oid_tostr(oid_str, GIT_OID_HEXSZ + 1, index_oid);
+	result = rb_funcall(	*p_ruby_lambda, rb_intern("call"), 4,
+										 		rb_str_new2(conflicting_path),
+												rb_str_new2(oid_str),
+												UINT2NUM(index_mode),
+												UINT2NUM(wd_mode));
+
+	/* Any fixnum value is assumed to be the result the user wants to
+	 * pass to libgit2 here. If we don't get a fixnum, assume no value
+	 * should be returned, which is 0 in this case. */
+	if (TYPE(result) == T_FIXNUM)
+		return NUM2INT(result);
+	else
+		return 0;
+}
+
+/* Callback function passed to libgit2 when you passed a callback
+ * to the checkout functions. `payload' is the ruby lamda for the
+ * callback. */
+void rb_git_repo__progress_callback(const char* path, size_t completed_steps, size_t total_steps, void* payload)
+{
+	VALUE* p_ruby_lambda = (VALUE*)payload;
+
+	rb_funcall(	*p_ruby_lambda, rb_intern("call"), 3,
+							rb_str_new2(path),
+							LONG2NUM(completed_steps),
+							LONG2NUM(total_steps));
 }
 
 /* Runs the git-clone operation with or without the GVL. `params' is a pointer
@@ -347,16 +409,20 @@ static VALUE rb_git_repo__internal_clone(void* p_params)
 	struct _clone_params* p_clone_params = (struct _clone_params*) p_params;
 	int error;
 
-	if (p_clone_params->block_given) {
+	/* Check if we got a transfer callback passed, and if so, hand it over
+	 * to libgit2. The two checkout-related callbacks for progress and conficts
+	 * have already been handled when parsing the checkout options in the ::clone
+	 * method. */
+	if (p_clone_params->p_ruby_transfer_proc) {
 		error = git_clone(	p_clone_params->pp_repo,
 												p_clone_params->url,
 												p_clone_params->target_path,
 												p_clone_params->p_opts,
 												rb_git_repo__transfer_callback,
-												NULL);
+												p_clone_params->p_ruby_transfer_proc);
 
 	}
-	else { /* In 1.9 we're running without the GVL here */
+	else { /* In 1.9 we may run without the GVL here (if no checkout callbacks have been set) */
 		error = git_clone(	p_clone_params->pp_repo,
 												p_clone_params->url,
 												p_clone_params->target_path,
@@ -376,12 +442,16 @@ static VALUE rb_git_repo__internal_clone_bare(void* p_params)
 	struct _clone_params* p_clone_params = (struct _clone_params*) p_params;
 	int error;
 
-	if (p_clone_params->block_given){
+	/* Check if we got a callback passed and if so, hand it over to
+	 * libgit2. A side effect of this check is that if we don't got
+	 * a transfer callback passed, we know for sure that we're currently
+	 * running without the GVL. */
+	if (p_clone_params->p_ruby_transfer_proc) { /* With GVL */
 		error = git_clone_bare(	p_clone_params->pp_repo,
 														p_clone_params->url,
 														p_clone_params->target_path,
 														rb_git_repo__transfer_callback,
-														NULL);
+														p_clone_params->p_ruby_transfer_proc);
 	}
 	else { /* In 1.9 we're running without the GVL here */
 		error = git_clone_bare(	p_clone_params->pp_repo,
@@ -408,6 +478,59 @@ static void rb_git_repo__abort_clone(void* p_param)
 }
 
 /*
+ * call-seq:
+ *   clone_repo_bare(url, target_path) -> repository
+ *   clone_repo_bare(url, target_path){|total_objects, indexed_objects, received_objects, received_bytes| ...} -> repository
+ *
+ * Creates a bare clone (in the Git sense, think <tt>git clone --bare</tt>) of
+ * the remote repository at +url+ in the local directory +target_path+ and returns
+ * a Repository object pointing to the newly created repo at +target_path+.
+ *
+ * If a block is given, it gets passed statistics about the fetching process
+ * while download is in progress (see method signature).
+ *
+ * If no block is given, this method releases the GVL during the clone operation.
+ *
+ *   Rugged::Repository.clone_repo_bare("git://github.com/libgit2/libgit2.git", "~/libgit2.git")
+ *   Rugged::Repository.clone_repo_bare("git://github.com/libgit2/libgit2.git", "~/libgit2.git") do |total, indexed, received_objs, bytes|
+ *     print "\rReceived #{received_objs}/#{total} (indexed #{indexed}, #{bytes} bytes)"
+ *   end
+ */
+static VALUE rb_git_repo_clone_bare(VALUE self, VALUE url, VALUE target_path)
+{
+	git_repository *p_repo;
+	struct _clone_params clone_params = DEFAULT_CLONE_PARAMS;
+	VALUE transfer_callback = Qnil;
+
+	clone_params.pp_repo		 = &p_repo;
+	clone_params.url				 = StringValueCStr(url);
+	clone_params.target_path = StringValueCStr(target_path);
+	clone_params.p_opts			 = NULL; /* Not required for bare clone */
+
+	if (rb_block_given_p()) {
+		/* If a transfer callback was given, we cannot release the GVL due to callback */
+		transfer_callback = rb_block_proc(); /* &block */
+		clone_params.p_ruby_transfer_proc = &transfer_callback;
+		rb_git_repo__internal_clone_bare(&clone_params);
+	}
+	else { /* No callback given -- release the GVL if Ruby version allows */
+#ifdef USING_RUBY_19
+		rb_thread_blocking_region(	rb_git_repo__internal_clone_bare,
+																&clone_params,
+																rb_git_repo__abort_clone,
+																&clone_params);
+#else
+		/* Poor 1.8 guys, you cannot have concurrency */
+		rb_git_repo__internal_clone_bare(&clone_params);
+#endif
+	}
+
+	/* Check for success and return new Repository instance */
+	rugged_exception_check(clone_params.git_error);
+	return rugged_repo_new(self, p_repo);
+}
+
+/*
  *	call-seq:
  *		clone_repo(url, target_path [, opts = {} ]) -> repository
  *		clone_rpeo(url, target_path [, opts = {} ]){|total_objects, indexed_objects, received_objects, received_bytes| ...}
@@ -430,7 +553,7 @@ static void rb_git_repo__abort_clone(void* p_param)
  *
  *		Rugged::Repository.clone_repo("git://github.com/libgit2/libgit2.git", "~/libgit2")
  *		Rugged::Repository.clone_repo("git://github.com/libgit2/libgit2.git", "~/libgit2.git", bare: true)
- *		Rugged::Repository.clone_repo("git://github.com/libgit2/libgit2.git", "~/libgit2", strategy: [:default, :overwrite_modified, :create_missing]) do |total, indexed, received_objs, bytes|
+ *		Rugged::Repository.clone_repo("git://github.com/libgit2/libgit2.git", "~/libgit2", strategy: [:force]) do |total, indexed, received_objs, bytes|
  *			print "\rReceived #{received_objs}/#{total} (indexed #{indexed}, #{bytes} bytes)"
  *		end
  */
@@ -439,65 +562,65 @@ static VALUE rb_git_repo_clone(int argc, VALUE argv[], VALUE self)
 	VALUE url;
 	VALUE target_path;
 	VALUE ruby_opts;
+	VALUE transfer_callback = Qnil;
 	git_repository *p_repo;
-	struct _clone_params clone_params;
+	git_checkout_opts checkout_opts = GIT_CHECKOUT_OPTS_INIT;
+	struct _clone_params clone_params = DEFAULT_CLONE_PARAMS;
+	short can_release_gvl = 1; /* bool */
 
 	rb_scan_args(argc, argv, "21", &url, &target_path, &ruby_opts);
 	if (TYPE(ruby_opts) != T_HASH)
 		ruby_opts = rb_hash_new(); /* Assume empty hash if none given */
 
-	clone_params.pp_repo     = &p_repo;
-	clone_params.url         = StringValueCStr(url);
+	clone_params.pp_repo		 = &p_repo;
+	clone_params.url				 = StringValueCStr(url);
 	clone_params.target_path = StringValueCStr(target_path);
 
-	if (RTEST(rb_hash_aref(ruby_opts, ID2SYM(rb_intern("bare"))))) {
-		clone_params.p_opts = NULL; /* Not required for bare clone */
+	/* Parse the checkout options */
+	rb_git__parse_checkout_options(&ruby_opts, &checkout_opts);
+	clone_params.p_opts = &checkout_opts;
 
-		if (rb_block_given_p()) {
-			/* If a block was given, we cannot release the GVL due to callback */
-			clone_params.block_given = 1;
-			rb_git_repo__internal_clone_bare(&clone_params);
-		}
-		else { /* No block given -- release the GVL if possible */
-			clone_params.block_given = 0;
-#ifdef USING_RUBY_19
-			rb_thread_blocking_region(	rb_git_repo__internal_clone_bare,
-																	&clone_params,
-																	rb_git_repo__abort_clone,
-																	&clone_params);
-#else
-			/* Poor 1.8 guys, you cannot have concurrency */
-			rb_git_repo__internal_clone_bare(&clone_params);
-#endif
-		}
-	}
-	else { /* Full non-bare clone requested */
-		/* Parse the checkout options */
-		git_checkout_opts opts = GIT_CHECKOUT_OPTS_INIT;
-		rb_git__parse_checkout_options(&ruby_opts, &opts);
-		clone_params.p_opts = &opts;
+	/* Check if we got any of the three callbacks that would prevent us
+	 * from releasing the GVL.*/
 
-		if (rb_block_given_p()) {
-			/* If a block was given, we cannot release the GVL due to callback */
-			clone_params.block_given =1;
-			rb_git_repo__internal_clone(&clone_params);
-		}
-		else { /* No block given -- release GVL if possible */
-			clone_params.block_given = 0;
-#ifdef USING_RUBY_19
-			rb_thread_blocking_region(	rb_git_repo__internal_clone,
-																	&clone_params,
-																	rb_git_repo__abort_clone,
-																	&clone_params);
-#else
-			/* Poor 1.8 guys, you cannot have concurrency */
-			rb_git_repo__internal_clone(&clone_params);
-#endif
-		}
+	/* 1. Transfer callback. Note that this callback is specific to the
+	 * clone methods and is not handled by rb_git__parse_checkout_options()
+	 * therefore, hence we must pass this to the C-side callback ourselves. */
+	if (rb_block_given_p()) {
+		transfer_callback = rb_block_proc(); /* &block */
+		clone_params.p_ruby_transfer_proc = &transfer_callback;
+		can_release_gvl = 0;
 	}
 
+	/* 2. Conflict callback. Handling is done by the checkout option
+	 * parsing function, we just need to know about it for GVL. */
+	if (checkout_opts.conflict_payload)
+		can_release_gvl = 0;
+
+	/* 3. Progress callback. Handling is done by the checkout option
+	 * parsing function, we just need to know about it for GVL. */
+	if (checkout_opts.progress_payload)
+		can_release_gvl = 0;
+
+	/* Release the GVL if the Ruby version permits it */
+	if (can_release_gvl) {
+#ifdef USING_RUBY_19
+		rb_thread_blocking_region(	rb_git_repo__internal_clone,
+																&clone_params,
+																rb_git_repo__abort_clone,
+																&clone_params);
+#else
+		/* Poor 1.8 guys, you cannot have concurrency */
+		rb_git_repo__internal_clone(&clone_params);
+#endif
+	}
+	else {
+		/* If any block or callback was given, we cannot release the GVL due to callback */
+		rb_git_repo__internal_clone(&clone_params);
+	}
+
+	/* Check for success and return new Repository instance */
 	rugged_exception_check(clone_params.git_error);
-
 	return rugged_repo_new(self, p_repo);
 }
 
@@ -876,18 +999,65 @@ static VALUE rb_git_repo_set_workdir(VALUE self, VALUE rb_workdir)
  *   repo.checkout_index( [ opts = {} ] )
  *
  * Writes the files in the index ("staging area") out to the working
- * tree. Does not update the HEAD pointer.
+ * tree. Does not update the HEAD pointer automatically.
+ *
+ * Checking out git trees is a fairly complex operation that can
+ * be adjusted in a variety of ways, the full documentation on this
+ * including background information can be found in libgit2's
+ * <tt>checkout.h</tt> header. Rugged's checkout methods support
+ * all operations mentioned there, but note that libgit2 itself
+ * doesn't implement them all yet.
  *
  * +opts+ is a hash which can take the following values:
  * [:strategy (<tt>[:default]</tt>)]
  *   Defines how to exactly check out the given +treeish+. This is an
  *   array containing one or more of the following symbols:
- *   [:default]            Don't overwrite anything.
- *   [:overwrite_modified] Overwrite files already there.
- *   [:create_missing]     If a file is in the index, but not in the worktree, copy it nevertheless to the work tree.
- *   [:remove_untracked]   Delete files from the working tree not checked into Git.
- * [:disable_filters (0)]
- *   Not documented by libgit2.
+ *
+ *   [:default]
+ *     Consider everything that would need a change a conflict.
+ *     This is effectively a dry run that does nothing.
+ *   [:update_unmodified]
+ *    Update entries in the working tree that don't have uncommited
+ *    data.
+ *   [:update_missing]
+ *     Update entries that don't exist in the working tree. Note that
+ *     due to bug #1121 libgit2 currently always behaves as if this
+ *     option was passed, i.e. there's no way to prevent this.
+ *   [:safe]
+ *     Update entries that don't have uncommited data. Equal
+ *     to passing :update_unmodified and :update_missing.
+ *   [:update_modified]
+ *     Overwrite entries with uncommitted data.
+ *   [:update_untracked]
+ *     Overwrite entries not checked into git if necessary.
+ *   [:force]
+ *     Force the working tree to like like the index regardless of
+ *     any conflicts. Equal to specifying :safe, :update_modified,
+ *     and :update_untracked.
+ *   [:allow_conflicts]
+ *     Check out even if conflicts are present. This causes libgit2
+ *     to continue checking out after the conflict callback has been
+ *     called (see below).
+ *   [:remove_untracked]
+ *     Remove files not checked into Git (these would normally be
+ *     ignored).
+ *   [:update_only]
+ *     Only update existing files and don't create new ones.
+ *   [:skip_unmerged (not implemented)]
+ *     Don't check out unmerged files, but continue.
+ *   [:use_ours (not implemented)]
+ *     Accept our version as the resolution of a merge conflict (i.e.
+ *     check out stage 2 from the index).
+ *   [:use_theirs (not implemented)]
+ *     Accept the other's version as the resolution of a merge conflict
+ *     (i.e. check out stage 3 from the index).
+ *   [:update_submodules (not implemented)]
+ *     Recursively check out submodules with the same options.
+ *   [:update_submodules_if_changed (not implemented)]
+ *     Recursively check out submodules if HEAD moved in parent repo.
+ *
+ * [:disable_filters (false)]
+ *   Don't apply filters like CR-LF conversion.
  * [:dir_mode (0755)]
  *   Not documented by libgit2.
  * [:file_mode (0664)]
@@ -965,7 +1135,7 @@ static VALUE rb_git_repo_checkout_head(int argc, VALUE argv[], VALUE self)
  *   # Checkout the branch "yourbranch"
  *   ref = Rugged::Reference.new(repo, "refs/heads/yourbranch")
  *   commit = Rugged::Commit.lookup(repo, ref.target)
- *   repo.checkout_tree(commit, strategy: [:overwrite_modified, :create_missing, :remove_untracked])
+ *   repo.checkout_tree(commit, strategy: [:force])
  *
  *   # Update the HEAD pointer to point to "yourbranch"
  *   head = Rugged::Reference.lookup(repo, "HEAD")
@@ -1196,6 +1366,7 @@ void Init_rugged_repo()
 	rb_define_singleton_method(rb_cRuggedRepo, "hash_file",   rb_git_repo_hashfile,  2);
 	rb_define_singleton_method(rb_cRuggedRepo, "init_at", rb_git_repo_init_at, 2);
 	rb_define_singleton_method(rb_cRuggedRepo, "clone_repo", rb_git_repo_clone, -1); /* Cannot name it ::clone b/c Ruby already has a method with this name */
+	rb_define_singleton_method(rb_cRuggedRepo, "clone_repo_bare", rb_git_repo_clone_bare, 2);
 	rb_define_singleton_method(rb_cRuggedRepo, "discover", rb_git_repo_discover, -1);
 
 	rb_define_method(rb_cRuggedRepo, "exists?", rb_git_repo_exists, 1);
