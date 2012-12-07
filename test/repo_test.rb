@@ -194,6 +194,29 @@ describe Rugged::Repository do
       FileUtils.rm_rf(tmpdir)
     end
   end
+
+  it "calls transfer and checkout callbacks on cloning" do
+    Dir.mktmpdir("clone-target-dir") do |tmpdir|
+      transfer_called = false
+      progress_called = false
+
+      pcb = proc{progress_called = true}
+
+      Rugged::Repository.clone_repo("git://github.com/libgit2/libgit2.git", tmpdir, :strategy => [:safe], :progress_cb => pcb) do
+        transfer_called = true
+      end
+
+      assert(transfer_called, "Didn't call transfer callback")
+      assert(progress_called, "Didn't call progress callback")
+
+      conflict_called = false
+      ccb = proc{conflict_called = true}
+      FileUtils.rm_rf(tmpdir)
+      Rugged::Repository.clone_repo("git://github.com/libgit2/libgit2.git", tmpdir, :strategy => [:default], :conflict_cb => ccb)
+      assert(conflict_called, "Didn't call conflict callback")
+    end
+  end
+
 end
 
 describe "Repository checkouts" do
@@ -249,4 +272,18 @@ describe "Repository checkouts" do
     assert_nil @repo.checkout_head(:strategy => [:remove_untracked])
     assert !File.file?(@path_to_other_file)
   end
+
+  it "calls progress and conflict callbacks" do
+    progress_called = false
+    pcb = proc{progress_called = true}
+    @repo.checkout_tree(@last_new_file_commit, :progress_cb => pcb, :strategy => [:safe])
+    assert(progress_called, "Didn't call progress callback")
+
+    conflict_called = false
+    ccb = proc{conflict_called = true}
+    `cd '#@repo_path' && rm -rf *`
+    @repo.checkout_tree(@last_master_commit, :conflict_cb => ccb, :strategy => [:default])
+    assert(conflict_called, "Didn't call conflict callback")
+  end
+
 end
