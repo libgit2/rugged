@@ -1,7 +1,5 @@
 require 'mkmf'
 
-$CFLAGS += " -g"
-
 def sys(cmd)
   puts " -- #{cmd}"
   unless ret = xsystem(cmd)
