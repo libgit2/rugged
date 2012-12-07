@@ -132,8 +132,11 @@ void rb_git_repo__free(git_repository *repo)
 
 /* Helper function used by the checkout_* methods to parse the argument hash.
  * Takes the hash (ruby_opts) and a git_checkout_opts struct to fill with the results
- * of the parsing process. Be sure to use GIT_CHECKOUT_OPTS_INIT for initialising
- * `p_opts'. */
+ * of the parsing process. `p_progress_cb' and `p_conflict_cb' are pointers to Ruby
+ * values which are used to store the callback procs extracted from `ruby_opts'; note
+ * these pointers are automatically stored in `p_opts', but the VALUEs themself also
+ * have to be stored somewhere, and firing malloc() on this seems just too big.
+ * Be sure to use GIT_CHECKOUT_OPTS_INIT for initialising `p_opts'. */
 static void rb_git__parse_checkout_options(const VALUE* ruby_opts, git_checkout_opts* p_opts, VALUE* p_progress_cb, VALUE* p_conflict_cb)
 {
 	VALUE opts_strategy;
@@ -385,7 +388,7 @@ int rb_git_repo__conflict_callback(const char* conflicting_path, const git_oid* 
 }
 
 /* Callback function passed to libgit2 when you passed a callback
- * to the checkout functions. `payload' is the ruby lamda for the
+ * to the checkout functions. `payload' is the ruby lambda for the
  * callback. */
 void rb_git_repo__progress_callback(const char* path, size_t completed_steps, size_t total_steps, void* payload)
 {
@@ -552,7 +555,8 @@ static VALUE rb_git_repo_clone_bare(VALUE self, VALUE url, VALUE target_path)
  *	If a block is given, it gets passed statistics about the fetching process
  *	(all values are integers).
  *
- *	If no block is given, this method releases the GVL during the clone operation.
+ *	If no callback of any kind is given (i.e. no block is passed, and you don't use the
+ *	:progress_cb and :conflict_cb parameters in +opts+), this method releases the GVL.
  *
  *		Rugged::Repository.clone_repo("git://github.com/libgit2/libgit2.git", "~/libgit2")
  *		Rugged::Repository.clone_repo("git://github.com/libgit2/libgit2.git", "~/libgit2.git", bare: true)
@@ -1013,7 +1017,8 @@ static VALUE rb_git_repo_set_workdir(VALUE self, VALUE rb_workdir)
  * all operations mentioned there, but note that libgit2 itself
  * doesn't implement them all yet.
  *
- * +opts+ is a hash which can take the following values:
+ * +opts+ is a hash which can take the following values (pro tip:
+ * use <tt>:strategy => [:safe]</tt> if you're unsure):
  * [:strategy (<tt>[:default]</tt>)]
  *   Defines how to exactly check out the given +treeish+. This is an
  *   array containing one or more of the following symbols:
