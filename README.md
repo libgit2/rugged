@@ -381,16 +381,7 @@ for the topic), send a pull request.
 
 ## Development
 
-First you need to install libgit2:
-
-    $ git clone https://github.com/libgit2/libgit2.git
-    $ cd libgit2
-    $ mkdir build && cd build
-    $ cmake ..
-    $ make
-    $ make install
-
-Now that those are installed, you can install Rugged:
+Simply clone and install:
 
     $ git clone https://github.com/libgit2/rugged.git
     $ cd rugged
