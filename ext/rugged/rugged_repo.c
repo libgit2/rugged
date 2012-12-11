@@ -323,6 +323,34 @@ static VALUE rb_git_repo_get_config(VALUE self)
 
 /*
  *	call-seq:
+ *		repo.merge_base(oid1, oid2)
+ *
+ *	Find a merge base between two commits.
+ */
+static VALUE rb_git_repo_merge_base(VALUE self, VALUE hex_oid1, VALUE hex_oid2)
+{
+	int error;
+	git_oid oid1, oid2, base;
+	git_repository *repo;
+
+	Data_Get_Struct(self, git_repository, repo);
+
+	Check_Type(hex_oid1, T_STRING);
+	error = git_oid_fromstr(&oid1, StringValueCStr(hex_oid1));
+	rugged_exception_check(error);
+
+	Check_Type(hex_oid2, T_STRING);
+	error = git_oid_fromstr(&oid2, StringValueCStr(hex_oid2));
+	rugged_exception_check(error);
+
+	error = git_merge_base(&base, repo, &oid1, &oid2);
+	rugged_exception_check(error);
+
+	return rugged_create_oid(&base);
+}
+
+/*
+ *	call-seq:
  *		repo.include?(oid) -> true or false
  *		repo.exists?(oid) -> true or false
  *
@@ -829,6 +857,8 @@ void Init_rugged_repo()
 
 	rb_define_method(rb_cRuggedRepo, "head_detached?",  rb_git_repo_head_detached,  0);
 	rb_define_method(rb_cRuggedRepo, "head_orphan?",  rb_git_repo_head_orphan,  0);
+
+        rb_define_method(rb_cRuggedRepo, "merge_base", rb_git_repo_merge_base, 2);
 
 	rb_cRuggedOdbObject = rb_define_class_under(rb_mRugged, "OdbObject", rb_cObject);
 	rb_define_method(rb_cRuggedOdbObject, "data",  rb_git_odbobj_data,  0);
