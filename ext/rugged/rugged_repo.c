@@ -468,6 +468,7 @@ static VALUE rb_git_repo_write(VALUE self, VALUE rb_buffer, VALUE rub_type)
 	git_otype type;
 
 	Data_Get_Struct(self, git_repository, repo);
+	Check_Type(rb_buffer, T_STRING);
 
 	error = git_repository_odb(&odb, repo);
 	rugged_exception_check(error);
