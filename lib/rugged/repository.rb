@@ -172,7 +172,7 @@ module Rugged
     def merge_base(commit1, commit2)
       commit1 = commit1.is_a?(Commit) ? commit1.oid : rev_parse_oid(commit1)
       commit2 = commit2.is_a?(Commit) ? commit2.oid : rev_parse_oid(commit2)
-      merge_base_oid(commit1, commit2)
+      _merge_base(commit1, commit2)
     end
   end
 end
