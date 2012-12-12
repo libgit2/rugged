@@ -858,7 +858,7 @@ void Init_rugged_repo()
 	rb_define_method(rb_cRuggedRepo, "head_detached?",  rb_git_repo_head_detached,  0);
 	rb_define_method(rb_cRuggedRepo, "head_orphan?",  rb_git_repo_head_orphan,  0);
 
-        rb_define_method(rb_cRuggedRepo, "merge_base", rb_git_repo_merge_base, 2);
+        rb_define_method(rb_cRuggedRepo, "merge_base_oid", rb_git_repo_merge_base, 2);
 
 	rb_cRuggedOdbObject = rb_define_class_under(rb_mRugged, "OdbObject", rb_cObject);
 	rb_define_method(rb_cRuggedOdbObject, "data",  rb_git_odbobj_data,  0);
