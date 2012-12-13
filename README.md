@@ -340,6 +340,48 @@ prsn  = entry[:committer]
 
 ---
 
+### Branches
+
+`Rugged::Branch` will help you with all of your branch-related needs.
+
+Iterate over all branches:
+
+```ruby
+Rugged::Branch.each_name(repo).sort
+# => ["master", "origin/HEAD", "origin/master", "origin/packed"]
+
+Rugged::Branch.each_name(repo, :local).sort
+# => ["master"]
+
+Rugged::Branch.each_name(repo, :remote).sort
+# => ["origin/HEAD", "origin/master", "origin/packed"]
+```
+
+Just the tip:
+
+```ruby
+Rugged::Branch.lookup(@repo, "master").tip.oid
+# => "36060c58702ed4c2a40832c51758d5344201d89a"
+```
+
+Looking up branches:
+
+```ruby
+branch = Rugged::Branch.lookup(@repo, "master")
+branch.name # => 'master'
+branch.canonical_name # => 'refs/heads/master'
+```
+
+Creation and deletion:
+
+```ruby
+branch = repo.create_branch("test_branch")
+branch.move("new_branch")
+branch.delete!
+```
+
+---
+
 ### Config files
 
 It's also easy to read and manipulate the Git config file data with Rugged.
