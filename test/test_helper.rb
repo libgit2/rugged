@@ -11,19 +11,6 @@ module Rugged
     TEST_DIR = File.dirname(File.expand_path(__FILE__))
 
     protected
-    def _rm_loose(oid)
-      base_path = File.join(@path, "objects", oid[0, 2])
-
-      file = File.join(base_path, oid[2, 38])
-      dir_contents = File.join(base_path, "*")
-
-      File.delete(file)
-
-      if Dir[dir_contents].empty?
-        Dir.delete(base_path)
-      end
-    end
-
     def with_default_encoding(encoding, &block)
       old_encoding = Encoding.default_internal
 
