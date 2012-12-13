@@ -1,13 +1,10 @@
 require "test_helper"
 require 'net/http'
 
-describe Rugged::Remote do
-  before do
-    @path = File.dirname(__FILE__) + '/fixtures/testrepo.git/'
-    @repo = Rugged::Repository.new(@path)
-  end
+class RemoteTest < Rugged::TestCase
+  include Rugged::RepositoryAccess
 
-  it "is able to connect to the remote" do
+  def test_remote_connect
     begin
       Net::HTTP.new('github.com').head('/')
     rescue SocketError => msg
@@ -23,10 +20,9 @@ describe Rugged::Remote do
     assert !remote.connected?
   end
 
-  it "can list remotes" do
+  def test_list_remotes
     remotes = @repo.remotes
     assert remotes.kind_of? Enumerable
     assert_equal [ "libgit2" ], remotes.to_a
   end
-
 end
