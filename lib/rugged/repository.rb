@@ -162,17 +162,5 @@ module Rugged
       blob = Rugged::Blob.lookup(self, blob_data[:oid])
       (blob.type == :blob) ? blob : nil
     end
-
-    # Get the oid of a merge base for two commits.
-    #
-    # commit1 - A commit, ref, or oid.
-    # commit2 - Another commit, ref, or oid.
-    #
-    # Returns the oid of the base commit.
-    def merge_base(commit1, commit2)
-      commit1 = commit1.is_a?(Commit) ? commit1.oid : rev_parse_oid(commit1)
-      commit2 = commit2.is_a?(Commit) ? commit2.oid : rev_parse_oid(commit2)
-      _merge_base(commit1, commit2)
-    end
   end
 end
