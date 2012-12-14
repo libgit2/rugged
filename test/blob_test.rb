@@ -29,6 +29,6 @@ class BlobWriteTest < Rugged::TestCase
   end
 
   def test_write_blob_data
-    oid = Rugged::Blob.create(@repo, "a new blob content")
+    Rugged::Blob.create(@repo, "a new blob content")
   end
 end

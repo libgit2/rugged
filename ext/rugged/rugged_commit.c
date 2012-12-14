@@ -313,7 +313,7 @@ static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 	Check_Type(rb_parents, T_ARRAY);
 
 	rb_tree = rb_hash_aref(rb_data, CSTR2SYM("tree"));
-	tree = (git_tree *)rugged_object_load(repo, rb_tree, GIT_OBJ_TREE);
+	tree = (git_tree *)rugged_object_get(repo, rb_tree, GIT_OBJ_TREE);
 
 	parents = xmalloc(RARRAY_LEN(rb_parents) * sizeof(void *));
 	free_list = xmalloc(RARRAY_LEN(rb_parents) * sizeof(void *));

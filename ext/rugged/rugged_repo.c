@@ -28,7 +28,6 @@ extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedIndex;
 extern VALUE rb_cRuggedConfig;
 extern VALUE rb_cRuggedBackend;
-extern VALUE rb_cRuggedCommit;
 
 VALUE rb_cRuggedRepo;
 VALUE rb_cRuggedOdbObject;
@@ -322,25 +321,6 @@ static VALUE rb_git_repo_get_config(VALUE self)
 	RB_GIT_REPO_OWNED_GET(rb_cRuggedConfig, config);
 }
 
-void rugged_get_oid(git_oid *oid, git_repository *repo, VALUE p)
-{
-	int error;
-	git_object *object;
-	git_commit *commit;
-
-	if (TYPE(p) == T_STRING) {
-		error = git_revparse_single(&object, repo, StringValueCStr(p));
-		rugged_exception_check(error);
-		git_oid_cpy(oid, git_object_id(object));
-		git_object_free(object);
-	} else if (rb_obj_is_kind_of(p, rb_cRuggedCommit)) {
-		Data_Get_Struct(p, git_commit, commit);
-		git_oid_cpy(oid, git_object_id(commit));
-	} else {
-		rb_raise(rb_eTypeError, "Expecting a commit or oid");
-	}
-}
-
 /*
  *	call-seq:
  *		repo.merge_base(oid1, oid2)
@@ -356,8 +336,8 @@ static VALUE rb_git_repo_merge_base(VALUE self, VALUE obj1, VALUE obj2)
 	git_repository *repo;
 
 	Data_Get_Struct(self, git_repository, repo);
-	rugged_get_oid(&oid1, repo, obj1);
-	rugged_get_oid(&oid2, repo, obj2);
+	rugged_oid_get(&oid1, repo, obj1);
+	rugged_oid_get(&oid2, repo, obj2);
 
 	error = git_merge_base(&base, repo, &oid1, &oid2);
 	rugged_exception_check(error);
