@@ -77,8 +77,8 @@ class ReferenceWriteTest < Rugged::TestCase
       "refs/heads/#{ReferenceTest::UNICODE_REF_NAME}",
       "refs/heads/master")
 
-    refs = @repo.refs.map { |r| r.name.gsub("refs/", '') }.sort.join(':')
-    assert_equal "heads/#{ReferenceTest::UNICODE_REF_NAME}:heads/master:heads/packed:tags/v0.9:tags/v1.0", refs
+    refs = @repo.refs.map { |r| r.name.gsub("refs/", '') }
+    assert refs.include? "heads/#{ReferenceTest::UNICODE_REF_NAME}"
   end
 
   def test_create_symbolic_ref
