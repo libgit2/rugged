@@ -1,12 +1,9 @@
 require "test_helper"
 
-describe Rugged::Commit do
-  before do
-    @path = File.dirname(__FILE__) + '/fixtures/testrepo.git/'
-    @repo = Rugged::Repository.new(@path)
-  end
+class TestCommit < Rugged::TestCase
+  include Rugged::RepositoryAccess
 
-  it "can read the commit data" do
+  def test_read_commit_data
     oid = "8496071c1b46c854b31185ea97743be6a8774479"
     obj = @repo.lookup(oid)
 
@@ -30,7 +27,7 @@ describe Rugged::Commit do
     assert_equal [], obj.parents
   end
 
-  it "can have multiple parents" do
+  def test_commit_with_multiple_parents
     oid = "a4a7dce85cf63874e984719f4fdd239f5145052f"
     obj = @repo.lookup(oid)
     parents = obj.parents.map {|c| c.oid }
@@ -38,7 +35,7 @@ describe Rugged::Commit do
     assert parents.include?("c47800c7266a2be04c571c04d5a6614691ea99bd")
   end
 
-  it "can list parent oids only" do
+  def test_get_parent_oids
     oid = "a4a7dce85cf63874e984719f4fdd239f5145052f"
     obj = @repo.lookup(oid)
     parents = obj.parent_oids
@@ -46,14 +43,18 @@ describe Rugged::Commit do
     assert parents.include?("c47800c7266a2be04c571c04d5a6614691ea99bd")
   end
 
-  it "can read a tree oid only" do
+  def test_get_tree_oid
     oid = "8496071c1b46c854b31185ea97743be6a8774479"
     obj = @repo.lookup(oid)
 
     assert_equal obj.tree_oid, "181037049a54a1eb5fab404658a3a250b44335d7"
   end
+end
 
-  it "can write new commit data" do
+class CommitWriteTest < Rugged::TestCase
+  include Rugged::TempRepositoryAccess
+
+  def test_write_a_commit 
     person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
 
     commit_oid = Rugged::Commit.create(@repo,
@@ -62,8 +63,5 @@ describe Rugged::Commit do
       :author => person,
       :parents => [@repo.head.target],
       :tree => "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
-
-    rm_loose(commit_oid)
   end
-
 end

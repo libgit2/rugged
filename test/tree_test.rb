@@ -1,14 +1,15 @@
 require "test_helper"
 
-describe Rugged::Tree do
-  before do
-    @path = File.dirname(__FILE__) + '/fixtures/testrepo.git/'
-    @repo = Rugged::Repository.new(@path)
+class TreeTest < Rugged::TestCase
+  include Rugged::RepositoryAccess
+
+  def setup
+    super
     @oid = "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b"
     @tree = @repo.lookup(@oid)
   end
 
-  it "can read the tree data" do
+  def test_read_tree_data
     assert_equal @oid, @tree.oid
     assert_equal :tree, @tree.type
     assert_equal 3, @tree.count
@@ -16,7 +17,7 @@ describe Rugged::Tree do
     assert_equal "fa49b077972391ad58037050f2a75f74e3671e92", @tree[1][:oid]
   end
 
-  it "can read the tree entry data" do
+  def test_read_tree_entry_data
     bent = @tree[0]
     tent = @tree[2]
 
@@ -30,7 +31,7 @@ describe Rugged::Tree do
     assert_equal :tree, @repo.lookup(tent[:oid]).type
   end
 
-  it "can iterate over the tree" do
+  def test_tree_iteration
     enum_test = @tree.sort { |a, b| a[:oid] <=> b[:oid] }.map { |e| e[:name] }.join(':')
     assert_equal "README:subdir:new.txt", enum_test
 
@@ -38,23 +39,27 @@ describe Rugged::Tree do
     assert enum.kind_of? Enumerable
   end
 
-  it "can walk the tree, yielding only trees" do
+  def test_tree_walk_only_trees
     @tree.walk_trees {|root, entry| assert_equal :tree, entry[:type]}
   end
 
-  it "can walk the tree, yielding only blobs" do
+  def test_tree_walk_only_blobs
     @tree.walk_blobs {|root, entry| assert_equal :blob, entry[:type]}
   end
 
-  it "can iterate over the subtrees a tree" do
+  def test_iterate_subtrees
     @tree.each_tree {|tree| assert_equal :tree, tree[:type]}
   end
 
-  it "can iterate over the subtrees a tree" do
+  def test_iterate_subtree_blobs
     @tree.each_blob {|tree| assert_equal :blob, tree[:type]}
   end
+end
 
-  it "can write the tree data" do
+class TreeWriteTest < Rugged::TestCase
+  include Rugged::TempRepositoryAccess
+
+  def test_write_tree_data
     entry = {:type => :blob,
              :name => "README.txt",
              :oid  => "1385f264afb75a56a5bec74243be9b367ba4ca08",
@@ -65,8 +70,5 @@ describe Rugged::Tree do
     sha = builder.write(@repo)
     obj = @repo.lookup(sha)
     assert_equal 38, obj.read_raw.len
-
-    rm_loose(sha)
   end
-
 end

@@ -1,21 +1,22 @@
 require "test_helper"
 require 'base64'
 
-describe Rugged::Walker do
-  before do
-    @path = File.dirname(__FILE__) + '/fixtures/testrepo.git/'
-    @repo = Rugged::Repository.new(@path)
+class WalkerTest < Rugged::TestCase
+  include Rugged::RepositoryAccess
+
+  def setup
+    super
     @walker = Rugged::Walker.new(@repo)
   end
 
-  it "can walk a simple revlist" do
+  def test_walk_revlist
     @walker.push("9fd738e8f7967c078dceed8190330fc8648ee56a")
     data = @walker.each.to_a
     oids = data.sort { |a, b| a.oid <=> b.oid }.map {|a| a.oid[0,5]}.join('.')
     assert_equal "4a202.5b5b0.84960.9fd73", oids
   end
 
-  it "can walk a part of a revlist" do
+  def test_walk_partial_revlist
     oid = "8496071c1b46c854b31185ea97743be6a8774479"
     @walker.push(oid)
     walk = @walker.each.to_a
@@ -23,14 +24,14 @@ describe Rugged::Walker do
     assert_equal 1, walk.count
   end
 
-  it "can hide part of a list" do
+  def test_hide_part_of_list
     @walker.push("9fd738e8f7967c078dceed8190330fc8648ee56a")
     @walker.hide("5b5b025afb0b4c913b4c338a42934a3863bf3644")
     assert_equal 2, @walker.each.count
   end
 
   # resetting a walker emtpies the walking queue
-  it "can reset a walker" do
+  def test_resetting_walker
     oid = "8496071c1b46c854b31185ea97743be6a8774479"
     @walker.push(oid)
     walk = @walker.each.to_a
@@ -41,7 +42,7 @@ describe Rugged::Walker do
     assert_equal 0, walk.count
   end
 
-  it "can enumerable" do
+  def test_walk_is_enumberable
     @walker.push("9fd738e8f7967c078dceed8190330fc8648ee56a")
     enum = @walker.sort { |a, b| a.oid <=> b.oid }.map { |a| a.oid[0, 4] }.join('.')
     assert_equal "4a20.5b5b.8496.9fd7", enum
@@ -65,22 +66,22 @@ describe Rugged::Walker do
     end
   end
 
-  it "can sort order by date" do
+  def test_sort_by_date
     time = revlist_with_sorting(Rugged::SORT_DATE)
     assert_equal "a4a7d.c4780.9fd73.4a202.5b5b0.84960", time
   end
 
-  it "can sort order by topo" do
+  def test_sort_by_topo
     sort_list = do_sort(Rugged::SORT_TOPO)
     assert_equal is_toposorted(sort_list), true
   end
 
-  it "can sort order by date reversed" do
+  def test_sort_by_date_reversed
     time = revlist_with_sorting(Rugged::SORT_DATE | Rugged::SORT_REVERSE)
     assert_equal "84960.5b5b0.4a202.9fd73.c4780.a4a7d", time
   end
 
-  it "can sort order by topo reversed" do
+  def test_sort_by_topo_reverse
     sort_list = do_sort(Rugged::SORT_TOPO | Rugged::SORT_REVERSE).reverse
     assert_equal is_toposorted(sort_list), true
   end
