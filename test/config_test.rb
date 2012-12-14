@@ -1,33 +1,30 @@
 require "test_helper"
 
-describe Rugged::Config do
-  before do
-    @path = temp_repo('testrepo.git')
-    @repo = Rugged::Repository.new(@path)
-  end
+class ConfigTest < Rugged::TestCase 
+  include Rugged::RepositoryAccess
 
-  after do
-    destroy_temp_repo(@path)
-  end
-
-  it "can read the config file from repo" do
+  def test_read_config_file
     config = @repo.config
     assert_equal 'false', config['core.bare']
     assert_nil config['not.exist']
   end
 
-  it "can read the config file from path" do
+  def test_read_config_from_path
     config = Rugged::Config.new(File.join(@repo.path, 'config'))
     assert_equal 'false', config['core.bare']
   end
 
-  it "can read the global config file" do
+  def test_read_global_config_file
     config = Rugged::Config.global
     assert config['user.name'] != nil
     assert_nil config['core.bare']
   end
+end
 
-  it "can write config values" do
+class ConfigWriteTest < Rugged::TestCase
+  include Rugged::TempRepositoryAccess
+
+  def test_write_config_values
     config = @repo.config
     config['custom.value'] = 'my value'
 
@@ -38,12 +35,11 @@ describe Rugged::Config do
     assert_match(/value = my value/, content)
   end
 
-  it "can delete config values" do
+  def test_delete_config_values
     config = @repo.config
     config.delete('core.bare')
 
     config2 = @repo.config
     assert_nil config2.get('core.bare')
   end
-
 end
