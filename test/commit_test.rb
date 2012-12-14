@@ -57,7 +57,7 @@ class CommitWriteTest < Rugged::TestCase
   def test_write_a_commit 
     person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
 
-    commit_oid = Rugged::Commit.create(@repo,
+    Rugged::Commit.create(@repo,
       :message => "This is the commit message\n\nThis commit is created from Rugged",
       :committer => person,
       :author => person,

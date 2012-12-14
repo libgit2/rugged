@@ -174,7 +174,7 @@ static VALUE rb_git_tag_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 		Check_Type(rb_name, T_STRING);
 
 		rb_target = rb_hash_aref(rb_data, CSTR2SYM("target"));
-		target = rugged_object_load(repo, rb_target, GIT_OBJ_ANY);
+		target = rugged_object_get(repo, rb_target, GIT_OBJ_ANY);
 
 		rb_force = rb_hash_aref(rb_data, CSTR2SYM("force"));
 		if (!NIL_P(rb_force))

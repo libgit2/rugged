@@ -87,7 +87,7 @@ static VALUE rb_git_branch_create(int argc, VALUE *argv, VALUE self)
 
 	Check_Type(rb_name, T_STRING);
 
-	target = (git_commit *)rugged_object_load(repo, rb_target, GIT_OBJ_COMMIT);
+	target = (git_commit *)rugged_object_get(repo, rb_target, GIT_OBJ_COMMIT);
 
 	if (!NIL_P(rb_force)) {
 		force = rugged_parse_bool(rb_force);
