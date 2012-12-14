@@ -131,21 +131,21 @@ class RepositoryTest < Rugged::TestCase
     assert repo.read('146ae76773c91e3b1d00cf7a338ec55ae58297e2')
   end
 
-  it "can find a merge base between commit oids" do
+  def find_merge_base_between_oids
     commit1 = 'a4a7dce85cf63874e984719f4fdd239f5145052f'
     commit2 = '36060c58702ed4c2a40832c51758d5344201d89a'
     base    = '5b5b025afb0b4c913b4c338a42934a3863bf3644'
     assert_equal base, @repo.merge_base(commit1, commit2)
   end
 
-  it "can find a merge base between commits" do
+  def find_merge_base_between_commits
     commit1 = @repo.lookup('a4a7dce85cf63874e984719f4fdd239f5145052f')
     commit2 = @repo.lookup('36060c58702ed4c2a40832c51758d5344201d89a')
     base    = '5b5b025afb0b4c913b4c338a42934a3863bf3644'
     assert_equal base, @repo.merge_base(commit1, commit2)
   end
 
-  it "can find a merge base between a ref and an oid" do
+  def find_merge_base_between_ref_and_oid
     commit1 = 'a4a7dce85cf63874e984719f4fdd239f5145052f'
     commit2 = "refs/heads/master"
     base    = '5b5b025afb0b4c913b4c338a42934a3863bf3644'

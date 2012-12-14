@@ -73,7 +73,8 @@ VALUE rugged_otype_new(git_otype t);
 git_otype rugged_otype_get(VALUE rb_type);
 
 git_signature *rugged_signature_get(VALUE rb_person);
-git_object *rugged_object_load(git_repository *repo, VALUE object_value, git_otype type);
+git_object *rugged_object_get(git_repository *repo, VALUE object_value, git_otype type);
+void rugged_oid_get(git_oid *oid, git_repository *repo, VALUE p);
 
 static inline void rugged_set_owner(VALUE object, VALUE owner)
 {
