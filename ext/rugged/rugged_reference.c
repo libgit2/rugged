@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2011 GitHub, Inc
+ * Copyright (c) 2012 GitHub, Inc
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -524,7 +524,7 @@ static VALUE rb_git_reflog_write(int argc, VALUE *argv, VALUE self)
 
 	git_signature *committer;
 	const char *message = NULL;
-	
+
 	git_oid oid;
 
 	RUGGED_UNPACK_REFERENCE(self, ref);
