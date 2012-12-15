@@ -72,4 +72,37 @@ class NoteWriteTest < Rugged::TestCase
     assert_equal note[:oid], note_oid
     assert_equal note[:message], message
   end
+
+  def test_remove_note
+    oid = "36060c58702ed4c2a40832c51758d5344201d89a"
+    person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
+    message ="This is the note message\n\nThis note is created from Rugged"
+    obj = @repo.lookup(oid)
+
+    obj.create_notes(
+      :message => message,
+      :committer => person,
+      :author => person,
+      :ref => 'refs/notes/test'
+    )
+
+    assert obj.remove_notes(
+      :committer => person,
+      :author => person,
+      :ref => 'refs/notes/test'
+    )
+
+    assert_nil obj.notes('refs/notes/test')
+  end
+
+  def test_remove_missing_note
+    person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
+    oid = "36060c58702ed4c2a40832c51758d5344201d89a"
+    obj = @repo.lookup(oid)
+    refute obj.remove_notes(
+      :committer => person,
+      :author => person,
+      :ref => 'refs/notes/test'
+    )
+  end
 end
