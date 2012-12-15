@@ -108,6 +108,87 @@ static VALUE rb_git_note_lookup(int argc, VALUE *argv, VALUE self)
 	return rb_note_hash;
 }
 
+/*
+ *	call-seq:
+ *		obj.create_notes(data = {}) -> oid
+ *
+ *	Write a new +note+ to +object+, with the given +data+
+ *	arguments, passed as a +Hash+:
+ *
+ *	- +:message+: the content of the note to add to the object
+ *	- +:committer+: a hash with the signature for the committer
+ *	- +:author+: a hash with the signature for the author
+ *	- +:ref+: (optional): cannonical name of the reference to use, defaults to "refs/notes/commits"
+ *
+ *	When the note is successfully written to disk, its +oid+ will be
+ *	returned as a hex +String+.
+ *
+ *		author = {:email=>"tanoku@gmail.com", :time=>Time.now, :name=>"Vicent Mart\303\255"}
+ *
+ *		obj.create_notes(
+ *			:author    => author,
+ *			:committer => author,
+ *			:message   => "Hello world\n\n",
+ *			:ref       => 'refs/notes/builds'
+ *			)
+ */
+static VALUE rb_git_note_create(VALUE self, VALUE rb_data)
+{
+	VALUE rb_ref, rb_message;
+	git_repository *repo = NULL;
+	const char *notes_ref = NULL;
+
+	VALUE owner;
+
+	git_signature *author, *committer;
+	git_oid note_oid;
+
+	git_object *target = NULL;
+	int error = 0;
+
+	Check_Type(rb_data, T_HASH);
+
+	Data_Get_Struct(self, git_object, target);
+
+	owner = rugged_owner(self);
+	Data_Get_Struct(owner, git_repository, repo);
+
+	rb_ref = rb_hash_aref(rb_data, CSTR2SYM("ref"));
+
+	if (!NIL_P(rb_ref)) {
+		Check_Type(rb_ref, T_STRING);
+		notes_ref = StringValueCStr(rb_ref);
+	}
+
+	rb_message = rb_hash_aref(rb_data, CSTR2SYM("message"));
+	Check_Type(rb_message, T_STRING);
+
+	committer = rugged_signature_get(
+		rb_hash_aref(rb_data, CSTR2SYM("committer"))
+	);
+
+	author = rugged_signature_get(
+		rb_hash_aref(rb_data, CSTR2SYM("author"))
+	);
+
+	error = git_note_create(
+			&note_oid,
+			repo,
+			author,
+			committer,
+			notes_ref,
+			git_object_id(target),
+			StringValueCStr(rb_message));
+
+
+	git_signature_free(author);
+	git_signature_free(committer);
+
+	rugged_exception_check(error);
+
+	return rugged_create_oid(&note_oid);
+}
+
 static int cb_note__each(const git_oid *blob_id, const git_oid *annotated_object_id, void *payload)
 {
 	VALUE rb_repo = (VALUE)payload;
@@ -177,5 +258,7 @@ static VALUE rb_git_note_each(int argc, VALUE *argv, VALUE self)
 void Init_rugged_notes()
 {
 	rb_define_method(rb_cRuggedObject, "notes", rb_git_note_lookup, -1);
+	rb_define_method(rb_cRuggedObject, "create_notes", rb_git_note_create, 1);
+
 	rb_define_method(rb_cRuggedRepo, "each_note", rb_git_note_each, -1);
 }

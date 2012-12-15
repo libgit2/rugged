@@ -43,3 +43,33 @@ class NoteTest < Rugged::TestCase
     assert enum.kind_of? Enumerable
   end
 end
+
+class NoteWriteTest < Rugged::TestCase
+  include Rugged::TempRepositoryAccess
+
+  def test_create_note
+    person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
+
+    oid = "8496071c1b46c854b31185ea97743be6a8774479"
+    message ="This is the note message\n\nThis note is created from Rugged"
+    obj = @repo.lookup(oid)
+
+    note_oid = obj.create_notes(
+      :message => message,
+      :committer => person,
+      :author => person,
+      :ref => 'refs/notes/test'
+    )
+
+    assert_equal '38c3a690c474d8dcdb13088205a464a60312eec4', note_oid
+    # note is actually a blob
+    blob = @repo.lookup(note_oid)
+    assert_equal blob.oid, note_oid
+    assert_equal blob.content, message
+    assert_equal blob.type, :blob
+
+    note = obj.notes('refs/notes/test')
+    assert_equal note[:oid], note_oid
+    assert_equal note[:message], message
+  end
+end
