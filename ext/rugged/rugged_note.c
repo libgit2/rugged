@@ -108,7 +108,74 @@ static VALUE rb_git_note_lookup(int argc, VALUE *argv, VALUE self)
 	return rb_note_hash;
 }
 
+static int cb_note__each(const git_oid *blob_id, const git_oid *annotated_object_id, void *payload)
+{
+	VALUE rb_repo = (VALUE)payload;
+
+	git_object *annotated_object;
+	git_object *note_blob;
+
+	git_repository *repo;
+
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	rugged_exception_check(
+		git_object_lookup(&annotated_object, repo, annotated_object_id, GIT_OBJ_ANY)
+	);
+
+	rugged_exception_check(
+		git_object_lookup(&note_blob, repo, blob_id, GIT_OBJ_BLOB)
+	);
+
+	rb_yield_values(2,
+			rugged_object_new(rb_repo, note_blob),
+			rugged_object_new(rb_repo, annotated_object)
+	);
+	return GIT_OK;
+}
+
+/*
+ *	call-seq:
+ *		repo.each_note(notes_ref = "refs/notes/commits") { |note_blob, annotated_object| block }
+ *		repo.each_note(notes_ref = "refs/notes/commits") -> an_enumerator
+ *
+ *	Call the given block once for each note_blob/annotated_object pair in +repository+
+ *	- +notes_ref+: (optional): cannonical name of the reference to use defaults to "refs/notes/commits"
+ *
+ *	If no block is given, an +Enumerator+ is returned.
+ *
+ *		@repo.each_note do |note_blob, annotated_object|
+ *			puts "#{note_blob.oid} => #{annotated_object.oid}"
+ *		end
+ */
+static VALUE rb_git_note_each(int argc, VALUE *argv, VALUE self)
+{
+	git_repository *repo;
+	const char *notes_ref = NULL;
+	int error;
+
+	VALUE rb_notes_ref;
+
+	rb_scan_args(argc, argv, "01", &rb_notes_ref);
+
+	if (!rb_block_given_p()) {
+		return rb_funcall(self, rb_intern("to_enum"), 3, CSTR2SYM("each_note"), self, rb_notes_ref);
+	}
+
+	if (!NIL_P(rb_notes_ref)) {
+		Check_Type(rb_notes_ref, T_STRING);
+		notes_ref = StringValueCStr(rb_notes_ref);
+	}
+
+	Data_Get_Struct(self, git_repository, repo);
+
+	error = git_note_foreach(repo, notes_ref, &cb_note__each, (void *)self);
+	rugged_exception_check(error);
+	return Qnil;
+}
+
 void Init_rugged_notes()
 {
 	rb_define_method(rb_cRuggedObject, "notes", rb_git_note_lookup, -1);
+	rb_define_method(rb_cRuggedRepo, "each_note", rb_git_note_each, -1);
 }

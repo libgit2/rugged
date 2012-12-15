@@ -30,4 +30,16 @@ class NoteTest < Rugged::TestCase
     obj = @repo.lookup(oid)
     assert_nil obj.notes('refs/notes/missing')
   end
+
+  def test_iterate_over_notes
+    @repo.each_note('refs/notes/commits') do |note_blob, annotated_object|
+      assert_equal "note text\n", note_blob.content
+      assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", annotated_object.oid
+    end
+  end
+
+  def test_each_note_enumerable
+    enum = @repo.each_note('refs/notes/commits')
+    assert enum.kind_of? Enumerable
+  end
 end
