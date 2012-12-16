@@ -330,6 +330,30 @@ static VALUE rb_git_note_each(int argc, VALUE *argv, VALUE self)
 	return Qnil;
 }
 
+/*
+ *	call-seq:
+ *		repo.notes_default_ref() -> string
+ *
+ *	Get the default notes reference for a +repository+:
+ *
+ *	Returns a new String object.
+ *
+ *		repo.default_notes_ref #=> "refs/notes/commits"
+ */
+static VALUE rb_git_note_default_ref_GET(VALUE self)
+{
+	git_repository *repo = NULL;
+	const char * ref_name;
+
+	Data_Get_Struct(self, git_repository, repo);
+
+	rugged_exception_check(
+		git_note_default_ref(&ref_name, repo)
+	);
+
+	return rugged_str_new2(ref_name, NULL);
+}
+
 void Init_rugged_notes()
 {
 	rb_define_method(rb_cRuggedObject, "notes", rb_git_note_lookup, -1);
@@ -337,4 +361,5 @@ void Init_rugged_notes()
 	rb_define_method(rb_cRuggedObject, "remove_notes", rb_git_note_remove, 1);
 
 	rb_define_method(rb_cRuggedRepo, "each_note", rb_git_note_each, -1);
+	rb_define_method(rb_cRuggedRepo, "default_notes_ref", rb_git_note_default_ref_GET, 0);
 }

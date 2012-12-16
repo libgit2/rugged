@@ -42,6 +42,10 @@ class NoteTest < Rugged::TestCase
     enum = @repo.each_note('refs/notes/commits')
     assert enum.kind_of? Enumerable
   end
+
+  def test_default_ref
+    assert_equal 'refs/notes/commits', @repo.default_notes_ref
+  end
 end
 
 class NoteWriteTest < Rugged::TestCase
