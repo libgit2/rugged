@@ -6,7 +6,7 @@ class ErrorsTest < Rugged::TestCase
     error_classes = [
       Rugged::NoMemError,
       Rugged::OSError,
-	    Rugged::InvalidError,
+      Rugged::InvalidError,
       Rugged::Error,
       Rugged::ReferenceError,
       Rugged::ZlibError,
@@ -31,5 +31,4 @@ class ErrorsTest < Rugged::TestCase
     end
   end
 end
-
 
