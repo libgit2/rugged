@@ -27,7 +27,7 @@ class ErrorsTest < Rugged::TestCase
     # which descends from Exception
     error_classes.each do |klass|
       err = klass.new
-      assert err.is_a?(StandardError) || err.is_a?(Exception)
+      assert err.is_a?(Exception)
     end
   end
 end
