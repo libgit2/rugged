@@ -33,7 +33,7 @@ class RuggedTest < Rugged::TestCase
 
   def test_hex_to_raw_with_invalid_character_raises_invalid_error
     assert_raises Rugged::InvalidError do
-      Rugged::hex_to_raw("\x16\xA0\x124VWATx\x9A\xBC\xDE\xF4") # invalid characters
+      Rugged::hex_to_raw("\x16\xA0\x124VWATx\x9A\xBC\xDE\xF4") # invalid bytes
     end
   end
 
