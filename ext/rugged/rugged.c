@@ -36,7 +36,7 @@ const char *RUGGED_ERROR_NAMES[] = {
 	"OdbError", /* GITERR_ODB, */
 	"IndexError", /* GITERR_INDEX, */
 	"ObjectError", /* GITERR_OBJECT, */
-	"NetworkError" /* GITERR_NET, */
+	"NetworkError", /* GITERR_NET, */
 	"TagError", /* GITERR_TAG, */
 	"TreeError", /* GITERR_TREE, */
 	"IndexerError", /* GITERR_INDEXER, */
