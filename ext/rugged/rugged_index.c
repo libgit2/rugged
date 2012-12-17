@@ -29,7 +29,6 @@ VALUE rb_cRuggedIndex;
 
 static void rb_git_indexentry_toC(git_index_entry *entry, VALUE rb_entry);
 static VALUE rb_git_indexentry_fromC(const git_index_entry *entry);
-static VALUE rb_git_reuc_fromC(const git_index_reuc_entry *entry);
 
 /*
  * Index
@@ -111,8 +110,6 @@ static VALUE rb_git_index_get(int argc, VALUE *argv, VALUE self)
 {
 	git_index *index;
 	const git_index_entry *entry = NULL;
-
-	int error;
 
 	VALUE rb_entry, rb_stage;
 

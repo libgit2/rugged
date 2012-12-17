@@ -524,8 +524,6 @@ static VALUE rb_git_reflog_write(int argc, VALUE *argv, VALUE self)
 
 	git_signature *committer;
 	const char *message = NULL;
-	
-	git_oid oid;
 
 	RUGGED_UNPACK_REFERENCE(self, ref);
 
