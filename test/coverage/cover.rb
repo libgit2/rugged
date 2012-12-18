@@ -63,13 +63,7 @@ File.open("#{CWD}/HEAD.json") do |f|
   method_list = json_data['groups']
 end
 
-# Don't look for the methods in IGNORED_METHODS. The first
-# element in each of the method_list elements is the git group 
-# name, e.g., 'attr' (which we don't care about). So get the 
-# second element, which we do care about, which are the actual 
-# methods in an array, e.g., ["git_attr_add_macro", 
-#                             "git_attr_cache_flush",
-#                             "git_attr_foreach"]
+# Don't look for the methods in IGNORED_METHODS. 
 look_for = [] 
 method_list.each do |_, methods|
   methods.reject! { |m| IGNORED_METHODS.include? m }
@@ -93,15 +87,14 @@ source_files.each do |file|
   end
 end
 
-# Keep a count of missing
+# Keep a count of missing and total
 total_missing = 0
 total_methods = 0
 
-# Now we do care about the libgit2 groups, so we nicely
-# print the results. We'll work through each group.
+# Print the results for each group
 method_list.each do |group, group_methods|
 
-  # What did we miss? Reject anything we found to find out.
+  # What are for we missing for this group?
   group_miss = group_methods.reject {|m| found.include? m}
   print "\n#{group} [#{group_methods.size - group_miss.size}/#{group_methods.size}]: "
 
@@ -109,7 +102,7 @@ method_list.each do |group, group_methods|
   total_missing += group_miss.size
   total_methods += group_methods.size
 
-  # Unit test style print out. A dot is a match, an 'M' is a miss.
+  # Unit test style printout. A dot is a match, an 'M' is a miss.
   group_methods.each do |m|
     print found.include?(m) ? "." : "M"
   end
