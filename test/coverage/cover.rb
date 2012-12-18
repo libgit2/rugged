@@ -3,7 +3,7 @@ require 'set'
 
 CWD = File.expand_path(File.dirname(__FILE__))
 
-IGNORE_METHOD = %w(
+IGNORED_METHODS = %w(
   git_blob_free
   git_blob_lookup
   git_blob_lookup_prefix
@@ -54,21 +54,34 @@ IGNORE_METHOD = %w(
   git_reflog_rename
 )
 
-source_files = Dir.glob("#{CWD}/../../ext/rugged/*.{c,h}")
-method_list = nil
-look_for = []
-found = Set.new
 
+method_list = nil
+
+# The list of methods in libgit2 that we want coverage for
 File.open("#{CWD}/HEAD.json") do |f|
   json_data = JSON.parse(f.read())
   method_list = json_data['groups']
 end
 
+# Don't look for the methods in IGNORED_METHODS. The first
+# element in each of the method_list elements is the git group 
+# name, e.g., 'attr' (which we don't care about). So get the 
+# second element, which we do care about, which are the actual 
+# methods in an array, e.g., ["git_attr_add_macro", 
+#                             "git_attr_cache_flush",
+#                             "git_attr_foreach"]
+look_for = [] 
 method_list.each do |_, methods|
-  methods.reject! { |m| IGNORE_METHOD.include? m }
+  methods.reject! { |m| IGNORED_METHODS.include? m }
   look_for += methods
 end
 
+# Look at the .c and .h files in the rugged directory
+source_files = Dir.glob("#{CWD}/../../ext/rugged/*.{c,h}")
+
+# If any of the files contain the string representation 
+# of a libgit2 method, add it to our set of found methods
+found = Set.new 
 source_files.each do |file|
   File.open(file) do |f|
     contents = f.read()
@@ -80,27 +93,35 @@ source_files.each do |file|
   end
 end
 
+# Keep a count of missing
 total_missing = 0
 total_methods = 0
 
-method_list.each do |group, gr_methods|
-  gr_miss = gr_methods.reject {|m| found.include? m}
-  print "#{group} [#{gr_methods.size - gr_miss.size}/#{gr_methods.size}]: "
+# Now we do care about the libgit2 groups, so we nicely
+# print the results. We'll work through each group.
+method_list.each do |group, group_methods|
 
-  total_missing += gr_miss.size
-  total_methods += gr_methods.size
+  # What did we miss? Reject anything we found to find out.
+  group_miss = group_methods.reject {|m| found.include? m}
+  print "\n#{group} [#{group_methods.size - group_miss.size}/#{group_methods.size}]: "
 
-  gr_methods.each do |m|
+  # Add the numbers to our grand total running count
+  total_missing += group_miss.size
+  total_methods += group_methods.size
+
+  # Unit test style print out. A dot is a match, an 'M' is a miss.
+  group_methods.each do |m|
     print found.include?(m) ? "." : "M"
   end
 
   print "\n"
 
-  if not gr_miss.empty?
-    print "    Missing: #{gr_miss.join(', ')}\n"
+  # Print out what is missing
+  if not group_miss.empty?
+    puts "  > missing: " + "#{group_miss.join(", ")}\n"
   end
-
-  print "\n"
 end
 
-puts "TOTAL: [#{total_methods - total_missing}/#{total_methods}] wrapped. (#{100.0 * (total_methods - total_missing)/total_methods}%)"
+# The grand tally
+percent = (100.0 * (total_methods - total_missing) / total_methods).round
+puts "\nTOTAL: [#{total_methods - total_missing}/#{total_methods}] wrapped. (#{percent}% coverage)"
