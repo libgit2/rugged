@@ -124,4 +124,5 @@ end
 
 # The grand tally
 percent = (100.0 * (total_methods - total_missing) / total_methods).round
+puts "\n" + "=" * 60
 puts "\nTOTAL: [#{total_methods - total_missing}/#{total_methods}] wrapped. (#{percent}% coverage)"
