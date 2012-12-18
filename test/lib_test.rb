@@ -43,6 +43,17 @@ class RuggedTest < Rugged::TestCase
     end
   end
 
+  def test_minimize_oid_with_no_block
+    oids = [
+ 		  'd8786bfc974aaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+ 		  'd8786bfc974bbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+ 		  'd8786bfc974ccccccccccccccccccccccccccccc',
+ 	    '68d041ee999cb07c6496fbdd4f384095de6ca9e1',
+ 		]
+
+    assert_equal Rugged::minimize_oid(oids), 12
+  end
+
   def test_prettify_commit_messages
     message = <<-MESSAGE
 Testing this whole prettify business    
