@@ -61,7 +61,7 @@ class RuggedTest < Rugged::TestCase
 
   def test_minimize_oid_with_block
     minimized_oids = []
-    Rugged.minimize_oid(@@oids) { |oid| minimized_oids << oid }
+    Rugged::minimize_oid(@@oids) { |oid| minimized_oids << oid }
     expected_oids = [
       "d8786bfc974a",
       "d8786bfc974b",
