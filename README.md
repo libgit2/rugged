@@ -288,7 +288,7 @@ index.add(path)
 
 ### Refs
 
-The `RefList` class allows you to list, create and delete packed and loose refs.
+The `Rugged::Reference` class allows you to list, create and delete packed and loose refs.
 
 ```ruby
 ref = repo.head # or...
@@ -357,19 +357,19 @@ Rugged::Branch.each_name(repo, :remote).sort
 # => ["origin/HEAD", "origin/master", "origin/packed"]
 ```
 
-Just the tip:
-
-```ruby
-Rugged::Branch.lookup(@repo, "master").tip.oid
-# => "36060c58702ed4c2a40832c51758d5344201d89a"
-```
-
-Looking up branches:
+Look up branches and get attributes:
 
 ```ruby
 branch = Rugged::Branch.lookup(@repo, "master")
 branch.name # => 'master'
 branch.canonical_name # => 'refs/heads/master'
+```
+
+Look up the oid for the tip of a branch:
+
+```ruby
+Rugged::Branch.lookup(@repo, "master").tip.oid
+# => "36060c58702ed4c2a40832c51758d5344201d89a"
 ```
 
 Creation and deletion:
