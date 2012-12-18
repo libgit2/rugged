@@ -72,6 +72,13 @@ class RuggedTest < Rugged::TestCase
     assert_equal minimized_oids, expected_oids
   end
 
+  def test_rugged_lib_constants
+    assert_equal 0, Rugged::SORT_NONE
+    assert_equal 1, Rugged::SORT_TOPO
+    assert_equal 2, Rugged::SORT_DATE
+    assert_equal 4, Rugged::SORT_REVERSE
+  end
+
   def test_prettify_commit_messages
     message = <<-MESSAGE
 Testing this whole prettify business    
