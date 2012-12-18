@@ -2,6 +2,14 @@ require "test_helper"
 require 'base64'
 
 class RuggedTest < Rugged::TestCase
+
+  @@oids = [
+    'd8786bfc974aaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    'd8786bfc974bbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+    'd8786bfc974ccccccccccccccccccccccccccccc',
+    '68d041ee999cb07c6496fbdd4f384095de6ca9e1'
+  ]
+
   def test_hex_to_raw_oid
     raw = Rugged::hex_to_raw("ce08fe4884650f067bd5703b6a59a8b3b3c99a09")
     b64raw = Base64.encode64(raw).strip
@@ -44,14 +52,25 @@ class RuggedTest < Rugged::TestCase
   end
 
   def test_minimize_oid_with_no_block
-    oids = [
- 		  'd8786bfc974aaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
- 		  'd8786bfc974bbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
- 		  'd8786bfc974ccccccccccccccccccccccccccccc',
- 	    '68d041ee999cb07c6496fbdd4f384095de6ca9e1',
- 		]
+    assert_equal Rugged::minimize_oid(@@oids), 12
+  end
 
-    assert_equal Rugged::minimize_oid(oids), 12
+  def test_minimize_oid_with_min_length
+    assert_equal Rugged::minimize_oid(@@oids, 20), 20
+  end
+
+  def test_minimize_oid_with_block
+    minimized_oids = []
+    Rugged.minimize_oid(@@oids) { |oid| minimized_oids << oid }
+
+    expected_oids = [
+      "d8786bfc974a",
+    	"d8786bfc974b",
+  		"d8786bfc974c",
+ 		  "68d041ee999c"
+    ]
+
+    assert_equal minimized_oids, expected_oids
   end
 
   def test_prettify_commit_messages
