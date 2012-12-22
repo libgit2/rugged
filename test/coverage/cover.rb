@@ -54,7 +54,6 @@ IGNORED_METHODS = %w(
   git_reflog_rename
 )
 
-
 method_list = nil
 
 # The list of methods in libgit2 that we want coverage for
@@ -63,8 +62,8 @@ File.open("#{CWD}/HEAD.json") do |f|
   method_list = json_data['groups']
 end
 
-# Don't look for the methods in IGNORED_METHODS. 
-look_for = [] 
+# Don't look for the methods in IGNORED_METHODS.
+look_for = []
 method_list.each do |_, methods|
   methods.reject! { |m| IGNORED_METHODS.include? m }
   look_for += methods
@@ -73,9 +72,9 @@ end
 # Look at the .c and .h files in the rugged directory
 source_files = Dir.glob("#{CWD}/../../ext/rugged/*.{c,h}")
 
-# If any of the files contain the string representation 
+# If any of the files contain the string representation
 # of a libgit2 method, add it to our set of found methods
-found = Set.new 
+found = Set.new
 source_files.each do |file|
   File.open(file) do |f|
     contents = f.read()
@@ -111,7 +110,7 @@ method_list.each do |group, group_methods|
 
   # Print out what is missing
   if not group_miss.empty?
-    puts "  > missing: " + "#{group_miss.join(", ")}\n"
+    puts "  > missing: " + "#{group_miss.join(", ")}"
   end
 end
 
