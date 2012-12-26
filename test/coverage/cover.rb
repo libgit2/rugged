@@ -21,7 +21,6 @@ IGNORED_METHODS = %w(
   git_diff_patch_free
   git_index_entry_stage
   git_indexer_stream_free
-  imaxdiv
   git_note_free
   git_object__size
   git_odb_add_alternate
@@ -38,9 +37,12 @@ IGNORED_METHODS = %w(
   git_oid_ncmp
   git_oid_pathfmt
   git_oid_streq
-  git_oid_to_string
+  git_oid_tostr
   git_packbuilder_free
   git_reference_owner
+  git_reference_listall
+  git_reflog_delete
+  git_reflog_rename
   git_repository_odb
   git_repository_set_odb
   git_signature_dup
@@ -54,9 +56,7 @@ IGNORED_METHODS = %w(
   git_tree_id
   git_tree_lookup
   git_tree_lookup_prefix
-  git_reference_listall
-  git_reflog_delete
-  git_reflog_rename
+  imaxdiv
 )
 
 method_list = nil
