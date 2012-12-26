@@ -1,7 +1,7 @@
 # Rugged
 **libgit2 bindings in Ruby**
 
-Rugged is a library for accessing libgit2 in Ruby. It gives you the speed and
+Rugged is a library for accessing [libgit2](https://github.com/libgit2/libgit2) in Ruby. It gives you the speed and
 portability of libgit2 with the beauty of the Ruby language.
 
 ### libgit2
