@@ -19,6 +19,7 @@ IGNORED_METHODS = %w(
   git_config_find_system
   git_index_entry_stage
   imaxdiv
+  git_note_free
   git_object__size
   git_odb_add_alternate
   git_odb_add_backend
