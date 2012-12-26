@@ -18,6 +18,7 @@ IGNORED_METHODS = %w(
   git_config_find_global
   git_config_find_system
   git_diff_list_free
+  git_diff_patch_free
   git_index_entry_stage
   git_indexer_stream_free
   imaxdiv
