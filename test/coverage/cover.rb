@@ -17,7 +17,9 @@ IGNORED_METHODS = %w(
   git_config_file__ondisk
   git_config_find_global
   git_config_find_system
+  git_diff_list_free
   git_index_entry_stage
+  git_indexer_stream_free
   imaxdiv
   git_note_free
   git_object__size
@@ -36,6 +38,7 @@ IGNORED_METHODS = %w(
   git_oid_pathfmt
   git_oid_streq
   git_oid_to_string
+  git_packbuilder_free
   git_reference_owner
   git_repository_odb
   git_repository_set_odb
