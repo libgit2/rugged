@@ -37,7 +37,7 @@ IGNORED_METHODS = %w(
   git_oid_ncmp
   git_oid_pathfmt
   git_oid_streq
-  git_oid_to_string
+  git_oid_tostr
   git_packbuilder_free
   git_reference_owner
   git_reference_listall
