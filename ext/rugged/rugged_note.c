@@ -110,7 +110,7 @@ static VALUE rb_git_note_lookup(int argc, VALUE *argv, VALUE self)
 
 /*
  *	call-seq:
- *		obj.create_notes(data = {}) -> oid
+ *		obj.create_note(data = {}) -> oid
  *
  *	Write a new +note+ to +object+, with the given +data+
  *	arguments, passed as a +Hash+:
@@ -125,7 +125,7 @@ static VALUE rb_git_note_lookup(int argc, VALUE *argv, VALUE self)
  *
  *		author = {:email=>"tanoku@gmail.com", :time=>Time.now, :name=>"Vicent Mart\303\255"}
  *
- *		obj.create_notes(
+ *		obj.create_note(
  *			:author    => author,
  *			:committer => author,
  *			:message   => "Hello world\n\n",
@@ -191,7 +191,7 @@ static VALUE rb_git_note_create(VALUE self, VALUE rb_data)
 
 /*
  *	call-seq:
- *		obj.remove_notes(data = {}) -> boolean
+ *		obj.remove_note(data = {}) -> boolean
  *
  *	Removes a +note+ from +object+, with the given +data+
  *	arguments, passed as a +Hash+:
@@ -205,7 +205,7 @@ static VALUE rb_git_note_create(VALUE self, VALUE rb_data)
  *
  *		author = {:email=>"tanoku@gmail.com", :time=>Time.now, :name=>"Vicent Mart\303\255"}
  *
- *		obj.remove_notes(
+ *		obj.remove_note(
  *			:author    => author,
  *			:committer => author,
  *			:ref       => 'refs/notes/builds'
@@ -357,8 +357,8 @@ static VALUE rb_git_note_default_ref_GET(VALUE self)
 void Init_rugged_notes()
 {
 	rb_define_method(rb_cRuggedObject, "notes", rb_git_note_lookup, -1);
-	rb_define_method(rb_cRuggedObject, "create_notes", rb_git_note_create, 1);
-	rb_define_method(rb_cRuggedObject, "remove_notes", rb_git_note_remove, 1);
+	rb_define_method(rb_cRuggedObject, "create_note", rb_git_note_create, 1);
+	rb_define_method(rb_cRuggedObject, "remove_note", rb_git_note_remove, 1);
 
 	rb_define_method(rb_cRuggedRepo, "each_note", rb_git_note_each, -1);
 	rb_define_method(rb_cRuggedRepo, "default_notes_ref", rb_git_note_default_ref_GET, 0);

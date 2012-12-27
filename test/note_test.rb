@@ -58,7 +58,7 @@ class NoteWriteTest < Rugged::TestCase
     message ="This is the note message\n\nThis note is created from Rugged"
     obj = @repo.lookup(oid)
 
-    note_oid = obj.create_notes(
+    note_oid = obj.create_note(
       :message => message,
       :committer => person,
       :author => person,
@@ -83,14 +83,14 @@ class NoteWriteTest < Rugged::TestCase
     message ="This is the note message\n\nThis note is created from Rugged"
     obj = @repo.lookup(oid)
 
-    obj.create_notes(
+    obj.create_note(
       :message => message,
       :committer => person,
       :author => person,
       :ref => 'refs/notes/test'
     )
 
-    assert obj.remove_notes(
+    assert obj.remove_note(
       :committer => person,
       :author => person,
       :ref => 'refs/notes/test'
@@ -103,7 +103,7 @@ class NoteWriteTest < Rugged::TestCase
     person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
     oid = "36060c58702ed4c2a40832c51758d5344201d89a"
     obj = @repo.lookup(oid)
-    refute obj.remove_notes(
+    refute obj.remove_note(
       :committer => person,
       :author => person,
       :ref => 'refs/notes/test'
