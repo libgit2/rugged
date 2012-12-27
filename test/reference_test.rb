@@ -8,7 +8,7 @@ class ReferenceTest < Rugged::TestCase
 
   def test_list_references
     refs = @repo.refs.map { |r| r.name.gsub("refs/", '') }.sort.join(':')
-    assert_equal "heads/master:heads/packed:tags/v0.9:tags/v1.0", refs
+    assert_equal "heads/master:heads/packed:notes/commits:tags/v0.9:tags/v1.0", refs
   end
 
   def test_can_filter_refs_with_regex

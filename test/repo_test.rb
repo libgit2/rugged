@@ -85,7 +85,7 @@ class RepositoryTest < Rugged::TestCase
   def test_return_all_ref_names
     refs = @repo.ref_names
     refs.each {|name| assert name.kind_of?(String)}
-    assert_equal 4, refs.count
+    assert_equal 5, refs.count
   end
 
   def test_return_all_tags
@@ -121,13 +121,13 @@ class RepositoryTest < Rugged::TestCase
   end
 
   def test_enumerate_all_objects
-    assert_equal 30, @repo.each_id.to_a.length
+    assert_equal 33, @repo.each_id.to_a.length
   end
 
   def test_loading_alternates
     alt_path = File.dirname(__FILE__) + '/fixtures/alternate/objects'
     repo = Rugged::Repository.new(@path, :alternates => [alt_path])
-    assert_equal 33, repo.each_id.to_a.length
+    assert_equal 36, repo.each_id.to_a.length
     assert repo.read('146ae76773c91e3b1d00cf7a338ec55ae58297e2')
   end
 
