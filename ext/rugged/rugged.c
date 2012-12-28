@@ -278,6 +278,7 @@ void Init_rugged()
 	Init_rugged_branch();
 	Init_rugged_config();
 	Init_rugged_remote();
+	Init_rugged_notes();
 
 	/* Constants */
 	rb_define_const(rb_mRugged, "SORT_NONE", INT2FIX(0));
