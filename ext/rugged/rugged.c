@@ -93,11 +93,11 @@ static VALUE rb_git_capabilities(VALUE self)
 
 	int caps = git_libgit2_capabilities();
 
-	if (caps & GIT_CAP_HTTPS)
-		rb_ary_push(ret_arr, CSTR2SYM("https"));
-
 	if (caps & GIT_CAP_THREADS)
 		rb_ary_push(ret_arr, CSTR2SYM("threads"));
+
+	if (caps & GIT_CAP_HTTPS)
+		rb_ary_push(ret_arr, CSTR2SYM("https"));
 
 	return ret_arr;
 }
