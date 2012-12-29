@@ -95,13 +95,14 @@ static VALUE rb_git_capabilities(VALUE self)
 
 	int caps = git_libgit2_capabilities();
 
-	https = rugged_str_ascii("https", 5);
-	threads = rugged_str_ascii("threads", 7);
+	https = rugged_str_ascii("https", strlen("https"));
+	threads = rugged_str_ascii("threads", strlen("threads"));
 
 	switch(caps)
 	{
 		case 0:
-			break;
+			rb_ary_push(ret_arr, threads);
+      break;
 		case 1:
 			rb_ary_push(ret_arr, threads);
 			break;
