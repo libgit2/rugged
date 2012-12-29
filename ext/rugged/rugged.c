@@ -99,8 +99,6 @@ static VALUE rb_git_capabilities(VALUE self)
 	if (caps & GIT_CAP_THREADS)
 		rb_ary_push(ret_arr, CSTR2SYM("threads"));
 
-  rb_ary_push(ret_arr, CSTR2SYM("threads"));
-
 	return ret_arr;
 }
 
