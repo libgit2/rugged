@@ -107,7 +107,7 @@ static VALUE rb_git_hex_to_raw(VALUE self, VALUE hex)
  */
 static VALUE rb_git_raw_to_hex(VALUE self, VALUE raw)
 {
-  git_oid oid;
+	git_oid oid;
 	char out[40];
 
 	Check_Type(raw, T_STRING);
