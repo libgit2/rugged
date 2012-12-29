@@ -80,41 +80,26 @@ static VALUE rb_git_libgit2_version(VALUE self)
  *	Returns an array representing the 'capabilities' that libgit2 was compiled
  *	with — this includes GIT_CAP_THREADS (thread support) and GIT_CAP_HTTPS (https).
  *	This is implemented in libgit2 with simple bitwise ops; we offer Rubyland an array
- *	of strings representing the capabilities.
+ *	of symbols representing the capabilities.
  *
  *	The possible capabilities are "threads" and "https".
  *
  *	Rugged.capabilities
- *		#=> ["threads", "https"]
+ *		#=> [:threads, :https]
  */
 static VALUE rb_git_capabilities(VALUE self)
 {
 	VALUE ret_arr = rb_ary_new();
-	VALUE threads;
-	VALUE https;
 
 	int caps = git_libgit2_capabilities();
 
-	https = rugged_str_ascii("https", strlen("https"));
-	threads = rugged_str_ascii("threads", strlen("threads"));
+	if (caps & GIT_CAP_HTTPS)
+		rb_ary_push(ret_arr, CSTR2SYM("https"));
 
-	switch(caps)
-	{
-		case 0:
-			break;
-		case 1:
-			rb_ary_push(ret_arr, threads);
-			break;
-		case 2:
-			rb_ary_push(ret_arr, https);
-			break;
-		case 3:
-			rb_ary_push(ret_arr, threads);
-			rb_ary_push(ret_arr, https);
-			break;
-		default:
-			rb_raise(rb_eRuggedError, "Invalid capabilities data from libgit2");
-	}
+	if (caps & GIT_CAP_THREADS)
+		rb_ary_push(ret_arr, CSTR2SYM("threads"));
+
+  rb_ary_push(ret_arr, CSTR2SYM("threads"));
 
 	return ret_arr;
 }
