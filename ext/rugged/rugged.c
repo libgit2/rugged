@@ -101,7 +101,6 @@ static VALUE rb_git_capabilities(VALUE self)
 	switch(caps)
 	{
 		case 0:
-			rb_ary_push(ret_arr, threads);
 			break;
 		case 1:
 			rb_ary_push(ret_arr, threads);
