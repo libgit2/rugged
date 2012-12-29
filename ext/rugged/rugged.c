@@ -52,6 +52,31 @@ static VALUE rb_mShutdownHook;
 
 /*
  *	call-seq:
+ * 		Rugged.libgit2_version -> version
+ *
+ *	Returns an array representing the current libgit2 version in use. Using
+ *	the array makes it easier for the end-user to take conditional actions
+ *	based on each respective version attribute: major, minor, rev.
+ *
+ *	Rugged.libgit2_version
+ *		#=> [0, 17, 0]
+ */
+static VALUE rb_git_libgit2_version(VALUE self)
+{
+	int major;
+	int minor;
+	int rev;
+	VALUE ret_arr;
+
+	git_libgit2_version(&major, &minor, &rev);
+
+	// We return an array of three elements to represent the version components
+	ret_arr = rb_ary_new3(3, INT2NUM(major), INT2NUM(minor), INT2NUM(rev)); 
+	return ret_arr;
+}
+
+/*
+ *	call-seq:
  *		Rugged.hex_to_raw(oid) -> raw_buffer
  *
  *	Turn a string of 40 hexadecimal characters into the buffer of
@@ -82,7 +107,7 @@ static VALUE rb_git_hex_to_raw(VALUE self, VALUE hex)
  */
 static VALUE rb_git_raw_to_hex(VALUE self, VALUE raw)
 {
-	git_oid oid;
+  git_oid oid;
 	char out[40];
 
 	Check_Type(raw, T_STRING);
@@ -260,6 +285,7 @@ void Init_rugged()
 		}
 	}
 
+  rb_define_module_function(rb_mRugged, "libgit2_version", rb_git_libgit2_version, 0);
 	rb_define_module_function(rb_mRugged, "hex_to_raw", rb_git_hex_to_raw, 1);
 	rb_define_module_function(rb_mRugged, "raw_to_hex", rb_git_raw_to_hex, 1);
 	rb_define_module_function(rb_mRugged, "minimize_oid", rb_git_minimize_oid, -1);
