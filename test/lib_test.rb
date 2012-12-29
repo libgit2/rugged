@@ -18,6 +18,11 @@ class RuggedTest < Rugged::TestCase
     end
   end
 
+  def test_capabilities
+    capabilities = Rugged.capabilities
+    assert capabilities.is_a? Array
+  end
+
   def test_hex_to_raw_oid
     raw = Rugged::hex_to_raw("ce08fe4884650f067bd5703b6a59a8b3b3c99a09")
     b64raw = Base64.encode64(raw).strip
