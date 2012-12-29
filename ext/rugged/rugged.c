@@ -102,7 +102,7 @@ static VALUE rb_git_capabilities(VALUE self)
 	{
 		case 0:
 			rb_ary_push(ret_arr, threads);
-      break;
+			break;
 		case 1:
 			rb_ary_push(ret_arr, threads);
 			break;
