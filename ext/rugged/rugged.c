@@ -75,6 +75,35 @@ static VALUE rb_git_libgit2_version(VALUE self)
 
 /*
  *	call-seq:
+ * 		Rugged.capabilities-> capabilities
+ *
+ *	Returns an array representing the 'capabilities' that libgit2 was compiled
+ *	with — this includes GIT_CAP_THREADS (thread support) and GIT_CAP_HTTPS (https).
+ *	This is implemented in libgit2 with simple bitwise ops; we offer Rubyland an array
+ *	of symbols representing the capabilities.
+ *
+ *	The possible capabilities are "threads" and "https".
+ *
+ *	Rugged.capabilities
+ *		#=> [:threads, :https]
+ */
+static VALUE rb_git_capabilities(VALUE self)
+{
+	VALUE ret_arr = rb_ary_new();
+
+	int caps = git_libgit2_capabilities();
+
+	if (caps & GIT_CAP_THREADS)
+		rb_ary_push(ret_arr, CSTR2SYM("threads"));
+
+	if (caps & GIT_CAP_HTTPS)
+		rb_ary_push(ret_arr, CSTR2SYM("https"));
+
+	return ret_arr;
+}
+
+/*
+ *	call-seq:
  *		Rugged.hex_to_raw(oid) -> raw_buffer
  *
  *	Turn a string of 40 hexadecimal characters into the buffer of
@@ -283,7 +312,8 @@ void Init_rugged()
 		}
 	}
 
-  rb_define_module_function(rb_mRugged, "libgit2_version", rb_git_libgit2_version, 0);
+	rb_define_module_function(rb_mRugged, "libgit2_version", rb_git_libgit2_version, 0);
+	rb_define_module_function(rb_mRugged, "capabilities", rb_git_capabilities, 0);  
 	rb_define_module_function(rb_mRugged, "hex_to_raw", rb_git_hex_to_raw, 1);
 	rb_define_module_function(rb_mRugged, "raw_to_hex", rb_git_raw_to_hex, 1);
 	rb_define_module_function(rb_mRugged, "minimize_oid", rb_git_minimize_oid, -1);
