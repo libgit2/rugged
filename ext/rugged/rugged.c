@@ -66,13 +66,11 @@ static VALUE rb_git_libgit2_version(VALUE self)
 	int major;
 	int minor;
 	int rev;
-	VALUE ret_arr;
 
 	git_libgit2_version(&major, &minor, &rev);
 
 	// We return an array of three elements to represent the version components
-	ret_arr = rb_ary_new3(3, INT2NUM(major), INT2NUM(minor), INT2NUM(rev)); 
-	return ret_arr;
+	return rb_ary_new3(3, INT2NUM(major), INT2NUM(minor), INT2NUM(rev)); 
 }
 
 /*
