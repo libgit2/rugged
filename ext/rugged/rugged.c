@@ -113,7 +113,7 @@ static VALUE rb_git_capabilities(VALUE self)
 			rb_ary_push(ret_arr, https);
 			break;
 		default:
-			rb_raise(rb_eRuggedError, "Invalid capabilities bitmask");
+			rb_raise(rb_eRuggedError, "Invalid capabilities data from libgit2");
 	}
 
 	return ret_arr;
