@@ -120,6 +120,33 @@ static VALUE rb_git_tree_get_entry(VALUE self, VALUE entry_id)
 
 /*
  *	call-seq:
+ *		tree.get_entry_by_oid(rb_oid) -> entry
+ *
+ *	Return one of the entries from a tree as a +Hash+, based off the oid SHA.
+ *	
+ *	If the entry doesn't exist, +nil+ will be returned.
+ *
+ *	This does a full traversal of the every element in the tree, so this method
+ *	is not especially fast.
+ *
+ *		tree.get_entry_by_oid("d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f") 
+ *		#=> {:name => "foo.txt", :type => :blob, :oid => "d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f", :filemode => 0}
+ *
+ */
+static VALUE rb_git_tree_get_entry_by_oid(VALUE self, VALUE rb_oid)
+{
+	git_tree *tree;
+	git_oid oid;
+	Data_Get_Struct(self, git_tree, tree);
+
+	Check_Type(rb_oid, T_STRING);
+	rugged_exception_check(git_oid_fromstr(&oid, StringValueCStr(rb_oid)));
+
+	return rb_git_treeentry_fromC(git_tree_entry_byoid(tree, &oid));
+}
+
+/*
+ *	call-seq:
  *		tree.each { |entry| block }
  *		tree.each -> Iterator
  *
@@ -374,6 +401,7 @@ void Init_rugged_tree()
 	rb_define_method(rb_cRuggedTree, "count", rb_git_tree_entrycount, 0);
 	rb_define_method(rb_cRuggedTree, "length", rb_git_tree_entrycount, 0);
 	rb_define_method(rb_cRuggedTree, "get_entry", rb_git_tree_get_entry, 1);
+	rb_define_method(rb_cRuggedTree, "get_entry_by_oid", rb_git_tree_get_entry_by_oid, 1);
 	rb_define_method(rb_cRuggedTree, "path", rb_git_tree_path, 1);
 	rb_define_method(rb_cRuggedTree, "[]", rb_git_tree_get_entry, 1);
 	rb_define_method(rb_cRuggedTree, "each", rb_git_tree_each, 0);

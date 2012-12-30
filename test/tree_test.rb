@@ -31,6 +31,18 @@ class TreeTest < Rugged::TestCase
     assert_equal :tree, @repo.lookup(tent[:oid]).type
   end
 
+  def test_get_entry_by_oid
+    bent = @tree.get_entry_by_oid("1385f264afb75a56a5bec74243be9b367ba4ca08")
+    assert_equal "README", bent[:name]
+    assert_equal :blob, bent[:type]
+  end
+
+  def test_get_entry_by_oid_throws_error_if_wrong_type
+    assert_raises TypeError do
+      @tree.get_entry_by_oid(:not_a_string)
+    end
+  end
+
   def test_tree_iteration
     enum_test = @tree.sort { |a, b| a[:oid] <=> b[:oid] }.map { |e| e[:name] }.join(':')
     assert_equal "README:subdir:new.txt", enum_test
