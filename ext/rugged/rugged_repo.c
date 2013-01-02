@@ -824,6 +824,63 @@ static VALUE rb_git_repo_each_id(VALUE self)
 	return Qnil;
 }
 
+static int parse_reset_type(VALUE rb_reset_type)
+{
+	ID id_reset_type;
+
+	Check_Type(rb_reset_type, T_SYMBOL);
+	id_reset_type = SYM2ID(rb_reset_type);
+
+	if (id_reset_type == rb_intern("soft")) {
+		return GIT_RESET_SOFT;
+	} else if (id_reset_type == rb_intern("mixed")) {
+		return GIT_RESET_MIXED;
+	} else if (id_reset_type == rb_intern("hard")) {
+		return GIT_RESET_HARD;
+	} else {
+		rb_raise(rb_eArgError,
+			"Invalid reset type. Expected `:soft`, `:mixed` or `:hard`");
+	}
+}
+
+/*
+ *	call-seq:
+ *		repo.reset(target, reset_type) -> nil
+ *
+ *	Sets the current head to the specified commit oid and optionally
+ *	resets the index and working tree to match.
+ *	- +target+: Rugged::Commit, Rugged::Tag or rev that resolves to a commit or tag object
+ *	- +reset_type+: :soft, :mixed: or :hard
+ *	[:soft] the head will be moved to the commit.
+ * 	[:mixed] will trigger a +:soft+ reset, plus the index will be replaced
+ * 		 with the content of the commit tree.
+ * 	[:hard] will trigger a +:mixed+ reset and the working directory will be
+ * 		replaced with the content of the index. (Untracked and ignored files
+ * 		will be left alone)
+ *
+ * 	Examples:
+ * 		repo.reset('origin/master', :hard) #=> nil
+ */
+static VALUE rb_git_repo_reset(VALUE self, VALUE rb_target, VALUE rb_reset_type)
+{
+	git_repository *repo;
+	int reset_type;
+	git_object *target = NULL;
+	int error;
+
+	Data_Get_Struct(self, git_repository, repo);
+
+	reset_type = parse_reset_type(rb_reset_type);
+	target = rugged_object_get(repo, rb_target, GIT_OBJ_ANY);
+
+	error = git_reset(repo, target, reset_type);
+
+	git_object_free(target);
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
 void Init_rugged_repo()
 {
 	rb_cRuggedRepo = rb_define_class_under(rb_mRugged, "Repository", rb_cObject);
@@ -859,6 +916,7 @@ void Init_rugged_repo()
 	rb_define_method(rb_cRuggedRepo, "head_orphan?",  rb_git_repo_head_orphan,  0);
 
 	rb_define_method(rb_cRuggedRepo, "merge_base", rb_git_repo_merge_base, 2);
+	rb_define_method(rb_cRuggedRepo, "reset", rb_git_repo_reset, 2);
 
 	rb_cRuggedOdbObject = rb_define_class_under(rb_mRugged, "OdbObject", rb_cObject);
 	rb_define_method(rb_cRuggedOdbObject, "data",  rb_git_odbobj_data,  0);
