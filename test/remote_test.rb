@@ -26,25 +26,29 @@ class RemoteTest < Rugged::TestCase
     assert_equal [ "libgit2" ], remotes.to_a
   end
 
-  def test_remote_name
+  def test_remote_new_name
     remote = Rugged::Remote.new(@repo, 'git://github.com/libgit2/libgit2.git')
     assert_nil remote.name
     assert_equal 'git://github.com/libgit2/libgit2.git', remote.url
   end
 
-  def test_remote_name_lookup
-    remote = Rugged::Remote.new(@repo, 'libgit2')
+  def test_remote_new_invalid_url
+    assert_nil Rugged::Remote.new(@repo, 'libgit2')
+  end
+
+  def test_remote_lookup
+    remote = Rugged::Remote.lookup(@repo, 'libgit2')
     assert_equal 'git://github.com/libgit2/libgit2.git', remote.url
     assert_equal 'libgit2', remote.name
   end
 
-  def test_missing_remote_name_lookup
-    assert_nil Rugged::Remote.new(@repo, 'missing_remote')
+  def test_remote_lookup_missing
+    assert_nil Rugged::Remote.lookup(@repo, 'missing_remote')
   end
 
-  def test_invalid_remote_name_lookup
+  def test_remote_lookup_invalid
     assert_raises Rugged::ConfigError do
-      Rugged::Remote.new(@repo, "*\?")
+      Rugged::Remote.lookup(@repo, "*\?")
     end
   end
 
