@@ -77,6 +77,52 @@ class NoteWriteTest < Rugged::TestCase
     assert_equal note[:message], message
   end
 
+  def test_create_note_on_object_with_notes_raises
+    person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
+    oid = "8496071c1b46c854b31185ea97743be6a8774479"
+    message ="This is the note message\n\nThis note is created from Rugged"
+    obj = @repo.lookup(oid)
+    obj.create_note(
+      :message => message,
+      :committer => person,
+      :author => person,
+      :ref => 'refs/notes/test'
+    )
+
+    assert_raises Rugged::RepositoryError do
+      obj.create_note(
+        :message => message,
+        :committer => person,
+        :author => person,
+        :ref => 'refs/notes/test'
+      )
+    end
+  end
+
+  def test_overwrite_object_note
+    person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
+    oid = "8496071c1b46c854b31185ea97743be6a8774479"
+    message ="This is the note message\n\nThis note is created from Rugged"
+    obj = @repo.lookup(oid)
+    obj.create_note(
+      :message => message,
+      :committer => person,
+      :author => person,
+      :ref => 'refs/notes/test'
+    )
+
+    obj.create_note(
+      :message => 'new message',
+      :committer => person,
+      :author => person,
+      :ref => 'refs/notes/test',
+      :force => true
+    )
+
+    note = obj.notes('refs/notes/test')
+    assert_equal note[:message], 'new message'
+  end
+
   def test_remove_note
     oid = "36060c58702ed4c2a40832c51758d5344201d89a"
     person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
