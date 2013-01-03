@@ -119,6 +119,7 @@ static VALUE rb_git_note_lookup(int argc, VALUE *argv, VALUE self)
  *	- +:committer+: a hash with the signature for the committer
  *	- +:author+: a hash with the signature for the author
  *	- +:ref+: (optional): cannonical name of the reference to use, defaults to "refs/notes/commits"
+ *	- +:force+: (optional): overwrite existing note (disabled by default)
  *
  *	When the note is successfully written to disk, its +oid+ will be
  *	returned as a hex +String+.
@@ -134,7 +135,7 @@ static VALUE rb_git_note_lookup(int argc, VALUE *argv, VALUE self)
  */
 static VALUE rb_git_note_create(VALUE self, VALUE rb_data)
 {
-	VALUE rb_ref, rb_message;
+	VALUE rb_ref, rb_message, rb_force;
 	git_repository *repo = NULL;
 	const char *notes_ref = NULL;
 
@@ -145,6 +146,7 @@ static VALUE rb_git_note_create(VALUE self, VALUE rb_data)
 
 	git_object *target = NULL;
 	int error = 0;
+	int force = 0;
 
 	Check_Type(rb_data, T_HASH);
 
@@ -154,6 +156,10 @@ static VALUE rb_git_note_create(VALUE self, VALUE rb_data)
 	Data_Get_Struct(owner, git_repository, repo);
 
 	rb_ref = rb_hash_aref(rb_data, CSTR2SYM("ref"));
+
+	rb_force = rb_hash_aref(rb_data, CSTR2SYM("force"));
+	if (!NIL_P(rb_force))
+		force = rugged_parse_bool(rb_force);
 
 	if (!NIL_P(rb_ref)) {
 		Check_Type(rb_ref, T_STRING);
@@ -179,7 +185,7 @@ static VALUE rb_git_note_create(VALUE self, VALUE rb_data)
 			notes_ref,
 			git_object_id(target),
 			StringValueCStr(rb_message),
-			0);
+			force);
 
 
 	git_signature_free(author);
