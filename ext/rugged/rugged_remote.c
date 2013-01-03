@@ -33,37 +33,34 @@ static void rb_git_remote__free(git_remote *remote)
 	git_remote_free(remote);
 }
 
-static VALUE rb_git_remote__new(int argc, VALUE *argv, VALUE klass)
+static VALUE rb_git_remote__new(VALUE klass, VALUE rb_repo, VALUE rb_url_or_name)
 {
-	VALUE rb_remote, rb_repo, rb_url, rb_name;
+	VALUE rb_remote;
 	git_remote *remote;
 	git_repository *repo;
-	const char *url;
+	const char *url_or_name;
 	int error;
 
-	rb_scan_args(argc, argv, "21", &rb_repo, &rb_url, &rb_name);
-
-	Check_Type(rb_url, T_STRING);
+	Check_Type(rb_url_or_name, T_STRING);
 	rugged_check_repo(rb_repo);
 
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
-	url = StringValueCStr(rb_url);
+	url_or_name = StringValueCStr(rb_url_or_name);
 
-	if (git_remote_valid_url(url)) {
-		if (!NIL_P(rb_name))
-			Check_Type(rb_name, T_STRING);
-
-		error = git_remote_new(
+	if (git_remote_valid_url(url_or_name)) {
+		error = git_remote_create_inmemory(
 			&remote,
 			repo,
-			NIL_P(rb_name) ? NULL : StringValueCStr(rb_name),
-			StringValueCStr(rb_url),
-			NULL
+			NULL,
+			StringValueCStr(rb_url_or_name)
 		);
 	} else {
-		error = git_remote_load(&remote, repo, url);
+		error = git_remote_load(&remote, repo, url_or_name);
 	}
+
+	if (error == GIT_ENOTFOUND)
+		return Qnil;
 
 	rugged_exception_check(error);
 
@@ -145,9 +142,15 @@ static VALUE rb_git_remote_ls(VALUE self)
 static VALUE rb_git_remote_name(VALUE self)
 {
 	git_remote *remote;
+	const char * name;
 	Data_Get_Struct(self, git_remote, remote);
 
-	return rugged_str_new2(git_remote_name(remote), NULL);
+	name = git_remote_name(remote);
+
+	if (name)
+		return rugged_str_new2(name, NULL);
+	else
+		return Qnil;
 }
 
 static VALUE rb_git_remote_url(VALUE self)
@@ -222,7 +225,7 @@ void Init_rugged_remote()
 {
 	rb_cRuggedRemote = rb_define_class_under(rb_mRugged, "Remote", rb_cObject);
 
-	rb_define_singleton_method(rb_cRuggedRemote, "new", rb_git_remote__new, -1);
+	rb_define_singleton_method(rb_cRuggedRemote, "new", rb_git_remote__new, 2);
 	rb_define_singleton_method(rb_cRuggedRemote, "each", rb_git_remote_each, 1);
 
 	rb_define_method(rb_cRuggedRemote, "connect", rb_git_remote_connect, 1);
