@@ -33,7 +33,9 @@ class RemoteTest < Rugged::TestCase
   end
 
   def test_remote_new_invalid_url
-    assert_nil Rugged::Remote.new(@repo, 'libgit2')
+    assert_raises ArgumentError do
+      Rugged::Remote.new(@repo, 'libgit2')
+    end
   end
 
   def test_remote_lookup

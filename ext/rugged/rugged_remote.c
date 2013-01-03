@@ -42,13 +42,12 @@ VALUE rugged_remote_new(VALUE klass, VALUE owner, git_remote *remote)
 
 /*
  *  	call-seq:
- *   		Remote.new(repository, url) -> remote or nil
+ *   		Remote.new(repository, url) -> remote
  *
  *   	Return a new remote from +url+ in +repository+ , the remote is not persisted:
  *	- +url+: a valid remote url
  *
- *	Returns a new <tt>Rugged::Remote</tt> object or +nil+ if the
- *	+url+ is invalid.
+ *	Returns a new <tt>Rugged::Remote</tt> object
  *
  *		Rugged::Remote.new(@repo, 'git://github.com/libgit2/libgit2.git') #=> #<Rugged::Remote:0x00000001fbfa80>
  */
@@ -73,7 +72,7 @@ static VALUE rb_git_remote_new(VALUE klass, VALUE rb_repo, VALUE rb_url)
 				NULL,
 				url);
 	} else {
-		return Qnil;
+		rb_raise(rb_eArgError, "Invalid URL format");
 	}
 
 	rugged_exception_check(error);
