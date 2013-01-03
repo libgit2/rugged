@@ -178,7 +178,8 @@ static VALUE rb_git_note_create(VALUE self, VALUE rb_data)
 			committer,
 			notes_ref,
 			git_object_id(target),
-			StringValueCStr(rb_message));
+			StringValueCStr(rb_message),
+			0);
 
 
 	git_signature_free(author);
