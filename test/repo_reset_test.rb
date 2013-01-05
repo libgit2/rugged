@@ -4,12 +4,6 @@ class RepositoryResetTest < Rugged::TestCase
   def repo_file_path; File.join('subdir', 'README') end
   def file_path;      File.join(@path, 'subdir', 'README') end
 
-  def test_reset_with_tree_oid
-    assert_raises Rugged::ObjectError do
-      @repo.reset('688a8f4ef7496901d15322972f96e212a9e466cc', :soft)
-    end
-  end
-
   def test_reset_with_rugged_tag
     tag = @repo.lookup('0c37a5391bbff43c37f0d0371823a5509eed5b1d')
     @repo.reset(tag, :soft)
@@ -54,12 +48,5 @@ class RepositoryResetTest < Rugged::TestCase
     new_content = File.open(file_path) { |f| f.read }
 
     refute_equal original_content, new_content
-  end
-
-  def test_reset_hard_removes_fs_entries
-    @repo.reset('5b5b025afb0b4c913b4c338a42934a3863bf3644', :hard)
-    assert_raises Rugged::InvalidError do
-      assert_equal @repo.status('subdir'), [:worktree_new]
-    end
   end
 end
