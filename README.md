@@ -114,7 +114,24 @@ sha = repo.write(content, type)
 ```
 
 You can also use the `Commit` object directly to craft a commit; this is a bit
-more high-level, so it may be preferable.
+more high-level, so it may be preferable:
+
+```ruby
+oid = rugged.write("This is a blob.", :blob)
+index = Rugged::Index.new
+index.add(:path => "README.md", :oid => oid, :mode => 0100644)
+
+options = {}
+options[:tree] = index.write_tree(rugged)
+
+options[:author] = { :email => "testuser@github.com", :name => 'Test Author', :time => Time.now }
+options[:committer] = { :email => "testuser@github.com", :name => 'Test Author', :time => Time.now }
+options[:message] ||= "Making a commit via Rugged!"
+options[:parents] = rugged.empty? ? [] : [ rugged.head.target ].compact
+options[:update_ref] = 'HEAD'
+
+Rugged::Commit.create(rugged, options)
+```
 
 ---
 
@@ -217,14 +234,20 @@ tree.each_blob { |entry| puts entry[:name] }  # list only files
 You can also write trees with the `TreeBuilder`:
 
 ```ruby
-entry = {:type => :blob,
-         :name => "README.txt",
-         :oid  => "1385f264afb75a56a5bec74243be9b367ba4ca08",
-         :filemode => 33188}
-
+oid = rugged.write("This is a blob.", :blob)
 builder = Rugged::Tree::Builder.new
-builder << entry
-sha = builder.write(repo)
+builder << { :type => :blob, :name => "README.md", :oid => oid, :filemode => 0100644 }
+
+options = {}
+options[:tree] = builder.write(rugged)
+
+options[:author] = { :email => "testuser@github.com", :name => 'Test Author', :time => Time.now }
+options[:committer] = { :email => "testuser@github.com", :name => 'Test Author', :time => Time.now }
+options[:message] ||= "Making a commit via Rugged!"
+options[:parents] = rugged.empty? ? [] : [ rugged.head.target ].compact
+options[:update_ref] = 'HEAD'
+
+Rugged::Commit.create(rugged, options)
 ```
 
 ---
