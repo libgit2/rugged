@@ -43,6 +43,7 @@ VALUE rugged_signature_new(const git_signature *sig, const char *encoding_name)
 	rb_hash_aset(rb_sig, CSTR2SYM("name"), rugged_str_new2(sig->name, encoding));
 	rb_hash_aset(rb_sig, CSTR2SYM("email"), rugged_str_new2(sig->email, encoding));
 	rb_hash_aset(rb_sig, CSTR2SYM("time"), rb_time);
+	rb_hash_aset(rb_sig, CSTR2SYM("time_offset"), INT2FIX(sig->when.offset * 60));
 
 	return rb_sig;
 }
