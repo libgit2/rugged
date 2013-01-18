@@ -200,7 +200,7 @@ static VALUE rb_git_index_add(VALUE self, VALUE rb_entry)
 	}
 
 	else if (TYPE(rb_entry) == T_STRING) {
-		error = git_index_add_from_workdir(index, StringValueCStr(rb_entry));
+		error = git_index_add_bypath(index, StringValueCStr(rb_entry));
 	}
 
 	else {
