@@ -22,6 +22,8 @@ class RuggedTest < Rugged::TestCase
     Rugged::Settings['mwindow_size'] = 8 * 1024 * 1024
     Rugged::Settings['mwindow_mapped_limit'] = 8 * 1024 * 1024
 
+    assert_equal 8 * 1024 * 1024, Rugged::Settings['mwindow_size']
+
     assert_raises(TypeError) { Rugged::Settings['mwindow_mapped_limit'] = 'asdf' }
     assert_raises(TypeError) { Rugged::Settings['mwindow_size'] = nil }
   end
