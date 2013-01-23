@@ -18,6 +18,14 @@ class RuggedTest < Rugged::TestCase
     end
   end
 
+  def test_options
+    Rugged::Settings['mwindow_size'] = 8 * 1024 * 1024
+    Rugged::Settings['mwindow_mapped_limit'] = 8 * 1024 * 1024
+
+    assert_raises(TypeError) { Rugged::Settings['mwindow_mapped_limit'] = 'asdf' }
+    assert_raises(TypeError) { Rugged::Settings['mwindow_size'] = nil }
+  end
+
   def test_capabilities
     capabilities = Rugged.capabilities
     assert capabilities.is_a? Array
