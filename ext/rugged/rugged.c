@@ -150,7 +150,7 @@ static VALUE rb_git_raw_to_hex(VALUE self, VALUE raw)
 
 /*
  *	call-seq:
- *		Rugged.rb_git_set_options(option, value)
+ *		Rugged.rb_git_set_option(option, value)
  *
  *	Sets a libgit2 library option
  *
