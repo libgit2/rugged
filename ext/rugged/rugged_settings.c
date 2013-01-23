@@ -24,6 +24,15 @@
 
 #include "rugged.h"
 
+#if !defined(NUM2SIZET)
+#  if SIZEOF_SIZE_T == SIZEOF_LONG
+#    define NUM2SIZET(n) ((size_t)NUM2ULONG(n))
+#  else
+#    define NUM2SIZET(n) ((size_t)NUM2ULL(n))
+#  endif
+#endif /* ! defined(NUM2SIZET) */
+
+
 extern VALUE rb_mRugged;
 VALUE rb_cRuggedSettings;
 
