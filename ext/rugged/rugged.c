@@ -150,39 +150,6 @@ static VALUE rb_git_raw_to_hex(VALUE self, VALUE raw)
 
 /*
  *	call-seq:
- *		Rugged.rb_git_set_option(option, value)
- *
- *	Sets a libgit2 library option
- *
- */
-static VALUE rb_git_set_option(VALUE self, VALUE option, VALUE value)
-{
-	char *opt;
-
-	Check_Type(option, T_STRING);
-	opt = RSTRING_PTR(option);
-
-	if (strcmp(opt, "mwindow_size") == 0) {
-		size_t val;
-		Check_Type(value, T_FIXNUM);
-		val = NUM2SIZET(value);
-
-		git_libgit2_opts(GIT_OPT_MWINDOW_SIZE, val);
-	} else if (strcmp(opt, "mwindow_mapped_limit") == 0) {
-		size_t val;
-		Check_Type(value, T_FIXNUM);
-		val = NUM2SIZET(value);
-
-		git_libgit2_opts(GIT_OPT_MWINDOW_MAPPED_LIMIT, val);
-	} else {
-		rb_raise(rb_eArgError, "Unknown option specified");
-	}
-
-	return Qnil;
-}
-
-/*
- *	call-seq:
  *		Rugged.prettify_message(message, strip_comments) -> clean_message
  *
  *	Process a commit or tag message into standard form, by stripping trailing spaces and
@@ -351,7 +318,6 @@ void Init_rugged()
 	rb_define_module_function(rb_mRugged, "raw_to_hex", rb_git_raw_to_hex, 1);
 	rb_define_module_function(rb_mRugged, "minimize_oid", rb_git_minimize_oid, -1);
 	rb_define_module_function(rb_mRugged, "prettify_message", rb_git_prettify_message, 2);
-	rb_define_module_function(rb_mRugged, "set_option", rb_git_set_option, 2);
 
 	Init_rugged_object();
 	Init_rugged_commit();
@@ -367,6 +333,7 @@ void Init_rugged()
 	Init_rugged_config();
 	Init_rugged_remote();
 	Init_rugged_notes();
+	Init_rugged_settings();
 
 	/* Constants */
 	rb_define_const(rb_mRugged, "SORT_NONE", INT2FIX(0));
