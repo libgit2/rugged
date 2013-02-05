@@ -54,7 +54,7 @@ end
 class CommitWriteTest < Rugged::TestCase
   include Rugged::TempRepositoryAccess
 
-  def test_write_a_commit 
+  def test_write_a_commit
     person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
 
     Rugged::Commit.create(@repo,
@@ -63,5 +63,19 @@ class CommitWriteTest < Rugged::TestCase
       :author => person,
       :parents => [@repo.head.target],
       :tree => "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
+  end
+
+  def test_write_commit_with_time_offset
+    person = {:name => 'Jake', :email => 'jake@github.com', :time => Time.now, :time_offset => 3600}
+
+    oid = Rugged::Commit.create(@repo,
+      :message => "This is the commit message\n\nThis commit is created from Rugged",
+      :committer => person,
+      :author => person,
+      :parents => [@repo.head.target],
+      :tree => "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
+
+    commit = @repo.lookup(oid)
+    assert_equal 3600, commit.committer[:time_offset]
   end
 end
