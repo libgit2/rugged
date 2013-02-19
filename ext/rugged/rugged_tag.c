@@ -142,9 +142,15 @@ static VALUE rb_git_tag_tagger_GET(VALUE self)
 static VALUE rb_git_tag_message_GET(VALUE self)
 {
 	git_tag *tag;
-	Data_Get_Struct(self, git_tag, tag);
+	const char *message;
 
-	return rugged_str_new2(git_tag_message(tag), NULL);
+	Data_Get_Struct(self, git_tag, tag);
+	message = git_tag_message(tag);
+
+	if (!message)
+		return Qnil;
+
+	return rugged_str_new2(message, NULL);
 }
 
 static VALUE rb_git_tag_create(VALUE self, VALUE rb_repo, VALUE rb_data)
