@@ -125,9 +125,15 @@ static VALUE rb_git_tag_name_GET(VALUE self)
 static VALUE rb_git_tag_tagger_GET(VALUE self)
 {
 	git_tag *tag;
-	Data_Get_Struct(self, git_tag, tag);
+	const git_signature *tagger;
 
-	return rugged_signature_new(git_tag_tagger(tag), NULL);
+	Data_Get_Struct(self, git_tag, tag);
+	tagger = git_tag_tagger(tag);
+
+	if (!tagger)
+		return Qnil;
+
+	return rugged_signature_new(tagger, NULL);
 }
 
 /*
