@@ -37,13 +37,21 @@ VALUE rugged_signature_new(const git_signature *sig, const char *encoding_name)
 
 	rb_sig = rb_hash_new();
 
+#if RUBY_API_VERSION_MINOR >= 9
+	/* Allocate the time with a the given timezone */
+	rb_time = rb_funcall(
+		rb_time_new(sig->when.time, 0),
+		rb_intern("getlocal"), 1,
+		INT2FIX(sig->when.offset * 60)
+	);
+#else
 	rb_time = rb_time_new(sig->when.time, 0);
-	rb_funcall(rb_time, rb_intern("utc"), 0);
+	rb_hash_aset(rb_sig, CSTR2SYM("time_offset"), INT2FIX(sig->when.offset * 60));
+#endif
 
 	rb_hash_aset(rb_sig, CSTR2SYM("name"), rugged_str_new2(sig->name, encoding));
 	rb_hash_aset(rb_sig, CSTR2SYM("email"), rugged_str_new2(sig->email, encoding));
 	rb_hash_aset(rb_sig, CSTR2SYM("time"), rb_time);
-	rb_hash_aset(rb_sig, CSTR2SYM("time_offset"), INT2FIX(sig->when.offset * 60));
 
 	return rb_sig;
 }
