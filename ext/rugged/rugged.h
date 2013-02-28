@@ -60,6 +60,8 @@ void Init_rugged_remote();
 void Init_rugged_notes();
 void Init_rugged_settings();
 
+extern int rugged_raw_types;
+
 VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE self);
 
 VALUE rugged_raw_read(git_repository *repo, const git_oid *oid);
