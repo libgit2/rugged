@@ -322,29 +322,6 @@ static void rb_git_indexentry_toC(git_index_entry *entry, VALUE rb_entry)
 	}
 }
 
-static VALUE rb_git_indexer(VALUE self, VALUE rb_packfile_path)
-{
-	int error;
-	git_indexer *indexer;
-	VALUE rb_oid;
-
-	Check_Type(rb_packfile_path, T_STRING);
-
-	error = git_indexer_new(&indexer, StringValueCStr(rb_packfile_path));
-	rugged_exception_check(error);
-
-	error = git_indexer_run(indexer, NULL);
-	rugged_exception_check(error);
-
-	error = git_indexer_write(indexer);
-	rugged_exception_check(error);
-
-	rb_oid = rugged_create_oid(git_indexer_hash(indexer));
-
-	git_indexer_free(indexer);
-	return rb_oid;
-}
-
 static VALUE rb_git_index_writetree(int argc, VALUE *argv, VALUE self)
 {
 	git_index *index;
@@ -416,8 +393,6 @@ void Init_rugged_index()
 
 	rb_define_method(rb_cRuggedIndex, "write_tree", rb_git_index_writetree, -1);
 	rb_define_method(rb_cRuggedIndex, "read_tree", rb_git_index_readtree, 1);
-
-	rb_define_singleton_method(rb_cRuggedIndex, "index_pack", rb_git_indexer, 1);
 
 	rb_const_set(rb_cRuggedIndex, rb_intern("ENTRY_FLAGS_STAGE"), INT2FIX(GIT_IDXENTRY_STAGEMASK));
 	rb_const_set(rb_cRuggedIndex, rb_intern("ENTRY_FLAGS_STAGE_SHIFT"), INT2FIX(GIT_IDXENTRY_STAGESHIFT));
