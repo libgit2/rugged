@@ -40,29 +40,6 @@ VALUE rugged_ref_new(VALUE klass, VALUE owner, git_reference *ref)
 	return rb_ref;
 }
 
-/*
- *	call-seq:
- *		Reference.pack_all(repository)
- *
- *	Pack all the references in +repository+ into the +packed_refs+
- *	file.
- */
-static VALUE rb_git_ref_packall(VALUE klass, VALUE rb_repo)
-{
-	git_repository *repo;
-	int error;
-
-	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo))
-		rb_raise(rb_eTypeError, "Expecting a Rugged::Repository instance");
-
-	Data_Get_Struct(rb_repo, git_repository, repo);
-
-	error = git_reference_packall(repo);
-	rugged_exception_check(error);
-
-	return Qnil;
-}
-
 static int ref_foreach__block(const char *ref_name, void *opaque)
 {
 	rb_funcall((VALUE)opaque, rb_intern("call"), 1, rugged_str_new2(ref_name, rb_utf8_encoding()));
@@ -71,11 +48,12 @@ static int ref_foreach__block(const char *ref_name, void *opaque)
 
 /*
  *	call-seq:
- *		Reference.each(repository, filter = :all) { |ref_name| block }
- *		Reference.each(repository, filter = :all) -> Iterator
+ *		Reference.each(repository, filter = :all, glob = nil) { |ref_name| block }
+ *		Reference.each(repository, filter = :all, glob = nil) -> Iterator
  *
  *	Iterate through all the references in +repository+. Iteration can be
- *	optionally filtered to only +:direct+ or +:symbolic+ references.
+ *	optionally filtered to only +:oid+ or +:symbolic+ references, or to
+ *	the ones matching the given +glob+, a standard Unix filename glob.
  *
  *	The given block will be called once with the name of each reference.
  *	If no block is given, an iterator will be returned.
@@ -83,13 +61,13 @@ static int ref_foreach__block(const char *ref_name, void *opaque)
 static VALUE rb_git_ref_each(int argc, VALUE *argv, VALUE self)
 {
 	git_repository *repo;
-	int error, flags = 0;
-	VALUE rb_repo, rb_list, rb_block;
+	int error, flags = GIT_REF_LISTALL;
+	VALUE rb_repo, rb_list, rb_glob, rb_block;
 
-	rb_scan_args(argc, argv, "11&", &rb_repo, &rb_list, &rb_block);
+	rb_scan_args(argc, argv, "12&", &rb_repo, &rb_list, &rb_glob, &rb_block);
 
 	if (!rb_block_given_p())
-		return rb_funcall(self, rb_intern("to_enum"), 3, CSTR2SYM("each"), rb_repo, rb_list);
+		return rb_funcall(self, rb_intern("to_enum"), 4, CSTR2SYM("each"), rb_repo, rb_list, rb_glob);
 
 	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo))
 		rb_raise(rb_eTypeError, "Expecting a Rugged::Repository instance");
@@ -104,15 +82,23 @@ static VALUE rb_git_ref_each(int argc, VALUE *argv, VALUE self)
 
 		if (list == rb_intern("all"))
 			flags = GIT_REF_LISTALL;
-		else if (list == rb_intern("direct"))
-			flags = GIT_REF_OID|GIT_REF_PACKED;
+		else if (list == rb_intern("oid"))
+			flags = GIT_REF_OID;
 		else if (list == rb_intern("symbolic"))
-			flags = GIT_REF_SYMBOLIC|GIT_REF_PACKED;
-	} else {
-		flags = GIT_REF_LISTALL;
+			flags = GIT_REF_SYMBOLIC;
+		else {
+			rb_raise(rb_eArgError, "Invalid list value (must be `all`, `oid` or `symbolic`)");
+		}
 	}
 
-	error = git_reference_foreach(repo, flags, &ref_foreach__block, (void *)rb_block);
+	if (!NIL_P(rb_glob)) {
+		Check_Type(rb_glob, T_STRING);
+		error = git_reference_foreach_glob(repo,
+			StringValueCStr(rb_glob), flags, &ref_foreach__block, (void *)rb_block);
+	} else {
+		error = git_reference_foreach(repo, flags, &ref_foreach__block, (void *)rb_block);
+	}
+
 	rugged_exception_check(error);
 	return Qnil;
 }
@@ -159,12 +145,13 @@ static VALUE rb_git_ref_exist(VALUE klass, VALUE rb_repo, VALUE rb_name)
 	Check_Type(rb_name, T_STRING);
 
 	error = git_reference_lookup(&ref, repo, StringValueCStr(rb_name));
+	git_reference_free(ref);
+
 	if (error == GIT_ENOTFOUND)
 		return Qfalse;
 	else
 		rugged_exception_check(error);
 
-	git_reference_free(ref);
 	return Qtrue;
 }
 
@@ -202,11 +189,10 @@ static VALUE rb_git_ref_create(int argc, VALUE *argv, VALUE klass)
 			&ref, repo, StringValueCStr(rb_name), &oid, force);
 	} else {
 		error = git_reference_symbolic_create(
-			&ref, repo, StringValueCStr(rb_name), RSTRING_PTR(rb_target), force);
+			&ref, repo, StringValueCStr(rb_name), StringValueCStr(rb_target), force);
 	}
 
 	rugged_exception_check(error);
-
 	return rugged_ref_new(klass, rb_repo, ref);
 }
 
@@ -227,8 +213,7 @@ static VALUE rb_git_ref_create(int argc, VALUE *argv, VALUE klass)
 static VALUE rb_git_ref_target(VALUE self)
 {
 	git_reference *ref;
-
-	RUGGED_UNPACK_REFERENCE(self, ref);
+	Data_Get_Struct(self, git_reference, ref);
 
 	if (git_reference_type(ref) == GIT_REF_OID) {
 		return rugged_create_oid(git_reference_target(ref));
@@ -239,7 +224,7 @@ static VALUE rb_git_ref_target(VALUE self)
 
 /*
  *	call-seq:
- *		reference.target = t
+ *		reference.set_target(t) -> Reference
  *
  *	Set the target of a reference. If +reference+ is a direct reference,
  *	the new target must be a +String+ representing a SHA1 OID.
@@ -247,18 +232,22 @@ static VALUE rb_git_ref_target(VALUE self)
  *	If +reference+ is symbolic, the new target must be a +String+ with
  *	the name of another reference.
  *
+ *	The original reference is unaltered; a new reference object is
+ *	returned with the new target, and the changes are persisted to
+ *	disk.
+ *
  *		r1.type #=> :symbolic
- *		r1.target = "refs/heads/master"
+ *		r1.set_target("refs/heads/master") #=> <Reference>
  *
  *		r2.type #=> :direct
- *		r2.target = "de5ba987198bcf2518885f0fc1350e5172cded78"
+ *		r2.set_target("de5ba987198bcf2518885f0fc1350e5172cded78") #=> <Reference>
  */
 static VALUE rb_git_ref_set_target(VALUE self, VALUE rb_target)
 {
-	git_reference *ref;
+	git_reference *ref, *out;
 	int error;
 
-	RUGGED_UNPACK_REFERENCE(self, ref);
+	Data_Get_Struct(self, git_reference, ref);
 	Check_Type(rb_target, T_STRING);
 
 	if (git_reference_type(ref) == GIT_REF_OID) {
@@ -267,13 +256,13 @@ static VALUE rb_git_ref_set_target(VALUE self, VALUE rb_target)
 		error = git_oid_fromstr(&target, StringValueCStr(rb_target));
 		rugged_exception_check(error);
 
-		error = git_reference_set_target(ref, &target);
+		error = git_reference_set_target(&out, ref, &target);
 	} else {
-		error = git_reference_symbolic_set_target(ref, StringValueCStr(rb_target));
+		error = git_reference_symbolic_set_target(&out, ref, StringValueCStr(rb_target));
 	}
 
 	rugged_exception_check(error);
-	return Qnil;
+	return rugged_ref_new(rb_cRuggedReference, rugged_owner(self), out);
 }
 
 /*
@@ -285,7 +274,8 @@ static VALUE rb_git_ref_set_target(VALUE self, VALUE rb_target)
 static VALUE rb_git_ref_type(VALUE self)
 {
 	git_reference *ref;
-	RUGGED_UNPACK_REFERENCE(self, ref);
+	Data_Get_Struct(self, git_reference, ref);
+
 	switch (git_reference_type(ref)) {
 		case GIT_REF_OID:
 			return CSTR2SYM("direct");
@@ -294,42 +284,6 @@ static VALUE rb_git_ref_type(VALUE self)
 		default:
 			return Qnil;
 	}
-}
-
-/*
- *	call-seq:
- *		reference.packed? -> true or false
- *
- *	Return whether the reference is packed or not
- */
-static VALUE rb_git_ref_packed(VALUE self)
-{
-	git_reference *ref;
-	RUGGED_UNPACK_REFERENCE(self, ref);
-
-	return git_reference_is_packed(ref) ? Qtrue : Qfalse;
-}
-
-/*
- *	call-seq:
- *		reference.reload!
- *
- *	Reload the reference from disk
- */
-static VALUE rb_git_ref_reload(VALUE self)
-{
-	int error;
-	git_reference *ref;
-	RUGGED_UNPACK_REFERENCE(self, ref);
-
-	error = git_reference_reload(ref);
-
-	/* If reload fails, the reference is invalidated */
-	if (error < GIT_OK)
-		ref = NULL;
-
-	rugged_exception_check(error);
-	return Qnil;
 }
 
 /*
@@ -343,7 +297,7 @@ static VALUE rb_git_ref_reload(VALUE self)
 static VALUE rb_git_ref_name(VALUE self)
 {
 	git_reference *ref;
-	RUGGED_UNPACK_REFERENCE(self, ref);
+	Data_Get_Struct(self, git_reference, ref);
 	return rugged_str_new2(git_reference_name(ref), rb_utf8_encoding());
 }
 
@@ -366,7 +320,7 @@ static VALUE rb_git_ref_resolve(VALUE self)
 	git_reference *resolved;
 	int error;
 
-	RUGGED_UNPACK_REFERENCE(self, ref);
+	Data_Get_Struct(self, git_reference, ref);
 
 	error = git_reference_resolve(&resolved, ref);
 	rugged_exception_check(error);
@@ -381,52 +335,51 @@ static VALUE rb_git_ref_resolve(VALUE self)
  *	Change the name of a reference. If +force+ is +true+, any previously
  *	existing references will be overwritten when renaming.
  *
+ *	Return a new reference object with the new object
+ *
  *		reference.name #=> 'refs/heads/master'
- *		reference.rename('refs/heads/development') #=> nil
- *		reference.name #=> 'refs/heads/development'
+ *		new_ref = reference.rename('refs/heads/development') #=> <Reference>
+ *		new_ref.name #=> 'refs/heads/development'
  */
 static VALUE rb_git_ref_rename(int argc, VALUE *argv, VALUE self)
 {
-	git_reference *ref;
+	git_reference *ref, *out;
 	VALUE rb_name, rb_force;
 	int error, force = 0;
 
-	RUGGED_UNPACK_REFERENCE(self, ref);
+	Data_Get_Struct(self, git_reference, ref);
 	rb_scan_args(argc, argv, "11", &rb_name, &rb_force);
 
 	Check_Type(rb_name, T_STRING);
 	if (!NIL_P(rb_force))
 		force = rugged_parse_bool(rb_force);
 
-	error = git_reference_rename(ref, StringValueCStr(rb_name), force);
+	error = git_reference_rename(&out, ref, StringValueCStr(rb_name), force);
 	rugged_exception_check(error);
 
-	return Qnil;
+	return rugged_ref_new(rb_cRuggedReference, rugged_owner(self), out);
 }
 
 /*
  *	call-seq:
  *		reference.delete!
  *
- *	Delete this reference from disk. The +reference+ object will
- *	become invalidated.
+ *	Delete this reference from disk. 
  *
  *		reference.name #=> 'HEAD'
  *		reference.delete!
- *		reference.name # Exception raised
+ *		# Reference no longer exists on disk
  */
 static VALUE rb_git_ref_delete(VALUE self)
 {
 	git_reference *ref;
 	int error;
 
-	RUGGED_UNPACK_REFERENCE(self, ref);
+	Data_Get_Struct(self, git_reference, ref);
 
 	error = git_reference_delete(ref);
 	rugged_exception_check(error);
 
-	DATA_PTR(self) = NULL; /* this reference has been free'd */
-	rugged_set_owner(self, Qnil); /* and is no longer owned */
 	return Qnil;
 }
 
@@ -489,7 +442,7 @@ static VALUE rb_git_reflog(VALUE self)
 	VALUE rb_log;
 	size_t i, ref_count;
 
-	RUGGED_UNPACK_REFERENCE(self, ref);
+	Data_Get_Struct(self, git_reference, ref);
 
 	error = git_reflog_read(&reflog, ref);
 	rugged_exception_check(error);
@@ -510,6 +463,19 @@ static VALUE rb_git_reflog(VALUE self)
 
 /*
  *	call-seq:
+ *		reference.log? -> Boolean
+ *
+ *	Return whether a given reference has a reflog.
+ */
+static VALUE rb_git_has_reflog(VALUE self)
+{
+	git_reference *ref;
+	Data_Get_Struct(self, git_reference, ref);
+	return git_reference_has_log(ref) ? Qtrue : Qfalse;
+}
+
+/*
+ *	call-seq:
  *		reference.log!(committer, message = nil)
  *
  *	Log a modification for this reference to the reflog.
@@ -525,7 +491,7 @@ static VALUE rb_git_reflog_write(int argc, VALUE *argv, VALUE self)
 	git_signature *committer;
 	const char *message = NULL;
 
-	RUGGED_UNPACK_REFERENCE(self, ref);
+	Data_Get_Struct(self, git_reference, ref);
 
 	rb_scan_args(argc, argv, "11", &rb_committer, &rb_message);
 
@@ -552,6 +518,31 @@ static VALUE rb_git_reflog_write(int argc, VALUE *argv, VALUE self)
 	return Qnil;
 }
 
+/*
+ *	call-seq:
+ *		reference.branch? -> Boolean
+ *
+ *	Return whether a given reference is a branch
+ */
+static VALUE rb_git_ref_is_branch(VALUE self)
+{
+	git_reference *ref;
+	Data_Get_Struct(self, git_reference, ref);
+	return git_reference_is_branch(ref) ? Qtrue : Qfalse;
+}
+
+/*
+ *	call-seq:
+ *		reference.remote? -> Boolean
+ *
+ *	Return whether a given reference is a remote
+ */
+static VALUE rb_git_ref_is_remote(VALUE self)
+{
+	git_reference *ref;
+	Data_Get_Struct(self, git_reference, ref);
+	return git_reference_is_remote(ref) ? Qtrue : Qfalse;
+}
 
 void Init_rugged_reference()
 {
@@ -561,22 +552,23 @@ void Init_rugged_reference()
 	rb_define_singleton_method(rb_cRuggedReference, "exist?", rb_git_ref_exist, 2);
 	rb_define_singleton_method(rb_cRuggedReference, "exists?", rb_git_ref_exist, 2);
 	rb_define_singleton_method(rb_cRuggedReference, "create", rb_git_ref_create, -1);
-	rb_define_singleton_method(rb_cRuggedReference, "pack_all", rb_git_ref_packall, 1);
 	rb_define_singleton_method(rb_cRuggedReference, "each", rb_git_ref_each, -1);
 
 	rb_define_method(rb_cRuggedReference, "target", rb_git_ref_target, 0);
-	rb_define_method(rb_cRuggedReference, "target=", rb_git_ref_set_target, 1);
+	rb_define_method(rb_cRuggedReference, "set_target", rb_git_ref_set_target, 1);
 
 	rb_define_method(rb_cRuggedReference, "type", rb_git_ref_type, 0);
 
 	rb_define_method(rb_cRuggedReference, "name", rb_git_ref_name, 0);
 	rb_define_method(rb_cRuggedReference, "rename", rb_git_ref_rename, -1);
 
-	rb_define_method(rb_cRuggedReference, "reload!", rb_git_ref_reload, 0);
 	rb_define_method(rb_cRuggedReference, "resolve", rb_git_ref_resolve, 0);
 	rb_define_method(rb_cRuggedReference, "delete!", rb_git_ref_delete, 0);
 
-	rb_define_method(rb_cRuggedReference, "packed?", rb_git_ref_packed, 0);
+	rb_define_method(rb_cRuggedReference, "branch?", rb_git_ref_is_branch, 0);
+	rb_define_method(rb_cRuggedReference, "remote?", rb_git_ref_is_remote, 0);
+
 	rb_define_method(rb_cRuggedReference, "log", rb_git_reflog, 0);
+	rb_define_method(rb_cRuggedReference, "log?", rb_git_has_reflog, 0);
 	rb_define_method(rb_cRuggedReference, "log!", rb_git_reflog_write, -1);
 }

@@ -142,7 +142,6 @@ static VALUE rb_git_branch_lookup(int argc, VALUE *argv, VALUE self)
 		return Qnil;
 
 	rugged_exception_check(error);
-
 	return rugged_branch_new(rb_repo, branch);
 }
 
@@ -157,14 +156,12 @@ static VALUE rb_git_branch_delete(VALUE self)
 {
 	git_reference *branch = NULL;
 
-	RUGGED_UNPACK_REFERENCE(self, branch);
+	Data_Get_Struct(self, git_reference, branch);
 
 	rugged_exception_check(
 		git_branch_delete(branch)
 	);
 
-	DATA_PTR(self) = NULL; /* this reference has been free'd */
-	rugged_set_owner(self, Qnil); /* and is no longer owned */
 	return Qnil;
 }
 
@@ -188,7 +185,7 @@ static int cb_branch__each_obj(const char *branch_name, git_branch_t branch_type
 	);
 
 	rb_yield(rugged_branch_new(rb_repo, branch));
-	return GIT_OK;
+	return 0;
 }
 
 static VALUE each_branch(int argc, VALUE *argv, VALUE self, int branch_names_only)
@@ -274,21 +271,21 @@ static VALUE rb_git_branch_each(int argc, VALUE *argv, VALUE self)
 static VALUE rb_git_branch_move(int argc, VALUE *argv, VALUE self)
 {
 	VALUE rb_new_branch_name, rb_force;
-	git_reference *old_branch = NULL;
+	git_reference *old_branch = NULL, *new_branch = NULL;
 	int error, force = 0;
 
 	rb_scan_args(argc, argv, "11", &rb_new_branch_name, &rb_force);
 
-	RUGGED_UNPACK_REFERENCE(self, old_branch);
+	Data_Get_Struct(self, git_reference, old_branch);
 	Check_Type(rb_new_branch_name, T_STRING);
 
 	if (!NIL_P(rb_force))
 		force = rugged_parse_bool(rb_force);
 
-	error = git_branch_move(old_branch, StringValueCStr(rb_new_branch_name), force);
+	error = git_branch_move(&new_branch, old_branch, StringValueCStr(rb_new_branch_name), force);
 	rugged_exception_check(error);
 
-	return Qnil;
+	return rugged_branch_new(rugged_owner(self), new_branch);
 }
 
 void Init_rugged_branch()
