@@ -109,9 +109,9 @@ class ReferenceWriteTest < Rugged::TestCase
     assert_equal :direct, ref.type
     assert_equal "refs/heads/unit_test", ref.name
 
-    ref.rename "refs/heads/rug_new_name"
-    assert_equal "refs/heads/rug_new_name", ref.name
-    ref.delete!
+    new_ref = ref.rename "refs/heads/rug_new_name"
+    assert_equal "refs/heads/rug_new_name", new_ref.name
+    new_ref.delete!
   end
 
   def test_set_ref_target
@@ -123,9 +123,9 @@ class ReferenceWriteTest < Rugged::TestCase
     assert_equal :direct, ref.type
     assert_equal "refs/heads/unit_test", ref.name
 
-    ref.target = "5b5b025afb0b4c913b4c338a42934a3863bf3644"
-    assert_equal "5b5b025afb0b4c913b4c338a42934a3863bf3644", ref.target
-    ref.delete!
+    new_ref = ref.set_target "5b5b025afb0b4c913b4c338a42934a3863bf3644"
+    assert_equal "5b5b025afb0b4c913b4c338a42934a3863bf3644", new_ref.target
+    new_ref.delete!
   end
 
   def test_write_and_read_unicode_refs
