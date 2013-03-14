@@ -328,6 +328,7 @@ static VALUE rb_git_repo_get_config(VALUE self)
  *		repo.merge_base(commit1, commit2)
  *
  *	Find a merge base, given two commits or oids.
+ *	Returns nil if a merge base is not found.
  */
 static VALUE rb_git_repo_merge_base(VALUE self, VALUE obj1, VALUE obj2)
 {
@@ -340,8 +341,10 @@ static VALUE rb_git_repo_merge_base(VALUE self, VALUE obj1, VALUE obj2)
 	rugged_oid_get(&oid2, repo, obj2);
 
 	error = git_merge_base(&base, repo, &oid1, &oid2);
-	rugged_exception_check(error);
+	if (error == GIT_ENOTFOUND)
+		return Qnil;
 
+	rugged_exception_check(error);
 	return rugged_create_oid(&base);
 }
 
