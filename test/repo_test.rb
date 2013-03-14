@@ -169,5 +169,11 @@ class RepositoryWriteTest < Rugged::TestCase
     assert_equal "76b1b55ab653581d6f2c7230d34098e837197674", oid
     assert @repo.exists?("76b1b55ab653581d6f2c7230d34098e837197674")
   end
+
+  def test_no_merge_base_between_unrelated_branches
+    info = @repo.rev_parse('HEAD').to_hash
+    baseless = Rugged::Commit.create(@repo, info.merge(:parents => []))
+    assert_nil @repo.merge_base('HEAD', baseless)
+  end
 end
 
