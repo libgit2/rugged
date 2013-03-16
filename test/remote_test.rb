@@ -1,10 +1,10 @@
 require "test_helper"
 require 'net/http'
 
-class RemoteTest < Rugged::TestCase
+class RemoteNetworkTest < Rugged::TestCase
   include Rugged::RepositoryAccess
 
-  def test_remote_connect
+  def test_remote_network_connect
     begin
       Net::HTTP.new('github.com').head('/')
     rescue SocketError => msg
@@ -19,6 +19,10 @@ class RemoteTest < Rugged::TestCase
 
     assert !remote.connected?
   end
+end
+
+class RemoteTest < Rugged::TestCase
+  include Rugged::RepositoryAccess
 
   def test_list_remotes
     remotes = @repo.remotes
@@ -116,5 +120,43 @@ class RemoteWriteTest < Rugged::TestCase
     assert_raises ArgumentError do
       Rugged::Remote.add(@repo, 'upstream', 'libgit2')
     end
+  end
+end
+
+class RemoteTransportTest < Rugged::TestCase
+  def setup
+    @path = Dir.mktmpdir 'dir'
+    @repo = Rugged::Repository.init_at(@path, false)
+    repo_dir = File.join(TEST_DIR, (File.join('fixtures', 'testrepo.git', '.')))
+    @remote = Rugged::Remote.add(@repo, 'origin', "file://#{repo_dir}")
+  end
+
+  def teardown
+    FileUtils.remove_entry_secure(@path)
+  end
+
+  def test_remote_disconnect
+    @remote.connect(:fetch)
+    assert @remote.connected?
+
+    @remote.disconnect
+    refute @remote.connected?
+  end
+
+  def test_remote_ls
+    @remote.connect(:fetch) do |r|
+      assert r.ls.kind_of? Enumerable
+      assert_equal 7, r.ls.to_a.count
+    end
+  end
+
+  def test_remote_fetch
+    @remote.connect(:fetch) do |r|
+      r.download
+      r.update_tips!
+    end
+
+    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', @repo.rev_parse('origin/master').oid
+    assert @repo.lookup('36060c5')
   end
 end
