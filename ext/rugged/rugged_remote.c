@@ -82,7 +82,7 @@ static VALUE rb_git_remote_new(VALUE klass, VALUE rb_repo, VALUE rb_url)
 
 /*
  *  	call-seq:
- *   		Remote.lookup(repository, name) -> new_remote or nil
+ *   		Remote.lookup(repository, name) -> remote or nil
  *
  *   	Return an existing remote with +name+ in +repository+:
  *	- +name+: a valid remote name
@@ -112,6 +112,12 @@ static VALUE rb_git_remote_lookup(VALUE klass, VALUE rb_repo, VALUE rb_name)
 	return rugged_remote_new(klass, rb_repo, remote);
 }
 
+/*
+ * 	call-seq:
+ * 		remote.disconnect() -> nil
+ *
+ *	Disconnect from the remote, closes the connection to the remote
+ */
 static VALUE rb_git_remote_disconnect(VALUE self)
 {
 	git_remote *remote;
@@ -121,6 +127,26 @@ static VALUE rb_git_remote_disconnect(VALUE self)
 	return Qnil;
 }
 
+/*
+ *	call-seq:
+ *		remote.connect(direction) -> nil
+ *		remote.connect(direction) { |connected_remote| block }
+ *
+ * 	Open a connection to a remote:
+ * 	- +direction+: +:fetch+ or +:pull+
+ *
+ * 	If a block is given it will be passed the connected remote as argument
+ * 	and the remote will be disconnected when the block terminates.
+ *
+ *	The transport is selected based on the URL.
+ *
+ *		remote.connect(:fetch) #=> nil
+ *
+ *		remote.connect(:fetch) do |r|
+ *		  r.connected?  #=> true
+ *		end
+ *
+ */
 static VALUE rb_git_remote_connect(VALUE self, VALUE rb_direction)
 {
 	int error, direction = 0;
@@ -167,6 +193,28 @@ static int cb_remote__ls(git_remote_head *head, void *payload)
 	return GIT_OK;
 }
 
+/*
+ *	call-seq:
+ *		remote.ls() -> an_enumerator
+ *		remote.ls() { |remote_head_hash| block }
+ *
+ *	List references avaliable in a connected +remote+ reposotory allong
+ *	with the associated commit IDs.
+ *
+ * 	Call the given block once for each remote head in the +remote+ as a
+ * 	+Hash+.
+ * 	If no block is given an Enumerator is returned.
+ *
+ *		remote.connect(:fetch) do |r|
+ *		  r.ls.to_a #=> [{:local?=>false, :oid=>"b3ee97a91b02e91c35394950bda6ea622044baad", :loid=>"0000000000000000000000000000000000000000", :name=>"refs/heads/development"}]
+ *		end
+ *
+ *	remote head hash includes:
+ * 	[:oid] oid of the remote head
+ * 	[:name] name of the remote head
+ *
+ *
+ */
 static VALUE rb_git_remote_ls(VALUE self)
 {
 	int error;
@@ -182,6 +230,13 @@ static VALUE rb_git_remote_ls(VALUE self)
 	return Qnil;
 }
 
+/*
+ * 	call-seq:
+ * 		remote.name() -> string
+ *
+ *	Returns the remote's name
+ *		remote.name #=> "origin"
+ */
 static VALUE rb_git_remote_name(VALUE self)
 {
 	git_remote *remote;
@@ -196,6 +251,13 @@ static VALUE rb_git_remote_name(VALUE self)
 		return Qnil;
 }
 
+/*
+ * 	call-seq:
+ * 		remote.url() -> string
+ *
+ *	Returns the remote's url
+ *		remote.url #=> "git://github.com/libgit2/rugged.git"
+ */
 static VALUE rb_git_remote_url(VALUE self)
 {
 	git_remote *remote;
@@ -204,6 +266,16 @@ static VALUE rb_git_remote_url(VALUE self)
 	return rugged_str_new2(git_remote_url(remote), NULL);
 }
 
+/*
+ * 	call-seq:
+ * 		remote.connected? -> true or false
+ *
+ *	Returns if the remote is connected
+ *
+ *		remote.connected? #=> false
+ *		remote.connect(:fetch)
+ *		remote.connected? #=> true
+ */
 static VALUE rb_git_remote_connected(VALUE self)
 {
 	git_remote *remote;
@@ -212,6 +284,19 @@ static VALUE rb_git_remote_connected(VALUE self)
 	return git_remote_connected(remote) ? Qtrue : Qfalse;
 }
 
+/*
+ * 	call-seq:
+ * 		remote.download() -> nil
+ *
+ * 	Download the packfile from a connected remote
+ *
+ *	Negotiate what objects should be downloaded and download the
+ *	packfile with those objects.
+ *
+ *		remote.connect(:fetch) do |r|
+ *		  r.download
+ *		end
+ */
 static VALUE rb_git_remote_download(VALUE self)
 {
 	int error;
@@ -225,6 +310,16 @@ static VALUE rb_git_remote_download(VALUE self)
 	return Qnil;
 }
 
+/*
+ * 	call-seq:
+ * 		remote.update_tips!() -> nil
+ *
+ *	Update the tips to a new state from a connected remote
+ *
+ *		remote.connect(:fetch) do |r|
+ *		  r.update_tips!
+ *		end
+ */
 static VALUE rb_git_remote_update_tips(VALUE self)
 {
 	int error;
@@ -239,6 +334,7 @@ static VALUE rb_git_remote_update_tips(VALUE self)
 	return Qnil;
 }
 
+/* :nodoc: */
 static VALUE rb_git_remote_each(VALUE self, VALUE rb_repo)
 {
 	git_repository *repo;
