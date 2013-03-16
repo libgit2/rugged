@@ -177,3 +177,32 @@ class RepositoryWriteTest < Rugged::TestCase
   end
 end
 
+class RepositoryInitTest < Rugged::TestCase
+  def setup
+    @tmppath = Dir.mktmpdir
+  end
+
+  def teardown
+    FileUtils.remove_entry_secure(@tmppath)
+  end
+
+  def test_init_bare_false
+    repo = Rugged::Repository.init_at(@tmppath, false)
+    refute repo.bare?
+  end
+
+  def test_init_bare_true
+    repo = Rugged::Repository.init_at(@tmppath, true)
+    assert repo.bare?
+  end
+
+  def test_init_bare_truthy
+    repo = Rugged::Repository.init_at(@tmppath, :bare)
+    assert repo.bare?
+  end
+
+  def test_init_non_bare_default
+    repo = Rugged::Repository.init_at(@tmppath)
+    refute repo.bare?
+  end
+end
