@@ -881,6 +881,73 @@ static VALUE rb_git_repo_reset(VALUE self, VALUE rb_target, VALUE rb_reset_type)
 	return Qnil;
 }
 
+/*
+ *	call-seq:
+ *		repo.reset_path(pathspecs, target=nil) -> nil
+ *
+ *	Updates entries in the index from the +target+ commit tree, matching
+ *	the given +pathspecs+.
+ *
+ * 	Passing a nil +target+ will result in removing
+ *	entries in the index matching the provided pathspecs.
+ *
+ *	- +pahtspecs+: list of pathspecs to operate on (+String+ or +Array+ of +String+ objects)
+ *	- +target+(optional): Rugged::Commit, Rugged::Tag or rev that resolves to a commit or tag object.
+ *
+ *	Examples:
+ *		reset_path(File.join('subdir','file.txt'), '441034f860c1d5d90e4188d11ae0d325176869a8') #=> nil
+ */
+static VALUE rb_git_repo_reset_path(int argc, VALUE *argv, VALUE self)
+{
+	git_repository *repo;
+	git_object *target = NULL;
+	git_strarray pathspecs;
+	VALUE rb_target, rb_paths;
+	VALUE rb_path_array;
+	VALUE err_obj = Qnil;
+	int error, i;
+
+	pathspecs.strings = NULL;
+	pathspecs.count = 0;
+
+	Data_Get_Struct(self, git_repository, repo);
+
+	rb_scan_args(argc, argv, "11", &rb_paths, &rb_target);
+
+	if (!NIL_P(rb_target)) {
+		target = rugged_object_get(repo, rb_target, GIT_OBJ_ANY);
+	}
+
+	rb_path_array = rb_ary_to_ary(rb_paths);
+
+	pathspecs.count = RARRAY_LEN(rb_path_array);
+	pathspecs.strings = xmalloc(pathspecs.count * sizeof(char *));
+
+	for (i = 0; i < RARRAY_LEN(rb_path_array); ++i) {
+		VALUE fpath = rb_ary_entry(rb_path_array, i);
+
+		if (TYPE(fpath) != T_STRING) {
+			err_obj = rb_exc_new2(rb_eTypeError, "Wrong type for path (expected String)");
+			goto cleanup;
+		}
+
+		pathspecs.strings[i] = StringValueCStr(fpath);
+	}
+
+	error = git_reset_default(repo, target, &pathspecs);
+
+cleanup:
+	xfree(pathspecs.strings);
+	git_object_free(target);
+
+	if (!NIL_P(err_obj))
+		rb_exc_raise(err_obj);
+
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
 void Init_rugged_repo()
 {
 	rb_cRuggedRepo = rb_define_class_under(rb_mRugged, "Repository", rb_cObject);
@@ -917,6 +984,7 @@ void Init_rugged_repo()
 
 	rb_define_method(rb_cRuggedRepo, "merge_base", rb_git_repo_merge_base, 2);
 	rb_define_method(rb_cRuggedRepo, "reset", rb_git_repo_reset, 2);
+	rb_define_method(rb_cRuggedRepo, "reset_path", rb_git_repo_reset_path, -1);
 
 	rb_cRuggedOdbObject = rb_define_class_under(rb_mRugged, "OdbObject", rb_cObject);
 	rb_define_method(rb_cRuggedOdbObject, "data",  rb_git_odbobj_data,  0);

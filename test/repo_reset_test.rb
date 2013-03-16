@@ -49,4 +49,32 @@ class RepositoryResetTest < Rugged::TestCase
 
     refute_equal original_content, new_content
   end
+
+  def test_reset_path
+    File.open(file_path, 'w') do |f|
+      f.puts "test content"
+    end
+    @repo.index.add(repo_file_path)
+    @repo.index.write
+
+    @repo.reset_path(repo_file_path, '441034f860c1d5d90e4188d11ae0d325176869a8')
+    assert_equal [:index_modified, :worktree_modified], @repo.status(repo_file_path)
+  end
+
+  def test_reset_path_no_target
+    File.open(file_path, 'w') do |f|
+      f.puts "test content"
+    end
+    @repo.index.add(repo_file_path)
+    @repo.index.write
+
+    @repo.reset_path(repo_file_path)
+    assert_equal [:index_deleted, :worktree_new], @repo.status(repo_file_path)
+  end
+
+  def test_reset_path_invalid_pathspec
+    assert_raises TypeError do
+      @repo.reset_path([:invalid_reset_path], '441034f860c1d5d90e4188d11ae0d325176869a8')
+    end
+  end
 end
