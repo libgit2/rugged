@@ -101,3 +101,20 @@ class RemotePushTest < Rugged::SandboxedTestCase
     assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @remote_repo.ref("refs/heads/master").target
   end
 end
+
+class RemoteWriteTest < Rugged::TestCase
+  include Rugged::TempRepositoryAccess
+
+  def test_remote_add
+    Rugged::Remote.add(@repo, 'upstream', 'git://github.com/libgit2/libgit2.git')
+    remote = Rugged::Remote.lookup(@repo, 'upstream')
+    assert_equal 'upstream', remote.name
+    assert_equal 'git://github.com/libgit2/libgit2.git', remote.url
+  end
+
+  def test_remote_add_with_invalid_url
+    assert_raises ArgumentError do
+      Rugged::Remote.add(@repo, 'upstream', 'libgit2')
+    end
+  end
+end
