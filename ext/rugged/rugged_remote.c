@@ -40,6 +40,13 @@ VALUE rugged_remote_new(VALUE klass, VALUE owner, git_remote *remote)
 	return rb_remote;
 }
 
+static inline void rugged_validate_remote_url(VALUE rb_url)
+{
+	Check_Type(rb_url, T_STRING);
+	if (!git_remote_valid_url(StringValueCStr(rb_url)))
+		rb_raise(rb_eArgError, "Invalid URL format");
+}
+
 /*
  *  	call-seq:
  *   		Remote.new(repository, url) -> remote
@@ -55,25 +62,19 @@ static VALUE rb_git_remote_new(VALUE klass, VALUE rb_repo, VALUE rb_url)
 {
 	git_remote *remote;
 	git_repository *repo;
-	const char *url;
 	int error;
 
-	Check_Type(rb_url, T_STRING);
 	rugged_check_repo(rb_repo);
+	rugged_validate_remote_url(rb_url);
 
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
-	url = StringValueCStr(rb_url);
 
-	if (git_remote_valid_url(url)) {
-		error = git_remote_create_inmemory(
-				&remote,
-				repo,
-				NULL,
-				url);
-	} else {
-		rb_raise(rb_eArgError, "Invalid URL format");
-	}
+	error = git_remote_create_inmemory(
+			&remote,
+			repo,
+			NULL,
+			StringValueCStr(rb_url));
 
 	rugged_exception_check(error);
 
@@ -96,26 +97,19 @@ static VALUE rb_git_remote_add(VALUE klass, VALUE rb_repo,VALUE rb_name, VALUE r
 {
 	git_remote *remote;
 	git_repository *repo;
-	const char *url;
 	int error;
 
 	Check_Type(rb_name, T_STRING);
-	Check_Type(rb_url, T_STRING);
+	rugged_validate_remote_url(rb_url);
 	rugged_check_repo(rb_repo);
 
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
-	url = StringValueCStr(rb_url);
-
-	if (git_remote_valid_url(url)) {
-		error = git_remote_create(
-				&remote,
-				repo,
-				StringValueCStr(rb_name),
-				url);
-	} else {
-		rb_raise(rb_eArgError, "Invalid URL format");
-	}
+	error = git_remote_create(
+			&remote,
+			repo,
+			StringValueCStr(rb_name),
+			StringValueCStr(rb_url));
 
 	rugged_exception_check(error);
 
@@ -319,17 +313,11 @@ static VALUE rb_git_remote_url(VALUE self)
 static VALUE rb_git_remote_set_url(VALUE self, VALUE rb_url)
 {
 	git_remote *remote;
-	const char * url;
 
-	Check_Type(rb_url, T_STRING);
+	rugged_validate_remote_url(rb_url);
 	Data_Get_Struct(self, git_remote, remote);
 
-	url = StringValueCStr(rb_url);
-
-	if (!git_remote_valid_url(url))
-		rb_raise(rb_eArgError, "Invalid URL format");
-
-	rugged_exception_check(git_remote_set_url(remote, url));
+	rugged_exception_check(git_remote_set_url(remote, StringValueCStr(rb_url)));
 	return rb_url;
 }
 
