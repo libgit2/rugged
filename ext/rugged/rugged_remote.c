@@ -310,6 +310,31 @@ static VALUE rb_git_remote_url(VALUE self)
 
 /*
  * 	call-seq:
+ * 		remote.url = url -> url
+ *
+ *	Sets the remote's url without persisting it in the config.
+ *	Existing connections will not be updated.
+ *		remote.url = 'git://github.com/libgit2/rugged.git' #=> "git://github.com/libgit2/rugged.git"
+ */
+static VALUE rb_git_remote_set_url(VALUE self, VALUE rb_url)
+{
+	git_remote *remote;
+	const char * url;
+
+	Check_Type(rb_url, T_STRING);
+	Data_Get_Struct(self, git_remote, remote);
+
+	url = StringValueCStr(rb_url);
+
+	if (!git_remote_valid_url(url))
+		rb_raise(rb_eArgError, "Invalid URL format");
+
+	rugged_exception_check(git_remote_set_url(remote, url));
+	return rb_url;
+}
+
+/*
+ * 	call-seq:
  * 		remote.connected? -> true or false
  *
  *	Returns if the remote is connected
@@ -415,6 +440,7 @@ void Init_rugged_remote()
 	rb_define_method(rb_cRuggedRemote, "disconnect", rb_git_remote_disconnect, 0);
 	rb_define_method(rb_cRuggedRemote, "name", rb_git_remote_name, 0);
 	rb_define_method(rb_cRuggedRemote, "url", rb_git_remote_url, 0);
+	rb_define_method(rb_cRuggedRemote, "url=", rb_git_remote_set_url, 1);
 	rb_define_method(rb_cRuggedRemote, "connected?", rb_git_remote_connected, 0);
 	rb_define_method(rb_cRuggedRemote, "ls", rb_git_remote_ls, 0);
 	rb_define_method(rb_cRuggedRemote, "download", rb_git_remote_download, 0);

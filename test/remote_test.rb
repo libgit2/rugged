@@ -42,6 +42,21 @@ class RemoteTest < Rugged::TestCase
     end
   end
 
+  def test_url_set
+    new_url = 'git://github.com/libgit2/TestGitRepository.git'
+    remote = Rugged::Remote.new(@repo, 'git://github.com/libgit2/libgit2.git')
+    remote.url = new_url
+    assert_equal new_url, remote.url
+  end
+
+  def test_url_set_invalid
+    url = 'upstream'
+    remote = Rugged::Remote.new(@repo, 'git://github.com/libgit2/libgit2.git')
+    assert_raises ArgumentError do
+      remote.url = url
+    end
+  end
+
   def test_remote_lookup
     remote = Rugged::Remote.lookup(@repo, 'libgit2')
     assert_equal 'git://github.com/libgit2/libgit2.git', remote.url
@@ -121,6 +136,7 @@ class RemoteWriteTest < Rugged::TestCase
       Rugged::Remote.add(@repo, 'upstream', 'libgit2')
     end
   end
+
 end
 
 class RemoteTransportTest < Rugged::TestCase
