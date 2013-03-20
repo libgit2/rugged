@@ -26,14 +26,14 @@ module Rugged
   module RepositoryAccess
     def setup
       @path = File.dirname(__FILE__) + '/fixtures/testrepo.git/'
-      @repo = Rugged::Repository.new(@path)
+      @repo = Rugged::Repository.open(@path)
     end
   end
 
   module TempRepositoryAccess
     def setup 
       @path = temp_repo("testrepo.git")
-      @repo = Rugged::Repository.new(@path)
+      @repo = Rugged::Repository.open(@path)
     end
 
     def teardown 
