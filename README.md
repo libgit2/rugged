@@ -109,7 +109,6 @@ There's a few ways to write to a repository. To write directly from your
 instantiated repository object:
 
 ```ruby
-sha = repo.hash(content, type)
 sha = repo.write(content, type)
 ```
 
