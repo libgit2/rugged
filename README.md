@@ -116,20 +116,20 @@ You can also use the `Commit` object directly to craft a commit; this is a bit
 more high-level, so it may be preferable:
 
 ```ruby
-oid = rugged.write("This is a blob.", :blob)
+oid = repo.write("This is a blob.", :blob)
 index = Rugged::Index.new
 index.add(:path => "README.md", :oid => oid, :mode => 0100644)
 
 options = {}
-options[:tree] = index.write_tree(rugged)
+options[:tree] = index.write_tree(repo)
 
 options[:author] = { :email => "testuser@github.com", :name => 'Test Author', :time => Time.now }
 options[:committer] = { :email => "testuser@github.com", :name => 'Test Author', :time => Time.now }
 options[:message] ||= "Making a commit via Rugged!"
-options[:parents] = rugged.empty? ? [] : [ rugged.head.target ].compact
+options[:parents] = repo.empty? ? [] : [ repo.head.target ].compact
 options[:update_ref] = 'HEAD'
 
-Rugged::Commit.create(rugged, options)
+Rugged::Commit.create(repo, options)
 ```
 
 ---
