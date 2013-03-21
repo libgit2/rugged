@@ -188,11 +188,11 @@ module Rugged
     end
   end
 
-  class StrArray < FFI::ManagedStruct
+  class StrArray < FFI::Struct
     layout :strings, :pointer,
            :count, :ulong
  
-    def self.release(ptr)
+    def free
       LibGit2.strarray_free(self)
     end
 
@@ -214,6 +214,8 @@ module Rugged
         yield tag_name
       end
  
+      string_array.free
+
       self
     end
   end
