@@ -3,8 +3,10 @@ module Rugged
   # interface between your app and the main Git objects Rugged makes available
   # to you.
   class Repository
-    def self.open(*args)
-      self.new(*args)
+    unless self.respond_to?(:open)
+      def self.open(*args)
+        self.new(*args)
+      end
     end
 
     # Pretty formatting of a Repository.
