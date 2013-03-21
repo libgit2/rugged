@@ -1,4 +1,9 @@
-require 'rugged/rugged'
+begin
+  require 'rugged/rugged'
+rescue LoadError
+  require 'rugged/ffi'
+end
+
 require 'rugged/index'
 require 'rugged/object'
 require 'rugged/commit'

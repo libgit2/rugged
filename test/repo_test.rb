@@ -11,11 +11,11 @@ class RepositoryTest < Rugged::TestCase
 
   def test_fails_to_open_unexisting_repos
     assert_raises IOError, Rugged::OSError do
-      Rugged::Repository.new("fakepath/123/")
+      Rugged::Repository.open("fakepath/123/")
     end
 
     assert_raises Rugged::RepositoryError do
-      Rugged::Repository.new("/home/")
+      Rugged::Repository.open("/home/")
     end
   end
 
@@ -116,7 +116,7 @@ class RepositoryTest < Rugged::TestCase
   end
 
   def test_garbage_collection
-    Rugged::Repository.new(@path)
+    Rugged::Repository.open(@path)
     ObjectSpace.garbage_collect
   end
 
@@ -126,7 +126,7 @@ class RepositoryTest < Rugged::TestCase
 
   def test_loading_alternates
     alt_path = File.dirname(__FILE__) + '/fixtures/alternate/objects'
-    repo = Rugged::Repository.new(@path, :alternates => [alt_path])
+    repo = Rugged::Repository.open(@path, :alternates => [alt_path])
     assert_equal 36, repo.each_id.to_a.length
     assert repo.read('146ae76773c91e3b1d00cf7a338ec55ae58297e2')
   end
