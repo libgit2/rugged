@@ -25,6 +25,7 @@
 #include "rugged.h"
 
 extern VALUE rb_mRugged;
+extern VALUE rb_eRuggedError;
 extern VALUE rb_cRuggedIndex;
 extern VALUE rb_cRuggedConfig;
 extern VALUE rb_cRuggedBackend;
@@ -945,6 +946,100 @@ static VALUE rb_git_repo_reset_path(int argc, VALUE *argv, VALUE self)
 	return Qnil;
 }
 
+
+static int rugged__push_status_cb(const char *ref, const char *msg, void *payload)
+{
+	rb_funcall((VALUE)payload, rb_intern("call"), 2,
+		rugged_str_new2(ref, NULL),
+		(msg == NULL ? Qnil : rugged_str_new2(msg, NULL))
+	);
+
+	return GIT_OK;
+}
+
+/*
+ *	call-seq:
+ *		repo.push("origin", ["refs/heads/master", ":refs/heads/to_be_deleted"], options = {}) { |refspec, msg| block }
+ *
+ *  Pushes the given refspecs to the given remote. Returns +true+ if the remote side successfully
+ *  unpacked, +false+ otherwise.
+ *
+ *  Yields the given block for each ref that was pushed. If +msg+ is not +nil+, the ref was not updated
+ *  for the given reason.
+ */
+static VALUE rb_git_repo_push(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_remote, rb_refspecs, rb_options, rb_result = Qnil;
+	git_repository *repo;
+	git_remote *remote = NULL;
+	git_push *push = NULL;
+	git_push_options push_options = GIT_PUSH_OPTIONS_INIT;
+
+	int error = 0, i = 0;
+
+	Data_Get_Struct(self, git_repository, repo);
+
+	rb_scan_args(argc, argv, "21", &rb_remote, &rb_refspecs, &rb_options);
+
+	Check_Type(rb_remote, T_STRING);
+	error = git_remote_load(&remote, repo, StringValueCStr(rb_remote));
+	rugged_exception_check(error);
+
+	error = git_push_new(&push, remote);
+	rugged_exception_check(error);
+
+	if (!NIL_P(rb_options)) {
+		Check_Type(rb_options, T_HASH);
+
+		VALUE rb_push_version = rb_hash_aref(rb_options, CSTR2SYM("version"));
+		if (!NIL_P(rb_push_version)) {
+			push_options.version = NUM2INT(rb_push_version);
+		}
+
+		VALUE rb_push_pb_parallelism = rb_hash_aref(rb_options, CSTR2SYM("pb_parallelism"));
+		if (!NIL_P(rb_push_pb_parallelism)) {
+			push_options.pb_parallelism = NUM2INT(rb_push_pb_parallelism);
+		}
+	}
+
+	error = git_push_set_options(push, &push_options);
+	if (error) goto cleanup;
+
+	Check_Type(rb_refspecs, T_ARRAY);
+	for (i = 0; !error && i < RARRAY_LEN(rb_refspecs); ++i) {
+		VALUE rb_refspec = rb_ary_entry(rb_refspecs, i);
+		Check_Type(rb_refspec, T_STRING);
+
+		error = git_push_add_refspec(push, StringValueCStr(rb_refspec));
+		if (error) goto cleanup;
+	}
+
+	error = git_push_finish(push);
+	if (error == GIT_ENONFASTFORWARD) {
+		rb_exc_raise(rb_exc_new2(rb_eRuggedError, "non-fast-forward update rejected"));
+	} else if (error == -1) {
+		rb_exc_raise(rb_exc_new2(rb_eRuggedError, "could not push to repo (check for non-bare repo)"));
+	} else {
+		rugged_exception_check(error);
+	}
+
+	rb_result = git_push_unpack_ok(push) ? Qtrue : Qfalse;
+
+	error = git_push_status_foreach(push, &rugged__push_status_cb, (void *)rb_block_proc());
+	rugged_exception_check(error);
+
+	error = git_push_update_tips(push);
+
+	cleanup:
+
+	rugged_exception_check(error);
+
+	git_push_free(push);
+	git_remote_free(remote);
+
+	return rb_result;
+}
+
 void Init_rugged_repo()
 {
 	rb_cRuggedRepo = rb_define_class_under(rb_mRugged, "Repository", rb_cObject);
@@ -967,6 +1062,8 @@ void Init_rugged_repo()
 	rb_define_method(rb_cRuggedRepo, "workdir",  rb_git_repo_workdir, 0);
 	rb_define_method(rb_cRuggedRepo, "workdir=",  rb_git_repo_set_workdir, 1);
 	rb_define_method(rb_cRuggedRepo, "status",  rb_git_repo_status,  -1);
+
+	rb_define_method(rb_cRuggedRepo, "push", rb_git_repo_push, -1);
 
 	rb_define_method(rb_cRuggedRepo, "index",  rb_git_repo_get_index,  0);
 	rb_define_method(rb_cRuggedRepo, "index=",  rb_git_repo_set_index,  1);
