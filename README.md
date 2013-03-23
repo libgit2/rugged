@@ -382,7 +382,7 @@ Rugged::Branch.each_name(repo, :remote).sort
 Look up branches and get attributes:
 
 ```ruby
-branch = Rugged::Branch.lookup(@repo, "master")
+branch = Rugged::Branch.lookup(repo, "master")
 branch.name # => 'master'
 branch.canonical_name # => 'refs/heads/master'
 ```
@@ -390,7 +390,7 @@ branch.canonical_name # => 'refs/heads/master'
 Look up the oid for the tip of a branch:
 
 ```ruby
-Rugged::Branch.lookup(@repo, "master").tip.oid
+Rugged::Branch.lookup(repo, "master").tip.oid
 # => "36060c58702ed4c2a40832c51758d5344201d89a"
 ```
 
