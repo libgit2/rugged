@@ -317,7 +317,7 @@ ref = repo.head # or...
 ref = Rugged::Reference.lookup(repo, "refs/heads/master")
 
 sha = ref.target
-str = ref.type   # "commit"
+str = ref.type   # :direct
 str = ref.name   # "refs/heads/master"
 ```
 
@@ -342,7 +342,7 @@ It is also easy to create, update, rename or delete a reference:
 ```ruby
 ref = Rugged::Reference.create(repo, "refs/heads/unit_test", some_commit_sha)
 
-ref.target = new_sha
+ref.set_target(new_sha)
 
 ref.rename("refs/heads/blead")
 
@@ -354,8 +354,8 @@ Finally, you can access the reflog for any branch:
 ```ruby
 ref = Rugged::Reference.lookup(repo, "refs/heads/master")
 entry = ref.log.first
-sha   = entry[:oid_old]
-sha   = entry[:oid_new]
+sha   = entry[:id_old]
+sha   = entry[:id_new]
 str   = entry[:message]
 prsn  = entry[:committer]
 ```
