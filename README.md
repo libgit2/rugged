@@ -233,20 +233,20 @@ tree.each_blob { |entry| puts entry[:name] }  # list only files
 You can also write trees with the `TreeBuilder`:
 
 ```ruby
-oid = rugged.write("This is a blob.", :blob)
+oid = repo.write("This is a blob.", :blob)
 builder = Rugged::Tree::Builder.new
 builder << { :type => :blob, :name => "README.md", :oid => oid, :filemode => 0100644 }
 
 options = {}
-options[:tree] = builder.write(rugged)
+options[:tree] = builder.write(repo)
 
 options[:author] = { :email => "testuser@github.com", :name => 'Test Author', :time => Time.now }
 options[:committer] = { :email => "testuser@github.com", :name => 'Test Author', :time => Time.now }
 options[:message] ||= "Making a commit via Rugged!"
-options[:parents] = rugged.empty? ? [] : [ rugged.head.target ].compact
+options[:parents] = repo.empty? ? [] : [ repo.head.target ].compact
 options[:update_ref] = 'HEAD'
 
-Rugged::Commit.create(rugged, options)
+Rugged::Commit.create(repo, options)
 ```
 
 ---
