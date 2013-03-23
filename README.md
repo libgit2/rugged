@@ -294,10 +294,10 @@ index.entries
 index.each { |i| puts i.inspect }
 
 # Get a particular entry in the index.
-index.get_entry(path)
+index[path]
 
 # Unstage.
-index.remove(i/path)
+index.remove(path)
 
 # Stage. Also updates existing entry if there is one.
 index.add(ientry)
