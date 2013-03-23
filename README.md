@@ -195,7 +195,7 @@ tag  = repo.lookup(tag_sha)
 
 object = tag.target
 sha    = tag.target.oid
-str    = tag.target_type # "commit", "tag", "blob"
+str    = tag.target_type # :commit, :tag, :blob
 str    = tag.name        # "v1.0"
 str    = tag.message
 person = tag.tagger
