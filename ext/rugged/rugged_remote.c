@@ -281,10 +281,7 @@ static VALUE rb_git_remote_name(VALUE self)
 
 	name = git_remote_name(remote);
 
-	if (name)
-		return rugged_str_new2(name, NULL);
-	else
-		return Qnil;
+	return name ? rugged_str_new2(name, NULL) : Qnil;
 }
 
 /*
