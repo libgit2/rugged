@@ -9,6 +9,7 @@ require 'pp'
 module Rugged
   class TestCase < MiniTest::Unit::TestCase
     TEST_DIR = File.dirname(File.expand_path(__FILE__))
+    ROOT_DIR = File.expand_path('..', TEST_DIR)
 
     protected
     def with_default_encoding(encoding, &block)
