@@ -1,4 +1,7 @@
 require 'mkmf'
+require File.join(File.dirname(__FILE__), 'exthelper')
+
+gnumake_program = gnumake_for( `uname -o` )
 
 def sys(cmd)
   puts " -- #{cmd}"
@@ -8,7 +11,7 @@ def sys(cmd)
   ret
 end
 
-if `which make`.strip.empty?
+if `which #{gnumake_program}`.strip.empty?
   STDERR.puts "ERROR: GNU make is required to build Rugged"
   exit(1)
 end
@@ -27,7 +30,7 @@ else
 
   if !File.exists?(LIBGIT2_LIB_PATH)
     Dir.chdir(LIBGIT2_DIR) do
-      sys("make -f Makefile.embed")
+      sys("#{gnumake_program} -f Makefile.embed")
       FileUtils.cp 'libgit2.a', LIBGIT2_LIB_PATH
     end
   end
