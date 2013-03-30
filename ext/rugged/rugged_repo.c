@@ -510,6 +510,7 @@ static VALUE rb_git_repo_write(VALUE self, VALUE rb_buffer, VALUE rub_type)
 	rugged_exception_check(error);
 
 	error = stream->finalize_write(&oid, stream);
+	stream->free(stream);
 	rugged_exception_check(error);
 
 	return rugged_create_oid(&oid);
