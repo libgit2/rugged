@@ -139,6 +139,8 @@ static VALUE rb_git_walker_push(VALUE self, VALUE rb_commit)
 		git_revwalk_repository(walk), rb_commit, GIT_OBJ_COMMIT);
 
 	git_revwalk_push(walk, git_object_id((git_object *)commit));
+
+	git_commit_free(commit);
 	return Qnil;
 }
 
@@ -158,6 +160,8 @@ static VALUE rb_git_walker_hide(VALUE self, VALUE rb_commit)
 		git_revwalk_repository(walk), rb_commit, GIT_OBJ_COMMIT);
 
 	git_revwalk_hide(walk, git_object_id((git_object *)commit));
+
+	git_commit_free(commit);
 	return Qnil;
 }
 
