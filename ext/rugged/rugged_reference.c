@@ -505,15 +505,16 @@ static VALUE rb_git_reflog_write(int argc, VALUE *argv, VALUE self)
 
 	committer = rugged_signature_get(rb_committer);
 
-	error = git_reflog_append(reflog, git_reference_target(ref), committer, message);
-	rugged_exception_check(error);
-
-	error = git_reflog_write(reflog);
-	rugged_exception_check(error);
+	if (!(error = git_reflog_append(reflog,
+					git_reference_target(ref),
+					committer,
+					message)))
+		error = git_reflog_write(reflog);
 
 	git_reflog_free(reflog);
-
 	git_signature_free(committer);
+
+	rugged_exception_check(error);
 
 	return Qnil;
 }
