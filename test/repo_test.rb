@@ -131,6 +131,12 @@ class RepositoryTest < Rugged::TestCase
     assert repo.read('146ae76773c91e3b1d00cf7a338ec55ae58297e2')
   end
 
+  def test_alternates_with_invalid_path_type
+    assert_raises TypeError do
+      Rugged::Repository.new(@path, :alternates => [:invalid_input])
+    end
+  end
+
   def test_find_merge_base_between_oids
     commit1 = 'a4a7dce85cf63874e984719f4fdd239f5145052f'
     commit2 = '36060c58702ed4c2a40832c51758d5344201d89a'
