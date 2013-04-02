@@ -904,8 +904,7 @@ static VALUE rb_git_repo_reset_path(int argc, VALUE *argv, VALUE self)
 	git_strarray pathspecs;
 	VALUE rb_target, rb_paths;
 	VALUE rb_path_array;
-	VALUE err_obj = Qnil;
-	int error, i;
+	int i, error = 0;
 
 	pathspecs.strings = NULL;
 	pathspecs.count = 0;
@@ -914,34 +913,26 @@ static VALUE rb_git_repo_reset_path(int argc, VALUE *argv, VALUE self)
 
 	rb_scan_args(argc, argv, "11", &rb_paths, &rb_target);
 
-	if (!NIL_P(rb_target)) {
-		target = rugged_object_get(repo, rb_target, GIT_OBJ_ANY);
-	}
-
 	rb_path_array = rb_ary_to_ary(rb_paths);
+
+	for (i = 0; i < RARRAY_LEN(rb_path_array); ++i)
+		Check_Type(rb_ary_entry(rb_path_array, i), T_STRING);
 
 	pathspecs.count = RARRAY_LEN(rb_path_array);
 	pathspecs.strings = xmalloc(pathspecs.count * sizeof(char *));
 
 	for (i = 0; i < RARRAY_LEN(rb_path_array); ++i) {
 		VALUE fpath = rb_ary_entry(rb_path_array, i);
-
-		if (TYPE(fpath) != T_STRING) {
-			err_obj = rb_exc_new2(rb_eTypeError, "Wrong type for path (expected String)");
-			goto cleanup;
-		}
-
 		pathspecs.strings[i] = StringValueCStr(fpath);
 	}
 
+	if (!NIL_P(rb_target))
+		target = rugged_object_get(repo, rb_target, GIT_OBJ_ANY);
+
 	error = git_reset_default(repo, target, &pathspecs);
 
-cleanup:
 	xfree(pathspecs.strings);
 	git_object_free(target);
-
-	if (!NIL_P(err_obj))
-		rb_exc_raise(err_obj);
 
 	rugged_exception_check(error);
 
