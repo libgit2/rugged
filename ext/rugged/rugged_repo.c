@@ -973,7 +973,7 @@ static VALUE rb_git_repo_push(VALUE self, VALUE rb_remote, VALUE rb_refspecs)
 	Check_Type(rb_remote, T_STRING);
 
 	Check_Type(rb_refspecs, T_ARRAY);
-	for (i = 0; !git_error && i < RARRAY_LEN(rb_refspecs); ++i) {
+	for (i = 0; i < RARRAY_LEN(rb_refspecs); ++i) {
 		rb_refspec = rb_ary_entry(rb_refspecs, i);
 		Check_Type(rb_refspec, T_STRING);
 	}
