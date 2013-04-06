@@ -842,13 +842,13 @@ static int rugged__push_status_cb(const char *ref, const char *msg, void *payloa
  */
 static VALUE rb_git_repo_push(int argc, VALUE *argv, VALUE self)
 {
-	VALUE rb_remote, rb_refspecs, rb_options, rb_refspec, rb_result = rb_hash_new();
+	VALUE rb_remote, rb_refspecs, rb_options, rb_refspec, rb_exception = Qnil, rb_result = rb_hash_new();
 	git_repository *repo;
 	git_remote *remote = NULL;
 	git_push *push = NULL;
 	git_push_options push_options = GIT_PUSH_OPTIONS_INIT;
 
-	int error = 0, i = 0;
+	int git_error = 0, i = 0;
 
 	Data_Get_Struct(self, git_repository, repo);
 
@@ -857,49 +857,56 @@ static VALUE rb_git_repo_push(int argc, VALUE *argv, VALUE self)
 	Check_Type(rb_remote, T_STRING);
 
 	Check_Type(rb_refspecs, T_ARRAY);
-	for (i = 0; !error && i < RARRAY_LEN(rb_refspecs); ++i) {
+	for (i = 0; !git_error && i < RARRAY_LEN(rb_refspecs); ++i) {
 		rb_refspec = rb_ary_entry(rb_refspecs, i);
 		Check_Type(rb_refspec, T_STRING);
 	}
 
-	error = git_remote_load(&remote, repo, StringValueCStr(rb_remote));
-	if (error) goto cleanup;
+	git_error = git_remote_load(&remote, repo, StringValueCStr(rb_remote));
+	if (git_error) goto cleanup;
 
-	error = git_push_new(&push, remote);
-	if (error) goto cleanup;
+	git_error = git_push_new(&push, remote);
+	if (git_error) goto cleanup;
 
-	error = git_push_set_options(push, &push_options);
-	if (error) goto cleanup;
+	git_error = git_push_set_options(push, &push_options);
+	if (git_error) goto cleanup;
 
-	for (i = 0; !error && i < RARRAY_LEN(rb_refspecs); ++i) {
-		error = git_push_add_refspec(push, StringValueCStr(rb_refspec));
-		if (error) goto cleanup;
+	for (i = 0; !git_error && i < RARRAY_LEN(rb_refspecs); ++i) {
+		git_error = git_push_add_refspec(push, StringValueCStr(rb_refspec));
+		if (git_error) goto cleanup;
 	}
 
-	error = git_push_finish(push);
-	if (error == GIT_ENONFASTFORWARD) {
-		rb_raise(rb_eRuggedError, "non-fast-forward update rejected");
-	} else if (error == -1) {
-		rb_raise(rb_eRuggedError, "could not push to repo (check for non-bare repo)");
-	} else if (error) {
+	git_error = git_push_finish(push);
+	if (git_error) {
+		if (git_error == GIT_ENONFASTFORWARD) {
+			rb_exception = rb_exc_new2(rb_eRuggedError, "non-fast-forward update rejected");
+		} else if (git_error == -1) {
+			rb_exception = rb_exc_new2(rb_eRuggedError, "could not push to repo (check for non-bare repo)");
+		}
+
 		goto cleanup;
 	}
 
 	if (!git_push_unpack_ok(push)) {
-		rb_raise(rb_eRuggedError, "the remote side did not successfully unpack");
+		rb_exception = rb_exc_new2(rb_eRuggedError, "the remote side did not successfully unpack");
+		goto cleanup;
 	}
 
-	error = git_push_status_foreach(push, &rugged__push_status_cb, (void *)rb_result);
-	if (error) goto cleanup;
+	git_error = git_push_status_foreach(push, &rugged__push_status_cb, (void *)rb_result);
+	if (git_error) goto cleanup;
 
-	error = git_push_update_tips(push);
+	git_error = git_push_update_tips(push);
 
 	cleanup:
 
 	git_push_free(push);
 	git_remote_free(remote);
 
-	rugged_exception_check(error);
+	if (rb_exception != Qnil) {
+		rb_exc_raise(rb_exception);
+	} else {
+		rugged_exception_check(git_error);
+	}
 
 	return rb_result;
 }
