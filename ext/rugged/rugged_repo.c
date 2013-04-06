@@ -840,19 +840,15 @@ static int rugged__push_status_cb(const char *ref, const char *msg, void *payloa
  *  Pushes the given refspecs to the given remote. Returns a hash that contains key-value pairs that
  *  reflect pushed refs and error messages, if applicable.
  */
-static VALUE rb_git_repo_push(int argc, VALUE *argv, VALUE self)
+static VALUE rb_git_repo_push(VALUE self, VALUE rb_remote, VALUE rb_refspecs)
 {
-	VALUE rb_remote, rb_refspecs, rb_options, rb_refspec, rb_exception = Qnil, rb_result = rb_hash_new();
+	VALUE rb_refspec, rb_exception = Qnil, rb_result = rb_hash_new();
 	git_repository *repo;
 	git_remote *remote = NULL;
 	git_push *push = NULL;
 	git_push_options push_options = GIT_PUSH_OPTIONS_INIT;
 
 	int git_error = 0, i = 0;
-
-	Data_Get_Struct(self, git_repository, repo);
-
-	rb_scan_args(argc, argv, "20", &rb_remote, &rb_refspecs);
 
 	Check_Type(rb_remote, T_STRING);
 
@@ -861,6 +857,8 @@ static VALUE rb_git_repo_push(int argc, VALUE *argv, VALUE self)
 		rb_refspec = rb_ary_entry(rb_refspecs, i);
 		Check_Type(rb_refspec, T_STRING);
 	}
+
+	Data_Get_Struct(self, git_repository, repo);
 
 	git_error = git_remote_load(&remote, repo, StringValueCStr(rb_remote));
 	if (git_error) goto cleanup;
@@ -934,7 +932,7 @@ void Init_rugged_repo()
 	rb_define_method(rb_cRuggedRepo, "workdir=",  rb_git_repo_set_workdir, 1);
 	rb_define_method(rb_cRuggedRepo, "status",  rb_git_repo_status,  -1);
 
-	rb_define_method(rb_cRuggedRepo, "push", rb_git_repo_push, -1);
+	rb_define_method(rb_cRuggedRepo, "push", rb_git_repo_push, 2);
 
 	rb_define_method(rb_cRuggedRepo, "index",  rb_git_repo_get_index,  0);
 	rb_define_method(rb_cRuggedRepo, "index=",  rb_git_repo_set_index,  1);
