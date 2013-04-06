@@ -1004,7 +1004,7 @@ static VALUE rb_git_repo_push(VALUE self, VALUE rb_remote, VALUE rb_refspecs)
 	}
 
 	if (!git_push_unpack_ok(push)) {
-		rb_exception = rb_exc_new2(rb_eRuggedError, "the remote side did not successfully unpack");
+		rb_exception = rb_exc_new2(rb_eRuggedError, "the remote side did not unpack successfully");
 		goto cleanup;
 	}
 
