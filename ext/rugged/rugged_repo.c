@@ -977,6 +977,12 @@ static VALUE rb_git_repo_push(int argc, VALUE *argv, VALUE self)
 
 	Check_Type(rb_remote, T_STRING);
 
+	Check_Type(rb_refspecs, T_ARRAY);
+	for (i = 0; !error && i < RARRAY_LEN(rb_refspecs); ++i) {
+		rb_refspec = rb_ary_entry(rb_refspecs, i);
+		Check_Type(rb_refspec, T_STRING);
+	}
+
 	error = git_remote_load(&remote, repo, StringValueCStr(rb_remote));
 	if (error) goto cleanup;
 
@@ -986,11 +992,7 @@ static VALUE rb_git_repo_push(int argc, VALUE *argv, VALUE self)
 	error = git_push_set_options(push, &push_options);
 	if (error) goto cleanup;
 
-	Check_Type(rb_refspecs, T_ARRAY);
 	for (i = 0; !error && i < RARRAY_LEN(rb_refspecs); ++i) {
-		rb_refspec = rb_ary_entry(rb_refspecs, i);
-		Check_Type(rb_refspec, T_STRING);
-
 		error = git_push_add_refspec(push, StringValueCStr(rb_refspec));
 		if (error) goto cleanup;
 	}
