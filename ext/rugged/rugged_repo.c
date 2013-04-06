@@ -956,7 +956,7 @@ static int rugged__push_status_cb(const char *ref, const char *msg, void *payloa
 
 /*
  *	call-seq:
- *		repo.push("origin", ["refs/heads/master", ":refs/heads/to_be_deleted"], options = {}) { |refspec, msg| block }
+ *		repo.push("origin", ["refs/heads/master", ":refs/heads/to_be_deleted"])
  *
  *  Pushes the given refspecs to the given remote. Returns a hash that contains key-value pairs that
  *  reflect pushed refs and error messages, if applicable.
@@ -973,28 +973,15 @@ static VALUE rb_git_repo_push(int argc, VALUE *argv, VALUE self)
 
 	Data_Get_Struct(self, git_repository, repo);
 
-	rb_scan_args(argc, argv, "21", &rb_remote, &rb_refspecs, &rb_options);
+	rb_scan_args(argc, argv, "20", &rb_remote, &rb_refspecs);
 
 	Check_Type(rb_remote, T_STRING);
+
 	error = git_remote_load(&remote, repo, StringValueCStr(rb_remote));
 	rugged_exception_check(error);
 
 	error = git_push_new(&push, remote);
 	rugged_exception_check(error);
-
-	if (!NIL_P(rb_options)) {
-		Check_Type(rb_options, T_HASH);
-
-		VALUE rb_push_version = rb_hash_aref(rb_options, CSTR2SYM("version"));
-		if (!NIL_P(rb_push_version)) {
-			push_options.version = NUM2INT(rb_push_version);
-		}
-
-		VALUE rb_push_pb_parallelism = rb_hash_aref(rb_options, CSTR2SYM("pb_parallelism"));
-		if (!NIL_P(rb_push_pb_parallelism)) {
-			push_options.pb_parallelism = NUM2INT(rb_push_pb_parallelism);
-		}
-	}
 
 	error = git_push_set_options(push, &push_options);
 	if (error) goto cleanup;
