@@ -993,8 +993,8 @@ static VALUE rb_git_repo_push(VALUE self, VALUE rb_remote, VALUE rb_refspecs)
 	for (i = 0; !git_error && i < RARRAY_LEN(rb_refspecs); ++i) {
 		rb_refspec = rb_ary_entry(rb_refspecs, i);
 		git_error = git_push_add_refspec(push, StringValueCStr(rb_refspec));
-		if (git_error) goto cleanup;
 	}
+	if (git_error) goto cleanup;
 
 	git_error = git_push_finish(push);
 	if (git_error) {
