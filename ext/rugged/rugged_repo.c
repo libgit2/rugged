@@ -967,7 +967,6 @@ static VALUE rb_git_repo_push(VALUE self, VALUE rb_remote, VALUE rb_refspecs)
 	git_repository *repo;
 	git_remote *remote = NULL;
 	git_push *push = NULL;
-	git_push_options push_options = GIT_PUSH_OPTIONS_INIT;
 
 	int git_error = 0, i = 0;
 
@@ -985,9 +984,6 @@ static VALUE rb_git_repo_push(VALUE self, VALUE rb_remote, VALUE rb_refspecs)
 	if (git_error) goto cleanup;
 
 	git_error = git_push_new(&push, remote);
-	if (git_error) goto cleanup;
-
-	git_error = git_push_set_options(push, &push_options);
 	if (git_error) goto cleanup;
 
 	for (i = 0; !git_error && i < RARRAY_LEN(rb_refspecs); ++i) {
