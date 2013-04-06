@@ -227,19 +227,13 @@ class RepositoryPushTest < Rugged::SandboxedTestCase
   end
 
   def test_push_single_ref
-    pushed = []
+    result = @repo.push("origin", ["refs/heads/master", "refs/heads/master:refs/heads/foobar", "refs/heads/unit_test"])
 
-    result = @repo.push("origin", ["refs/heads/master", "refs/heads/master:refs/heads/foobar", "refs/heads/unit_test"]) do |ref, error_msg|
-      pushed << [ref, error_msg]
-    end
-
-    assert_equal true, result
-
-    assert_equal [
-      ["refs/heads/foobar", nil],
-      ["refs/heads/master", nil],
-      ["refs/heads/unit_test", nil],
-    ], pushed.sort
+    assert_equal({
+      "refs/heads/foobar" => nil,
+      "refs/heads/master" => nil,
+      "refs/heads/unit_test" => nil
+    }, result)
 
     assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", @remote_repo.ref("refs/heads/foobar").target
     assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @remote_repo.ref("refs/heads/unit_test").target
@@ -249,29 +243,23 @@ class RepositoryPushTest < Rugged::SandboxedTestCase
     @remote_repo.config['core.bare'] = 'false'
 
     assert_raises Rugged::Error do
-      @repo.push("origin", ["refs/heads/master"]) { |ref, error_msg| }
+      @repo.push("origin", ["refs/heads/master"])
     end
   end
 
   def test_push_non_forward_raise_error
     assert_raises Rugged::Error do
-      @repo.push("origin", ["refs/heads/unit_test:refs/heads/master"]) { |ref, error_msg| }
+      @repo.push("origin", ["refs/heads/unit_test:refs/heads/master"])
     end
 
     assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", @remote_repo.ref("refs/heads/master").target
   end
 
   def test_push_non_forward_forced_raise_no_error
-    pushed = []
-    result = @repo.push("origin", ["+refs/heads/unit_test:refs/heads/master"]) do |ref, error_msg|
-      pushed << [ref, error_msg]
-    end
-
-    assert_equal true, result
-
-    assert_equal [
-      ["refs/heads/master", nil]
-    ], pushed.sort
+    result = @repo.push("origin", ["+refs/heads/unit_test:refs/heads/master"])
+    assert_equal({
+      "refs/heads/master" => nil
+    }, result)
 
     assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @remote_repo.ref("refs/heads/master").target
   end

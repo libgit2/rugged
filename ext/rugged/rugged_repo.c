@@ -949,11 +949,8 @@ static VALUE rb_git_repo_reset_path(int argc, VALUE *argv, VALUE self)
 
 static int rugged__push_status_cb(const char *ref, const char *msg, void *payload)
 {
-	rb_funcall((VALUE)payload, rb_intern("call"), 2,
-		rugged_str_new2(ref, NULL),
-		(msg == NULL ? Qnil : rugged_str_new2(msg, NULL))
-	);
-
+	VALUE rb_result_hash = (VALUE)payload;
+	rb_hash_aset(rb_result_hash, rugged_str_new2(ref, NULL), (msg == NULL ? Qnil : rugged_str_new2(msg, NULL)));
 	return GIT_OK;
 }
 
@@ -961,15 +958,12 @@ static int rugged__push_status_cb(const char *ref, const char *msg, void *payloa
  *	call-seq:
  *		repo.push("origin", ["refs/heads/master", ":refs/heads/to_be_deleted"], options = {}) { |refspec, msg| block }
  *
- *  Pushes the given refspecs to the given remote. Returns +true+ if the remote side successfully
- *  unpacked, +false+ otherwise.
- *
- *  Yields the given block for each ref that was pushed. If +msg+ is not +nil+, the ref was not updated
- *  for the given reason.
+ *  Pushes the given refspecs to the given remote. Returns a hash that contains key-value pairs that
+ *  reflect pushed refs and error messages, if applicable.
  */
 static VALUE rb_git_repo_push(int argc, VALUE *argv, VALUE self)
 {
-	VALUE rb_remote, rb_refspecs, rb_options, rb_result = Qnil;
+	VALUE rb_remote, rb_refspecs, rb_options, rb_result = rb_hash_new();
 	git_repository *repo;
 	git_remote *remote = NULL;
 	git_push *push = NULL;
@@ -1023,9 +1017,11 @@ static VALUE rb_git_repo_push(int argc, VALUE *argv, VALUE self)
 		rugged_exception_check(error);
 	}
 
-	rb_result = git_push_unpack_ok(push) ? Qtrue : Qfalse;
+	if (!git_push_unpack_ok(push)) {
+		rb_exc_raise(rb_exc_new2(rb_eRuggedError, "the remote side did not successfully unpack"));
+	}
 
-	error = git_push_status_foreach(push, &rugged__push_status_cb, (void *)rb_block_proc());
+	error = git_push_status_foreach(push, &rugged__push_status_cb, (void *)rb_result);
 	rugged_exception_check(error);
 
 	error = git_push_update_tips(push);
