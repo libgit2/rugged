@@ -8,7 +8,7 @@ def sys(cmd)
   ret
 end
 
-if `which make`.strip.empty?
+unless find_executable('make')
   STDERR.puts "ERROR: GNU make is required to build Rugged"
   exit(1)
 end
