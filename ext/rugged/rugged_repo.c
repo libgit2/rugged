@@ -847,7 +847,7 @@ static VALUE rb_git_repo_push(VALUE self, VALUE rb_remote, VALUE rb_refspecs)
 	git_remote *remote = NULL;
 	git_push *push = NULL;
 
-	int git_error = 0, i = 0;
+	int error = 0, i = 0;
 
 	Check_Type(rb_remote, T_STRING);
 
@@ -859,23 +859,23 @@ static VALUE rb_git_repo_push(VALUE self, VALUE rb_remote, VALUE rb_refspecs)
 
 	Data_Get_Struct(self, git_repository, repo);
 
-	git_error = git_remote_load(&remote, repo, StringValueCStr(rb_remote));
-	if (git_error) goto cleanup;
+	error = git_remote_load(&remote, repo, StringValueCStr(rb_remote));
+	if (error) goto cleanup;
 
-	git_error = git_push_new(&push, remote);
-	if (git_error) goto cleanup;
+	error = git_push_new(&push, remote);
+	if (error) goto cleanup;
 
-	for (i = 0; !git_error && i < RARRAY_LEN(rb_refspecs); ++i) {
+	for (i = 0; !error && i < RARRAY_LEN(rb_refspecs); ++i) {
 		rb_refspec = rb_ary_entry(rb_refspecs, i);
-		git_error = git_push_add_refspec(push, StringValueCStr(rb_refspec));
+		error = git_push_add_refspec(push, StringValueCStr(rb_refspec));
 	}
-	if (git_error) goto cleanup;
+	if (error) goto cleanup;
 
-	git_error = git_push_finish(push);
-	if (git_error) {
-		if (git_error == GIT_ENONFASTFORWARD) {
+	error = git_push_finish(push);
+	if (error) {
+		if (error == GIT_ENONFASTFORWARD) {
 			rb_exception = rb_exc_new2(rb_eRuggedError, "non-fast-forward update rejected");
-		} else if (git_error == -1) {
+		} else if (error == -1) {
 			rb_exception = rb_exc_new2(rb_eRuggedError, "could not push to repo (check for non-bare repo)");
 		}
 
@@ -887,10 +887,10 @@ static VALUE rb_git_repo_push(VALUE self, VALUE rb_remote, VALUE rb_refspecs)
 		goto cleanup;
 	}
 
-	git_error = git_push_status_foreach(push, &rugged__push_status_cb, (void *)rb_result);
-	if (git_error) goto cleanup;
+	error = git_push_status_foreach(push, &rugged__push_status_cb, (void *)rb_result);
+	if (error) goto cleanup;
 
-	git_error = git_push_update_tips(push);
+	error = git_push_update_tips(push);
 
 	cleanup:
 
@@ -900,7 +900,7 @@ static VALUE rb_git_repo_push(VALUE self, VALUE rb_remote, VALUE rb_refspecs)
 	if (rb_exception != Qnil)
 		rb_exc_raise(rb_exception);
 
-	rugged_exception_check(git_error);
+	rugged_exception_check(error);
 
 	return rb_result;
 }
