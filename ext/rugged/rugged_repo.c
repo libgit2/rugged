@@ -1018,11 +1018,10 @@ static VALUE rb_git_repo_push(VALUE self, VALUE rb_remote, VALUE rb_refspecs)
 	git_push_free(push);
 	git_remote_free(remote);
 
-	if (rb_exception != Qnil) {
+	if (rb_exception != Qnil)
 		rb_exc_raise(rb_exception);
-	} else {
-		rugged_exception_check(git_error);
-	}
+
+	rugged_exception_check(git_error);
 
 	return rb_result;
 }
