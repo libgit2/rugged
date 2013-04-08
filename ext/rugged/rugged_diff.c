@@ -46,7 +46,7 @@ static int diff_print_cb(const  git_diff_delta *delta, const git_diff_range *ran
 
   rb_str_cat(*str, content, content_len);
 
-  return 0;
+  return GIT_OK;
 }
 
 /*
@@ -88,7 +88,7 @@ static int diff_write_cb(const  git_diff_delta *delta, const git_diff_range *ran
 
   rb_io_write(*io, str);
 
-  return 0;
+  return GIT_OK;
 }
 
 /*
