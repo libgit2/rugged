@@ -145,6 +145,10 @@ static VALUE rb_git_diff_each_patch(VALUE self)
   git_diff_patch *patch;
   int error = 0, d, delta_count;
 
+  if (!rb_block_given_p()) {
+    return rb_funcall(self, rb_intern("to_enum"), 3, CSTR2SYM("each_patch"), self);
+  }
+
   Data_Get_Struct(self, git_diff_list, diff);
 
   delta_count = git_diff_num_deltas(diff);

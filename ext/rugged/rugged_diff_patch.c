@@ -144,6 +144,10 @@ static VALUE rb_git_diff_patch_each_hunk(VALUE self)
   size_t header_len, lines_in_hunk;
   int error = 0, hooks_count, h;
 
+  if (!rb_block_given_p()) {
+    return rb_funcall(self, rb_intern("to_enum"), 3, CSTR2SYM("each_hunk"), self);
+  }
+
   Data_Get_Struct(self, git_diff_patch, patch);
 
   hooks_count = git_diff_patch_num_hunks(patch);

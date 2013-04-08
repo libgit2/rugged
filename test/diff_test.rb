@@ -72,6 +72,24 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
     assert_equal "Git allows and encourages you to have multiple local branches that can be\n", lines[4].content
   end
 
+  def test_each_patch_returns_enumerator
+    assert_instance_of Enumerator, @diff.each_patch
+  end
+
+  def test_each_hunk_returns_enumerator
+    @diff.each_patch do |patch|
+      assert_instance_of Enumerator, patch.each_hunk
+    end
+  end
+
+  def test_each_line_returns_enumerator
+    @diff.each_patch do |patch|
+      patch.each_hunk do |hunk|
+        assert_instance_of Enumerator, hunk.each_line
+      end
+    end
+  end
+
   def test_patch
     assert_equal <<-EOS, @diff.patch
 diff --git a/another.txt b/another.txt

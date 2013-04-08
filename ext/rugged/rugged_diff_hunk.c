@@ -57,6 +57,10 @@ static VALUE rb_git_diff_hunk_each_line(VALUE self)
   size_t content_len = 0;
   int error = 0, l, old_lineno, new_lineno;
 
+  if (!rb_block_given_p()) {
+    return rb_funcall(self, rb_intern("to_enum"), 3, CSTR2SYM("each_line"), self);
+  }
+
   Data_Get_Struct(rugged_owner(self), git_diff_patch, patch);
 
   int lines_count = FIX2INT(rb_iv_get(self, "@line_count"));
