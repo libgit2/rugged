@@ -17,7 +17,7 @@ module Rugged
       end
 
       def hunks
-        Enumerator.new(self, :each_hunk)
+        each_hunk.to_a
       end
     end
   end

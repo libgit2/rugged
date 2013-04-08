@@ -20,7 +20,7 @@ module Rugged
       end
 
       def lines
-        Enumerator.new(self, :each_line)
+        each_line.to_a
       end
     end
   end

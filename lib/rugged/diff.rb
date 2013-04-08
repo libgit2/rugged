@@ -8,7 +8,7 @@ module Rugged
     alias each each_patch
 
     def patches
-      Enumerator.new(self, :each_patch)
+      each_patch.to_a
     end
   end
 end
