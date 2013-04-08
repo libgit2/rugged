@@ -27,7 +27,7 @@
 extern VALUE rb_cRuggedDiff;
 VALUE rb_cRuggedDiffHunk;
 
-VALUE rugged_diff_hunk_new(VALUE owner, const char *header, size_t header_len, git_diff_range *range)
+VALUE rugged_diff_hunk_new(VALUE owner, int hunk_idx, const git_diff_range *range, const char *header, size_t header_len, size_t lines_in_hunk)
 {
   VALUE rb_hunk;
   VALUE rb_range;
@@ -43,55 +43,34 @@ VALUE rugged_diff_hunk_new(VALUE owner, const char *header, size_t header_len, g
   rb_iv_set(rb_hunk, "@range", rb_range);
 
   rb_iv_set(rb_hunk, "@header", rugged_str_new(header, header_len, NULL));
+  rb_iv_set(rb_hunk, "@line_count", INT2FIX(lines_in_hunk));
+  rb_iv_set(rb_hunk, "@hunk_index", INT2FIX(hunk_idx));
 
   return rb_hunk;
 }
 
 static VALUE rb_git_diff_hunk_each_line(VALUE self)
 {
-  VALUE rb_diff;
-  VALUE rb_hunk;
-  VALUE rb_line;
-  rugged_diff *diff;
+  git_diff_patch *patch;
   char line_origin;
   const char *content;
   size_t content_len = 0;
-  int err = 0;
+  int error = 0, l, old_lineno, new_lineno;
 
-  rb_hunk = rugged_owner(self);
-  rb_diff = rugged_owner(rb_hunk);
-  Data_Get_Struct(rb_diff, rugged_diff, diff);
+  Data_Get_Struct(rugged_owner(self), git_diff_patch, patch);
 
-  while (err != GIT_ITEROVER) {
-    err = git_diff_iterator_next_line(&line_origin, &content, &content_len, diff->iter);
-    if (err == GIT_ITEROVER)
-      break;
-    else
-      rugged_exception_check(err);
+  int lines_count = FIX2INT(rb_iv_get(self, "@line_count"));
+  int hunk_idx = FIX2INT(rb_iv_get(self, "@hunk_index"));
 
-    rb_line = rugged_diff_line_new(self, line_origin, content, content_len);
-    rb_yield(rb_line);
+  for (l = 0; l < lines_count; ++l) {
+    error = git_diff_patch_get_line_in_hunk(&line_origin, &content, &content_len, &old_lineno, &new_lineno, patch, hunk_idx, l);
+    if (error) break;
+
+    rb_yield(rugged_diff_line_new(self, line_origin, content, content_len, old_lineno, new_lineno));
   }
+  rugged_exception_check(error);
 
   return Qnil;
-}
-
-static VALUE rb_git_diff_hunk_line_count(VALUE self)
-{
-  git_diff_delta *delta;
-  rugged_diff *diff;
-  int num_lines = 0;
-  VALUE rb_diff;
-  VALUE rb_hunk;
-
-  rb_hunk = rugged_owner(self);
-  rb_diff = rugged_owner(rb_hunk);
-  Data_Get_Struct(rb_diff, rugged_diff, diff);
-
-  num_lines = git_diff_iterator_num_lines_in_hunk(diff->iter);
-  rugged_exception_check(num_lines);
-
-  return INT2FIX(num_lines);
 }
 
 void Init_rugged_diff_hunk()
@@ -99,5 +78,4 @@ void Init_rugged_diff_hunk()
   rb_cRuggedDiffHunk = rb_define_class_under(rb_cRuggedDiff, "Hunk", rb_cObject);
 
   rb_define_method(rb_cRuggedDiffHunk, "each_line", rb_git_diff_hunk_each_line, 0);
-  rb_define_method(rb_cRuggedDiffHunk, "line_count", rb_git_diff_hunk_line_count, 0);
 }

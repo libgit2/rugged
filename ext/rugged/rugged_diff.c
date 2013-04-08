@@ -25,34 +25,26 @@
 #include "rugged.h"
 
 extern VALUE rb_mRugged;
-extern VALUE rb_cRuggedDiffFile;
 VALUE rb_cRuggedDiff;
 
-static void rb_git_diff__free(rugged_diff *diff)
+static void rb_git_diff__free(git_diff_list *diff)
 {
-  if (diff->iter)
-    git_diff_iterator_free(diff->iter);
-
-  git_diff_list_free(diff->diff);
-  xfree(diff);
+  git_diff_list_free(diff);
 }
 
-VALUE rugged_diff_new(VALUE klass, VALUE owner, rugged_diff *diff)
+VALUE rugged_diff_new(VALUE klass, VALUE owner, git_diff_list *diff)
 {
-  VALUE rb_diff;
-
-  rb_diff = Data_Wrap_Struct(klass, NULL, rb_git_diff__free, diff);
+  VALUE rb_diff = Data_Wrap_Struct(klass, NULL, rb_git_diff__free, diff);
   rugged_set_owner(rb_diff, owner);
-  diff->iter = NULL;
   return rb_diff;
 }
 
-static int diff_print_cb(void *data, git_diff_delta *delta, git_diff_range *range, char usage,
-        const char *line, size_t line_len)
+static int diff_print_cb(const  git_diff_delta *delta, const git_diff_range *range, char line_origin,
+        const char *content, size_t content_len, void *payload)
 {
-  VALUE *str = data;
+  VALUE *str = payload;
 
-  rb_str_cat(*str, line, line_len);
+  rb_str_cat(*str, content, content_len);
 
   return 0;
 }
@@ -64,9 +56,9 @@ static int diff_print_cb(void *data, git_diff_delta *delta, git_diff_range *rang
  *
  *  Return a string containing the diff in patch form.
  */
-static VALUE rb_git_diff_patch_GET(int argc, VALUE *argv, VALUE self)
+static VALUE rb_git_diff_patch(int argc, VALUE *argv, VALUE self)
 {
-  rugged_diff *diff;
+  git_diff_list *diff;
   VALUE str;
   VALUE rb_opts;
   VALUE compact;
@@ -74,16 +66,16 @@ static VALUE rb_git_diff_patch_GET(int argc, VALUE *argv, VALUE self)
   rb_scan_args(argc, argv, "01", &rb_opts);
 
   str = rugged_str_new(NULL, 0, NULL);
-  Data_Get_Struct(self, rugged_diff, diff);
+  Data_Get_Struct(self, git_diff_list, diff);
 
   if (!NIL_P(rb_opts)) {
     Check_Type(rb_opts, T_HASH);
     if (rb_hash_aref(rb_opts, CSTR2SYM("compact")) == Qtrue)
-      git_diff_print_compact(diff->diff, &str, diff_print_cb);
+      git_diff_print_compact(diff, diff_print_cb, &str);
     else
-      git_diff_print_patch(diff->diff, &str, diff_print_cb);
+      git_diff_print_patch(diff, diff_print_cb, &str);
   } else {
-    git_diff_print_patch(diff->diff, &str, diff_print_cb);
+    git_diff_print_patch(diff, diff_print_cb, &str);
   }
 
   return str;
@@ -110,7 +102,7 @@ static int diff_write_cb(void *data, git_diff_delta *delta, git_diff_range *rang
  */
 static VALUE rb_git_diff_write_patch(int argc, VALUE *argv, VALUE self)
 {
-  rugged_diff *diff;
+  git_diff_list *diff;
   VALUE rb_io;
   VALUE rb_opts;
 
@@ -119,16 +111,16 @@ static VALUE rb_git_diff_write_patch(int argc, VALUE *argv, VALUE self)
   if (!rb_respond_to(rb_io, rb_intern("write")))
     rb_raise(rb_eArgError, "Expected io to respond to \"write\"");
 
-  Data_Get_Struct(self, rugged_diff, diff);
+  Data_Get_Struct(self, git_diff_list, diff);
 
   if (!NIL_P(rb_opts)) {
     Check_Type(rb_opts, T_HASH);
     if (rb_hash_aref(rb_opts, CSTR2SYM("compact")) == Qtrue)
-      git_diff_print_compact(diff->diff, &rb_io, diff_write_cb);
+      git_diff_print_compact(diff, &rb_io, diff_write_cb);
     else
-      git_diff_print_patch(diff->diff, &rb_io, diff_write_cb);
+      git_diff_print_patch(diff, &rb_io, diff_write_cb);
   } else {
-    git_diff_print_patch(diff->diff, &rb_io, diff_write_cb);
+    git_diff_print_patch(diff, &rb_io, diff_write_cb);
   }
 
   return Qnil;
@@ -136,50 +128,44 @@ static VALUE rb_git_diff_write_patch(int argc, VALUE *argv, VALUE self)
 
 static VALUE rb_git_diff_merge(VALUE self, VALUE rb_other)
 {
-  rugged_diff *diff;
-  rugged_diff *other;
+  git_diff_list *diff;
+  git_diff_list *other;
 
-  Data_Get_Struct(self, rugged_diff, diff);
-  Data_Get_Struct(self, rugged_diff, other);
+  Data_Get_Struct(self, git_diff_list, diff);
+  Data_Get_Struct(self, git_diff_list, other);
 
-  git_diff_merge(diff->diff, other->diff);
+  git_diff_merge(diff, other);
 
   return self;
 }
 
-static VALUE rb_git_diff_each_delta(VALUE self)
+static VALUE rb_git_diff_each_patch(VALUE self)
 {
-  rugged_diff *diff;
-  int err = 0;
-  git_diff_delta *delta;
+  git_diff_list *diff;
+  git_diff_patch *patch;
+  int error = 0, d, delta_count;
 
-  Data_Get_Struct(self, rugged_diff, diff);
+  Data_Get_Struct(self, git_diff_list, diff);
 
-  if (diff->iter != NULL)
-    git_diff_iterator_free(diff->iter);
+  delta_count = git_diff_num_deltas(diff);
+  for (d = 0; d < delta_count; ++d) {
+    error = git_diff_get_patch(&patch, NULL, diff, d);
+    if (error) break;
 
-  err = git_diff_iterator_new(&diff->iter, diff->diff);
-  rugged_exception_check(err);
-
-  while (err != GIT_ITEROVER) {
-    err = git_diff_iterator_next_file(&delta, diff->iter);
-    if (err == GIT_ITEROVER)
-      break;
-    else
-      rugged_exception_check(err);
-
-    rb_yield(rugged_diff_delta_new(self, delta));
+    rb_yield(rugged_diff_patch_new(self, patch));
   }
 
-  return Qnil;
+  rugged_exception_check(error);
+
+  return self;
 }
 
 void Init_rugged_diff()
 {
   rb_cRuggedDiff = rb_define_class_under(rb_mRugged, "Diff", rb_cObject);
 
-  rb_define_method(rb_cRuggedDiff, "patch", rb_git_diff_patch_GET, -1);
+  rb_define_method(rb_cRuggedDiff, "patch", rb_git_diff_patch, -1);
   rb_define_method(rb_cRuggedDiff, "write_patch", rb_git_diff_write_patch, -1);
   rb_define_method(rb_cRuggedDiff, "merge!", rb_git_diff_merge, 1);
-  rb_define_method(rb_cRuggedDiff, "each_delta", rb_git_diff_each_delta, 0);
+  rb_define_method(rb_cRuggedDiff, "each_patch", rb_git_diff_each_patch, 0);
 }

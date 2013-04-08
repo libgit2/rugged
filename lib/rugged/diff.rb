@@ -1,14 +1,14 @@
-require 'rugged/diff/delta'
+require 'rugged/diff/patch'
 require 'rugged/diff/hunk'
 require 'rugged/diff/line'
 
 module Rugged
   class Diff
     include Enumerable
-    alias each each_delta
+    alias each each_patch
 
-    def deltas
-      Enumerator.new(self, :each_delta)
+    def patches
+      Enumerator.new(self, :each_patch)
     end
   end
 end

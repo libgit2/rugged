@@ -4,6 +4,7 @@ module Rugged
       include Enumerable
       alias each each_line
 
+      attr_reader :line_count
       alias size line_count
       alias count line_count
 

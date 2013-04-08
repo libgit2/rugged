@@ -124,13 +124,13 @@ static VALUE rb_git_tree_get_entry(VALUE self, VALUE entry_id)
  *		tree.get_entry_by_oid(rb_oid) -> entry
  *
  *	Return one of the entries from a tree as a +Hash+, based off the oid SHA.
- *	
+ *
  *	If the entry doesn't exist, +nil+ will be returned.
  *
  *	This does a full traversal of the every element in the tree, so this method
  *	is not especially fast.
  *
- *		tree.get_entry_by_oid("d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f") 
+ *		tree.get_entry_by_oid("d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f")
  *		#=> {:name => "foo.txt", :type => :blob, :oid => "d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f", :filemode => 0}
  *
  */
@@ -264,10 +264,9 @@ static VALUE rb_git_tree_path(VALUE self, VALUE rb_path)
 static VALUE rb_git_tree_diff(VALUE self, VALUE other)
 {
 	git_tree *tree, *other_tree;
-	git_diff_options opts = {0};
+	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
 	git_repository *repo;
 	git_diff_list *diff;
-	rugged_diff *rdiff;
 	VALUE owner;
 	int error;
 
@@ -276,12 +275,10 @@ static VALUE rb_git_tree_diff(VALUE self, VALUE other)
 	owner = rugged_owner(self);
 	Data_Get_Struct(owner, git_repository, repo);
 
-	error = git_diff_tree_to_tree(repo, &opts, tree, other_tree, &diff);
+	error = git_diff_tree_to_tree(&diff, repo, tree, other_tree, &opts);
 	rugged_exception_check(error);
 
-	rdiff = xmalloc(sizeof(rugged_diff));
-	rdiff->diff = diff;
-	return rugged_diff_new(rb_cRuggedDiff, self, rdiff);
+	return rugged_diff_new(rb_cRuggedDiff, self, diff);
 }
 
 static void rb_git_treebuilder_free(git_treebuilder *bld)

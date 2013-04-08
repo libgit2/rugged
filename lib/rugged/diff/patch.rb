@@ -1,6 +1,6 @@
 module Rugged
   class Diff
-    class Delta
+    class Patch
       include Enumerable
       alias each each_hunk
 
