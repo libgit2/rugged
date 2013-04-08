@@ -7,10 +7,10 @@ require 'rugged'
 require 'pp'
 
 module Rugged
-  # Ruby 1.8 / 1.9 Shim
-  Enumerator = defined?(::Enumerator) ? ::Enumerator : ::Enumerable::Enumerator
-
   class TestCase < MiniTest::Unit::TestCase
+    # Ruby 1.8 / 1.9 Shim
+    Enumerator = defined?(::Enumerator) ? ::Enumerator : ::Enumerable::Enumerator
+
     TEST_DIR = File.dirname(File.expand_path(__FILE__))
 
     protected
