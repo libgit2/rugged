@@ -170,6 +170,27 @@ static VALUE rb_git_diff_patch_hunk_count(VALUE self)
   return INT2FIX(git_diff_patch_num_hunks(patch));
 }
 
+static VALUE rb_git_diff_patch_additions(VALUE self)
+{
+  git_diff_patch *patch;
+  size_t additions;
+  Data_Get_Struct(self, git_diff_patch, patch);
+
+  git_diff_patch_line_stats(NULL, &additions, NULL, patch);
+
+  return INT2FIX(git_diff_patch_num_hunks(patch));
+}
+
+static VALUE rb_git_diff_patch_deletions(VALUE self)
+{
+  git_diff_patch *patch;
+  size_t deletions;
+  Data_Get_Struct(self, git_diff_patch, patch);
+
+  git_diff_patch_line_stats(NULL, NULL, &deletions, patch);
+
+  return INT2FIX(git_diff_patch_num_hunks(patch));
+}
 
 void Init_rugged_diff_patch()
 {
@@ -180,6 +201,9 @@ void Init_rugged_diff_patch()
   rb_define_method(rb_cRuggedDiffPatch, "similarity", rb_git_diff_patch_similarity, 0);
   rb_define_method(rb_cRuggedDiffPatch, "status", rb_git_diff_patch_status, 0);
   rb_define_method(rb_cRuggedDiffPatch, "binary", rb_git_diff_patch_binary, 0);
+
+  rb_define_method(rb_cRuggedDiffPatch, "additions", rb_git_diff_patch_additions, 0);
+  rb_define_method(rb_cRuggedDiffPatch, "deletions", rb_git_diff_patch_deletions, 0);
 
   rb_define_method(rb_cRuggedDiffPatch, "each_hunk", rb_git_diff_patch_each_hunk, 0);
   rb_define_method(rb_cRuggedDiffPatch, "hunk_count", rb_git_diff_patch_hunk_count, 0);
