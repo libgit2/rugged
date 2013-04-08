@@ -8,6 +8,9 @@ def sys(cmd)
   ret
 end
 
+have_func('rb_thread_blocking_region', 'ruby.h')
+have_func('rb_thread_call_without_gvl', 'ruby/thread.h')
+
 if `which make`.strip.empty?
   STDERR.puts "ERROR: GNU make is required to build Rugged"
   exit(1)

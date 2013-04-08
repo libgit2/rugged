@@ -833,6 +833,11 @@ static int rugged__push_status_cb(const char *ref, const char *msg, void *payloa
 	return GIT_OK;
 }
 
+static void * rugged_push_no_gvl(void *payload)
+{
+	return (void *)(VALUE)git_push_finish((git_push *)payload);
+}
+
 /*
  *	call-seq:
  *		repo.push("origin", ["refs/heads/master", ":refs/heads/to_be_deleted"])
@@ -871,7 +876,18 @@ static VALUE rb_git_repo_push(VALUE self, VALUE rb_remote, VALUE rb_refspecs)
 	}
 	if (error) goto cleanup;
 
-	error = git_push_finish(push);
+	if (git_libgit2_capabilities() & GIT_CAP_THREADS) {
+#if defined(HAVE_RB_THREAD_CALL_WITHOUT_GVL)
+		error = (int)(VALUE)rb_thread_call_without_gvl(rugged_push_no_gvl, (void *)push, NULL, NULL);
+#elif defined(HAVE_RB_THREAD_BLOCKING_REGION)
+		error = (int)rb_thread_blocking_region(rugged_push_no_gvl, (void *)push, NULL, NULL);
+#else
+		error = git_push_finish(push);
+#endif
+	} else {
+		error = git_push_finish(push);		
+	}
+
 	if (error) {
 		if (error == GIT_ENONFASTFORWARD) {
 			rb_exception = rb_exc_new2(rb_eRuggedError, "non-fast-forward update rejected");
