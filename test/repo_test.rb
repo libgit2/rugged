@@ -192,12 +192,7 @@ class RepositoryPushTest < Rugged::SandboxedTestCase
 
   def test_push_single_ref
     result = @repo.push("origin", ["refs/heads/master", "refs/heads/master:refs/heads/foobar", "refs/heads/unit_test"])
-
-    assert_equal({
-      "refs/heads/foobar" => nil,
-      "refs/heads/master" => nil,
-      "refs/heads/unit_test" => nil
-    }, result)
+    assert_equal({}, result)
 
     assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", @remote_repo.ref("refs/heads/foobar").target
     assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @remote_repo.ref("refs/heads/unit_test").target
@@ -206,9 +201,7 @@ class RepositoryPushTest < Rugged::SandboxedTestCase
   def test_push_to_remote_instance
     origin = Rugged::Remote.lookup(@repo, "origin")
     result = @repo.push(origin, ["refs/heads/master"])
-    assert_equal({
-      "refs/heads/master" => nil
-    }, result)
+    assert_equal({}, result)
   end
 
   def test_push_to_non_bare_raise_error
@@ -229,9 +222,7 @@ class RepositoryPushTest < Rugged::SandboxedTestCase
 
   def test_push_non_forward_forced_raise_no_error
     result = @repo.push("origin", ["+refs/heads/unit_test:refs/heads/master"])
-    assert_equal({
-      "refs/heads/master" => nil
-    }, result)
+    assert_equal({}, result)
 
     assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @remote_repo.ref("refs/heads/master").target
   end
