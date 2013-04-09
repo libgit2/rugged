@@ -1039,6 +1039,7 @@ static VALUE rb_git_repo_push(VALUE self, VALUE rb_remote, VALUE rb_refspecs)
 
 	git_push_free(push);
 
+	// We can only free the remote if we have loaded it ourselves.
 	if (!rb_obj_is_kind_of(rb_remote, rb_cRuggedRemote)) {
 		git_remote_free(remote);
 	}
