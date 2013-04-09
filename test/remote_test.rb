@@ -27,7 +27,7 @@ class RemoteTest < Rugged::TestCase
   def test_list_remotes
     remotes = @repo.remotes
     assert remotes.kind_of? Enumerable
-    assert_equal [ "libgit2" ], remotes.to_a
+    assert_equal [ "test_remote", "libgit2" ], remotes.to_a
   end
 
   def test_remote_new_name

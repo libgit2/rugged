@@ -6,3 +6,6 @@
 	ignorecase = true
 [remote "libgit2"]
 	url = git://github.com/libgit2/libgit2.git
+[remote "test_remote"]
+	url = git://github.com/libgit2/rugged.git
+	pushurl = git://github.com/libgit2/TestEmptyRepository.git
