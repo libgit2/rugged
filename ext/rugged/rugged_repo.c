@@ -950,7 +950,8 @@ static VALUE rb_git_repo_reset_path(int argc, VALUE *argv, VALUE self)
 static int rugged__push_status_cb(const char *ref, const char *msg, void *payload)
 {
 	VALUE rb_result_hash = (VALUE)payload;
-	rb_hash_aset(rb_result_hash, rugged_str_new2(ref, NULL), (msg == NULL ? Qnil : rugged_str_new2(msg, NULL)));
+	rb_hash_aset(rb_result_hash, rugged_str_new2(ref, rb_utf8_encoding()),
+		(msg == NULL ? Qnil : rugged_str_new2(msg, NULL)));
 	return GIT_OK;
 }
 
