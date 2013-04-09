@@ -57,6 +57,13 @@ class RemoteTest < Rugged::TestCase
     end
   end
 
+  def test_push_url
+    assert_equal 'git://github.com/libgit2/TestEmptyRepository.git',
+      Rugged::Remote.lookup(@repo, 'test_remote').push_url
+
+    assert_nil Rugged::Remote.lookup(@repo, 'libgit2').push_url
+  end
+
   def test_remote_lookup
     remote = Rugged::Remote.lookup(@repo, 'libgit2')
     assert_equal 'git://github.com/libgit2/libgit2.git', remote.url

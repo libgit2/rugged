@@ -320,6 +320,25 @@ static VALUE rb_git_remote_set_url(VALUE self, VALUE rb_url)
 
 /*
  * 	call-seq:
+ * 		remote.push_url() -> string or nil
+ *
+ *	Returns the remote's url for pushing or nil if no special url for
+ *	pushing is set.
+ *		remote.push_url #=> "git://github.com/libgit2/rugged.git"
+ */
+static VALUE rb_git_remote_push_url(VALUE self)
+{
+	git_remote *remote;
+	const char * push_url;
+
+	Data_Get_Struct(self, git_remote, remote);
+
+	push_url = git_remote_pushurl(remote);
+	return push_url ? rugged_str_new2(push_url, NULL) : Qnil;
+}
+
+/*
+ * 	call-seq:
  * 		remote.connected? -> true or false
  *
  *	Returns if the remote is connected
@@ -447,6 +466,7 @@ void Init_rugged_remote()
 	rb_define_method(rb_cRuggedRemote, "name", rb_git_remote_name, 0);
 	rb_define_method(rb_cRuggedRemote, "url", rb_git_remote_url, 0);
 	rb_define_method(rb_cRuggedRemote, "url=", rb_git_remote_set_url, 1);
+	rb_define_method(rb_cRuggedRemote, "push_url", rb_git_remote_push_url, 0);
 	rb_define_method(rb_cRuggedRemote, "connected?", rb_git_remote_connected, 0);
 	rb_define_method(rb_cRuggedRemote, "ls", rb_git_remote_ls, 0);
 	rb_define_method(rb_cRuggedRemote, "download", rb_git_remote_download, 0);
