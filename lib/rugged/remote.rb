@@ -7,7 +7,7 @@ module Rugged
     # Returns a hash containing the pushed refspecs as keys and
     # any error messages or +nil+ as values.
     def push(refspecs)
-      @owner.push(self.name, refspecs)
+      @owner.push(self, refspecs)
     end
   end
 end
