@@ -412,6 +412,27 @@ static VALUE rb_git_remote_each(VALUE self, VALUE rb_repo)
 	return Qnil;
 }
 
+/*
+ * 	call-seq:
+ * 		remote.save -> true
+ *
+ * 	Saves the remote data ( url, fetchspecs, ...) to the config
+ *
+ *	One can't save a in-memory remote. Doing so will
+ *	result in an exception being raised.
+*/
+static VALUE rb_git_remote_save(VALUE self)
+{
+	git_remote *remote;
+
+	Data_Get_Struct(self, git_remote, remote);
+
+	rugged_exception_check(
+		git_remote_save(remote)
+	);
+	return Qtrue;
+}
+
 void Init_rugged_remote()
 {
 	rb_cRuggedRemote = rb_define_class_under(rb_mRugged, "Remote", rb_cObject);
@@ -430,4 +451,5 @@ void Init_rugged_remote()
 	rb_define_method(rb_cRuggedRemote, "ls", rb_git_remote_ls, 0);
 	rb_define_method(rb_cRuggedRemote, "download", rb_git_remote_download, 0);
 	rb_define_method(rb_cRuggedRemote, "update_tips!", rb_git_remote_update_tips, 0);
+	rb_define_method(rb_cRuggedRemote, "save", rb_git_remote_save, 0);
 }

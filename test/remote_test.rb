@@ -137,6 +137,13 @@ class RemoteWriteTest < Rugged::TestCase
     end
   end
 
+  def test_url_set
+    new_url = 'git://github.com/l?#!@#$ibgit2/TestGitRepository.git'
+    remote = Rugged::Remote.lookup(@repo, 'origin')
+    remote.url = new_url
+    assert remote.save
+    assert_equal new_url, Rugged::Remote.lookup(@repo, 'origin').url
+  end
 end
 
 class RemoteTransportTest < Rugged::TestCase
