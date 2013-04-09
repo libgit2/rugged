@@ -203,6 +203,14 @@ class RepositoryPushTest < Rugged::SandboxedTestCase
     assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @remote_repo.ref("refs/heads/unit_test").target
   end
 
+  def test_push_to_remote_instance
+    origin = Rugged::Remote.lookup(@repo, "origin")
+    result = @repo.push(origin, ["refs/heads/master"])
+    assert_equal({
+      "refs/heads/master" => nil
+    }, result)
+  end
+
   def test_push_to_non_bare_raise_error
     @remote_repo.config['core.bare'] = 'false'
 

@@ -29,6 +29,7 @@ extern VALUE rb_eRuggedError;
 extern VALUE rb_cRuggedIndex;
 extern VALUE rb_cRuggedConfig;
 extern VALUE rb_cRuggedBackend;
+extern VALUE rb_cRuggedRemote;
 
 VALUE rb_cRuggedRepo;
 VALUE rb_cRuggedOdbObject;
@@ -855,8 +856,6 @@ static VALUE rb_git_repo_push(VALUE self, VALUE rb_remote, VALUE rb_refspecs)
 
 	int error = 0, i = 0;
 
-	Check_Type(rb_remote, T_STRING);
-
 	Check_Type(rb_refspecs, T_ARRAY);
 	for (i = 0; i < RARRAY_LEN(rb_refspecs); ++i) {
 		rb_refspec = rb_ary_entry(rb_refspecs, i);
@@ -865,8 +864,14 @@ static VALUE rb_git_repo_push(VALUE self, VALUE rb_remote, VALUE rb_refspecs)
 
 	Data_Get_Struct(self, git_repository, repo);
 
-	error = git_remote_load(&remote, repo, StringValueCStr(rb_remote));
-	if (error) goto cleanup;
+	if (rb_obj_is_kind_of(rb_remote, rb_cRuggedRemote)) {
+		Data_Get_Struct(rb_remote, git_remote, remote);
+	} else if (RB_TYPE_P(rb_remote, T_STRING)) {
+		error = git_remote_load(&remote, repo, StringValueCStr(rb_remote));
+		if (error) goto cleanup;
+	} else {
+		rb_raise(rb_eTypeError, "Expecting a String or Rugged::Remote instance");		
+	}
 
 	error = git_push_new(&push, remote);
 	if (error) goto cleanup;
@@ -912,7 +917,10 @@ static VALUE rb_git_repo_push(VALUE self, VALUE rb_remote, VALUE rb_refspecs)
 	cleanup:
 
 	git_push_free(push);
-	git_remote_free(remote);
+
+	if (!rb_obj_is_kind_of(rb_remote, rb_cRuggedRemote)) {
+		git_remote_free(remote);
+	}
 
 	if (!NIL_P(rb_exception))
 		rb_exc_raise(rb_exception);
