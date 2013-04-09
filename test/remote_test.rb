@@ -64,6 +64,23 @@ class RemoteTest < Rugged::TestCase
     assert_nil Rugged::Remote.lookup(@repo, 'libgit2').push_url
   end
 
+  def test_push_url_set
+    new_url = 'git://github.com/libgit2/TestGitRepository.git'
+    remote = Rugged::Remote.new(@repo, 'git://github.com/libgit2/libgit2.git')
+
+    assert_nil remote.push_url
+    remote.push_url = new_url
+    assert_equal new_url, remote.push_url
+  end
+
+  def test_push_url_set_invalid
+    new_url = 'upstream'
+    remote = Rugged::Remote.new(@repo, 'git://github.com/libgit2/libgit2.git')
+    assert_raises ArgumentError do
+      remote.push_url = new_url
+    end
+  end
+
   def test_remote_lookup
     remote = Rugged::Remote.lookup(@repo, 'libgit2')
     assert_equal 'git://github.com/libgit2/libgit2.git', remote.url
