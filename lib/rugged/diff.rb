@@ -11,5 +11,9 @@ module Rugged
     def patches
       each_patch.to_a
     end
+
+    def deltas
+      each_delta.to_a
+    end
   end
 end
