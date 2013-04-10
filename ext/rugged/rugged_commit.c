@@ -277,7 +277,8 @@ static VALUE rb_git_commit_parent_ids_GET(VALUE self)
 static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 {
 	VALUE rb_message, rb_tree, rb_parents, rb_ref;
-	int parent_count, i, error;
+	VALUE err_obj = Qnil;
+	int parent_count, i, error = 0;
 	const git_commit **parents = NULL;
 	git_commit **free_list = NULL;
 	git_tree *tree;
@@ -343,7 +344,8 @@ static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 		} else if (rb_obj_is_kind_of(p, rb_cRuggedCommit)) {
 			Data_Get_Struct(p, git_commit, parent);
 		} else {
-			rb_raise(rb_eTypeError, "Invalid type for parent object");
+			err_obj = rb_exc_new2(rb_eTypeError, "Invalid type for parent object");
+			goto cleanup;
 		}
 
 		parents[parent_count] = parent;
@@ -374,6 +376,10 @@ cleanup:
 
 	xfree(parents);
 	xfree(free_list);
+
+	if (!NIL_P(err_obj))
+		rb_exc_raise(err_obj);
+
 	rugged_exception_check(error);
 
 	return rugged_create_oid(&commit_oid);

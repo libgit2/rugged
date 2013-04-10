@@ -185,22 +185,24 @@ static VALUE rb_git_tag_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 		rb_name = rb_hash_aref(rb_data, CSTR2SYM("name"));
 		Check_Type(rb_name, T_STRING);
 
-		rb_target = rb_hash_aref(rb_data, CSTR2SYM("target"));
-		target = rugged_object_get(repo, rb_target, GIT_OBJ_ANY);
-
 		rb_force = rb_hash_aref(rb_data, CSTR2SYM("force"));
 		if (!NIL_P(rb_force))
 			force = rugged_parse_bool(rb_force);
 
 		/* only for heavy tags */
-		rb_message = rb_hash_aref(rb_data, CSTR2SYM("message"));
 		rb_tagger = rb_hash_aref(rb_data, CSTR2SYM("tagger"));
+		rb_message = rb_hash_aref(rb_data, CSTR2SYM("message"));
+
+		if (!NIL_P(rb_message))
+			Check_Type(rb_message, T_STRING);
+
+		rb_target = rb_hash_aref(rb_data, CSTR2SYM("target"));
+		target = rugged_object_get(repo, rb_target, GIT_OBJ_ANY);
 
 		if (!NIL_P(rb_tagger) && !NIL_P(rb_message)) {
 			git_signature *tagger = NULL;
 
 			tagger = rugged_signature_get(rb_tagger);
-			Check_Type(rb_message, T_STRING);
 
 			error = git_tag_create(
 				&tag_oid,

@@ -159,14 +159,14 @@ static void set_repository_options(git_repository *repo, VALUE rb_options)
 		if (!NIL_P(rb_alternates)) {
 			Check_Type(rb_alternates, T_ARRAY);
 
+			for (i = 0; i < RARRAY_LEN(rb_alternates); ++i)
+				Check_Type(rb_ary_entry(rb_alternates, i), T_STRING);
+
 			error = git_repository_odb(&odb, repo);
 			rugged_exception_check(error);
 
 			for (i = 0; !error && i < RARRAY_LEN(rb_alternates); ++i) {
 				VALUE alt = rb_ary_entry(rb_alternates, i);
-				Check_Type(alt, T_STRING);
-				/* TODO: this leaks when alt != STRING */
-
 				error = git_odb_add_disk_alternate(odb, StringValueCStr(alt));
 			}
 
@@ -510,6 +510,7 @@ static VALUE rb_git_repo_write(VALUE self, VALUE rb_buffer, VALUE rub_type)
 	rugged_exception_check(error);
 
 	error = stream->finalize_write(&oid, stream);
+	stream->free(stream);
 	rugged_exception_check(error);
 
 	return rugged_create_oid(&oid);
