@@ -50,6 +50,27 @@ VALUE rb_eRuggedErrors[RUGGED_ERROR_COUNT];
 
 static VALUE rb_mShutdownHook;
 
+/* Enable or disable the generation of raw types instead of
+ * complex types. This is useful when running Ruby in a high
+ * performance setting.
+ *
+ * The following types are affected:
+ *
+ * - `time` on signatures will be returned as an integer
+ * instead of a Time object.
+ */
+int rugged_raw_types = 0;
+
+static VALUE rb_rugged_raw_types_get(VALUE self)
+{
+	return rugged_raw_types ? Qtrue : Qfalse;
+}
+
+static VALUE rb_rugged_raw_types_set(VALUE self, VALUE val)
+{
+	rugged_raw_types = rugged_parse_bool(val);
+}
+
 /*
  *	call-seq:
  * 		Rugged.libgit2_version -> version
@@ -340,6 +361,9 @@ void Init_rugged()
 	rb_define_const(rb_mRugged, "SORT_TOPO", INT2FIX(1));
 	rb_define_const(rb_mRugged, "SORT_DATE", INT2FIX(2));
 	rb_define_const(rb_mRugged, "SORT_REVERSE", INT2FIX(4));
+ 
+	rb_define_singleton_method(rb_mRugged, "raw_types", rb_rugged_raw_types_get, 0);
+	rb_define_singleton_method(rb_mRugged, "raw_types=", rb_rugged_raw_types_set, 1);
 
 	/* Initialize libgit2 */
 	git_threads_init();
