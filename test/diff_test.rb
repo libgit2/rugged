@@ -24,8 +24,12 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
     assert_equal "another.txt", deltas[0].old_file[:path]
     assert_equal "another.txt", deltas[0].new_file[:path]
 
+    refute deltas[0].binary?
+
     assert_equal "readme.txt", deltas[1].old_file[:path]
     assert_equal "readme.txt", deltas[1].new_file[:path]
+
+    refute deltas[1].binary?
   end
 
   def test_iteration

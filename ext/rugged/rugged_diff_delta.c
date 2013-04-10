@@ -117,7 +117,7 @@ static VALUE rb_git_diff_delta_binary(VALUE self)
 
   Data_Get_Struct(self, git_diff_delta, delta);
 
-  return (delta->flags | GIT_DIFF_FLAG_NOT_BINARY) ? Qtrue : Qfalse;
+  return (delta->flags & GIT_DIFF_FLAG_NOT_BINARY) ? Qtrue : Qfalse;
 }
 
 void Init_rugged_diff_delta()
