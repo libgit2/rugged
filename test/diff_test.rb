@@ -12,6 +12,22 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
     @diff = @a.tree.diff(@b.tree)
   end
 
+  def test_each_delta
+    deltas = []
+    @diff.each_delta do |delta|
+      assert_instance_of Rugged::Diff::Delta, delta
+      deltas << delta
+    end
+
+    assert_equal 2, deltas.size
+
+    assert_equal "another.txt", deltas[0].old_file[:path]
+    assert_equal "another.txt", deltas[0].new_file[:path]
+
+    assert_equal "readme.txt", deltas[1].old_file[:path]
+    assert_equal "readme.txt", deltas[1].new_file[:path]
+  end
+
   def test_iteration
     patches = []
 

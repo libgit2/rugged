@@ -162,6 +162,32 @@ static VALUE rb_git_diff_each_patch(VALUE self)
   return self;
 }
 
+static VALUE rb_git_diff_each_delta(VALUE self)
+{
+  git_diff_list *diff;
+  const git_diff_delta *delta;
+  int error = 0, d, delta_count;
+
+  if (!rb_block_given_p()) {
+    return rb_funcall(self, rb_intern("to_enum"), 3, CSTR2SYM("each_delta"), self);
+  }
+
+  Data_Get_Struct(self, git_diff_list, diff);
+
+  delta_count = git_diff_num_deltas(diff);
+  for (d = 0; d < delta_count; ++d) {
+    error = git_diff_get_patch(NULL, &delta, diff, d);
+    if (error) break;
+
+    rb_yield(rugged_diff_delta_new(self, delta));
+  }
+
+  rugged_exception_check(error);
+
+  return self;
+}
+
+
 void Init_rugged_diff()
 {
   rb_cRuggedDiff = rb_define_class_under(rb_mRugged, "Diff", rb_cObject);
@@ -169,5 +195,7 @@ void Init_rugged_diff()
   rb_define_method(rb_cRuggedDiff, "patch", rb_git_diff_patch, -1);
   rb_define_method(rb_cRuggedDiff, "write_patch", rb_git_diff_write_patch, -1);
   rb_define_method(rb_cRuggedDiff, "merge!", rb_git_diff_merge, 1);
+
   rb_define_method(rb_cRuggedDiff, "each_patch", rb_git_diff_each_patch, 0);
+  rb_define_method(rb_cRuggedDiff, "each_delta", rb_git_diff_each_delta, 0);
 }
