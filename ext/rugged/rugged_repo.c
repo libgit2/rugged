@@ -215,28 +215,33 @@ static VALUE rb_git_repo_new(int argc, VALUE *argv, VALUE klass)
 
 /*
  *	call-seq:
- *		Rugged::Repository.init_at(path, is_bare) -> repository
+ *		init_at(path, is_bare = false) -> repository
  *
  *	Initialize a Git repository in +path+. This implies creating all the
  *	necessary files on the FS, or re-initializing an already existing
  *	repository if the files have already been created.
  *
- *	The +is_bare+ attribute specifies whether the Repository should be
- *	created on disk as bare or not. Bare repositories have no working
- *	directory and are created in the root of +path+. Non-bare repositories
- *	are created in a +.git+ folder and use +path+ as working directory.
+ *	The +is_bare+ (optional, defaults to false) attribute specifies whether
+ *	the Repository should be created on disk as bare or not.
+ *	Bare repositories have no working directory and are created in the root
+ *	of +path+. Non-bare repositories are created in a +.git+ folder and
+ *	use +path+ as working directory.
  *
- *		Rugged::Repository.init_at('~/repository') #=> #<Rugged::Repository:0x108849488>
+ *		Rugged::Repository.init_at('~/repository', :bare) #=> #<Rugged::Repository:0x108849488>
  */
-static VALUE rb_git_repo_init_at(VALUE klass, VALUE path, VALUE rb_is_bare)
+static VALUE rb_git_repo_init_at(int argc, VALUE *argv, VALUE klass)
 {
 	git_repository *repo;
-	int error, is_bare;
+	VALUE rb_path, rb_is_bare;
+	int error, is_bare = 0;
 
-	is_bare = rugged_parse_bool(rb_is_bare);
-	Check_Type(path, T_STRING);
+	rb_scan_args(argc, argv, "11", &rb_path, &rb_is_bare);
+	Check_Type(rb_path, T_STRING);
 
-	error = git_repository_init(&repo, StringValueCStr(path), is_bare);
+	if (!NIL_P(rb_is_bare))
+		is_bare = rb_is_bare ? 1 : 0;
+
+	error = git_repository_init(&repo, StringValueCStr(rb_path), is_bare);
 	rugged_exception_check(error);
 
 	return rugged_repo_new(klass, repo);
@@ -832,7 +837,7 @@ void Init_rugged_repo()
 	rb_define_singleton_method(rb_cRuggedRepo, "new", rb_git_repo_new, -1);
 	rb_define_singleton_method(rb_cRuggedRepo, "hash",   rb_git_repo_hash,  2);
 	rb_define_singleton_method(rb_cRuggedRepo, "hash_file",   rb_git_repo_hashfile,  2);
-	rb_define_singleton_method(rb_cRuggedRepo, "init_at", rb_git_repo_init_at, 2);
+	rb_define_singleton_method(rb_cRuggedRepo, "init_at", rb_git_repo_init_at, -1);
 	rb_define_singleton_method(rb_cRuggedRepo, "discover", rb_git_repo_discover, -1);
 
 	rb_define_method(rb_cRuggedRepo, "exists?", rb_git_repo_exists, 1);
