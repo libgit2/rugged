@@ -45,7 +45,7 @@ If you're working against a bare repository, you'll need to indicate that:
 
 ```ruby
 # Second parameter indicates whether the repo is a bare repository
-Rugged::Repository.init_at('.', true)
+Rugged::Repository.init_at('.', :bare)
 ```
 
 You can also let Rugged discover the path to the .git directory if you give it a
