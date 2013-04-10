@@ -1,6 +1,7 @@
 require 'rugged/diff/patch'
 require 'rugged/diff/hunk'
 require 'rugged/diff/line'
+require 'rugged/diff/delta'
 
 module Rugged
   class Diff

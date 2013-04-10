@@ -22,8 +22,8 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
 
     assert_equal 2, patches.size
 
-    assert_equal "another.txt", patches[0].old_file[:path]
-    assert_equal "another.txt", patches[0].new_file[:path]
+    assert_equal "another.txt", patches[0].delta.old_file[:path]
+    assert_equal "another.txt", patches[0].delta.new_file[:path]
 
     hunks = []
     patches[0].each_hunk do |hunk|
@@ -36,8 +36,8 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
     assert_equal "@@ -8,10 +8,6 @@\n", hunks[1].header
     assert_equal "@@ -32,6 +28,10 @@\n", hunks[2].header
 
-    assert_equal "readme.txt", patches[1].old_file[:path]
-    assert_equal "readme.txt", patches[1].new_file[:path]
+    assert_equal "readme.txt", patches[1].delta.old_file[:path]
+    assert_equal "readme.txt", patches[1].delta.new_file[:path]
 
     hunks = []
     patches[1].each_hunk do |hunk|
