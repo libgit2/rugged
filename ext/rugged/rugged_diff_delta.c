@@ -29,7 +29,8 @@ VALUE rb_cRuggedDiffDelta;
 
 VALUE rugged_diff_delta_new(VALUE owner, const git_diff_delta *delta)
 {
-  VALUE rb_delta = Data_Wrap_Struct(rb_cRuggedDiffDelta, NULL, NULL, delta);
+  // TODO: Is it okay to cast away the const-ness of the delta here?
+  VALUE rb_delta = Data_Wrap_Struct(rb_cRuggedDiffDelta, NULL, NULL, (git_diff_delta *)delta);
   rugged_set_owner(rb_delta, owner);
   return rb_delta;
 }
