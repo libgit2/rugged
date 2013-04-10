@@ -55,7 +55,7 @@ static VALUE rb_git_diff_hunk_each_line(VALUE self)
   char line_origin;
   const char *content;
   size_t content_len = 0;
-  int error = 0, l, old_lineno, new_lineno;
+  int error = 0, l, old_lineno, new_lineno, lines_count, hunk_index;
 
   if (!rb_block_given_p()) {
     return rb_funcall(self, rb_intern("to_enum"), 3, CSTR2SYM("each_line"), self);
@@ -63,8 +63,8 @@ static VALUE rb_git_diff_hunk_each_line(VALUE self)
 
   Data_Get_Struct(rugged_owner(self), git_diff_patch, patch);
 
-  int lines_count = FIX2INT(rb_iv_get(self, "@line_count"));
-  int hunk_idx = FIX2INT(rb_iv_get(self, "@hunk_index"));
+  lines_count = FIX2INT(rb_iv_get(self, "@line_count"));
+  hunk_idx = FIX2INT(rb_iv_get(self, "@hunk_index"));
 
   for (l = 0; l < lines_count; ++l) {
     error = git_diff_patch_get_line_in_hunk(&line_origin, &content, &content_len, &old_lineno, &new_lineno, patch, hunk_idx, l);

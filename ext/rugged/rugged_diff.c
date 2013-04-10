@@ -61,7 +61,6 @@ static VALUE rb_git_diff_patch(int argc, VALUE *argv, VALUE self)
   git_diff_list *diff;
   VALUE str;
   VALUE rb_opts;
-  VALUE compact;
 
   rb_scan_args(argc, argv, "01", &rb_opts);
 
