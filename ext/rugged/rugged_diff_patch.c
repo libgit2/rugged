@@ -90,7 +90,7 @@ static VALUE rb_git_diff_patch_additions(VALUE self)
 
   git_diff_patch_line_stats(NULL, &additions, NULL, patch);
 
-  return INT2FIX(git_diff_patch_num_hunks(patch));
+  return INT2FIX(additions);
 }
 
 static VALUE rb_git_diff_patch_deletions(VALUE self)
@@ -101,7 +101,7 @@ static VALUE rb_git_diff_patch_deletions(VALUE self)
 
   git_diff_patch_line_stats(NULL, NULL, &deletions, patch);
 
-  return INT2FIX(git_diff_patch_num_hunks(patch));
+  return INT2FIX(deletions);
 }
 
 void Init_rugged_diff_patch()
