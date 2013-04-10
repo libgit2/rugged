@@ -277,7 +277,8 @@ static VALUE rb_git_commit_parent_ids_GET(VALUE self)
 static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 {
 	VALUE rb_message, rb_tree, rb_parents, rb_ref;
-	int parent_count, i, error;
+	VALUE rb_err_obj = Qnil;
+	int parent_count, i, error = 0;
 	const git_commit **parents = NULL;
 	git_commit **free_list = NULL;
 	git_tree *tree;
@@ -315,8 +316,8 @@ static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 	rb_tree = rb_hash_aref(rb_data, CSTR2SYM("tree"));
 	tree = (git_tree *)rugged_object_get(repo, rb_tree, GIT_OBJ_TREE);
 
-	parents = xmalloc(RARRAY_LEN(rb_parents) * sizeof(void *));
-	free_list = xmalloc(RARRAY_LEN(rb_parents) * sizeof(void *));
+	parents = alloca(RARRAY_LEN(rb_parents) * sizeof(void *));
+	free_list = alloca(RARRAY_LEN(rb_parents) * sizeof(void *));
 	parent_count = 0;
 
 	for (i = 0; i < (int)RARRAY_LEN(rb_parents); ++i) {
@@ -343,7 +344,8 @@ static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 		} else if (rb_obj_is_kind_of(p, rb_cRuggedCommit)) {
 			Data_Get_Struct(p, git_commit, parent);
 		} else {
-			rb_raise(rb_eTypeError, "Invalid type for parent object");
+			rb_err_obj = rb_exc_new2(rb_eTypeError, "Invalid type for parent object");
+			goto cleanup;
 		}
 
 		parents[parent_count] = parent;
@@ -372,8 +374,9 @@ cleanup:
 	for (i = 0; i < parent_count; ++i)
 		git_object_free((git_object *)free_list[i]);
 
-	xfree(parents);
-	xfree(free_list);
+	if (!NIL_P(rb_err_obj))
+		rb_exc_raise(rb_err_obj);
+
 	rugged_exception_check(error);
 
 	return rugged_create_oid(&commit_oid);

@@ -159,14 +159,14 @@ static void set_repository_options(git_repository *repo, VALUE rb_options)
 		if (!NIL_P(rb_alternates)) {
 			Check_Type(rb_alternates, T_ARRAY);
 
+			for (i = 0; i < RARRAY_LEN(rb_alternates); ++i)
+				Check_Type(rb_ary_entry(rb_alternates, i), T_STRING);
+
 			error = git_repository_odb(&odb, repo);
 			rugged_exception_check(error);
 
 			for (i = 0; !error && i < RARRAY_LEN(rb_alternates); ++i) {
 				VALUE alt = rb_ary_entry(rb_alternates, i);
-				Check_Type(alt, T_STRING);
-				/* TODO: this leaks when alt != STRING */
-
 				error = git_odb_add_disk_alternate(odb, StringValueCStr(alt));
 			}
 
@@ -215,28 +215,33 @@ static VALUE rb_git_repo_new(int argc, VALUE *argv, VALUE klass)
 
 /*
  *	call-seq:
- *		Rugged::Repository.init_at(path, is_bare) -> repository
+ *		init_at(path, is_bare = false) -> repository
  *
  *	Initialize a Git repository in +path+. This implies creating all the
  *	necessary files on the FS, or re-initializing an already existing
  *	repository if the files have already been created.
  *
- *	The +is_bare+ attribute specifies whether the Repository should be
- *	created on disk as bare or not. Bare repositories have no working
- *	directory and are created in the root of +path+. Non-bare repositories
- *	are created in a +.git+ folder and use +path+ as working directory.
+ *	The +is_bare+ (optional, defaults to false) attribute specifies whether
+ *	the Repository should be created on disk as bare or not.
+ *	Bare repositories have no working directory and are created in the root
+ *	of +path+. Non-bare repositories are created in a +.git+ folder and
+ *	use +path+ as working directory.
  *
- *		Rugged::Repository.init_at('~/repository') #=> #<Rugged::Repository:0x108849488>
+ *		Rugged::Repository.init_at('~/repository', :bare) #=> #<Rugged::Repository:0x108849488>
  */
-static VALUE rb_git_repo_init_at(VALUE klass, VALUE path, VALUE rb_is_bare)
+static VALUE rb_git_repo_init_at(int argc, VALUE *argv, VALUE klass)
 {
 	git_repository *repo;
-	int error, is_bare;
+	VALUE rb_path, rb_is_bare;
+	int error, is_bare = 0;
 
-	is_bare = rugged_parse_bool(rb_is_bare);
-	Check_Type(path, T_STRING);
+	rb_scan_args(argc, argv, "11", &rb_path, &rb_is_bare);
+	Check_Type(rb_path, T_STRING);
 
-	error = git_repository_init(&repo, StringValueCStr(path), is_bare);
+	if (!NIL_P(rb_is_bare))
+		is_bare = rb_is_bare ? 1 : 0;
+
+	error = git_repository_init(&repo, StringValueCStr(rb_path), is_bare);
 	rugged_exception_check(error);
 
 	return rugged_repo_new(klass, repo);
@@ -328,6 +333,7 @@ static VALUE rb_git_repo_get_config(VALUE self)
  *		repo.merge_base(commit1, commit2)
  *
  *	Find a merge base, given two commits or oids.
+ *	Returns nil if a merge base is not found.
  */
 static VALUE rb_git_repo_merge_base(VALUE self, VALUE obj1, VALUE obj2)
 {
@@ -340,8 +346,10 @@ static VALUE rb_git_repo_merge_base(VALUE self, VALUE obj1, VALUE obj2)
 	rugged_oid_get(&oid2, repo, obj2);
 
 	error = git_merge_base(&base, repo, &oid1, &oid2);
-	rugged_exception_check(error);
+	if (error == GIT_ENOTFOUND)
+		return Qnil;
 
+	rugged_exception_check(error);
 	return rugged_create_oid(&base);
 }
 
@@ -507,6 +515,7 @@ static VALUE rb_git_repo_write(VALUE self, VALUE rb_buffer, VALUE rub_type)
 	rugged_exception_check(error);
 
 	error = stream->finalize_write(&oid, stream);
+	stream->free(stream);
 	rugged_exception_check(error);
 
 	return rugged_create_oid(&oid);
@@ -821,6 +830,121 @@ static VALUE rb_git_repo_each_id(VALUE self)
 	return Qnil;
 }
 
+static int parse_reset_type(VALUE rb_reset_type)
+{
+	ID id_reset_type;
+
+	Check_Type(rb_reset_type, T_SYMBOL);
+	id_reset_type = SYM2ID(rb_reset_type);
+
+	if (id_reset_type == rb_intern("soft")) {
+		return GIT_RESET_SOFT;
+	} else if (id_reset_type == rb_intern("mixed")) {
+		return GIT_RESET_MIXED;
+	} else if (id_reset_type == rb_intern("hard")) {
+		return GIT_RESET_HARD;
+	} else {
+		rb_raise(rb_eArgError,
+			"Invalid reset type. Expected `:soft`, `:mixed` or `:hard`");
+	}
+}
+
+/*
+ *	call-seq:
+ *		repo.reset(target, reset_type) -> nil
+ *
+ *	Sets the current head to the specified commit oid and optionally
+ *	resets the index and working tree to match.
+ *	- +target+: Rugged::Commit, Rugged::Tag or rev that resolves to a commit or tag object
+ *	- +reset_type+: :soft, :mixed: or :hard
+ *	[:soft] the head will be moved to the commit.
+ * 	[:mixed] will trigger a +:soft+ reset, plus the index will be replaced
+ * 		 with the content of the commit tree.
+ * 	[:hard] will trigger a +:mixed+ reset and the working directory will be
+ * 		replaced with the content of the index. (Untracked and ignored files
+ * 		will be left alone)
+ *
+ * 	Examples:
+ * 		repo.reset('origin/master', :hard) #=> nil
+ */
+static VALUE rb_git_repo_reset(VALUE self, VALUE rb_target, VALUE rb_reset_type)
+{
+	git_repository *repo;
+	int reset_type;
+	git_object *target = NULL;
+	int error;
+
+	Data_Get_Struct(self, git_repository, repo);
+
+	reset_type = parse_reset_type(rb_reset_type);
+	target = rugged_object_get(repo, rb_target, GIT_OBJ_ANY);
+
+	error = git_reset(repo, target, reset_type);
+
+	git_object_free(target);
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
+/*
+ *	call-seq:
+ *		repo.reset_path(pathspecs, target=nil) -> nil
+ *
+ *	Updates entries in the index from the +target+ commit tree, matching
+ *	the given +pathspecs+.
+ *
+ * 	Passing a nil +target+ will result in removing
+ *	entries in the index matching the provided pathspecs.
+ *
+ *	- +pahtspecs+: list of pathspecs to operate on (+String+ or +Array+ of +String+ objects)
+ *	- +target+(optional): Rugged::Commit, Rugged::Tag or rev that resolves to a commit or tag object.
+ *
+ *	Examples:
+ *		reset_path(File.join('subdir','file.txt'), '441034f860c1d5d90e4188d11ae0d325176869a8') #=> nil
+ */
+static VALUE rb_git_repo_reset_path(int argc, VALUE *argv, VALUE self)
+{
+	git_repository *repo;
+	git_object *target = NULL;
+	git_strarray pathspecs;
+	VALUE rb_target, rb_paths;
+	VALUE rb_path_array;
+	int i, error = 0;
+
+	pathspecs.strings = NULL;
+	pathspecs.count = 0;
+
+	Data_Get_Struct(self, git_repository, repo);
+
+	rb_scan_args(argc, argv, "11", &rb_paths, &rb_target);
+
+	rb_path_array = rb_ary_to_ary(rb_paths);
+
+	for (i = 0; i < RARRAY_LEN(rb_path_array); ++i)
+		Check_Type(rb_ary_entry(rb_path_array, i), T_STRING);
+
+	pathspecs.count = RARRAY_LEN(rb_path_array);
+	pathspecs.strings = xmalloc(pathspecs.count * sizeof(char *));
+
+	for (i = 0; i < RARRAY_LEN(rb_path_array); ++i) {
+		VALUE fpath = rb_ary_entry(rb_path_array, i);
+		pathspecs.strings[i] = StringValueCStr(fpath);
+	}
+
+	if (!NIL_P(rb_target))
+		target = rugged_object_get(repo, rb_target, GIT_OBJ_ANY);
+
+	error = git_reset_default(repo, target, &pathspecs);
+
+	xfree(pathspecs.strings);
+	git_object_free(target);
+
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
 void Init_rugged_repo()
 {
 	rb_cRuggedRepo = rb_define_class_under(rb_mRugged, "Repository", rb_cObject);
@@ -828,7 +952,7 @@ void Init_rugged_repo()
 	rb_define_singleton_method(rb_cRuggedRepo, "new", rb_git_repo_new, -1);
 	rb_define_singleton_method(rb_cRuggedRepo, "hash",   rb_git_repo_hash,  2);
 	rb_define_singleton_method(rb_cRuggedRepo, "hash_file",   rb_git_repo_hashfile,  2);
-	rb_define_singleton_method(rb_cRuggedRepo, "init_at", rb_git_repo_init_at, 2);
+	rb_define_singleton_method(rb_cRuggedRepo, "init_at", rb_git_repo_init_at, -1);
 	rb_define_singleton_method(rb_cRuggedRepo, "discover", rb_git_repo_discover, -1);
 
 	rb_define_method(rb_cRuggedRepo, "exists?", rb_git_repo_exists, 1);
@@ -856,6 +980,8 @@ void Init_rugged_repo()
 	rb_define_method(rb_cRuggedRepo, "head_orphan?",  rb_git_repo_head_orphan,  0);
 
 	rb_define_method(rb_cRuggedRepo, "merge_base", rb_git_repo_merge_base, 2);
+	rb_define_method(rb_cRuggedRepo, "reset", rb_git_repo_reset, 2);
+	rb_define_method(rb_cRuggedRepo, "reset_path", rb_git_repo_reset_path, -1);
 
 	rb_cRuggedOdbObject = rb_define_class_under(rb_mRugged, "OdbObject", rb_cObject);
 	rb_define_method(rb_cRuggedOdbObject, "data",  rb_git_odbobj_data,  0);

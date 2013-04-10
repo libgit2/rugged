@@ -45,7 +45,7 @@ If you're working against a bare repository, you'll need to indicate that:
 
 ```ruby
 # Second parameter indicates whether the repo is a bare repository
-Rugged::Repository.init_at('.', true)
+Rugged::Repository.init_at('.', :bare)
 ```
 
 You can also let Rugged discover the path to the .git directory if you give it a
@@ -109,7 +109,6 @@ There's a few ways to write to a repository. To write directly from your
 instantiated repository object:
 
 ```ruby
-sha = repo.hash(content, type)
 sha = repo.write(content, type)
 ```
 
@@ -117,20 +116,20 @@ You can also use the `Commit` object directly to craft a commit; this is a bit
 more high-level, so it may be preferable:
 
 ```ruby
-oid = rugged.write("This is a blob.", :blob)
+oid = repo.write("This is a blob.", :blob)
 index = Rugged::Index.new
 index.add(:path => "README.md", :oid => oid, :mode => 0100644)
 
 options = {}
-options[:tree] = index.write_tree(rugged)
+options[:tree] = index.write_tree(repo)
 
 options[:author] = { :email => "testuser@github.com", :name => 'Test Author', :time => Time.now }
 options[:committer] = { :email => "testuser@github.com", :name => 'Test Author', :time => Time.now }
 options[:message] ||= "Making a commit via Rugged!"
-options[:parents] = rugged.empty? ? [] : [ rugged.head.target ].compact
+options[:parents] = repo.empty? ? [] : [ repo.head.target ].compact
 options[:update_ref] = 'HEAD'
 
-Rugged::Commit.create(rugged, options)
+Rugged::Commit.create(repo, options)
 ```
 
 ---
@@ -196,7 +195,7 @@ tag  = repo.lookup(tag_sha)
 
 object = tag.target
 sha    = tag.target.oid
-str    = tag.target_type # "commit", "tag", "blob"
+str    = tag.target_type # :commit, :tag, :blob
 str    = tag.name        # "v1.0"
 str    = tag.message
 person = tag.tagger
@@ -234,20 +233,20 @@ tree.each_blob { |entry| puts entry[:name] }  # list only files
 You can also write trees with the `TreeBuilder`:
 
 ```ruby
-oid = rugged.write("This is a blob.", :blob)
+oid = repo.write("This is a blob.", :blob)
 builder = Rugged::Tree::Builder.new
 builder << { :type => :blob, :name => "README.md", :oid => oid, :filemode => 0100644 }
 
 options = {}
-options[:tree] = builder.write(rugged)
+options[:tree] = builder.write(repo)
 
 options[:author] = { :email => "testuser@github.com", :name => 'Test Author', :time => Time.now }
 options[:committer] = { :email => "testuser@github.com", :name => 'Test Author', :time => Time.now }
 options[:message] ||= "Making a commit via Rugged!"
-options[:parents] = rugged.empty? ? [] : [ rugged.head.target ].compact
+options[:parents] = repo.empty? ? [] : [ repo.head.target ].compact
 options[:update_ref] = 'HEAD'
 
-Rugged::Commit.create(rugged, options)
+Rugged::Commit.create(repo, options)
 ```
 
 ---
@@ -295,10 +294,10 @@ index.entries
 index.each { |i| puts i.inspect }
 
 # Get a particular entry in the index.
-index.get_entry(path)
+index[path]
 
 # Unstage.
-index.remove(i/path)
+index.remove(path)
 
 # Stage. Also updates existing entry if there is one.
 index.add(ientry)
@@ -318,7 +317,7 @@ ref = repo.head # or...
 ref = Rugged::Reference.lookup(repo, "refs/heads/master")
 
 sha = ref.target
-str = ref.type   # "commit"
+str = ref.type   # :direct
 str = ref.name   # "refs/heads/master"
 ```
 
@@ -343,7 +342,7 @@ It is also easy to create, update, rename or delete a reference:
 ```ruby
 ref = Rugged::Reference.create(repo, "refs/heads/unit_test", some_commit_sha)
 
-ref.target = new_sha
+ref.set_target(new_sha)
 
 ref.rename("refs/heads/blead")
 
@@ -355,8 +354,8 @@ Finally, you can access the reflog for any branch:
 ```ruby
 ref = Rugged::Reference.lookup(repo, "refs/heads/master")
 entry = ref.log.first
-sha   = entry[:oid_old]
-sha   = entry[:oid_new]
+sha   = entry[:id_old]
+sha   = entry[:id_new]
 str   = entry[:message]
 prsn  = entry[:committer]
 ```
@@ -383,7 +382,7 @@ Rugged::Branch.each_name(repo, :remote).sort
 Look up branches and get attributes:
 
 ```ruby
-branch = Rugged::Branch.lookup(@repo, "master")
+branch = Rugged::Branch.lookup(repo, "master")
 branch.name # => 'master'
 branch.canonical_name # => 'refs/heads/master'
 ```
@@ -391,7 +390,7 @@ branch.canonical_name # => 'refs/heads/master'
 Look up the oid for the tip of a branch:
 
 ```ruby
-Rugged::Branch.lookup(@repo, "master").tip.oid
+Rugged::Branch.lookup(repo, "master").tip.oid
 # => "36060c58702ed4c2a40832c51758d5344201d89a"
 ```
 

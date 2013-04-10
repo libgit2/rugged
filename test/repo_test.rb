@@ -121,14 +121,20 @@ class RepositoryTest < Rugged::TestCase
   end
 
   def test_enumerate_all_objects
-    assert_equal 33, @repo.each_id.to_a.length
+    assert_equal 36, @repo.each_id.to_a.length
   end
 
   def test_loading_alternates
     alt_path = File.dirname(__FILE__) + '/fixtures/alternate/objects'
     repo = Rugged::Repository.new(@path, :alternates => [alt_path])
-    assert_equal 36, repo.each_id.to_a.length
+    assert_equal 39, repo.each_id.to_a.length
     assert repo.read('146ae76773c91e3b1d00cf7a338ec55ae58297e2')
+  end
+
+  def test_alternates_with_invalid_path_type
+    assert_raises TypeError do
+      Rugged::Repository.new(@path, :alternates => [:invalid_input])
+    end
   end
 
   def test_find_merge_base_between_oids
@@ -169,5 +175,40 @@ class RepositoryWriteTest < Rugged::TestCase
     assert_equal "76b1b55ab653581d6f2c7230d34098e837197674", oid
     assert @repo.exists?("76b1b55ab653581d6f2c7230d34098e837197674")
   end
+
+  def test_no_merge_base_between_unrelated_branches
+    info = @repo.rev_parse('HEAD').to_hash
+    baseless = Rugged::Commit.create(@repo, info.merge(:parents => []))
+    assert_nil @repo.merge_base('HEAD', baseless)
+  end
 end
 
+class RepositoryInitTest < Rugged::TestCase
+  def setup
+    @tmppath = Dir.mktmpdir
+  end
+
+  def teardown
+    FileUtils.remove_entry_secure(@tmppath)
+  end
+
+  def test_init_bare_false
+    repo = Rugged::Repository.init_at(@tmppath, false)
+    refute repo.bare?
+  end
+
+  def test_init_bare_true
+    repo = Rugged::Repository.init_at(@tmppath, true)
+    assert repo.bare?
+  end
+
+  def test_init_bare_truthy
+    repo = Rugged::Repository.init_at(@tmppath, :bare)
+    assert repo.bare?
+  end
+
+  def test_init_non_bare_default
+    repo = Rugged::Repository.init_at(@tmppath)
+    refute repo.bare?
+  end
+end

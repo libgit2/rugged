@@ -114,7 +114,9 @@ git_object *rugged_object_get(git_repository *repo, VALUE object_value, git_otyp
 	git_object *object = NULL;
 
 	if (rb_obj_is_kind_of(object_value, rb_cRuggedObject)) {
-		Data_Get_Struct(object_value, git_object, object);
+		git_object *owned_obj = NULL;
+		Data_Get_Struct(object_value, git_object, owned_obj);
+		git_object_dup(&object, owned_obj);
 	} else {
 		int error;
 

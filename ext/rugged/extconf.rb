@@ -8,7 +8,9 @@ def sys(cmd)
   ret
 end
 
-if `which make`.strip.empty?
+MAKE_PROGRAM = find_executable('gmake') || find_executable('make')
+
+if MAKE_PROGRAM.nil?
   STDERR.puts "ERROR: GNU make is required to build Rugged"
   exit(1)
 end
@@ -27,7 +29,7 @@ else
 
   if !File.exists?(LIBGIT2_LIB_PATH)
     Dir.chdir(LIBGIT2_DIR) do
-      sys("make -f Makefile.embed")
+      sys("#{MAKE_PROGRAM} -f Makefile.embed")
       FileUtils.cp 'libgit2.a', LIBGIT2_LIB_PATH
     end
   end
