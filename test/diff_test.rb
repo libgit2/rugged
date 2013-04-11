@@ -32,6 +32,14 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
     refute deltas[1].binary?
   end
 
+  def test_diff_prefiltering
+    diff = @a.tree.diff(@b.tree, :max_size => 1000) do |diff, delta, matched_pathspec|
+      delta.old_file[:path] == "readme.txt"
+    end
+
+    assert_equal "M\treadme.txt\n", diff.patch(:compact => true)
+  end
+
   def test_iteration
     patches = []
 

@@ -39,6 +39,12 @@ VALUE rugged_diff_new(VALUE klass, VALUE owner, git_diff_list *diff)
   return rb_diff;
 }
 
+VALUE rugged_diff_new2(const git_diff_list *diff)
+{
+  return Data_Wrap_Struct(rb_cRuggedDiff, NULL, NULL, (git_diff_list *)diff);
+}
+
+
 static int diff_print_cb(const  git_diff_delta *delta, const git_diff_range *range, char line_origin,
         const char *content, size_t content_len, void *payload)
 {

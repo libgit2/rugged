@@ -270,6 +270,11 @@ static VALUE rb_git_tree_diff(VALUE self, VALUE other)
 	VALUE owner;
 	int error;
 
+	if (rb_block_given_p()) {
+		opts.notify_cb = &rugged__diff_notify_cb;
+		opts.notify_payload = (void*)rb_block_proc();
+	}
+
 	Data_Get_Struct(self, git_tree, tree);
 	Data_Get_Struct(other, git_tree, other_tree);
 	owner = rugged_owner(self);

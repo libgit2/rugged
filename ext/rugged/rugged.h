@@ -76,6 +76,7 @@ VALUE rugged_config_new(VALUE klass, VALUE owner, git_config *cfg);
 VALUE rugged_object_new(VALUE owner, git_object *object);
 VALUE rugged_ref_new(VALUE klass, VALUE owner, git_reference *ref);
 VALUE rugged_diff_new(VALUE klass, VALUE owner, git_diff_list *diff);
+VALUE rugged_diff_new2(const git_diff_list *diff);
 VALUE rugged_diff_patch_new(VALUE owner, git_diff_patch *patch);
 VALUE rugged_diff_delta_new(VALUE owner, const git_diff_delta *delta);
 VALUE rugged_diff_hunk_new(VALUE owner, int hunk_idx, const git_diff_range *range, const char *header, size_t header_len, size_t lines_in_hunk);
