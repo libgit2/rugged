@@ -4,15 +4,10 @@ module Rugged
       include Enumerable
       alias each each_line
 
-      attr_reader :line_count
+      attr_reader :line_count, :header, :range, :owner
+
       alias size line_count
       alias count line_count
-
-      attr_accessor :header
-
-      attr_accessor :range
-
-      attr_accessor :owner
       alias delta owner
 
       def inspect
