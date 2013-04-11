@@ -983,7 +983,7 @@ static VALUE rb_git_repo_push(VALUE self, VALUE rb_remote, VALUE rb_refspecs)
 
 	if (rb_obj_is_kind_of(rb_remote, rb_cRuggedRemote)) {
 		Data_Get_Struct(rb_remote, git_remote, remote);
-	} else if (RB_TYPE_P(rb_remote, T_STRING)) {
+	} else if (TYPE(rb_remote) == T_STRING) {
 		error = git_remote_load(&remote, repo, StringValueCStr(rb_remote));
 		if (error) goto cleanup;
 	} else {
