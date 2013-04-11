@@ -6,19 +6,19 @@ module Rugged
       alias hunk owner
 
       def context?
-        @line_origin == "context"
+        @line_origin == :context
       end
 
       def addition?
-        @line_origin == "addition"
+        @line_origin == :addition
       end
 
       def deletion?
-        @line_origin == "deletion"
+        @line_origin == :deletion
       end
 
       def eof_newline?
-        @line_origin == "eof_newline"
+        @line_origin == :eof_newline
       end
 
       def inspect
