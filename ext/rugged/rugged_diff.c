@@ -143,7 +143,7 @@ static VALUE rb_git_diff_each_patch(VALUE self)
   int error = 0, d, delta_count;
 
   if (!rb_block_given_p()) {
-    return rb_funcall(self, rb_intern("to_enum"), 3, CSTR2SYM("each_patch"), self);
+    return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_patch"), self);
   }
 
   Data_Get_Struct(self, git_diff_list, diff);
@@ -168,7 +168,7 @@ static VALUE rb_git_diff_each_delta(VALUE self)
   int error = 0, d, delta_count;
 
   if (!rb_block_given_p()) {
-    return rb_funcall(self, rb_intern("to_enum"), 3, CSTR2SYM("each_delta"), self);
+    return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_delta"), self);
   }
 
   Data_Get_Struct(self, git_diff_list, diff);

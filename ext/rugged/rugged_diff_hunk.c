@@ -58,7 +58,7 @@ static VALUE rb_git_diff_hunk_each_line(VALUE self)
   int error = 0, l, old_lineno, new_lineno, lines_count, hunk_idx;
 
   if (!rb_block_given_p()) {
-    return rb_funcall(self, rb_intern("to_enum"), 3, CSTR2SYM("each_line"), self);
+    return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_line"), self);
   }
 
   Data_Get_Struct(rugged_owner(self), git_diff_patch, patch);

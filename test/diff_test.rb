@@ -94,6 +94,13 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
 
   def test_each_patch_returns_enumerator
     assert_instance_of Enumerator, @diff.each_patch
+
+    patches = []
+    @diff.each_patch.each do |patch|
+      assert_instance_of Rugged::Diff::Patch, patch
+      patches << patch
+    end
+    assert_equal 2, patches.size
   end
 
   def test_each_hunk_returns_enumerator
