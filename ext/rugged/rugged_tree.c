@@ -276,6 +276,44 @@ static int rugged__diff_notify_cb(
 	return RTEST(rb_result) ? 0 : 1;
 }
 
+/*
+ *  call-seq: tree.diff(other_tree, options = {}) -> diff
+ *  call-seq: tree.diff(other_tree, options = {}) { |diff_so_far, delta_to_add, matched_pathspec| block } -> diff
+ *
+ *  Creates and returns a diff between two tree objects.
+ *
+ *  Can be passed an optional block to filter unwanted delta objects before
+ *  they're added to the diff.
+ *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :max_size ::
+ *    An integer specifying the maximum byte size of a file before a it will
+ *    be treated as binary. The default value is 512MB.
+ *
+ *  :context_lines ::
+ *    The number of unchanged lines that define the boundary of a hunk (and
+ *    to display before and after the actual changes). The default is 3.
+ *
+ *  :interhunk_lines ::
+ *    The maximum number of unchanged lines between hunk boundaries before the hunks
+ *    will be merged into a one. The default is 0.
+ *
+ *  :reverse ::
+ *    If true, the sides of the diff will be reversed.
+ *
+ *  :force_text ::
+ *    If true, all files will be treated as text, disabling binary attributes & detection.
+ *
+ *  :ignore_whitespace ::
+ *    If true, all whitespace will be ignored.
+ *
+ *  Examples:
+ *
+ *    tree = Rugged::Tree.lookup(repo, "d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+ *    other_tree = Rugged::Tree.lookup(repo, "7a9e0b02e63179929fed24f0a3e0f19168114d10")
+ *    diff = tree.diff(other_tree)
+ */
 static VALUE rb_git_tree_diff(int argc, VALUE *argv, VALUE self)
 {
 	git_tree *tree, *other_tree;
