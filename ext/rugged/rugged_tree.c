@@ -262,6 +262,21 @@ static VALUE rb_git_tree_path(VALUE self, VALUE rb_path)
 }
 
 static VALUE rb_git_tree_diff(VALUE self, VALUE other)
+static int rugged__diff_notify_cb(
+	const git_diff_list *diff_so_far,
+	const git_diff_delta *delta_to_add,
+	const char *matched_pathspec,
+	void *payload
+) {
+	VALUE rb_diff = rugged_diff_new2(diff_so_far);
+	VALUE rb_result = rb_funcall((VALUE)payload, rb_intern("call"), 3, rb_diff,
+		rugged_diff_delta_new(rb_diff, delta_to_add),
+		(matched_pathspec == NULL ? Qnil : rugged_str_new2(matched_pathspec, NULL))
+	);
+
+	return RTEST(rb_result) ? 0 : 1;
+}
+
 {
 	git_tree *tree, *other_tree;
 	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
