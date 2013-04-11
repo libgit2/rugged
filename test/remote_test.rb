@@ -53,5 +53,51 @@ class RemoteTest < Rugged::TestCase
       Rugged::Remote.lookup(@repo, "*\?")
     end
   end
+end
 
+class RemotePushTest < Rugged::SandboxedTestCase
+  def setup
+    super
+    @remote_repo = sandbox_init("testrepo.git")
+    # We can only push to bare repos
+    @remote_repo.config['core.bare'] = 'true'
+
+    @repo = sandbox_clone("testrepo.git", "testrepo")
+    Rugged::Reference.create(@repo,
+      "refs/heads/unit_test",
+      "8496071c1b46c854b31185ea97743be6a8774479")
+
+    @remote = Rugged::Remote.lookup(@repo, 'origin')
+  end
+
+  def test_push_single_ref
+    result = @remote.push(["refs/heads/master", "refs/heads/master:refs/heads/foobar", "refs/heads/unit_test"])
+    assert_equal({}, result)
+
+    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", @remote_repo.ref("refs/heads/foobar").target
+    assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @remote_repo.ref("refs/heads/unit_test").target
+  end
+
+  def test_push_to_non_bare_raise_error
+    @remote_repo.config['core.bare'] = 'false'
+
+    assert_raises Rugged::Error do
+      @remote.push(["refs/heads/master"])
+    end
+  end
+
+  def test_push_non_forward_raise_error
+    assert_raises Rugged::Error do
+      @remote.push(["refs/heads/unit_test:refs/heads/master"])
+    end
+
+    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", @remote_repo.ref("refs/heads/master").target
+  end
+
+  def test_push_non_forward_forced_raise_no_error
+    result = @remote.push(["+refs/heads/unit_test:refs/heads/master"])
+    assert_equal({}, result)
+
+    assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @remote_repo.ref("refs/heads/master").target
+  end
 end
