@@ -192,6 +192,19 @@ static VALUE rb_git_diff_each_delta(VALUE self)
   return self;
 }
 
+/*
+ *  call-seq: diff.size
+ *
+ *  Returns the number of deltas/patches in this diff.
+ */
+static VALUE rb_git_diff_size(VALUE self)
+{
+  git_diff_list *diff;
+
+  Data_Get_Struct(self, git_diff_list, diff);
+
+  return INT2FIX(git_diff_num_deltas(diff));
+}
 
 void Init_rugged_diff()
 {
@@ -200,6 +213,8 @@ void Init_rugged_diff()
   rb_define_method(rb_cRuggedDiff, "patch", rb_git_diff_patch, -1);
   rb_define_method(rb_cRuggedDiff, "write_patch", rb_git_diff_write_patch, -1);
   rb_define_method(rb_cRuggedDiff, "merge!", rb_git_diff_merge, 1);
+
+  rb_define_method(rb_cRuggedDiff, "size", rb_git_diff_size, 0);
 
   rb_define_method(rb_cRuggedDiff, "each_patch", rb_git_diff_each_patch, 0);
   rb_define_method(rb_cRuggedDiff, "each_delta", rb_git_diff_each_delta, 0);

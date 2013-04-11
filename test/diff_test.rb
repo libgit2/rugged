@@ -10,6 +10,11 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
     @b = @repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
   end
 
+  def test_size
+    diff = @a.tree.diff(@b.tree)
+    assert_equal 2, diff.size
+  end
+
   def test_each_delta
     diff = @a.tree.diff(@b.tree)
 
