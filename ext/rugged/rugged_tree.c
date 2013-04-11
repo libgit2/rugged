@@ -261,7 +261,6 @@ static VALUE rb_git_tree_path(VALUE self, VALUE rb_path)
 	return rb_entry;
 }
 
-static VALUE rb_git_tree_diff(VALUE self, VALUE other)
 static int rugged__diff_notify_cb(
 	const git_diff_list *diff_so_far,
 	const git_diff_delta *delta_to_add,
@@ -277,17 +276,52 @@ static int rugged__diff_notify_cb(
 	return RTEST(rb_result) ? 0 : 1;
 }
 
+static VALUE rb_git_tree_diff(int argc, VALUE *argv, VALUE self)
 {
 	git_tree *tree, *other_tree;
 	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
 	git_repository *repo;
 	git_diff_list *diff;
-	VALUE owner;
+	VALUE owner, other, rb_options, rb_diff;
 	int error;
+
+	rb_scan_args(argc, argv, "11", &other, &rb_options);
 
 	if (rb_block_given_p()) {
 		opts.notify_cb = &rugged__diff_notify_cb;
 		opts.notify_payload = (void*)rb_block_proc();
+	}
+
+	if (!NIL_P(rb_options)) {
+		VALUE rb_value;
+		Check_Type(rb_options, T_HASH);
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("max_size"));
+		if (!NIL_P(rb_value)) {
+			opts.max_size = FIX2INT(rb_value);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("context_lines"));
+		if (!NIL_P(rb_value)) {
+			opts.context_lines = FIX2INT(rb_value);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("interhunk_lines"));
+		if (!NIL_P(rb_value)) {
+			opts.interhunk_lines = FIX2INT(rb_value);
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("reverse")))) {
+			opts.flags |= GIT_DIFF_REVERSE;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("force_text")))) {
+			opts.flags |= GIT_DIFF_FORCE_TEXT;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("ignore_whitespace")))) {
+			opts.flags |= GIT_DIFF_IGNORE_WHITESPACE;
+		}
 	}
 
 	Data_Get_Struct(self, git_tree, tree);
@@ -444,7 +478,7 @@ void Init_rugged_tree()
 	rb_define_method(rb_cRuggedTree, "get_entry", rb_git_tree_get_entry, 1);
 	rb_define_method(rb_cRuggedTree, "get_entry_by_oid", rb_git_tree_get_entry_by_oid, 1);
 	rb_define_method(rb_cRuggedTree, "path", rb_git_tree_path, 1);
-	rb_define_method(rb_cRuggedTree, "diff", rb_git_tree_diff, 1);
+	rb_define_method(rb_cRuggedTree, "diff", rb_git_tree_diff, -1);
 	rb_define_method(rb_cRuggedTree, "[]", rb_git_tree_get_entry, 1);
 	rb_define_method(rb_cRuggedTree, "each", rb_git_tree_each, 0);
 	rb_define_method(rb_cRuggedTree, "walk", rb_git_tree_walk, 1);

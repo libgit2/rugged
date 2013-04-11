@@ -8,13 +8,13 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
 
     @a = @repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
     @b = @repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
-
-    @diff = @a.tree.diff(@b.tree)
   end
 
   def test_each_delta
+    diff = @a.tree.diff(@b.tree)
+
     deltas = []
-    @diff.each_delta do |delta|
+    diff.each_delta do |delta|
       assert_instance_of Rugged::Diff::Delta, delta
       deltas << delta
     end
@@ -32,18 +32,33 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
     refute deltas[1].binary?
   end
 
+  def test_diff_treats_files_bigger_as_max_size_as_binary
+    diff = @a.tree.diff(@b.tree, :max_size => 10)
+    assert_equal 2, diff.patches.size
+    assert_equal <<-EOS, diff.patch
+diff --git a/another.txt b/another.txt
+index 3e5bcba..546c735 100644
+Binary files a/another.txt and b/another.txt differ
+diff --git a/readme.txt b/readme.txt
+index 7b808f7..29ab705 100644
+Binary files a/readme.txt and b/readme.txt differ
+EOS
+  end
+
   def test_diff_prefiltering
-    diff = @a.tree.diff(@b.tree, :max_size => 1000) do |diff, delta, matched_pathspec|
-      delta.old_file[:path] == "readme.txt"
+    diff = @a.tree.diff(@b.tree, :max_size => 1000) do |diff_so_far, delta_to_be_added, matched_pathspec|
+      delta_to_be_added.old_file[:path] == "readme.txt"
     end
 
     assert_equal "M\treadme.txt\n", diff.patch(:compact => true)
   end
 
   def test_iteration
+    diff = @a.tree.diff(@b.tree)
+
     patches = []
 
-    @diff.each_patch do |patch|
+    diff.each_patch do |patch|
       assert_instance_of Rugged::Diff::Patch, patch
       patches << patch
     end
@@ -101,10 +116,12 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
   end
 
   def test_each_patch_returns_enumerator
-    assert_instance_of Enumerator, @diff.each_patch
+    diff = @a.tree.diff(@b.tree)
+
+    assert_instance_of Enumerator, diff.each_patch
 
     patches = []
-    @diff.each_patch.each do |patch|
+    diff.each_patch.each do |patch|
       assert_instance_of Rugged::Diff::Patch, patch
       patches << patch
     end
@@ -112,13 +129,17 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
   end
 
   def test_each_hunk_returns_enumerator
-    @diff.each_patch do |patch|
+    diff = @a.tree.diff(@b.tree)
+
+    diff.each_patch do |patch|
       assert_instance_of Enumerator, patch.each_hunk
     end
   end
 
   def test_each_line_returns_enumerator
-    @diff.each_patch do |patch|
+    diff = @a.tree.diff(@b.tree)
+
+    diff.each_patch do |patch|
       patch.each_hunk do |hunk|
         assert_instance_of Enumerator, hunk.each_line
       end
@@ -126,7 +147,9 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
   end
 
   def test_patch
-    assert_equal <<-EOS, @diff.patch
+    diff = @a.tree.diff(@b.tree)
+
+    assert_equal <<-EOS, diff.patch
 diff --git a/another.txt b/another.txt
 index 3e5bcba..546c735 100644
 --- a/another.txt
@@ -200,7 +223,9 @@ EOS
   end
 
   def test_patch_compact
-    assert_equal <<-EOS, @diff.patch(:compact => true)
+    diff = @a.tree.diff(@b.tree)
+
+    assert_equal <<-EOS, diff.patch(:compact => true)
 M\tanother.txt
 M\treadme.txt
 EOS
