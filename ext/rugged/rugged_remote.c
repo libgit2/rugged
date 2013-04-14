@@ -438,8 +438,7 @@ static VALUE rb_git_remote_each(VALUE self, VALUE rb_repo)
 	if (!rb_block_given_p())
 		return rb_funcall(self, rb_intern("to_enum"), 2, CSTR2SYM("each"), rb_repo);
 
-	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo))
-		rb_raise(rb_eTypeError, "Expeting a Rugged::Repository instance");
+	rugged_check_repo(rb_repo);
 
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
