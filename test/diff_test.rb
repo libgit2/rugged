@@ -73,6 +73,8 @@ EOS
     assert_equal "another.txt", patches[0].delta.old_file[:path]
     assert_equal "another.txt", patches[0].delta.new_file[:path]
 
+    refute patches[0].delta.binary?
+
     hunks = []
     patches[0].each_hunk do |hunk|
       assert_instance_of Rugged::Diff::Hunk, hunk
@@ -86,6 +88,8 @@ EOS
 
     assert_equal "readme.txt", patches[1].delta.old_file[:path]
     assert_equal "readme.txt", patches[1].delta.new_file[:path]
+
+    refute patches[1].delta.binary?
 
     hunks = []
     patches[1].each_hunk do |hunk|
