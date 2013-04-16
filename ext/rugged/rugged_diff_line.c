@@ -27,7 +27,13 @@
 extern VALUE rb_cRuggedDiff;
 VALUE rb_cRuggedDiffLine;
 
-VALUE rugged_diff_line_new(VALUE owner, const char line_origin, const char *content, size_t content_len, int old_lineno, int new_lineno)
+VALUE rugged_diff_line_new(
+  VALUE owner,
+  const char line_origin,
+  const char *content,
+  size_t content_len,
+  int old_lineno,
+  int new_lineno)
 {
   VALUE rb_line;
   VALUE rb_line_origin;

@@ -48,9 +48,13 @@ VALUE rugged_diff_new2(const git_diff_list *diff)
   return Data_Wrap_Struct(rb_cRuggedDiff, NULL, NULL, (git_diff_list *)diff);
 }
 
-
-static int diff_print_cb(const  git_diff_delta *delta, const git_diff_range *range, char line_origin,
-        const char *content, size_t content_len, void *payload)
+static int diff_print_cb(
+  const git_diff_delta *delta,
+  const git_diff_range *range,
+  char line_origin,
+  const char *content,
+  size_t content_len,
+  void *payload)
 {
   VALUE rb_str = (VALUE)payload;
 
@@ -89,8 +93,13 @@ static VALUE rb_git_diff_patch(int argc, VALUE *argv, VALUE self)
   return rb_str;
 }
 
-static int diff_write_cb(const  git_diff_delta *delta, const git_diff_range *range, char line_origin,
-        const char *content, size_t content_len, void *payload)
+static int diff_write_cb(
+  const git_diff_delta *delta,
+  const git_diff_range *range,
+  char line_origin,
+  const char *content,
+  size_t content_len,
+  void *payload)
 {
   VALUE rb_io = (VALUE)payload, str = rugged_str_new(content, content_len, NULL);
 

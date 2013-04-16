@@ -27,7 +27,12 @@
 extern VALUE rb_cRuggedDiff;
 VALUE rb_cRuggedDiffHunk;
 
-VALUE rugged_diff_hunk_new(VALUE owner, int hunk_idx, const git_diff_range *range, const char *header, size_t header_len, size_t lines_in_hunk)
+VALUE rugged_diff_hunk_new(
+  VALUE owner, int hunk_idx,
+  const git_diff_range *range,
+  const char *header,
+  size_t header_len,
+  size_t lines_in_hunk)
 {
   VALUE rb_hunk;
   VALUE rb_range;
@@ -67,7 +72,8 @@ static VALUE rb_git_diff_hunk_each_line(VALUE self)
   hunk_idx = FIX2INT(rb_iv_get(self, "@hunk_index"));
 
   for (l = 0; l < lines_count; ++l) {
-    error = git_diff_patch_get_line_in_hunk(&line_origin, &content, &content_len, &old_lineno, &new_lineno, patch, hunk_idx, l);
+    error = git_diff_patch_get_line_in_hunk(
+      &line_origin, &content, &content_len, &old_lineno, &new_lineno, patch, hunk_idx, l);
     if (error) break;
 
     rb_yield(rugged_diff_line_new(self, line_origin, content, content_len, old_lineno, new_lineno));
