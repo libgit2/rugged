@@ -48,9 +48,9 @@ VALUE rugged_diff_new2(const git_diff_list *diff)
 static int diff_print_cb(const  git_diff_delta *delta, const git_diff_range *range, char line_origin,
         const char *content, size_t content_len, void *payload)
 {
-  VALUE *str = payload;
+  VALUE rb_str = (VALUE)payload;
 
-  rb_str_cat(*str, content, content_len);
+  rb_str_cat(rb_str, content, content_len);
 
   return GIT_OK;
 }
@@ -65,33 +65,32 @@ static int diff_print_cb(const  git_diff_delta *delta, const git_diff_range *ran
 static VALUE rb_git_diff_patch(int argc, VALUE *argv, VALUE self)
 {
   git_diff_list *diff;
-  VALUE str;
+  VALUE rb_str = rugged_str_new(NULL, 0, NULL);;
   VALUE rb_opts;
 
   rb_scan_args(argc, argv, "01", &rb_opts);
 
-  str = rugged_str_new(NULL, 0, NULL);
   Data_Get_Struct(self, git_diff_list, diff);
 
   if (!NIL_P(rb_opts)) {
     Check_Type(rb_opts, T_HASH);
     if (rb_hash_aref(rb_opts, CSTR2SYM("compact")) == Qtrue)
-      git_diff_print_compact(diff, diff_print_cb, &str);
+      git_diff_print_compact(diff, diff_print_cb, (void*)rb_str);
     else
-      git_diff_print_patch(diff, diff_print_cb, &str);
+      git_diff_print_patch(diff, diff_print_cb, (void*)rb_str);
   } else {
-    git_diff_print_patch(diff, diff_print_cb, &str);
+    git_diff_print_patch(diff, diff_print_cb, (void*)rb_str);
   }
 
-  return str;
+  return rb_str;
 }
 
 static int diff_write_cb(const  git_diff_delta *delta, const git_diff_range *range, char line_origin,
         const char *content, size_t content_len, void *payload)
 {
-  VALUE *io = payload, str = rugged_str_new(content, content_len, NULL);
+  VALUE rb_io = (VALUE)payload, str = rugged_str_new(content, content_len, NULL);
 
-  rb_io_write(*io, str);
+  rb_io_write(rb_io, str);
 
   return GIT_OK;
 }
@@ -106,8 +105,7 @@ static int diff_write_cb(const  git_diff_delta *delta, const git_diff_range *ran
 static VALUE rb_git_diff_write_patch(int argc, VALUE *argv, VALUE self)
 {
   git_diff_list *diff;
-  VALUE rb_io;
-  VALUE rb_opts;
+  VALUE rb_io, rb_opts;
 
   rb_scan_args(argc, argv, "11", &rb_io, &rb_opts);
 
@@ -119,11 +117,11 @@ static VALUE rb_git_diff_write_patch(int argc, VALUE *argv, VALUE self)
   if (!NIL_P(rb_opts)) {
     Check_Type(rb_opts, T_HASH);
     if (rb_hash_aref(rb_opts, CSTR2SYM("compact")) == Qtrue)
-      git_diff_print_compact(diff, diff_write_cb, &rb_io);
+      git_diff_print_compact(diff, diff_write_cb, (void*)rb_io);
     else
-      git_diff_print_patch(diff, diff_write_cb, &rb_io);
+      git_diff_print_patch(diff, diff_write_cb, (void*)rb_io);
   } else {
-    git_diff_print_patch(diff, diff_write_cb, &rb_io);
+    git_diff_print_patch(diff, diff_write_cb, (void*)rb_io);
   }
 
   return Qnil;
