@@ -336,16 +336,19 @@ static VALUE rb_git_tree_diff(int argc, VALUE *argv, VALUE self)
 
 		rb_value = rb_hash_aref(rb_options, CSTR2SYM("max_size"));
 		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_FIXNUM);
 			opts.max_size = FIX2INT(rb_value);
 		}
 
 		rb_value = rb_hash_aref(rb_options, CSTR2SYM("context_lines"));
 		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_FIXNUM);
 			opts.context_lines = FIX2INT(rb_value);
 		}
 
 		rb_value = rb_hash_aref(rb_options, CSTR2SYM("interhunk_lines"));
 		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_FIXNUM);
 			opts.interhunk_lines = FIX2INT(rb_value);
 		}
 
