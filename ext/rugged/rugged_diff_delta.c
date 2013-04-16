@@ -29,28 +29,28 @@ VALUE rb_cRuggedDiffDelta;
 
 VALUE rugged_diff_delta_new(VALUE owner, const git_diff_delta *delta)
 {
-  // TODO: Is it okay to cast away the const-ness of the delta here?
-  VALUE rb_delta = Data_Wrap_Struct(rb_cRuggedDiffDelta, NULL, NULL, (git_diff_delta *)delta);
-  rugged_set_owner(rb_delta, owner);
-  return rb_delta;
+	// TODO: Is it okay to cast away the const-ness of the delta here?
+	VALUE rb_delta = Data_Wrap_Struct(rb_cRuggedDiffDelta, NULL, NULL, (git_diff_delta *)delta);
+	rugged_set_owner(rb_delta, owner);
+	return rb_delta;
 }
 
 static VALUE rb_git_delta_file_fromC(const git_diff_file *file)
 {
-  VALUE rb_file;
+	VALUE rb_file;
 
-  if (!file)
-    return Qnil;
+	if (!file)
+		return Qnil;
 
-  rb_file = rb_hash_new();
+	rb_file = rb_hash_new();
 
-  rb_hash_aset(rb_file, CSTR2SYM("oid"), rugged_create_oid(&file->oid));
-  rb_hash_aset(rb_file, CSTR2SYM("path"), rugged_str_new2(file->path, NULL));
-  rb_hash_aset(rb_file, CSTR2SYM("size"), INT2FIX(file->size));
-  rb_hash_aset(rb_file, CSTR2SYM("flags"), UINT2NUM(file->flags));
-  rb_hash_aset(rb_file, CSTR2SYM("mode"), UINT2NUM(file->mode));
+	rb_hash_aset(rb_file, CSTR2SYM("oid"), rugged_create_oid(&file->oid));
+	rb_hash_aset(rb_file, CSTR2SYM("path"), rugged_str_new2(file->path, NULL));
+	rb_hash_aset(rb_file, CSTR2SYM("size"), INT2FIX(file->size));
+	rb_hash_aset(rb_file, CSTR2SYM("flags"), UINT2NUM(file->flags));
+	rb_hash_aset(rb_file, CSTR2SYM("mode"), UINT2NUM(file->mode));
 
-  return rb_file;
+	return rb_file;
 }
 
 /*
@@ -60,11 +60,11 @@ static VALUE rb_git_delta_file_fromC(const git_diff_file *file)
  */
 static VALUE rb_git_diff_delta_old_file(VALUE self)
 {
-  const git_diff_delta *delta;
+	const git_diff_delta *delta;
 
-  Data_Get_Struct(self, git_diff_delta, delta);
+	Data_Get_Struct(self, git_diff_delta, delta);
 
-  return rb_git_delta_file_fromC(&delta->old_file);
+	return rb_git_delta_file_fromC(&delta->old_file);
 }
 
 /*
@@ -74,11 +74,11 @@ static VALUE rb_git_diff_delta_old_file(VALUE self)
  */
 static VALUE rb_git_diff_delta_new_file(VALUE self)
 {
-  const git_diff_delta *delta;
+	const git_diff_delta *delta;
 
-  Data_Get_Struct(self, git_diff_delta, delta);
+	Data_Get_Struct(self, git_diff_delta, delta);
 
-  return rb_git_delta_file_fromC(&delta->new_file);
+	return rb_git_delta_file_fromC(&delta->new_file);
 }
 
 /*
@@ -89,11 +89,11 @@ static VALUE rb_git_diff_delta_new_file(VALUE self)
  */
 static VALUE rb_git_diff_delta_similarity(VALUE self)
 {
-  const git_diff_delta *delta;
+	const git_diff_delta *delta;
 
-  Data_Get_Struct(self, git_diff_delta, delta);
+	Data_Get_Struct(self, git_diff_delta, delta);
 
-  return INT2FIX(delta->similarity);
+	return INT2FIX(delta->similarity);
 }
 
 /*
@@ -103,33 +103,33 @@ static VALUE rb_git_diff_delta_similarity(VALUE self)
  */
 static VALUE rb_git_diff_delta_status(VALUE self)
 {
-  const git_diff_delta *delta;
+	const git_diff_delta *delta;
 
-  Data_Get_Struct(self, git_diff_delta, delta);
+	Data_Get_Struct(self, git_diff_delta, delta);
 
-  switch(delta->status) {
-    case GIT_DELTA_UNMODIFIED:
-      return CSTR2SYM("unmodified");
-    case GIT_DELTA_ADDED:
-      return CSTR2SYM("added");
-    case GIT_DELTA_DELETED:
-      return CSTR2SYM("deleted");
-    case GIT_DELTA_MODIFIED:
-      return CSTR2SYM("modified");
-    case GIT_DELTA_RENAMED:
-      return CSTR2SYM("renamed");
-    case GIT_DELTA_COPIED:
-      return CSTR2SYM("copied");
-    case GIT_DELTA_IGNORED:
-      return CSTR2SYM("ignored");
-    case GIT_DELTA_UNTRACKED:
-      return CSTR2SYM("untracked");
-    case GIT_DELTA_TYPECHANGE:
-      return CSTR2SYM("typechange");
-    default:
-      /* FIXME: raise here instead? */
-      return CSTR2SYM("unknown");
-  }
+	switch(delta->status) {
+		case GIT_DELTA_UNMODIFIED:
+			return CSTR2SYM("unmodified");
+		case GIT_DELTA_ADDED:
+			return CSTR2SYM("added");
+		case GIT_DELTA_DELETED:
+			return CSTR2SYM("deleted");
+		case GIT_DELTA_MODIFIED:
+			return CSTR2SYM("modified");
+		case GIT_DELTA_RENAMED:
+			return CSTR2SYM("renamed");
+		case GIT_DELTA_COPIED:
+			return CSTR2SYM("copied");
+		case GIT_DELTA_IGNORED:
+			return CSTR2SYM("ignored");
+		case GIT_DELTA_UNTRACKED:
+			return CSTR2SYM("untracked");
+		case GIT_DELTA_TYPECHANGE:
+			return CSTR2SYM("typechange");
+		default:
+			/* FIXME: raise here instead? */
+			return CSTR2SYM("unknown");
+	}
 }
 
 /*
@@ -139,20 +139,20 @@ static VALUE rb_git_diff_delta_status(VALUE self)
  */
 static VALUE rb_git_diff_delta_binary(VALUE self)
 {
-  const git_diff_delta *delta;
+	const git_diff_delta *delta;
 
-  Data_Get_Struct(self, git_diff_delta, delta);
+	Data_Get_Struct(self, git_diff_delta, delta);
 
-  return (!(delta->flags & GIT_DIFF_FLAG_NOT_BINARY) && (delta->flags & GIT_DIFF_FLAG_BINARY)) ? Qtrue : Qfalse;
+	return (!(delta->flags & GIT_DIFF_FLAG_NOT_BINARY) && (delta->flags & GIT_DIFF_FLAG_BINARY)) ? Qtrue : Qfalse;
 }
 
 void Init_rugged_diff_delta()
 {
-  rb_cRuggedDiffDelta = rb_define_class_under(rb_cRuggedDiff, "Delta", rb_cObject);
+	rb_cRuggedDiffDelta = rb_define_class_under(rb_cRuggedDiff, "Delta", rb_cObject);
 
-  rb_define_method(rb_cRuggedDiffDelta, "old_file", rb_git_diff_delta_old_file, 0);
-  rb_define_method(rb_cRuggedDiffDelta, "new_file", rb_git_diff_delta_new_file, 0);
-  rb_define_method(rb_cRuggedDiffDelta, "similarity", rb_git_diff_delta_similarity, 0);
-  rb_define_method(rb_cRuggedDiffDelta, "status", rb_git_diff_delta_status, 0);
-  rb_define_method(rb_cRuggedDiffDelta, "binary", rb_git_diff_delta_binary, 0);
+	rb_define_method(rb_cRuggedDiffDelta, "old_file", rb_git_diff_delta_old_file, 0);
+	rb_define_method(rb_cRuggedDiffDelta, "new_file", rb_git_diff_delta_new_file, 0);
+	rb_define_method(rb_cRuggedDiffDelta, "similarity", rb_git_diff_delta_similarity, 0);
+	rb_define_method(rb_cRuggedDiffDelta, "status", rb_git_diff_delta_status, 0);
+	rb_define_method(rb_cRuggedDiffDelta, "binary", rb_git_diff_delta_binary, 0);
 }

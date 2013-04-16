@@ -28,46 +28,46 @@ extern VALUE rb_cRuggedDiff;
 VALUE rb_cRuggedDiffLine;
 
 VALUE rugged_diff_line_new(
-  VALUE owner,
-  const char line_origin,
-  const char *content,
-  size_t content_len,
-  int old_lineno,
-  int new_lineno)
+	VALUE owner,
+	const char line_origin,
+	const char *content,
+	size_t content_len,
+	int old_lineno,
+	int new_lineno)
 {
-  VALUE rb_line;
-  VALUE rb_line_origin;
+	VALUE rb_line;
+	VALUE rb_line_origin;
 
-  rb_line = rb_class_new_instance(0, NULL, rb_cRuggedDiffLine);
-  rugged_set_owner(rb_line, owner);
+	rb_line = rb_class_new_instance(0, NULL, rb_cRuggedDiffLine);
+	rugged_set_owner(rb_line, owner);
 
-  switch(line_origin) {
-    case GIT_DIFF_LINE_CONTEXT:
-      rb_line_origin = CSTR2SYM("context");
-      break;
-    case GIT_DIFF_LINE_ADDITION:
-      rb_line_origin = CSTR2SYM("addition");
-      break;
-    case GIT_DIFF_LINE_DELETION:
-      rb_line_origin = CSTR2SYM("deletion");
-      break;
-    case GIT_DIFF_LINE_DEL_EOFNL: /**< LF was removed at end of file */
-      rb_line_origin = CSTR2SYM("eof_newline");
-      break;
-    default:
-      /* FIXME: raise here instead? */
-      rb_line_origin = CSTR2SYM("unknown");
-  }
+	switch(line_origin) {
+		case GIT_DIFF_LINE_CONTEXT:
+			rb_line_origin = CSTR2SYM("context");
+			break;
+		case GIT_DIFF_LINE_ADDITION:
+			rb_line_origin = CSTR2SYM("addition");
+			break;
+		case GIT_DIFF_LINE_DELETION:
+			rb_line_origin = CSTR2SYM("deletion");
+			break;
+		case GIT_DIFF_LINE_DEL_EOFNL: /**< LF was removed at end of file */
+			rb_line_origin = CSTR2SYM("eof_newline");
+			break;
+		default:
+			/* FIXME: raise here instead? */
+			rb_line_origin = CSTR2SYM("unknown");
+	}
 
-  rb_iv_set(rb_line, "@line_origin", rb_line_origin);
-  rb_iv_set(rb_line, "@content", rugged_str_new(content, content_len, NULL));
-  rb_iv_set(rb_line, "@old_lineno", INT2FIX(old_lineno));
-  rb_iv_set(rb_line, "@new_lineno", INT2FIX(new_lineno));
+	rb_iv_set(rb_line, "@line_origin", rb_line_origin);
+	rb_iv_set(rb_line, "@content", rugged_str_new(content, content_len, NULL));
+	rb_iv_set(rb_line, "@old_lineno", INT2FIX(old_lineno));
+	rb_iv_set(rb_line, "@new_lineno", INT2FIX(new_lineno));
 
-  return rb_line;
+	return rb_line;
 }
 
 void Init_rugged_diff_line()
 {
-  rb_cRuggedDiffLine = rb_define_class_under(rb_cRuggedDiff, "Line", rb_cObject);
+	rb_cRuggedDiffLine = rb_define_class_under(rb_cRuggedDiff, "Line", rb_cObject);
 }
