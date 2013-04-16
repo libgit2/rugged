@@ -39,6 +39,10 @@ VALUE rugged_diff_new(VALUE klass, VALUE owner, git_diff_list *diff)
   return rb_diff;
 }
 
+/*
+ * Create a new Diff object from a constant git_diff_list, where we don't
+ * need to manage memory ourself.
+ */
 VALUE rugged_diff_new2(const git_diff_list *diff)
 {
   return Data_Wrap_Struct(rb_cRuggedDiff, NULL, NULL, (git_diff_list *)diff);
@@ -97,8 +101,8 @@ static int diff_write_cb(const  git_diff_delta *delta, const git_diff_range *ran
 
 /*
  *  call-seq:
- *    diff.write_patch(io)
- *    diff.write_patch(io, :compact => true)
+ *    diff.write_patch(io) -> nil
+ *    diff.write_patch(io, :compact => true) -> nil
  *
  *  Write a patch directly to an object which responds to "write".
  */
@@ -127,6 +131,12 @@ static VALUE rb_git_diff_write_patch(int argc, VALUE *argv, VALUE self)
   return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    diff.merge!(other_diff) -> self
+ *
+ *  Merges all diff information from +other_diff+.
+ */
 static VALUE rb_git_diff_merge(VALUE self, VALUE rb_other)
 {
   git_diff_list *diff;
@@ -140,6 +150,14 @@ static VALUE rb_git_diff_merge(VALUE self, VALUE rb_other)
   return self;
 }
 
+/*
+ *  call-seq:
+ *    diff.each_patch { |patch| } -> self
+ *    diff.each_patch -> Enumerator
+ *
+ *  If given a block, yields each patch that is part of the diff.
+ *  If no block is given, an Enumerator will be returned.
+ */
 static VALUE rb_git_diff_each_patch(VALUE self)
 {
   git_diff_list *diff;
@@ -165,6 +183,17 @@ static VALUE rb_git_diff_each_patch(VALUE self)
   return self;
 }
 
+/*
+ *  call-seq:
+ *    diff.each_delta { |delta| } -> self
+ *    diff.each_delta -> Enumerator
+ *
+ *  If given a block, yields each delta that is part of the diff.
+ *  If no block is given, an Enumerator will be returned.
+ *
+ *  This method should be preferred over #each_patch if you're not interested
+ *  in the actual line-by-line changes of the diff.
+ */
 static VALUE rb_git_diff_each_delta(VALUE self)
 {
   git_diff_list *diff;
