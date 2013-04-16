@@ -53,6 +53,11 @@ static VALUE rb_git_delta_file_fromC(const git_diff_file *file)
   return rb_file;
 }
 
+/*
+ *  call-seq: delta.old_file -> Hash
+ *
+ *  Returns a Hash describing the left side of a diff delta.
+ */
 static VALUE rb_git_diff_delta_old_file(VALUE self)
 {
   const git_diff_delta *delta;
@@ -62,6 +67,11 @@ static VALUE rb_git_diff_delta_old_file(VALUE self)
   return rb_git_delta_file_fromC(&delta->old_file);
 }
 
+/*
+ *  call-seq: delta.new_file -> Hash
+ *
+ *  Returns a Hash describing the right side of a diff delta.
+ */
 static VALUE rb_git_diff_delta_new_file(VALUE self)
 {
   const git_diff_delta *delta;
@@ -71,6 +81,12 @@ static VALUE rb_git_diff_delta_new_file(VALUE self)
   return rb_git_delta_file_fromC(&delta->new_file);
 }
 
+/*
+ *  call-seq: delta.similarity -> Fixnum
+ *
+ *  A value between 0-100, indicating the similarity between +old_file+ and +new_file+.
+ *  Only valid/set for deltas with a status of +:renamed+ or +:copied:.
+ */
 static VALUE rb_git_diff_delta_similarity(VALUE self)
 {
   const git_diff_delta *delta;
@@ -80,6 +96,11 @@ static VALUE rb_git_diff_delta_similarity(VALUE self)
   return INT2FIX(delta->similarity);
 }
 
+/*
+ *  call-seq: delta.status -> Symbol
+ *
+ *  Returns the delta status, indicating the type of change.
+ */
 static VALUE rb_git_diff_delta_status(VALUE self)
 {
   const git_diff_delta *delta;
@@ -111,6 +132,11 @@ static VALUE rb_git_diff_delta_status(VALUE self)
   }
 }
 
+/*
+ *  call-seq: delta.binary -> true or false
+ *
+ *  Returns true if this delta was recognized as binary.
+ */
 static VALUE rb_git_diff_delta_binary(VALUE self)
 {
   const git_diff_delta *delta;
