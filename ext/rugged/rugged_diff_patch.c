@@ -40,6 +40,15 @@ VALUE rugged_diff_patch_new(VALUE owner, git_diff_patch *patch)
 	return rb_patch;
 }
 
+/*
+ *  call-seq:
+ *    patch.each_hunk { |hunk| } -> self
+ *    patch.each_hunk -> Enumerator
+ *
+ *  If given a block, yields each hunk that is part of the patch.
+ *
+ *  If no block is given, an enumerator is returned instead.
+ */
 static VALUE rb_git_diff_patch_each_hunk(VALUE self)
 {
 	git_diff_patch *patch;
@@ -66,6 +75,12 @@ static VALUE rb_git_diff_patch_each_hunk(VALUE self)
 	return self;
 }
 
+/*
+ *  call-seq:
+ *    patch.hunk_count -> Fixnum
+ *
+ *  Returns the number of hunks in the patch.
+ */
 static VALUE rb_git_diff_patch_hunk_count(VALUE self)
 {
 	git_diff_patch *patch;
@@ -74,6 +89,12 @@ static VALUE rb_git_diff_patch_hunk_count(VALUE self)
 	return INT2FIX(git_diff_patch_num_hunks(patch));
 }
 
+/*
+ *  call-seq:
+ *    patch.delta -> Rugged::Diff::Delta
+ *
+ *  Returns the delta object associated with the patch.
+ */
 static VALUE rb_git_diff_patch_delta(VALUE self)
 {
 	git_diff_patch *patch;
@@ -82,6 +103,12 @@ static VALUE rb_git_diff_patch_delta(VALUE self)
 	return rugged_diff_delta_new(rugged_owner(self), git_diff_patch_delta(patch));
 }
 
+/*
+ *  call-seq:
+ *    patch.additions -> Fixnum
+ *
+ *  Returns the number of addition lines in the patch.
+ */
 static VALUE rb_git_diff_patch_additions(VALUE self)
 {
 	git_diff_patch *patch;
@@ -93,6 +120,12 @@ static VALUE rb_git_diff_patch_additions(VALUE self)
 	return INT2FIX(additions);
 }
 
+/*
+ *  call-seq:
+ *    patch.deletions -> Fixnum
+ *
+ *  Returns the number of deletion lines in the patch.
+ */
 static VALUE rb_git_diff_patch_deletions(VALUE self)
 {
 	git_diff_patch *patch;
@@ -104,6 +137,12 @@ static VALUE rb_git_diff_patch_deletions(VALUE self)
 	return INT2FIX(deletions);
 }
 
+/*
+ *  call-seq:
+ *    patch.context -> Fixnum
+ *
+ *  Returns the number of context lines in the patch.
+ */
 static VALUE rb_git_diff_patch_context(VALUE self)
 {
 	git_diff_patch *patch;

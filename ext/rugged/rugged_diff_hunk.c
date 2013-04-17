@@ -54,6 +54,15 @@ VALUE rugged_diff_hunk_new(
 	return rb_hunk;
 }
 
+/*
+ *  call-seq:
+ *    hunk.each_line { |line| } -> self
+ *    hunk.each_line -> Enumerator
+ *
+ *  If given a block, yields each line that is part of the current hunk.
+ *
+ *  If no block is given, an enumerator is returned instead.
+ */
 static VALUE rb_git_diff_hunk_each_line(VALUE self)
 {
 	git_diff_patch *patch;
