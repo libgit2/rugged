@@ -14,6 +14,7 @@ module Rugged
         "#<#{self.class.name}:#{object_id}>"
       end
 
+      # Returns an Array containing all hunks of the patch.
       def hunks
         each_hunk.to_a
       end

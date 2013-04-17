@@ -14,6 +14,7 @@ module Rugged
         "#<#{self.class.name}:#{object_id} {header: #{header.inspect}, range: #{range.inspect}>"
       end
 
+      # Returns an Array containing all lines of the hunk.
       def lines
         each_line.to_a
       end
