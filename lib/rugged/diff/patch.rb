@@ -14,6 +14,11 @@ module Rugged
         "#<#{self.class.name}:#{object_id}>"
       end
 
+      # Returns the the number of changes in the patch.
+      def changes
+        additions + deletions
+      end
+
       # Returns an Array containing all hunks of the patch.
       def hunks
         each_hunk.to_a
