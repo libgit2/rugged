@@ -80,7 +80,7 @@ static VALUE rb_git_diff_hunk_each_line(VALUE self)
 	}
 	rugged_exception_check(error);
 
-	return Qnil;
+	return self;
 }
 
 void Init_rugged_diff_hunk()

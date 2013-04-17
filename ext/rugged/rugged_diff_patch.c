@@ -63,7 +63,7 @@ static VALUE rb_git_diff_patch_each_hunk(VALUE self)
 	}
 	rugged_exception_check(error);
 
-	return Qnil;
+	return self;
 }
 
 static VALUE rb_git_diff_patch_hunk_count(VALUE self)
