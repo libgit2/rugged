@@ -276,6 +276,48 @@ static int rugged__diff_notify_cb(
 	return RTEST(rb_result) ? 0 : 1;
 }
 
+static git_diff_options rugged_parse_diff_options(VALUE rb_options)
+{
+	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
+
+	if (!NIL_P(rb_options)) {
+		VALUE rb_value;
+		Check_Type(rb_options, T_HASH);
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("max_size"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_FIXNUM);
+			opts.max_size = FIX2INT(rb_value);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("context_lines"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_FIXNUM);
+			opts.context_lines = FIX2INT(rb_value);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("interhunk_lines"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_FIXNUM);
+			opts.interhunk_lines = FIX2INT(rb_value);
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("reverse")))) {
+			opts.flags |= GIT_DIFF_REVERSE;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("force_text")))) {
+			opts.flags |= GIT_DIFF_FORCE_TEXT;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("ignore_whitespace")))) {
+			opts.flags |= GIT_DIFF_IGNORE_WHITESPACE;
+		}
+	}
+
+	return opts;
+}
+
 /*
  *  call-seq: tree.diff(other_tree, options = {}) -> diff
  *  call-seq: tree.diff(other_tree, options = {}) { |diff_so_far, delta_to_add, matched_pathspec| block } -> diff
@@ -317,7 +359,7 @@ static int rugged__diff_notify_cb(
 static VALUE rb_git_tree_diff(int argc, VALUE *argv, VALUE self)
 {
 	git_tree *tree, *other_tree;
-	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
+	git_diff_options opts;
 	git_repository *repo;
 	git_diff_list *diff;
 	VALUE owner, other, rb_options;
@@ -325,44 +367,10 @@ static VALUE rb_git_tree_diff(int argc, VALUE *argv, VALUE self)
 
 	rb_scan_args(argc, argv, "11", &other, &rb_options);
 
+	opts = rugged_parse_diff_options(rb_options);
 	if (rb_block_given_p()) {
 		opts.notify_cb = &rugged__diff_notify_cb;
 		opts.notify_payload = (void*)rb_block_proc();
-	}
-
-	if (!NIL_P(rb_options)) {
-		VALUE rb_value;
-		Check_Type(rb_options, T_HASH);
-
-		rb_value = rb_hash_aref(rb_options, CSTR2SYM("max_size"));
-		if (!NIL_P(rb_value)) {
-			Check_Type(rb_value, T_FIXNUM);
-			opts.max_size = FIX2INT(rb_value);
-		}
-
-		rb_value = rb_hash_aref(rb_options, CSTR2SYM("context_lines"));
-		if (!NIL_P(rb_value)) {
-			Check_Type(rb_value, T_FIXNUM);
-			opts.context_lines = FIX2INT(rb_value);
-		}
-
-		rb_value = rb_hash_aref(rb_options, CSTR2SYM("interhunk_lines"));
-		if (!NIL_P(rb_value)) {
-			Check_Type(rb_value, T_FIXNUM);
-			opts.interhunk_lines = FIX2INT(rb_value);
-		}
-
-		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("reverse")))) {
-			opts.flags |= GIT_DIFF_REVERSE;
-		}
-
-		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("force_text")))) {
-			opts.flags |= GIT_DIFF_FORCE_TEXT;
-		}
-
-		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("ignore_whitespace")))) {
-			opts.flags |= GIT_DIFF_IGNORE_WHITESPACE;
-		}
 	}
 
 	Data_Get_Struct(self, git_tree, tree);
