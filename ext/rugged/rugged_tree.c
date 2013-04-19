@@ -320,7 +320,7 @@ static VALUE rb_git_tree_diff(int argc, VALUE *argv, VALUE self)
 	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
 	git_repository *repo;
 	git_diff_list *diff;
-	VALUE owner, other, rb_options, rb_diff;
+	VALUE owner, other, rb_options;
 	int error;
 
 	rb_scan_args(argc, argv, "11", &other, &rb_options);
