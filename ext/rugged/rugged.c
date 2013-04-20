@@ -242,6 +242,66 @@ git_diff_options rugged_parse_diff_options(VALUE rb_options)
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("ignore_whitespace")))) {
 			opts.flags |= GIT_DIFF_IGNORE_WHITESPACE;
 		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("ignore_whitespace_change")))) {
+			opts.flags |= GIT_DIFF_IGNORE_WHITESPACE_CHANGE;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("ignore_whitespace_eol")))) {
+			opts.flags |= GIT_DIFF_IGNORE_WHITESPACE_EOL;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("ignore_submodules")))) {
+			opts.flags |= GIT_DIFF_IGNORE_SUBMODULES;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("patience")))) {
+			opts.flags |= GIT_DIFF_PATIENCE;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("include_ignored")))) {
+			opts.flags |= GIT_DIFF_INCLUDE_IGNORED;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("include_untracked")))) {
+			opts.flags |= GIT_DIFF_INCLUDE_UNTRACKED;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("include_unmodified")))) {
+			opts.flags |= GIT_DIFF_INCLUDE_UNMODIFIED;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("recurse_untracked_dirs")))) {
+			opts.flags |= GIT_DIFF_RECURSE_UNTRACKED_DIRS;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("disable_pathspec_match")))) {
+			opts.flags |= GIT_DIFF_DISABLE_PATHSPEC_MATCH;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("include_untracked_content")))) {
+			opts.flags |= GIT_DIFF_INCLUDE_UNTRACKED_CONTENT ;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("skip_binary_check")))) {
+			opts.flags |= GIT_DIFF_SKIP_BINARY_CHECK;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("include_typechange")))) {
+			opts.flags |= GIT_DIFF_INCLUDE_TYPECHANGE;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("include_typechange_trees")))) {
+			opts.flags |= GIT_DIFF_INCLUDE_TYPECHANGE_TREES;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("ignore_filemode")))) {
+			opts.flags |= GIT_DIFF_IGNORE_FILEMODE;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("recurse_ignored_dirs")))) {
+			opts.flags |= GIT_DIFF_RECURSE_IGNORED_DIRS;
+		}
 	}
 
 	return opts;

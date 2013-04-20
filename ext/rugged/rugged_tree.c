@@ -306,6 +306,65 @@ static VALUE rb_git_tree_path(VALUE self, VALUE rb_path)
  *  :ignore_whitespace ::
  *    If true, all whitespace will be ignored.
  *
+ *  :ignore_whitespace_change ::
+ *    If true, changes in amount of whitespace will be ignored.
+ *
+ *  :ignore_whitespace_eol ::
+ *    If true, whitespace at end of line will be ignored.
+ *
+ *  :ignore_submodules ::
+ *    if true, submodules will be excluded from the diff completely.
+ *
+ *  :patience ::
+ *    If true, the "patience diff" algorithm will be used (currenlty unimplemented).
+ *
+ *  :include_ignored ::
+ *    If true, ignored files will be included in the diff.
+ *
+ *  :include_untracked ::
+ *   If true, untracked files will be included in the diff.
+ *
+ *  :include_unmodified ::
+ *    If true, unmodified files will be included in the diff.
+ *
+ *  :recurse_untracked_dirs ::
+ *		Even if `:include_untracked` is true, untracked directories will only be
+ *    marked with a single entry in the diff. If this flag is set to true,
+ *    all files under ignored directories will be included in the diff, too.
+ *
+ *  :disable_pathspec_match ::
+ *    If true, the given +:paths+ will be applied as exact matches, instead of
+ *    as fnmatch patterns.
+ *
+ *  :deltas_are_icase ::
+ *    If true, filename comparisons will be made with case-insensitivity.
+ *
+ *  :include_untracked_content ::
+ *    if true, untracked content will be contained in the the diff patch text.
+ *
+ *  :skip_binary_check ::
+ *    If true, diff deltas will be generated without spending time on binary
+ *    detection. This is useful to improve performance in cases where the actual
+ *    file content difference is not needed.
+ *
+ *  :include_typechange ::
+ *    If true, type changes for files will not be interpreted as deletion of
+ *    the "old file" and addition of the "new file", but will generate
+ *    typechange records.
+ *
+ *  :include_typechange_trees ::
+ *		Even if `:include_typechange` is true, blob -> tree changes will still
+ *    usually be handled as a deletion of the blob. If this flag is set to true,
+ *    blob -> tree changes will be marked as typechanges.
+ *
+ *  :ignore_filemode ::
+ *    If true, file mode changes will be ignored.
+ *
+ *  :recurse_ignored_dirs ::
+ *		Even if `:include_ignored` is true, ignored directories will only be
+ *    marked with a single entry in the diff. If this flag is set to true,
+ *    all files under ignored directories will be included in the diff, too.
+ *
  *  Examples:
  *
  *    # Emulating `git diff <treeish>`
