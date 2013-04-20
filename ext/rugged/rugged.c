@@ -190,7 +190,7 @@ static VALUE minimize_yield(VALUE rb_oid, VALUE *data)
 	return Qnil;
 }
 
-int rugged__diff_notify_cb(
+static int rugged__diff_notify_cb(
 	const git_diff_list *diff_so_far,
 	const git_diff_delta *delta_to_add,
 	const char *matched_pathspec,
@@ -205,13 +205,38 @@ int rugged__diff_notify_cb(
 	return RTEST(rb_result) ? 0 : 1;
 }
 
-git_diff_options rugged_parse_diff_options(VALUE rb_options)
+/**
+ * The caller has to free the returned git_diff_options pathspec strings array.
+ */
+git_diff_options rugged_parse_diff_options(VALUE rb_options, VALUE rb_block)
 {
 	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
+
+	if (!NIL_P(rb_block)) {
+		opts.notify_cb = &rugged__diff_notify_cb;
+		opts.notify_payload = (void*)rb_block_proc();
+	}
 
 	if (!NIL_P(rb_options)) {
 		VALUE rb_value;
 		Check_Type(rb_options, T_HASH);
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("paths"));
+		if (!NIL_P(rb_value)) {
+			int i;
+			Check_Type(rb_value, T_ARRAY);
+
+			for (i = 0; i < RARRAY_LEN(rb_value); ++i)
+				Check_Type(rb_ary_entry(rb_value, i), T_STRING);
+
+			opts.pathspec.count = RARRAY_LEN(rb_value);
+			opts.pathspec.strings = xmalloc(opts.pathspec.count * sizeof(char *));
+
+			for (i = 0; i < RARRAY_LEN(rb_value); ++i) {
+				VALUE rb_path = rb_ary_entry(rb_value, i);
+				opts.pathspec.strings[i] = StringValueCStr(rb_path);
+			}
+		}
 
 		rb_value = rb_hash_aref(rb_options, CSTR2SYM("max_size"));
 		if (!NIL_P(rb_value)) {

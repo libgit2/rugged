@@ -393,6 +393,10 @@ static VALUE rb_git_index_readtree(VALUE self, VALUE rb_tree)
  *
  *  The following options can be passed in the +options+ Hash:
  *
+ *  :paths ::
+ *    An array of paths / fnmatch patterns to constrain the diff to a specific
+ *    set of files. Also see +:disable_pathspec_match+.
+ *
  *  :max_size ::
  *    An integer specifying the maximum byte size of a file before a it will
  *    be treated as binary. The default value is 512MB.
@@ -479,16 +483,11 @@ static VALUE rb_git_index_diff(int argc, VALUE *argv, VALUE self)
 	git_diff_options opts;
 	git_repository *repo;
 	git_diff_list *diff;
-	VALUE owner, rb_other, rb_options;
+	VALUE owner, rb_other, rb_options, rb_block;
 	int error;
 
-	rb_scan_args(argc, argv, "01:", &rb_other, &rb_options);
-
-	opts = rugged_parse_diff_options(rb_options);
-	if (rb_block_given_p()) {
-		opts.notify_cb = &rugged__diff_notify_cb;
-		opts.notify_payload = (void*)rb_block_proc();
-	}
+	rb_scan_args(argc, argv, "01:&", &rb_other, &rb_options, &rb_block);
+	opts = rugged_parse_diff_options(rb_options, rb_block);
 
 	Data_Get_Struct(self, git_index, index);
 	owner = rugged_owner(self);
@@ -514,10 +513,12 @@ static VALUE rb_git_index_diff(int argc, VALUE *argv, VALUE self)
 			Data_Get_Struct(rb_other, git_tree, other_tree);
 			error = git_diff_tree_to_index(&diff, repo, other_tree, index, &opts);
 		} else {
+			xfree(opts.pathspec.strings);
 			rb_raise(rb_eTypeError, "A Rugged::Commit or Rugged::Tree instance is required");
 		}
 	}
 
+	xfree(opts.pathspec.strings);
 	rugged_exception_check(error);
 
 	return rugged_diff_new(rb_cRuggedDiff, self, diff);
