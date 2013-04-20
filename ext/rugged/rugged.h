@@ -119,7 +119,7 @@ extern VALUE rb_cRuggedRepo;
 
 static inline void rugged_check_repo(VALUE rb_repo)
 {
-	if (!rb_obj_is_instance_of(rb_repo, rb_cRuggedRepo))
+	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo))
 		rb_raise(rb_eTypeError, "Expecting a Rugged Repository");
 }
 

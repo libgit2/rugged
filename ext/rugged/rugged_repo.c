@@ -143,6 +143,34 @@ static VALUE rugged_repo_new(VALUE klass, git_repository *repo)
 	return rb_repo;
 }
 
+static void load_alternates(git_repository *repo, VALUE rb_alternates)
+{
+	git_odb *odb = NULL;
+	int i, error;
+
+	if (NIL_P(rb_alternates))
+		return;
+
+	Check_Type(rb_alternates, T_ARRAY);
+
+	if (RARRAY_LEN(rb_alternates) == 0)
+		return;
+
+	for (i = 0; i < RARRAY_LEN(rb_alternates); ++i)
+		Check_Type(rb_ary_entry(rb_alternates, i), T_STRING);
+
+	error = git_repository_odb(&odb, repo);
+	rugged_exception_check(error);
+
+	for (i = 0; !error && i < RARRAY_LEN(rb_alternates); ++i) {
+		VALUE alt = rb_ary_entry(rb_alternates, i);
+		error = git_odb_add_disk_alternate(odb, StringValueCStr(alt));
+	}
+
+	git_odb_free(odb);
+	rugged_exception_check(error);
+}
+
 static void set_repository_options(git_repository *repo, VALUE rb_options)
 {
 	int error = 0;
@@ -153,29 +181,24 @@ static void set_repository_options(git_repository *repo, VALUE rb_options)
 	Check_Type(rb_options, T_HASH);
 
 	/* Check for `:alternates` */
-	{
-		git_odb *odb = NULL;
-		VALUE rb_alternates = rb_hash_aref(rb_options, CSTR2SYM("alternates"));
-		int i;
+	load_alternates(repo, rb_hash_aref(rb_options, CSTR2SYM("alternates")));
+}
 
-		if (!NIL_P(rb_alternates)) {
-			Check_Type(rb_alternates, T_ARRAY);
+static VALUE rb_git_repo_open_bare(int argc, VALUE *argv, VALUE klass)
+{
+	git_repository *repo;
+	int error = 0;
+	VALUE rb_path, rb_alternates;
 
-			for (i = 0; i < RARRAY_LEN(rb_alternates); ++i)
-				Check_Type(rb_ary_entry(rb_alternates, i), T_STRING);
+	rb_scan_args(argc, argv, "11", &rb_path, &rb_alternates);
+	Check_Type(rb_path, T_STRING);
 
-			error = git_repository_odb(&odb, repo);
-			rugged_exception_check(error);
+	error = git_repository_open_bare(&repo, StringValueCStr(rb_path));
+	rugged_exception_check(error);
 
-			for (i = 0; !error && i < RARRAY_LEN(rb_alternates); ++i) {
-				VALUE alt = rb_ary_entry(rb_alternates, i);
-				error = git_odb_add_disk_alternate(odb, StringValueCStr(alt));
-			}
+	load_alternates(repo, rb_alternates);
 
-			git_odb_free(odb);
-			rugged_exception_check(error);
-		}
-	}
+	return rugged_repo_new(klass, repo);
 }
 
 /*
@@ -1042,6 +1065,7 @@ void Init_rugged_repo()
 	rb_cRuggedRepo = rb_define_class_under(rb_mRugged, "Repository", rb_cObject);
 
 	rb_define_singleton_method(rb_cRuggedRepo, "new", rb_git_repo_new, -1);
+	rb_define_singleton_method(rb_cRuggedRepo, "bare", rb_git_repo_open_bare, -1);
 	rb_define_singleton_method(rb_cRuggedRepo, "hash",   rb_git_repo_hash,  2);
 	rb_define_singleton_method(rb_cRuggedRepo, "hash_file",   rb_git_repo_hashfile,  2);
 	rb_define_singleton_method(rb_cRuggedRepo, "init_at", rb_git_repo_init_at, -1);

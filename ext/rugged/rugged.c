@@ -279,16 +279,19 @@ void rugged_exception_raise(int errorcode)
 	VALUE err_klass = rb_eRuggedError;
 	VALUE err_obj;
 	const git_error *error;
+	const char *err_message;
 
 	error = giterr_last();
 
-	if (!error)
-		return;
-
-	if (error->klass >= 0 && error->klass < RUGGED_ERROR_COUNT)
+	if (error && error->klass >= 0 && error->klass < RUGGED_ERROR_COUNT) {
 		err_klass = rb_eRuggedErrors[error->klass];
+		err_message = error->message;
+	} else {
+		err_klass = rb_eRuggedErrors[2]; /* InvalidError */
+		err_message = "Unknown Error";
+	}
 
-	err_obj = rb_exc_new2(err_klass, error->message);
+	err_obj = rb_exc_new2(err_klass, err_message);
 	giterr_clear();
 	rb_exc_raise(err_obj);
 }
