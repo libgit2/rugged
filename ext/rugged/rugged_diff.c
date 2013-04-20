@@ -161,6 +161,138 @@ static VALUE rb_git_diff_merge(VALUE self, VALUE rb_other)
 
 /*
  *  call-seq:
+ *    diff.find_similar!([options]) -> self
+ *
+ *  By default, similarity will be measured without leading whitespace. You
+ *  you can use the +:dont_ignore_whitespace+ to disable this.
+ *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :rename_threshold ::
+ *    An integer specifying the similarity to consider a file renamed (default 50).
+ *
+ *  :rename_from_rewrite_threshold ::
+ *    An integer specifying the similarity of modified to be eligible
+ *    rename source (default 50).
+ *
+ *  :copy_threshold ::
+ *    An integer specifying the similarity to consider a file a copy (default 50).
+ *
+ *  :break_rewrite_threshold ::
+ *    An integer specifying the similarity to split modify into delete/add pair (default 60).
+ *
+ *  :target_limit ::
+ *    An integer specifying the maximum amount of similarity sources to examine
+ *    (a la diff's `-l` option or the `diff.renameLimit` config) (default 200).
+ *
+ *  :renames ::
+ *    If true, looking for renames will be enabled (`--find-renames`).
+ *
+ *  :renames_from_rewrites ::
+ *    If true, the "old side" of modified files will be considered for renames (`--break-rewrites=N`).
+ *
+ *  :copies ::
+ *    If true, looking for copies will be enabled (`--find-copies`).
+ *
+ *  :copies_from_unmodified ::
+ *    If true, unmodified files will be considered as copy sources (`--find-copies-harder`).
+ *
+ *  :break_rewrites ::
+ *    If true, larger rewrites will be split into delete/add pairs (`--break-rewrites=/M`).
+ *
+ *  :all ::
+ *    If true, enables all finding features.
+ *
+ *  :ignore_whitespace ::
+ *    If true, similarity will be measured with all whitespace ignored.
+ *
+ *  :dont_ignore_whitespace ::
+ *    If true, similarity will be measured without ignoring any whitespace.
+ *
+ */
+static VALUE rb_git_diff_find_similar(int argc, VALUE *argv, VALUE self)
+{
+	git_diff_list *diff;
+	git_diff_find_options opts = GIT_DIFF_FIND_OPTIONS_INIT;
+	VALUE rb_options;
+	int error;
+
+	Data_Get_Struct(self, git_diff_list, diff);
+
+	rb_scan_args(argc, argv, "00:", &rb_options);
+
+	if (!NIL_P(rb_options)) {
+		VALUE rb_value = rb_hash_aref(rb_options, CSTR2SYM("rename_threshold"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_FIXNUM);
+			opts.rename_threshold = FIX2INT(rb_value);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("rename_from_rewrite_threshold"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_FIXNUM);
+			opts.rename_from_rewrite_threshold = FIX2INT(rb_value);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("copy_threshold"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_FIXNUM);
+			opts.copy_threshold = FIX2INT(rb_value);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("break_rewrite_threshold"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_FIXNUM);
+			opts.break_rewrite_threshold = FIX2INT(rb_value);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("target_limit"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_FIXNUM);
+			opts.target_limit = FIX2INT(rb_value);
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("renames")))) {
+			opts.flags |= GIT_DIFF_FIND_RENAMES;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("renames_from_rewrites")))) {
+			opts.flags |= GIT_DIFF_FIND_RENAMES_FROM_REWRITES;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("copies")))) {
+			opts.flags |= GIT_DIFF_FIND_COPIES;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("copies_from_unmodified")))) {
+			opts.flags |= GIT_DIFF_FIND_COPIES_FROM_UNMODIFIED;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("break_rewrites")))) {
+			opts.flags |= GIT_DIFF_FIND_AND_BREAK_REWRITES;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("all")))) {
+			opts.flags |= GIT_DIFF_FIND_ALL;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("ignore_whitespace")))) {
+			opts.flags |= GIT_DIFF_FIND_IGNORE_WHITESPACE;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("dont_ignore_whitespace")))) {
+			opts.flags |= GIT_DIFF_FIND_DONT_IGNORE_WHITESPACE;
+		}
+	}
+
+	error = git_diff_find_similar(diff, &opts);
+	rugged_exception_check(error);
+
+	return self;
+}
+
+/*
+ *  call-seq:
  *    diff.each_patch { |patch| } -> self
  *    diff.each_patch -> Enumerator
  *
@@ -248,6 +380,8 @@ void Init_rugged_diff()
 
 	rb_define_method(rb_cRuggedDiff, "patch", rb_git_diff_patch, -1);
 	rb_define_method(rb_cRuggedDiff, "write_patch", rb_git_diff_write_patch, -1);
+
+	rb_define_method(rb_cRuggedDiff, "find_similar!", rb_git_diff_find_similar, -1);
 	rb_define_method(rb_cRuggedDiff, "merge!", rb_git_diff_merge, 1);
 
 	rb_define_method(rb_cRuggedDiff, "size", rb_git_diff_size, 0);
