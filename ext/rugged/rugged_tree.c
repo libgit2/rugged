@@ -28,6 +28,7 @@ extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedObject;
 extern VALUE rb_cRuggedRepo;
 extern VALUE rb_cRuggedDiff;
+extern VALUE rb_cRuggedIndex;
 
 VALUE rb_cRuggedTree;
 VALUE rb_cRuggedTreeBuilder;
@@ -398,9 +399,17 @@ static VALUE rb_git_tree_diff(int argc, VALUE *argv, VALUE self)
 	if (NIL_P(rb_other)) {
 		error = git_diff_tree_to_workdir(&diff, repo, tree, &opts);
 	} else {
-		git_tree *other_tree;
-		Data_Get_Struct(rb_other, git_tree, other_tree);
-		error = git_diff_tree_to_tree(&diff, repo, tree, other_tree, &opts);
+		if (rb_obj_is_kind_of(rb_other, rb_cRuggedTree)) {
+			git_tree *other_tree;
+			Data_Get_Struct(rb_other, git_tree, other_tree);
+			error = git_diff_tree_to_tree(&diff, repo, tree, other_tree, &opts);
+		} else if (rb_obj_is_kind_of(rb_other, rb_cRuggedIndex)) {
+			git_index *index;
+			Data_Get_Struct(rb_other, git_index, index);
+			error = git_diff_tree_to_index(&diff, repo, tree, index, &opts);
+		} else {
+			rb_raise(rb_eTypeError, "A Rugged::Tree or Rugged::Index instance is required");
+		}
 	}
 
 	rugged_exception_check(error);
