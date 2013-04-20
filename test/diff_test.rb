@@ -58,6 +58,50 @@ EOS
     assert_equal "M\treadme.txt\n", diff.patch(:compact => true)
   end
 
+  def test_options
+    diff = @a.tree.diff(@b.tree, :context_lines => 0)
+
+    assert_equal <<-EOS, diff.patch
+diff --git a/another.txt b/another.txt
+index 3e5bcba..546c735 100644
+--- a/another.txt
++++ b/another.txt
+@@ -2 +2 @@
+-it a huge speed advantage on centralized systems that constantly have to
++it an huge speed advantage on centralized systems that constantly have to
+@@ -11,4 +10,0 @@
+-Let's see how common operations stack up against Subversion, a common
+-centralized version control system that is similar to CVS or
+-Perforce. Smaller is faster.
+-
+@@ -34,0 +31,4 @@
++Let's see how common operations stack up against Subversion, a common
++centralized version control system that is similar to CVS or
++Perforce. Smaller is faster.
++
+diff --git a/readme.txt b/readme.txt
+index 7b808f7..29ab705 100644
+--- a/readme.txt
++++ b/readme.txt
+@@ -1 +1 @@
+-The Git feature that really makes it stand apart from nearly every other SCM
++The Git feature that r3ally mak3s it stand apart from n3arly 3v3ry other SCM
+@@ -10,4 +9,0 @@
+-Frictionless Context Switching. Create a branch to try out an idea, commit a
+-few times, switch back to where you branched from, apply a patch, switch
+-back to where you are experimenting, and merge it in.
+-
+@@ -27,3 +22,0 @@
+-of your branches. You can choose to share just one of your branches, a few
+-of them, or all of them. This tends to free people to try new ideas without
+-worrying about having to plan how and when they are going to merge it in or
+@@ -35 +28 @@
+-it.
++it.!
+\\ No newline at end of file
+EOS
+  end
+
   def test_iteration
     diff = @a.tree.diff(@b.tree)
 
