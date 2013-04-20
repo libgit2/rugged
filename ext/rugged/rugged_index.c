@@ -24,8 +24,11 @@
 
 #include "rugged.h"
 
-extern VALUE rb_mRugged;
 VALUE rb_cRuggedIndex;
+extern VALUE rb_mRugged;
+extern VALUE rb_cRuggedCommit;
+extern VALUE rb_cRuggedDiff;
+extern VALUE rb_cRuggedTree;
 
 static void rb_git_indexentry_toC(git_index_entry *entry, VALUE rb_entry);
 static VALUE rb_git_indexentry_fromC(const git_index_entry *entry);
@@ -369,6 +372,98 @@ static VALUE rb_git_index_readtree(VALUE self, VALUE rb_tree)
 	return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    index.diff([options]) -> diff
+ *    index.diff([options]) { |diff_so_far, delta_to_add, matched_pathspec| block } -> diff
+ *    index.diff(diffable[, options]) -> diff
+ *    index.diff(diffable[, options]) { |diff_so_far, delta_to_add, matched_pathspec| block } -> diff
+ *
+ *  The first two forms return a diff between the index and the current working
+ *  directory.
+ *
+ *  The last two forms return a diff between the index and the given diffable object.
+ *  +diffable+ can either be a `Rugged::Commit` or a `Rugged::Tree`.
+ *
+ *  The index will be used as the "old file" side of the diff, while the working
+ *  directory or the +diffable+ will be used for the "new file" side.
+ *
+ *  Can be passed an optional block to filter unwanted delta objects before
+ *  they're added to the diff.
+ *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :max_size ::
+ *    An integer specifying the maximum byte size of a file before a it will
+ *    be treated as binary. The default value is 512MB.
+ *
+ *  :context_lines ::
+ *    The number of unchanged lines that define the boundary of a hunk (and
+ *    to display before and after the actual changes). The default is 3.
+ *
+ *  :interhunk_lines ::
+ *    The maximum number of unchanged lines between hunk boundaries before the hunks
+ *    will be merged into a one. The default is 0.
+ *
+ *  :reverse ::
+ *    If true, the sides of the diff will be reversed.
+ *
+ *  :force_text ::
+ *    If true, all files will be treated as text, disabling binary attributes & detection.
+ *
+ *  :ignore_whitespace ::
+ *    If true, all whitespace will be ignored.
+ */
+static VALUE rb_git_index_diff(int argc, VALUE *argv, VALUE self)
+{
+	git_index *index;
+	git_diff_options opts;
+	git_repository *repo;
+	git_diff_list *diff;
+	VALUE owner, rb_other, rb_options;
+	int error;
+
+	rb_scan_args(argc, argv, "01:", &rb_other, &rb_options);
+
+	opts = rugged_parse_diff_options(rb_options);
+	if (rb_block_given_p()) {
+		opts.notify_cb = &rugged__diff_notify_cb;
+		opts.notify_payload = (void*)rb_block_proc();
+	}
+
+	Data_Get_Struct(self, git_index, index);
+	owner = rugged_owner(self);
+	Data_Get_Struct(owner, git_repository, repo);
+
+	if (NIL_P(rb_other)) {
+		error = git_diff_index_to_workdir(&diff, repo, index, &opts);
+	} else {
+		// Need to flip the reverse option, so that the index is by default
+		// the "old file" side of the diff.
+		opts.flags ^= GIT_DIFF_REVERSE;
+
+		if (rb_obj_is_kind_of(rb_other, rb_cRuggedCommit)) {
+			git_tree *other_tree;
+			git_commit *commit;
+			Data_Get_Struct(rb_other, git_commit, commit);
+			error = git_commit_tree(&other_tree, commit);
+
+			if (!error)
+				error = git_diff_tree_to_index(&diff, repo, other_tree, index, &opts);
+		} else if (rb_obj_is_kind_of(rb_other, rb_cRuggedTree)) {
+			git_tree *other_tree;
+			Data_Get_Struct(rb_other, git_tree, other_tree);
+			error = git_diff_tree_to_index(&diff, repo, other_tree, index, &opts);
+		} else {
+			rb_raise(rb_eTypeError, "A Rugged::Commit or Rugged::Tree instance is required");
+		}
+	}
+
+	rugged_exception_check(error);
+
+	return rugged_diff_new(rb_cRuggedDiff, self, diff);
+}
+
 void Init_rugged_index()
 {
 	/*
@@ -384,6 +479,7 @@ void Init_rugged_index()
 	rb_define_method(rb_cRuggedIndex, "get", rb_git_index_get, -1);
 	rb_define_method(rb_cRuggedIndex, "[]", rb_git_index_get, -1);
 	rb_define_method(rb_cRuggedIndex, "each", rb_git_index_each, 0);
+	rb_define_method(rb_cRuggedIndex, "diff", rb_git_index_diff, -1);
 
 	rb_define_method(rb_cRuggedIndex, "add", rb_git_index_add, 1);
 	rb_define_method(rb_cRuggedIndex, "update", rb_git_index_add, 1);

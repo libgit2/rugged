@@ -263,64 +263,6 @@ static VALUE rb_git_tree_path(VALUE self, VALUE rb_path)
 	return rb_entry;
 }
 
-static int rugged__diff_notify_cb(
-	const git_diff_list *diff_so_far,
-	const git_diff_delta *delta_to_add,
-	const char *matched_pathspec,
-	void *payload
-) {
-	VALUE rb_diff = rugged_diff_new2(diff_so_far);
-	VALUE rb_result = rb_funcall((VALUE)payload, rb_intern("call"), 3, rb_diff,
-		rugged_diff_delta_new(rb_diff, delta_to_add),
-		(matched_pathspec == NULL ? Qnil : rugged_str_new2(matched_pathspec, NULL))
-	);
-
-	return RTEST(rb_result) ? 0 : 1;
-}
-
-
-static git_diff_options rugged_parse_diff_options(VALUE rb_options)
-{
-	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
-
-	if (!NIL_P(rb_options)) {
-		VALUE rb_value;
-		Check_Type(rb_options, T_HASH);
-
-		rb_value = rb_hash_aref(rb_options, CSTR2SYM("max_size"));
-		if (!NIL_P(rb_value)) {
-			Check_Type(rb_value, T_FIXNUM);
-			opts.max_size = FIX2INT(rb_value);
-		}
-
-		rb_value = rb_hash_aref(rb_options, CSTR2SYM("context_lines"));
-		if (!NIL_P(rb_value)) {
-			Check_Type(rb_value, T_FIXNUM);
-			opts.context_lines = FIX2INT(rb_value);
-		}
-
-		rb_value = rb_hash_aref(rb_options, CSTR2SYM("interhunk_lines"));
-		if (!NIL_P(rb_value)) {
-			Check_Type(rb_value, T_FIXNUM);
-			opts.interhunk_lines = FIX2INT(rb_value);
-		}
-
-		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("reverse")))) {
-			opts.flags |= GIT_DIFF_REVERSE;
-		}
-
-		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("force_text")))) {
-			opts.flags |= GIT_DIFF_FORCE_TEXT;
-		}
-
-		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("ignore_whitespace")))) {
-			opts.flags |= GIT_DIFF_IGNORE_WHITESPACE;
-		}
-	}
-
-	return opts;
-}
-
 /*
  *  call-seq:
  *    tree.diff([options]) -> diff
