@@ -58,6 +58,23 @@ EOS
     assert_equal "M\treadme.txt\n", diff.patch(:compact => true)
   end
 
+  def test_contraining_paths
+    diff = @a.tree.diff(@b.tree, :paths => ["readme.txt"])
+    assert_equal "M\treadme.txt\n", diff.patch(:compact => true)
+
+    diff = @a.tree.diff(@b.tree, :paths => ["r*.txt"])
+    assert_equal "M\treadme.txt\n", diff.patch(:compact => true)
+
+    diff = @a.tree.diff(@b.tree, :paths => ["*.txt"])
+    assert_equal "M\tanother.txt\nM\treadme.txt\n", diff.patch(:compact => true)
+
+    diff = @a.tree.diff(@b.tree, :paths => ["*.txt"], :disable_pathspec_match => true)
+    assert_equal "", diff.patch(:compact => true)
+
+    diff = @a.tree.diff(@b.tree, :paths => ["readme.txt"], :disable_pathspec_match => true)
+    assert_equal "M\treadme.txt\n", diff.patch(:compact => true)
+  end
+
   def test_options
     diff = @a.tree.diff(@b.tree, :context_lines => 0)
 
