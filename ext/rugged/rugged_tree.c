@@ -320,10 +320,21 @@ static git_diff_options rugged_parse_diff_options(VALUE rb_options)
 }
 
 /*
- *  call-seq: tree.diff(other_tree, options = {}) -> diff
- *  call-seq: tree.diff(other_tree, options = {}) { |diff_so_far, delta_to_add, matched_pathspec| block } -> diff
+ *  call-seq:
+ *    tree.diff([options]) -> diff
+ *    tree.diff([options]) { |diff_so_far, delta_to_add, matched_pathspec| block } -> diff
+ *    tree.diff(diffable[, options]) -> diff
+ *    tree.diff(diffable[, options]) { |diff_so_far, delta_to_add, matched_pathspec| block } -> diff
  *
- *  Creates and returns a diff between two tree objects.
+ *  The first two forms return a diff between the tree and the current working
+ *  directory.
+ *
+ *  The last two forms return a diff between the tree and the diffable object
+ *  was given. +diffable+ can either be a `Rugged::Commit`, a `Rugged::Tree`, or
+ *  a `Rugged::Index`.
+ *
+ *  The tree will be used as the "old file" side of the diff, while the working
+ *  directory or the +diffable+ will be used for the "new file" side.
  *
  *  Can be passed an optional block to filter unwanted delta objects before
  *  they're added to the diff.
@@ -353,94 +364,26 @@ static git_diff_options rugged_parse_diff_options(VALUE rb_options)
  *
  *  Examples:
  *
+ *    # Emulating `git diff <treeish>`
+ *    tree = Rugged::Tree.lookup(repo, "d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+ *    diff = tree.diff(repo.index)
+ *    diff.merge!(tree.diff)
+ *
+ *    # Tree-to-Tree Diff
  *    tree = Rugged::Tree.lookup(repo, "d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
  *    other_tree = Rugged::Tree.lookup(repo, "7a9e0b02e63179929fed24f0a3e0f19168114d10")
  *    diff = tree.diff(other_tree)
  */
 static VALUE rb_git_tree_diff(int argc, VALUE *argv, VALUE self)
 {
-	git_tree *tree, *other_tree;
-	git_diff_options opts;
-	git_repository *repo;
-	git_diff_list *diff;
-	VALUE owner, other, rb_options;
-	int error;
-
-	rb_scan_args(argc, argv, "11", &other, &rb_options);
-
-	opts = rugged_parse_diff_options(rb_options);
-	if (rb_block_given_p()) {
-		opts.notify_cb = &rugged__diff_notify_cb;
-		opts.notify_payload = (void*)rb_block_proc();
-	}
-
-	Data_Get_Struct(self, git_tree, tree);
-	Data_Get_Struct(other, git_tree, other_tree);
-	owner = rugged_owner(self);
-	Data_Get_Struct(owner, git_repository, repo);
-
-	error = git_diff_tree_to_tree(&diff, repo, tree, other_tree, &opts);
-	rugged_exception_check(error);
-
-	return rugged_diff_new(rb_cRuggedDiff, self, diff);
-}
-
-/*
- *  call-seq: tree.workdir_diff(options = {}) -> diff
- *  call-seq: tree.workdir_diff(options = {}) { |diff_so_far, delta_to_add, matched_pathspec| block } -> diff
- *
- *  Creates and returns a diff between a tree object and the current working directory.
- *
- *  The tree will be used as the "old file" side of the diff, while the working
- *  directory will be used for the "new file" side.
- *
- *  This method returns strictly the difference between the tree and the working
- *  directory, ignoring the state of the index.
- *
- *  Can be passed an optional block to filter unwanted delta objects before
- *  they're added to the diff.
- *
- *  The following options can be passed in the +options+ Hash:
- *
- *  :max_size ::
- *    An integer specifying the maximum byte size of a file before a it will
- *    be treated as binary. The default value is 512MB.
- *
- *  :context_lines ::
- *    The number of unchanged lines that define the boundary of a hunk (and
- *    to display before and after the actual changes). The default is 3.
- *
- *  :interhunk_lines ::
- *    The maximum number of unchanged lines between hunk boundaries before the hunks
- *    will be merged into a one. The default is 0.
- *
- *  :reverse ::
- *    If true, the sides of the diff will be reversed.
- *
- *  :force_text ::
- *    If true, all files will be treated as text, disabling binary attributes & detection.
- *
- *  :ignore_whitespace ::
- *    If true, all whitespace will be ignored.
- *
- *  Examples:
- *
- *    tree = Rugged::Tree.lookup(repo, "d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
- *    other_tree = Rugged::Tree.lookup(repo, "7a9e0b02e63179929fed24f0a3e0f19168114d10")
- *    diff = tree.diff(other_tree)
- */
-static VALUE rb_git_tree_workdir_diff(int argc, VALUE *argv, VALUE self)
-{
 	git_tree *tree;
 	git_diff_options opts;
 	git_repository *repo;
 	git_diff_list *diff;
-
-	VALUE rb_repo, rb_options;
-
+	VALUE owner, rb_other, rb_options;
 	int error;
 
-	rb_scan_args(argc, argv, "01", &rb_options);
+	rb_scan_args(argc, argv, "01:", &rb_other, &rb_options);
 
 	opts = rugged_parse_diff_options(rb_options);
 	if (rb_block_given_p()) {
@@ -448,11 +391,18 @@ static VALUE rb_git_tree_workdir_diff(int argc, VALUE *argv, VALUE self)
 		opts.notify_payload = (void*)rb_block_proc();
 	}
 
-	rb_repo = rugged_owner(self);
-	Data_Get_Struct(rb_repo, git_repository, repo);
 	Data_Get_Struct(self, git_tree, tree);
+	owner = rugged_owner(self);
+	Data_Get_Struct(owner, git_repository, repo);
 
-	error = git_diff_tree_to_workdir(&diff, repo, tree, &opts);
+	if (NIL_P(rb_other)) {
+		error = git_diff_tree_to_workdir(&diff, repo, tree, &opts);
+	} else {
+		git_tree *other_tree;
+		Data_Get_Struct(rb_other, git_tree, other_tree);
+		error = git_diff_tree_to_tree(&diff, repo, tree, other_tree, &opts);
+	}
+
 	rugged_exception_check(error);
 
 	return rugged_diff_new(rb_cRuggedDiff, self, diff);
@@ -602,7 +552,6 @@ void Init_rugged_tree()
 	rb_define_method(rb_cRuggedTree, "get_entry_by_oid", rb_git_tree_get_entry_by_oid, 1);
 	rb_define_method(rb_cRuggedTree, "path", rb_git_tree_path, 1);
 	rb_define_method(rb_cRuggedTree, "diff", rb_git_tree_diff, -1);
-	rb_define_method(rb_cRuggedTree, "workdir_diff", rb_git_tree_workdir_diff, -1);
 	rb_define_method(rb_cRuggedTree, "[]", rb_git_tree_get_entry, 1);
 	rb_define_method(rb_cRuggedTree, "each", rb_git_tree_each, 0);
 	rb_define_method(rb_cRuggedTree, "walk", rb_git_tree_walk, 1);
