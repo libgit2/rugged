@@ -403,26 +403,68 @@ static VALUE rb_git_remote_download(VALUE self)
 	return Qnil;
 }
 
+static int cb_remote__update_tips(const char *refname, const git_oid *src, const git_oid *dest, void *data)
+{
+	rb_yield_values(
+			3,
+			rugged_str_new2(refname, rb_utf8_encoding()),
+			git_oid_iszero(src) ? Qnil : rugged_create_oid(src),
+			git_oid_iszero(dest) ? Qnil : rugged_create_oid(dest));
+
+	return GIT_OK;
+}
+
+static VALUE rb_git_remote__update_tips(VALUE self)
+{
+	git_remote *remote;
+	Data_Get_Struct(self, git_remote, remote);
+
+	rugged_exception_check(
+		git_remote_update_tips(remote)
+	);
+
+	return Qnil;
+}
+
 /*
  * 	call-seq:
- * 		remote.update_tips!() -> nil
+ * 		remote.update_tips! -> nil
+ * 		remote.update_tips! { |reference, source, destination| block }
  *
- *	Update the tips to a new state from a connected remote
+ *	Update the tips to a new state from a connected remote. The target
+ *	objects must be downloaded before the tips are updated.
  *
- *		remote.connect(:fetch) do |r|
- *		  r.update_tips!
- *		end
+ *		  r.update_tips! do |ref, src, dst|
+ *		    puts "#{ref}: #{src}..#{dst}"
+ *		  end
  */
 static VALUE rb_git_remote_update_tips(VALUE self)
 {
-	int error;
 	git_remote *remote;
 
 	Data_Get_Struct(self, git_remote, remote);
 
-	// TODO: Maybe allow passing down a block?
-	error = git_remote_update_tips(remote);
-	rugged_exception_check(error);
+	if (rb_block_given_p()) {
+		int exception = 0;
+		git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
+
+		callbacks.update_tips = &cb_remote__update_tips;
+		rugged_exception_check(
+			git_remote_set_callbacks(remote, &callbacks)
+		);
+
+		rb_protect(rb_git_remote__update_tips, self, &exception);
+
+		callbacks.update_tips = NULL;
+		rugged_exception_check(
+			git_remote_set_callbacks(remote, &callbacks)
+		);
+
+		if (exception)
+			rb_jump_tag(exception);
+	} else {
+		rugged_exception_check(git_remote_update_tips(remote));
+	}
 
 	return Qnil;
 }

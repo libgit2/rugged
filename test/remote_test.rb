@@ -171,6 +171,9 @@ class RemoteWriteTest < Rugged::TestCase
 end
 
 class RemoteTransportTest < Rugged::TestCase
+  class TestException < StandardError
+  end
+
   def setup
     @path = Dir.mktmpdir 'dir'
     @repo = Rugged::Repository.init_at(@path, false)
@@ -194,6 +197,34 @@ class RemoteTransportTest < Rugged::TestCase
     @remote.connect(:fetch) do |r|
       assert r.ls.kind_of? Enumerable
       assert_equal 7, r.ls.to_a.count
+    end
+  end
+
+  def test_update_tips_callback
+    @remote.connect(:fetch) do |r|
+      r.download
+        r.update_tips! do |ref, source, destination|
+          assert Rugged::Reference.lookup(@repo, ref)
+          assert_nil source
+          assert destination
+        end
+    end
+  end
+
+  # this is not as useless as it seems
+  # LocalJumpError is raised in the second call to
+  # update_tips! if libgit2 callback is not cleared
+  # Also the exception is explicitly raised after the
+  # callback is cleared
+  def test_update_tips_cleanup_callbacks
+    @remote.connect(:fetch) do |r|
+      r.download
+      assert_raises TestException do
+        r.update_tips! do
+          raise TestException
+        end
+      end
+      r.update_tips!
     end
   end
 
