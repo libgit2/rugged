@@ -51,7 +51,7 @@ EOS
   end
 
   def test_diff_prefiltering
-    diff = @a.tree.diff(@b.tree, :max_size => 1000) do |diff_so_far, delta_to_be_added, matched_pathspec|
+    diff = @a.tree.diff(@b.tree) do |diff_so_far, delta_to_be_added, matched_pathspec|
       delta_to_be_added.old_file[:path] == "readme.txt"
     end
 
