@@ -163,6 +163,12 @@ static VALUE rb_git_diff_merge(VALUE self, VALUE rb_other)
  *  call-seq:
  *    diff.find_similar!([options]) -> self
  *
+ *  Detects entries in the diff that look like renames or copies (based on the
+ *  given options) and replaces them with actual rename or copy entries.
+ *
+ *  Additionally, modified files can be broken into add/delete pairs if the
+ *  amount of changes are above a specific threshold (see +:break_rewrite_threshold+).
+ *
  *  By default, similarity will be measured without leading whitespace. You
  *  you can use the +:dont_ignore_whitespace+ to disable this.
  *
