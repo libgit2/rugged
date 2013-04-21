@@ -168,6 +168,32 @@ class RemoteWriteTest < Rugged::TestCase
     assert remote.save
     assert_equal new_url, Rugged::Remote.lookup(@repo, 'origin').url
   end
+
+  def test_rename
+    remote = Rugged::Remote.lookup(@repo, 'origin')
+    assert_nil remote.rename!('new_remote_name')
+    assert Rugged::Remote.lookup(@repo, 'new_remote_name')
+  end
+
+  def test_rename_invalid_name
+    remote = Rugged::Remote.lookup(@repo, 'origin')
+    assert_raises Rugged::ConfigError do
+      remote.rename!('/?')
+    end
+  end
+
+  def test_rename_exists
+    remote = Rugged::Remote.lookup(@repo, 'origin')
+    assert_raises Rugged::ConfigError do
+      remote.rename!('origin')
+    end
+  end
+
+  def test_rename_error_callback
+    @repo.config['remote.origin.fetch']  = '+refs/*:refs/*'
+    remote = Rugged::Remote.lookup(@repo, 'origin')
+    assert_equal ["+refs/*:refs/*"], remote.rename!('test_remote')
+  end
 end
 
 class RemoteTransportTest < Rugged::TestCase

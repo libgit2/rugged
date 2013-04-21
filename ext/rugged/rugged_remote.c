@@ -515,6 +515,50 @@ static VALUE rb_git_remote_save(VALUE self)
 	return Qtrue;
 }
 
+static int cb_remote__rename_problem(const char* refspec_name, void *payload)
+{
+
+	rb_ary_push((VALUE) payload,
+			rugged_str_new2(refspec_name, rb_utf8_encoding()));
+	return 0;
+}
+
+/*
+ * 	call-seq:
+ * 		remote.rename!(new_name) -> array or nil
+ *
+ * 	Renames a remote
+ *
+ * 	All remote-tracking branches and configuration settings
+ * 	for the remote are updated.
+ *
+ * 	Returns +nil+ if everything was updated or array of fetch refspecs
+ * 	that haven't been automatically updated and need potential manual
+ * 	tweaking.
+ *
+ * 	A temporary in-memory remote cannot be given a name with this method.
+ * 		remote = Rugged::Remote.lookup(@repo, 'origin')
+ * 		remote.rename!('upstream') #=> nil
+ *
+*/
+static VALUE rb_git_remote_rename(VALUE self, VALUE rb_new_name)
+{
+	git_remote *remote;
+	int error = 0;
+	VALUE rb_refspec_ary = rb_ary_new();
+
+	Check_Type(rb_new_name, T_STRING);
+	Data_Get_Struct(self, git_remote, remote);
+	error = git_remote_rename(
+			remote,
+			StringValueCStr(rb_new_name),
+			cb_remote__rename_problem, (void *)rb_refspec_ary);
+
+	rugged_exception_check(error);
+
+	return RARRAY_LEN(rb_refspec_ary) == 0 ? Qnil : rb_refspec_ary;
+}
+
 void Init_rugged_remote()
 {
 	rb_cRuggedRemote = rb_define_class_under(rb_mRugged, "Remote", rb_cObject);
@@ -536,4 +580,5 @@ void Init_rugged_remote()
 	rb_define_method(rb_cRuggedRemote, "download", rb_git_remote_download, 0);
 	rb_define_method(rb_cRuggedRemote, "update_tips!", rb_git_remote_update_tips, 0);
 	rb_define_method(rb_cRuggedRemote, "save", rb_git_remote_save, 0);
+	rb_define_method(rb_cRuggedRemote, "rename!", rb_git_remote_rename, 1);
 }
