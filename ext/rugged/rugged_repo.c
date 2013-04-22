@@ -23,6 +23,7 @@
  */
 
 #include "rugged.h"
+#include <git2/sys/repository.h>
 
 extern VALUE rb_mRugged;
 extern VALUE rb_eRuggedError;
