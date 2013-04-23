@@ -296,6 +296,13 @@ void rugged_exception_raise(int errorcode)
 	rb_exc_raise(err_obj);
 }
 
+static VALUE rb_git_cache_usage(VALUE self)
+{
+	int64_t used, max;
+	git_libgit2_opts(GIT_OPT_GET_CACHED_MEMORY, &used, &max);
+	return rb_ary_new3(2, LL2NUM(used), LL2NUM(max));
+}
+
 void Init_rugged()
 {
 	rb_mRugged = rb_define_module("Rugged");
@@ -321,6 +328,7 @@ void Init_rugged()
 	rb_define_module_function(rb_mRugged, "raw_to_hex", rb_git_raw_to_hex, 1);
 	rb_define_module_function(rb_mRugged, "minimize_oid", rb_git_minimize_oid, -1);
 	rb_define_module_function(rb_mRugged, "prettify_message", rb_git_prettify_message, 2);
+	rb_define_module_function(rb_mRugged, "__cache_usage__", rb_git_cache_usage, 0);
 
 	Init_rugged_object();
 	Init_rugged_commit();
