@@ -390,7 +390,13 @@ static VALUE rb_git_tree_diff(int argc, VALUE *argv, VALUE self)
 	VALUE owner, rb_other, rb_options, rb_block;
 	int error;
 
-	rb_scan_args(argc, argv, "01:&", &rb_other, &rb_options, &rb_block);
+	if (rb_scan_args(argc, argv, "02&", &rb_other, &rb_options, &rb_block) == 1) {
+		if (TYPE(rb_other) == T_HASH) {
+			rb_options = rb_other;
+			rb_other = Qnil;
+		}
+	}
+
 	opts = rugged_parse_diff_options(rb_options, rb_block);
 
 	Data_Get_Struct(self, git_tree, tree);
