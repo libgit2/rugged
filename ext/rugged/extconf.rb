@@ -43,4 +43,10 @@ else
   end
 end
 
+def add_define(const)
+  $INCFLAGS << " -D#{const}"
+end
+
+add_define "HAVE_WITHOUT_GIL" if have_func('rb_thread_blocking_region')
+
 create_makefile("rugged/rugged")

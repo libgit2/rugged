@@ -1,0 +1,239 @@
+#ifdef HAVE_WITHOUT_GIL
+
+RUGGED_WITHOUT_GIL3(int, git_blob_create_fromworkdir, git_oid *, id, git_repository *, repo, const char *, relative_path);
+RUGGED_WITHOUT_GIL3(int, git_blob_create_fromdisk, git_oid *, id, git_repository *, repo, const char *, path);
+RUGGED_WITHOUT_GIL4(int, git_blob_create_frombuffer, git_oid *, oid, git_repository *, repo, const void *, buffer, size_t , len);
+
+RUGGED_WITHOUT_GIL2(int, git_checkout_head, git_repository *, repo, git_checkout_opts *, opts);
+RUGGED_WITHOUT_GIL3(int, git_checkout_index, git_repository *, repo, git_index *, index, git_checkout_opts *, opts);
+RUGGED_WITHOUT_GIL3(int, git_checkout_tree, git_repository *, repo, const git_object *, treeish, git_checkout_opts *, opts);
+RUGGED_WITHOUT_GIL4(int, git_clone, git_repository **, out, const char *, url, const char *, local_path, const git_clone_options *, options);
+
+RUGGED_WITHOUT_GIL2(int, git_commit_tree, git_tree **, tree_out, const git_commit *, commit);
+RUGGED_WITHOUT_GIL3(int, git_commit_parent, git_commit **, out, git_commit *, commit, unsigned int , n);
+
+RUGGED_WITHOUT_GIL3(int, git_commit_nth_gen_ancestor, git_commit **, ancestor, const git_commit *, commit, unsigned int , n);
+RUGGED_WITHOUT_GIL10(int, git_commit_create, git_oid *, id, git_repository *, repo, const char *, update_ref, const git_signature *, author, const git_signature *, committer, const char *, message_encoding, const char *, message, const git_tree *, tree, int , parent_count, const git_commit **, parents);
+
+RUGGED_WITHOUT_GIL5(int, git_diff_tree_to_tree, git_diff_list **, diff, git_repository *, repo, git_tree *, old_tree, git_tree *, new_tree, const git_diff_options *, opts);
+RUGGED_WITHOUT_GIL5(int, git_diff_tree_to_index, git_diff_list **, diff, git_repository *, repo, git_tree *, old_tree, git_index *, index, const git_diff_options *, opts);
+RUGGED_WITHOUT_GIL4(int, git_diff_index_to_workdir, git_diff_list **, diff, git_repository *, repo, git_index *, index, const git_diff_options *, opts);
+RUGGED_WITHOUT_GIL4(int, git_diff_tree_to_workdir, git_diff_list **, diff, git_repository *, repo, git_tree *, old_tree, const git_diff_options *, opts);
+RUGGED_WITHOUT_GIL2(int, git_diff_merge, git_diff_list *, onto, const git_diff_list *, from);
+RUGGED_WITHOUT_GIL2(int, git_diff_find_similar, git_diff_list *, diff, git_diff_find_options *, options);
+RUGGED_WITHOUT_GIL4(int, git_diff_get_patch, git_diff_patch **, patch_out, const git_diff_delta **, delta_out, git_diff_list *, diff, size_t , idx);
+
+RUGGED_WITHOUT_GIL5(int, git_graph_ahead_behind, size_t *, ahead, size_t *, behind, git_repository *, repo, const git_oid *, local, const git_oid *, upstream);
+RUGGED_WITHOUT_GIL3(int, git_ignore_path_is_ignored, int *, ignored, git_repository *, repo, const char *, path);
+RUGGED_WITHOUT_GIL2(int, git_index_open, git_index **, out, const char *, index_path);
+
+RUGGED_WITHOUT_GIL1(int, git_index_read, git_index *, index);
+RUGGED_WITHOUT_GIL1(int, git_index_write, git_index *, index);
+RUGGED_WITHOUT_GIL2(int, git_index_read_tree, git_index *, index, const git_tree *, tree);
+RUGGED_WITHOUT_GIL2(int, git_index_write_tree, git_oid *, out, git_index *, index);
+RUGGED_WITHOUT_GIL3(int, git_index_write_tree_to, git_oid *, out, git_index *, index, git_repository *, repo);
+
+RUGGED_WITHOUT_GIL3(int, git_index_remove, git_index *, index, const char *, path, int , stage);
+RUGGED_WITHOUT_GIL3(int, git_index_remove_directory, git_index *, index, const char *, dir, int , stage);
+RUGGED_WITHOUT_GIL2(int, git_index_add, git_index *, index, const git_index_entry *, source_entry);
+RUGGED_WITHOUT_GIL1(int, git_index_entry_stage, const git_index_entry *, entry);
+RUGGED_WITHOUT_GIL2(int, git_index_add_bypath, git_index *, index, const char *, path);
+RUGGED_WITHOUT_GIL2(int, git_index_remove_bypath, git_index *, index, const char *, path);
+RUGGED_WITHOUT_GIL3(int, git_index_find, size_t *, at_pos, git_index *, index, const char *, path);
+RUGGED_WITHOUT_GIL4(int, git_index_conflict_add, git_index *, index, const git_index_entry *, ancestor_entry, const git_index_entry *, our_entry, const git_index_entry *, their_entry);
+RUGGED_WITHOUT_GIL5(int, git_index_conflict_get, git_index_entry **, ancestor_out, git_index_entry **, our_out, git_index_entry **, their_out, git_index *, index, const char *, path);
+RUGGED_WITHOUT_GIL2(int, git_index_conflict_remove, git_index *, index, const char *, path);
+
+RUGGED_WITHOUT_GIL3(int, git_index_reuc_find, size_t *, at_pos, git_index *, index, const char *, path);
+RUGGED_WITHOUT_GIL8(int, git_index_reuc_add, git_index *, index, const char *, path, int , ancestor_mode, git_oid *, ancestor_id, int , our_mode, git_oid *, our_id, int , their_mode, git_oid *, their_id);
+RUGGED_WITHOUT_GIL2(int, git_index_reuc_remove, git_index *, index, size_t , n);
+
+RUGGED_WITHOUT_GIL4(int, git_merge_base, git_oid *, out, git_repository *, repo, const git_oid *, one, const git_oid *, two);
+RUGGED_WITHOUT_GIL4(int, git_merge_base_many, git_oid *, out, git_repository *, repo, const git_oid *, input_array, size_t , length);
+
+RUGGED_WITHOUT_GIL3(int, git_note_next, git_oid* , note_id, git_oid* , annotated_id, git_note_iterator *, it);
+RUGGED_WITHOUT_GIL4(int, git_note_read, git_note **, out, git_repository *, repo, const char *, notes_ref, const git_oid *, oid);
+RUGGED_WITHOUT_GIL8(int, git_note_create, git_oid *, out, git_repository *, repo, const git_signature *, author, const git_signature *, committer, const char *, notes_ref, const git_oid *, oid, const char *, note, int , force);
+RUGGED_WITHOUT_GIL5(int, git_note_remove, git_repository *, repo, const char *, notes_ref, const git_signature *, author, const git_signature *, committer, const git_oid *, oid);
+
+RUGGED_WITHOUT_GIL4(int, git_object_lookup, git_object **, object, git_repository *, repo, const git_oid *, id, git_otype , type);
+RUGGED_WITHOUT_GIL5(int, git_object_lookup_prefix, git_object **, object_out, git_repository *, repo, const git_oid *, id, size_t , len, git_otype , type);
+RUGGED_WITHOUT_GIL3(int, git_object_peel, git_object **, peeled, const git_object *, object, git_otype , target_type);
+
+RUGGED_WITHOUT_GIL3(int, git_odb_read, git_odb_object **, out, git_odb *, db, const git_oid *, id);
+RUGGED_WITHOUT_GIL4(int, git_odb_read_prefix, git_odb_object **, out, git_odb *, db, const git_oid *, short_id, size_t , len);
+RUGGED_WITHOUT_GIL4(int, git_odb_read_header, size_t *, len_out, git_otype *, type_out, git_odb *, db, const git_oid *, id);
+RUGGED_WITHOUT_GIL2(int, git_odb_exists, git_odb *, db, const git_oid *, id);
+RUGGED_WITHOUT_GIL1(int, git_odb_refresh, struct git_odb *, db);
+RUGGED_WITHOUT_GIL5(int, git_odb_write, git_oid *, out, git_odb *, odb, const void *, data, size_t , len, git_otype , type);
+RUGGED_WITHOUT_GIL4(int, git_odb_hash, git_oid *, out, const void *, data, size_t , len, git_otype , type);
+RUGGED_WITHOUT_GIL3(int, git_odb_hashfile, git_oid *, out, const char *, path, git_otype , type);
+
+RUGGED_WITHOUT_GIL3(int, git_packbuilder_insert, git_packbuilder *, pb, const git_oid *, id, const char *, name);
+RUGGED_WITHOUT_GIL2(int, git_packbuilder_insert_tree, git_packbuilder *, pb, const git_oid *, id);
+RUGGED_WITHOUT_GIL2(int, git_packbuilder_write, git_packbuilder *, pb, const char *, file);
+
+RUGGED_WITHOUT_GIL2(int, git_push_add_refspec, git_push *, push, const char *, refspec);
+RUGGED_WITHOUT_GIL1(int, git_push_update_tips, git_push *, push);
+RUGGED_WITHOUT_GIL1(int, git_push_finish, git_push *, push);
+
+RUGGED_WITHOUT_GIL1(int, git_refdb_compress, git_refdb *, refdb);
+
+RUGGED_WITHOUT_GIL2(int, git_reflog_read, git_reflog **, out, const git_reference *, ref);
+RUGGED_WITHOUT_GIL1(int, git_reflog_write, git_reflog *, reflog);
+RUGGED_WITHOUT_GIL4(int, git_reflog_append, git_reflog *, reflog, const git_oid *, id, const git_signature *, committer, const char *, msg);
+RUGGED_WITHOUT_GIL2(int, git_reflog_rename, git_reference *, ref, const char *, name);
+RUGGED_WITHOUT_GIL1(int, git_reflog_delete, git_reference *, ref);
+RUGGED_WITHOUT_GIL3(int, git_reflog_drop, git_reflog *, reflog, size_t , idx, int , rewrite_previous_entry);
+
+RUGGED_WITHOUT_GIL3(int, git_reference_list, git_strarray *, array, git_repository *, repo, unsigned int , list_flags);
+RUGGED_WITHOUT_GIL3(int, git_reference_peel, git_object **, out, git_reference *, ref, git_otype , type);
+
+RUGGED_WITHOUT_GIL2(int, git_repository_open, git_repository **, out, const char *, path);
+RUGGED_WITHOUT_GIL5(int, git_repository_discover, char *, path_out, size_t , path_size, const char *, start_path, int , across_fs, const char *, ceiling_dirs);
+RUGGED_WITHOUT_GIL4(int, git_repository_open_ext, git_repository **, out, const char *, path, unsigned int , flags, const char *, ceiling_dirs);
+RUGGED_WITHOUT_GIL2(int, git_repository_open_bare, git_repository **, out, const char *, bare_path);
+RUGGED_WITHOUT_GIL3(int, git_repository_init, git_repository **, out, const char *, path, unsigned , is_bare);
+RUGGED_WITHOUT_GIL3(int, git_repository_init_ext, git_repository **, out, const char *, repo_path, git_repository_init_options *, opts);
+RUGGED_WITHOUT_GIL3(int, git_repository_message, char *, out, size_t , len, git_repository *, repo);
+RUGGED_WITHOUT_GIL1(int, git_repository_message_remove, git_repository *, repo);
+RUGGED_WITHOUT_GIL1(int, git_repository_merge_cleanup, git_repository *, repo);
+RUGGED_WITHOUT_GIL5(int, git_repository_hashfile, git_oid *, out, git_repository *, repo, const char *, path, git_otype , type, const char *, as_path);
+RUGGED_WITHOUT_GIL3(int, git_reset, git_repository *, repo, git_object *, target, git_reset_t , reset_type);
+RUGGED_WITHOUT_GIL3(int, git_reset_default, git_repository *, repo, git_object *, target, git_strarray* , pathspecs);
+RUGGED_WITHOUT_GIL3(int, git_revparse_single, git_object **, out, git_repository *, repo, const char *, spec);
+
+RUGGED_WITHOUT_GIL3(int, git_submodule_lookup, git_submodule **, submodule, git_repository *, repo, const char *, name);
+RUGGED_WITHOUT_GIL5(int, git_submodule_add_setup, git_submodule **, submodule, git_repository *, repo, const char *, url, const char *, path, int , use_gitlink);
+RUGGED_WITHOUT_GIL1(int, git_submodule_add_finalize, git_submodule *, submodule);
+RUGGED_WITHOUT_GIL2(int, git_submodule_add_to_index, git_submodule *, submodule, int , write_index);
+RUGGED_WITHOUT_GIL1(int, git_submodule_save, git_submodule *, submodule);
+RUGGED_WITHOUT_GIL1(int, git_submodule_sync, git_submodule *, submodule);
+RUGGED_WITHOUT_GIL2(int, git_submodule_open, git_repository **, repo, git_submodule *, submodule);
+RUGGED_WITHOUT_GIL1(int, git_submodule_reload, git_submodule *, submodule);
+RUGGED_WITHOUT_GIL1(int, git_submodule_reload_all, git_repository *, repo);
+
+RUGGED_WITHOUT_GIL3(int, git_tree_entry_bypath, git_tree_entry **, out, git_tree *, root, const char *, path);
+RUGGED_WITHOUT_GIL3(int, git_tree_entry_to_object, git_object **, object_out, git_repository *, repo, const git_tree_entry *, entry);
+
+
+/* Overwriding methods */
+
+#define git_blob_create_fromworkdir   git_blob_create_fromworkdir_without_gil
+#define git_blob_create_fromdisk      git_blob_create_fromdisk_without_gil
+#define git_blob_create_frombuffer    git_blob_create_frombuffer_without_gil
+
+#define git_checkout_head             git_checkout_head_without_gil
+#define git_checkout_index            git_checkout_index_without_gil
+#define git_checkout_tree             git_checkout_tree_without_gil
+#define git_clone                     git_clone_without_gil
+
+#define git_commit_tree               git_commit_tree_without_gil
+#define git_commit_parent             git_commit_parent_without_gil
+
+#define git_commit_nth_gen_ancestor   git_commit_nth_gen_ancestor_without_gil
+#define git_commit_create             git_commit_create_without_gil
+
+#define git_diff_tree_to_tree         git_diff_tree_to_tree_without_gil
+#define git_diff_tree_to_index        git_diff_tree_to_index_without_gil
+#define git_diff_index_to_workdir     git_diff_index_to_workdir_without_gil
+#define git_diff_tree_to_workdir      git_diff_tree_to_workdir_without_gil
+#define git_diff_merge                git_diff_merge_without_gil
+#define git_diff_find_similar         git_diff_find_similar_without_gil
+#define git_diff_get_patch            git_diff_get_patch_without_gil
+
+#define git_graph_ahead_behind        git_graph_ahead_behind_without_gil
+#define git_ignore_path_is_ignored    git_ignore_path_is_ignored_without_gil
+#define git_index_open                git_index_open_without_gil
+
+#define git_index_read                git_index_read_without_gil
+#define git_index_write               git_index_write_without_gil
+#define git_index_read_tree           git_index_read_tree_without_gil
+#define git_index_write_tree          git_index_write_tree_without_gil
+#define git_index_write_tree_to       git_index_write_tree_to_without_gil
+
+#define git_index_remove              git_index_remove_without_gil
+#define git_index_remove_directory    git_index_remove_directory_without_gil
+#define git_index_add                 git_index_add_without_gil
+#define git_index_entry_stage         git_index_entry_stage_without_gil
+#define git_index_add_bypath          git_index_add_bypath_without_gil
+#define git_index_remove_bypath       git_index_remove_bypath_without_gil
+#define git_index_find                git_index_find_without_gil
+#define git_index_conflict_add        git_index_conflict_add_without_gil
+#define git_index_conflict_get        git_index_conflict_get_without_gil
+#define git_index_conflict_remove     git_index_conflict_remove_without_gil
+
+#define git_index_reuc_find           git_index_reuc_find_without_gil
+#define git_index_reuc_add            git_index_reuc_add_without_gil
+#define git_index_reuc_remove         git_index_reuc_remove_without_gil
+
+#define git_merge_base                git_merge_base_without_gil
+#define git_merge_base_many           git_merge_base_many_without_gil
+
+#define git_note_next                 git_note_next_without_gil
+#define git_note_read                 git_note_read_without_gil
+#define git_note_create               git_note_create_without_gil
+#define git_note_remove               git_note_remove_without_gil
+
+#define git_object_lookup             git_object_lookup_without_gil
+#define git_object_lookup_prefix      git_object_lookup_prefix_without_gil
+#define git_object_peel               git_object_peel_without_gil
+
+#define git_odb_read                  git_odb_read_without_gil
+#define git_odb_read_prefix           git_odb_read_prefix_without_gil
+#define git_odb_read_header           git_odb_read_header_without_gil
+#define git_odb_exists                git_odb_exists_without_gil
+#define git_odb_refresh               git_odb_refresh_without_gil
+#define git_odb_write                 git_odb_write_without_gil
+#define git_odb_write_pack            git_odb_write_pack_without_gil
+#define git_odb_hash                  git_odb_hash_without_gil
+#define git_odb_hashfile              git_odb_hashfile_without_gil
+
+#define git_packbuilder_insert        git_packbuilder_insert_without_gil
+#define git_packbuilder_insert_tree   git_packbuilder_insert_tree_without_gil
+#define git_packbuilder_write         git_packbuilder_write_without_gil
+
+#define git_push_add_refspec          git_push_add_refspec_without_gil
+#define git_push_update_tips          git_push_update_tips_without_gil
+#define git_push_finish               git_push_finish_without_gil
+
+#define git_refdb_compress            git_refdb_compress_without_gil
+
+#define git_reflog_read               git_reflog_read_without_gil
+#define git_reflog_write              git_reflog_write_without_gil
+#define git_reflog_append             git_reflog_append_without_gil
+#define git_reflog_rename             git_reflog_rename_without_gil
+#define git_reflog_delete             git_reflog_delete_without_gil
+#define git_reflog_drop               git_reflog_drop_without_gil
+
+#define git_reference_list            git_reference_list_without_gil
+#define git_reference_peel            git_reference_peel_without_gil
+
+#define git_repository_open           git_repository_open_without_gil
+#define git_repository_discover       git_repository_discover_without_gil
+#define git_repository_open_ext       git_repository_open_ext_without_gil
+#define git_repository_open_bare      git_repository_open_bare_without_gil
+#define git_repository_init           git_repository_init_without_gil
+#define git_repository_init_ext       git_repository_init_ext_without_gil
+#define git_repository_message        git_repository_message_without_gil
+#define git_repository_message_remove git_repository_message_remove_without_gil
+#define git_repository_merge_cleanup  git_repository_merge_cleanup_without_gil
+#define git_repository_hashfile       git_repository_hashfile_without_gil
+#define git_reset                     git_reset_without_gil
+#define git_reset_default             git_reset_default_without_gil
+#define git_revparse_single           git_revparse_single_without_gil
+
+#define git_submodule_lookup          git_submodule_lookup_without_gil
+#define git_submodule_add_setup       git_submodule_add_setup_without_gil
+#define git_submodule_add_finalize    git_submodule_add_finalize_without_gil
+#define git_submodule_add_to_index    git_submodule_add_to_index_without_gil
+#define git_submodule_save            git_submodule_save_without_gil
+#define git_submodule_sync            git_submodule_sync_without_gil
+#define git_submodule_open            git_submodule_open_without_gil
+#define git_submodule_reload          git_submodule_reload_without_gil
+#define git_submodule_reload_all      git_submodule_reload_all_without_gil
+
+#define git_tree_entry_bypath         git_tree_entry_bypath_without_gil
+#define git_tree_entry_to_object      git_tree_entry_to_object_without_gil
+
+#endif
