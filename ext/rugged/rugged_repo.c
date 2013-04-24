@@ -1061,6 +1061,24 @@ cleanup:
 	return rb_result;
 }
 
+/*
+ *	call-seq:
+ *		repo.close
+ *
+ *  Frees all the resources used by this repository immediately. The repository can
+ *  still be used after this call. Resources will be opened as necessary.
+ *
+ *  It is not required to call this method explicitly. Repositories are closed
+ *  automatically before garbage collection
+ */
+static VALUE rb_git_repo_close(VALUE self)
+{
+	git_repository *repo;
+	Data_Get_Struct(self, git_repository, repo);
+
+	git_repository__cleanup(repo);
+}
+
 void Init_rugged_repo()
 {
 	rb_cRuggedRepo = rb_define_class_under(rb_mRugged, "Repository", rb_cObject);
@@ -1071,6 +1089,8 @@ void Init_rugged_repo()
 	rb_define_singleton_method(rb_cRuggedRepo, "hash_file",   rb_git_repo_hashfile,  2);
 	rb_define_singleton_method(rb_cRuggedRepo, "init_at", rb_git_repo_init_at, -1);
 	rb_define_singleton_method(rb_cRuggedRepo, "discover", rb_git_repo_discover, -1);
+
+	rb_define_method(rb_cRuggedRepo, "close", rb_git_repo_close, 0);
 
 	rb_define_method(rb_cRuggedRepo, "exists?", rb_git_repo_exists, 1);
 	rb_define_method(rb_cRuggedRepo, "include?", rb_git_repo_exists, 1);
