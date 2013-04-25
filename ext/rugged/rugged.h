@@ -39,6 +39,8 @@
 #include <assert.h>
 #include <git2.h>
 #include <git2/odb_backend.h>
+#include "rugged_gil.h"
+#include "rugged_gil.def"
 
 #define CSTR2SYM(s) (ID2SYM(rb_intern((s))))
 

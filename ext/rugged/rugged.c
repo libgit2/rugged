@@ -303,6 +303,17 @@ static VALUE rb_git_cache_usage(VALUE self)
 	return rb_ary_new3(2, LL2NUM(used), LL2NUM(max));
 }
 
+static VALUE rb_git_set_without_gil(VALUE self, VALUE rb_without_gil)
+{
+	rugged_without_gil_enabled = rugged_parse_bool(rb_without_gil);
+	return rugged_without_gil_enabled ? Qtrue : Qfalse;
+}
+
+static VALUE rb_git_get_without_gil(VALUE self)
+{
+	return rugged_without_gil_enabled ? Qtrue : Qfalse;
+}
+
 void Init_rugged()
 {
 	rb_mRugged = rb_define_module("Rugged");
@@ -329,6 +340,8 @@ void Init_rugged()
 	rb_define_module_function(rb_mRugged, "minimize_oid", rb_git_minimize_oid, -1);
 	rb_define_module_function(rb_mRugged, "prettify_message", rb_git_prettify_message, 2);
 	rb_define_module_function(rb_mRugged, "__cache_usage__", rb_git_cache_usage, 0);
+	rb_define_module_function(rb_mRugged, "without_gil=", rb_git_set_without_gil, 1);
+	rb_define_module_function(rb_mRugged, "without_gil", rb_git_get_without_gil, 0);
 
 	Init_rugged_object();
 	Init_rugged_commit();
