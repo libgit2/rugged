@@ -1,3 +1,4 @@
+require 'open-uri'
 require 'json'
 require 'set'
 
@@ -62,7 +63,7 @@ IGNORED_METHODS = %w(
 method_list = nil
 
 # The list of methods in libgit2 that we want coverage for
-File.open("#{CWD}/HEAD.json") do |f|
+open('http://libgit2.github.com/libgit2/HEAD.json') do |f|
   json_data = JSON.parse(f.read())
   method_list = json_data['groups']
 end
