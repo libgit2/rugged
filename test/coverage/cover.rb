@@ -57,6 +57,8 @@ IGNORED_METHODS = %w(
   git_tree_id
   git_tree_lookup
   git_tree_lookup_prefix
+  git_strarray_copy
+  git_trace_set
   imaxdiv
 )
 
