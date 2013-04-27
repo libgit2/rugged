@@ -449,6 +449,17 @@ static VALUE rb_git_remote_add_push(VALUE self, VALUE rb_refspec)
 	return rb_git_remote_add_refspec(self, rb_refspec, GIT_DIRECTION_PUSH);
 }
 
+static VALUE rb_git_remote_clear_refspecs(VALUE self)
+{
+	git_remote *remote;
+
+	Data_Get_Struct(self, git_remote, remote);
+
+	git_remote_clear_refspecs(remote);
+
+	return Qnil;
+}
+
 /*
  * 	call-seq:
  * 		remote.connected? -> true or false
@@ -673,6 +684,7 @@ void Init_rugged_remote()
 	rb_define_method(rb_cRuggedRemote, "ls", rb_git_remote_ls, 0);
 	rb_define_method(rb_cRuggedRemote, "download", rb_git_remote_download, 0);
 	rb_define_method(rb_cRuggedRemote, "update_tips!", rb_git_remote_update_tips, 0);
+	rb_define_method(rb_cRuggedRemote, "clear_refspecs", rb_git_remote_clear_refspecs, 0);
 	rb_define_method(rb_cRuggedRemote, "save", rb_git_remote_save, 0);
 	rb_define_method(rb_cRuggedRemote, "rename!", rb_git_remote_rename, 1);
 }

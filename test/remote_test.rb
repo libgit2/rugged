@@ -107,6 +107,15 @@ class RemoteTest < Rugged::TestCase
     assert_equal ['refs/heads/*:refs/heads/test/*'], remote.push_refspecs
   end
 
+  def test_clear_refspecs
+    remote = Rugged::Remote.lookup(@repo, 'test_remote')
+
+    remote.clear_refspecs
+
+    assert_empty remote.push_refspecs
+    assert_empty remote.fetch_refspecs
+  end
+
   def test_remote_lookup
     remote = Rugged::Remote.lookup(@repo, 'libgit2')
     assert_equal 'git://github.com/libgit2/libgit2.git', remote.url
