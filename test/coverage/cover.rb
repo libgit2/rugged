@@ -101,6 +101,9 @@ total_methods = 0
 # Print the results for each group
 method_list.each do |group, group_methods|
 
+  # Skip the group if all methods are ignored
+  next if group_methods.size == 0
+
   # What are for we missing for this group?
   group_miss = group_methods.reject {|m| found.include? m}
   print "\n#{group} [#{group_methods.size - group_miss.size}/#{group_methods.size}]: "
