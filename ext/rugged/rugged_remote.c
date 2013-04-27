@@ -408,6 +408,47 @@ static VALUE rb_git_remote_push_refspecs(VALUE self)
 	return rb_git_remote_refspecs(self, GIT_DIRECTION_PUSH);
 }
 
+static VALUE rb_git_remote_add_refspec(VALUE self, VALUE rb_refspec, git_direction direction)
+{
+	git_remote *remote;
+	int error = 0;
+
+	Data_Get_Struct(self, git_remote, remote);
+
+	Check_Type(rb_refspec, T_STRING);
+
+	if (direction == GIT_DIRECTION_FETCH)
+		error = git_remote_add_fetch(remote, StringValueCStr(rb_refspec));
+	else
+		error = git_remote_add_push(remote, StringValueCStr(rb_refspec));
+
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
+/*
+ *	call-seq:
+ *		remote.add_fetch(refspec) -> nil
+ *
+ *	Add a fetch refspec to the remote
+ */
+static VALUE rb_git_remote_add_fetch(VALUE self, VALUE rb_refspec)
+{
+	return rb_git_remote_add_refspec(self, rb_refspec, GIT_DIRECTION_FETCH);
+}
+
+/*
+ *	call-seq:
+ *		remote.add_push(refspec) -> nil
+ *
+ *	Add a push refspec to the remote
+ */
+static VALUE rb_git_remote_add_push(VALUE self, VALUE rb_refspec)
+{
+	return rb_git_remote_add_refspec(self, rb_refspec, GIT_DIRECTION_PUSH);
+}
+
 /*
  * 	call-seq:
  * 		remote.connected? -> true or false
@@ -626,6 +667,8 @@ void Init_rugged_remote()
 	rb_define_method(rb_cRuggedRemote, "push_url=", rb_git_remote_set_push_url, 1);
 	rb_define_method(rb_cRuggedRemote, "fetch_refspecs", rb_git_remote_fetch_refspecs, 0);
 	rb_define_method(rb_cRuggedRemote, "push_refspecs", rb_git_remote_push_refspecs, 0);
+	rb_define_method(rb_cRuggedRemote, "add_fetch", rb_git_remote_add_fetch, 1);
+	rb_define_method(rb_cRuggedRemote, "add_push", rb_git_remote_add_push, 1);
 	rb_define_method(rb_cRuggedRemote, "connected?", rb_git_remote_connected, 0);
 	rb_define_method(rb_cRuggedRemote, "ls", rb_git_remote_ls, 0);
 	rb_define_method(rb_cRuggedRemote, "download", rb_git_remote_download, 0);

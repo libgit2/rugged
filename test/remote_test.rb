@@ -95,6 +95,18 @@ class RemoteTest < Rugged::TestCase
     assert_empty Rugged::Remote.lookup(@repo, 'libgit2').push_refspecs
   end
 
+  def test_add_fetch
+    remote = Rugged::Remote.new(@repo, 'git://github.com/libgit2/libgit2.git')
+    assert_nil remote.add_fetch('+refs/heads/*:refs/remotes/test/*')
+    assert_equal ['+refs/heads/*:refs/remotes/test/*'], remote.fetch_refspecs
+  end
+
+  def test_add_push
+    remote = Rugged::Remote.new(@repo, 'git://github.com/libgit2/libgit2.git')
+    assert_nil remote.add_push('refs/heads/*:refs/heads/test/*')
+    assert_equal ['refs/heads/*:refs/heads/test/*'], remote.push_refspecs
+  end
+
   def test_remote_lookup
     remote = Rugged::Remote.lookup(@repo, 'libgit2')
     assert_equal 'git://github.com/libgit2/libgit2.git', remote.url
