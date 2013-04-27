@@ -174,8 +174,6 @@ static void load_alternates(git_repository *repo, VALUE rb_alternates)
 
 static void set_repository_options(git_repository *repo, VALUE rb_options)
 {
-	int error = 0;
-
 	if (NIL_P(rb_options))
 		return;
 
