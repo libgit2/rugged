@@ -1077,6 +1077,8 @@ static VALUE rb_git_repo_close(VALUE self)
 	Data_Get_Struct(self, git_repository, repo);
 
 	git_repository__cleanup(repo);
+
+	return Qnil;
 }
 
 void Init_rugged_repo()
