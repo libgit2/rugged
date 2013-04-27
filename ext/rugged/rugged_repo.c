@@ -174,8 +174,6 @@ static void load_alternates(git_repository *repo, VALUE rb_alternates)
 
 static void set_repository_options(git_repository *repo, VALUE rb_options)
 {
-	int error = 0;
-
 	if (NIL_P(rb_options))
 		return;
 
@@ -1077,6 +1075,8 @@ static VALUE rb_git_repo_close(VALUE self)
 	Data_Get_Struct(self, git_repository, repo);
 
 	git_repository__cleanup(repo);
+
+	return Qnil;
 }
 
 void Init_rugged_repo()
