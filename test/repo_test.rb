@@ -115,6 +115,12 @@ class RepositoryTest < Rugged::TestCase
     assert_equal "new file\n", blob.content
   end
 
+  def test_access_a_missing_file
+    sha = '36060c58702ed4c2a40832c51758d5344201d89a'
+    blob = @repo.blob_at(sha, 'file-not-found.txt')
+    assert_nil blob
+  end
+
   def test_garbage_collection
     Rugged::Repository.new(@path)
     ObjectSpace.garbage_collect
