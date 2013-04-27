@@ -359,6 +359,55 @@ static VALUE rb_git_remote_set_push_url(VALUE self, VALUE rb_url)
 	return rb_url;
 }
 
+static VALUE rb_git_remote_refspecs(VALUE self, git_direction direction)
+{
+	git_remote *remote;
+	int error = 0;
+	git_strarray refspecs;
+	VALUE rb_refspec_array = rb_ary_new();
+
+	Data_Get_Struct(self, git_remote, remote);
+
+	if (direction == GIT_DIRECTION_FETCH)
+		error = git_remote_get_fetch_refspecs(&refspecs, remote);
+	else
+		error = git_remote_get_push_refspecs(&refspecs, remote);
+
+	rugged_exception_check(error);
+
+	for (int i = 0; i < refspecs.count; ++i) {
+		rb_ary_push(
+			rb_refspec_array,
+			rugged_str_new2(refspecs.strings[i], rb_utf8_encoding())
+			);
+	}
+
+	git_strarray_free(&refspecs);
+	return rb_refspec_array;
+}
+
+/*
+ *	call-seq:
+ *	remote.fetch_refspecs -> array
+ *
+ *	Get the remote's list of fetch refspecs as +array+
+ */
+static VALUE rb_git_remote_fetch_refspecs(VALUE self)
+{
+	return rb_git_remote_refspecs(self, GIT_DIRECTION_FETCH);
+}
+
+/*
+ *	call-seq:
+ *	remote.push_refspecs -> array
+ *
+ *	Get the remote's list of push refspecs as +array+
+ */
+static VALUE rb_git_remote_push_refspecs(VALUE self)
+{
+	return rb_git_remote_refspecs(self, GIT_DIRECTION_PUSH);
+}
+
 /*
  * 	call-seq:
  * 		remote.connected? -> true or false
@@ -575,6 +624,8 @@ void Init_rugged_remote()
 	rb_define_method(rb_cRuggedRemote, "url=", rb_git_remote_set_url, 1);
 	rb_define_method(rb_cRuggedRemote, "push_url", rb_git_remote_push_url, 0);
 	rb_define_method(rb_cRuggedRemote, "push_url=", rb_git_remote_set_push_url, 1);
+	rb_define_method(rb_cRuggedRemote, "fetch_refspecs", rb_git_remote_fetch_refspecs, 0);
+	rb_define_method(rb_cRuggedRemote, "push_refspecs", rb_git_remote_push_refspecs, 0);
 	rb_define_method(rb_cRuggedRemote, "connected?", rb_git_remote_connected, 0);
 	rb_define_method(rb_cRuggedRemote, "ls", rb_git_remote_ls, 0);
 	rb_define_method(rb_cRuggedRemote, "download", rb_git_remote_download, 0);

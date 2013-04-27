@@ -9,3 +9,5 @@
 [remote "test_remote"]
 	url = git://github.com/libgit2/rugged.git
 	pushurl = git://github.com/libgit2/TestEmptyRepository.git
+	fetch = +refs/heads/*:refs/remotes/test_remote/*
+	push = refs/heads/*:refs/heads/testing/*
