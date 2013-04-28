@@ -273,7 +273,14 @@ class RemoteTransportTest < Rugged::TestCase
   def test_remote_ls
     @remote.connect(:fetch) do |r|
       assert r.ls.kind_of? Enumerable
-      assert_equal 7, r.ls.to_a.count
+      rheads = r.ls.to_a
+
+      assert_equal 7, rheads.count
+
+      rhead = rheads.first
+      assert_equal false, rhead[:local?]
+      assert rhead[:oid]
+      assert_nil rhead[:loid]
     end
   end
 

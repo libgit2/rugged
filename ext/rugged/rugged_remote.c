@@ -231,7 +231,8 @@ static VALUE rugged_rhead_new(git_remote_head *head)
 
 	rb_hash_aset(rb_head, CSTR2SYM("local?"), head->local ? Qtrue : Qfalse);
 	rb_hash_aset(rb_head, CSTR2SYM("oid"), rugged_create_oid(&head->oid));
-	rb_hash_aset(rb_head, CSTR2SYM("loid"), rugged_create_oid(&head->loid));
+	rb_hash_aset(rb_head, CSTR2SYM("loid"),
+			git_oid_iszero(&head->loid) ? Qnil : rugged_create_oid(&head->loid));
 	rb_hash_aset(rb_head, CSTR2SYM("name"), rugged_str_new2(head->name, NULL));
 
 	return rb_head;
@@ -256,7 +257,7 @@ static int cb_remote__ls(git_remote_head *head, void *payload)
  * 	If no block is given an Enumerator is returned.
  *
  *		remote.connect(:fetch) do |r|
- *		  r.ls.to_a #=> [{:local?=>false, :oid=>"b3ee97a91b02e91c35394950bda6ea622044baad", :loid=>"0000000000000000000000000000000000000000", :name=>"refs/heads/development"}]
+ *		  r.ls.to_a #=> [{:local?=>false, :oid=>"b3ee97a91b02e91c35394950bda6ea622044baad", :loid=> nil, :name=>"refs/heads/development"}]
  *		end
  *
  *	remote head hash includes:
