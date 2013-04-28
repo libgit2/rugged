@@ -24,10 +24,26 @@ end
 class RemoteTest < Rugged::TestCase
   include Rugged::RepositoryAccess
 
+  class TestException < StandardError
+  end
+
+  def test_list_remote_names
+    remote_names = Rugged::Remote.names(@repo)
+    assert_equal [ "test_remote", "libgit2" ], remote_names
+  end
+
   def test_list_remotes
     remotes = @repo.remotes
     assert remotes.kind_of? Enumerable
-    assert_equal [ "test_remote", "libgit2" ], remotes.to_a
+    assert_equal [ "test_remote", "libgit2" ], remotes.map(&:name)
+  end
+
+  def test_remotes_each_protect
+    assert_raises TestException do
+      @repo.remotes.each do |remote|
+        raise TestException
+      end
+    end
   end
 
   def test_remote_new_name

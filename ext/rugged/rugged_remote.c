@@ -47,6 +47,20 @@ static inline void rugged_validate_remote_url(VALUE rb_url)
 		rb_raise(rb_eArgError, "Invalid URL format");
 }
 
+static VALUE rugged_strarray_to_rb_ary(git_strarray *str_array)
+{
+	VALUE rb_array = rb_ary_new();
+	size_t i;
+
+	for (i = 0; i < str_array->count; ++i) {
+		rb_ary_push(
+			rb_array,
+			rugged_str_new2(str_array->strings[i], rb_utf8_encoding()));
+	}
+
+	return rb_array;
+}
+
 /*
  *  	call-seq:
  *   		Remote.new(repository, url) -> remote
@@ -364,7 +378,7 @@ static VALUE rb_git_remote_refspecs(VALUE self, git_direction direction)
 	git_remote *remote;
 	int error = 0;
 	git_strarray refspecs;
-	VALUE rb_refspec_array = rb_ary_new();
+	VALUE rb_refspec_array;
 
 	Data_Get_Struct(self, git_remote, remote);
 
@@ -375,13 +389,7 @@ static VALUE rb_git_remote_refspecs(VALUE self, git_direction direction)
 
 	rugged_exception_check(error);
 
-	for (int i = 0; i < refspecs.count; ++i) {
-		rb_ary_push(
-			rb_refspec_array,
-			rugged_str_new2(refspecs.strings[i], rb_utf8_encoding())
-			);
-	}
-
+	rb_refspec_array = rugged_strarray_to_rb_ary(&refspecs);
 	git_strarray_free(&refspecs);
 	return rb_refspec_array;
 }
@@ -570,16 +578,21 @@ static VALUE rb_git_remote_update_tips(VALUE self)
 	return Qnil;
 }
 
-/* :nodoc: */
-static VALUE rb_git_remote_each(VALUE self, VALUE rb_repo)
+/*
+ *	call-seq:
+ *		Remote.names(repository) -> array
+ *
+ *	Returns the names of all remotes in +repository+
+ *
+ *		Rugged::Remote.names(@repo) #=> ['origin', 'upstream']
+ */
+
+static VALUE rb_git_remote_names(VALUE klass, VALUE rb_repo)
 {
 	git_repository *repo;
 	git_strarray remotes;
-	size_t i;
+	VALUE rb_remote_names;
 	int error;
-
-	if (!rb_block_given_p())
-		return rb_funcall(self, rb_intern("to_enum"), 2, CSTR2SYM("each"), rb_repo);
 
 	rugged_check_repo(rb_repo);
 
@@ -588,10 +601,46 @@ static VALUE rb_git_remote_each(VALUE self, VALUE rb_repo)
 	error = git_remote_list(&remotes, repo);
 	rugged_exception_check(error);
 
-	for (i = 0; i < remotes.count; ++i)
-		rb_yield(rugged_str_new2(remotes.strings[i], NULL));
+	rb_remote_names = rugged_strarray_to_rb_ary(&remotes);
+	git_strarray_free(&remotes);
+	return rb_remote_names;
+}
+
+/* :nodoc: */
+static VALUE rb_git_remote_each(VALUE klass, VALUE rb_repo)
+{
+	git_repository *repo;
+	git_strarray remotes;
+	size_t i;
+	int error = 0;
+	int exception = 0;
+
+	if (!rb_block_given_p())
+		return rb_funcall(klass, rb_intern("to_enum"), 2, CSTR2SYM("each"), rb_repo);
+
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	error = git_remote_list(&remotes, repo);
+	rugged_exception_check(error);
+
+	for (i = 0; !exception && !error && i < remotes.count; ++i) {
+		git_remote *remote;
+		error = git_remote_load(&remote, repo, remotes.strings[i]);
+
+		if (!error) {
+			rb_protect(
+				rb_yield, rugged_remote_new(klass, rb_repo, remote),
+				&exception);
+		}
+	}
 
 	git_strarray_free(&remotes);
+
+	if (exception)
+		rb_jump_tag(exception);
+
+	rugged_exception_check(error);
 	return Qnil;
 }
 
@@ -667,6 +716,7 @@ void Init_rugged_remote()
 	rb_define_singleton_method(rb_cRuggedRemote, "new", rb_git_remote_new, 2);
 	rb_define_singleton_method(rb_cRuggedRemote, "add", rb_git_remote_add, 3);
 	rb_define_singleton_method(rb_cRuggedRemote, "lookup", rb_git_remote_lookup, 2);
+	rb_define_singleton_method(rb_cRuggedRemote, "names", rb_git_remote_names, 1);
 	rb_define_singleton_method(rb_cRuggedRemote, "each", rb_git_remote_each, 1);
 
 	rb_define_method(rb_cRuggedRemote, "connect", rb_git_remote_connect, 1);
