@@ -65,10 +65,10 @@ static VALUE rugged_strarray_to_rb_ary(git_strarray *str_array)
  *  	call-seq:
  *   		Remote.new(repository, url) -> remote
  *
- *   	Return a new remote from +url+ in +repository+ , the remote is not persisted:
+ *   	Return a new remote with +url+ in +repository+ , the remote is not persisted:
  *	- +url+: a valid remote url
  *
- *	Returns a new <tt>Rugged::Remote</tt> object
+ *	Returns a new Rugged::Remote object
  *
  *		Rugged::Remote.new(@repo, 'git://github.com/libgit2/libgit2.git') #=> #<Rugged::Remote:0x00000001fbfa80>
  */
@@ -99,13 +99,13 @@ static VALUE rb_git_remote_new(VALUE klass, VALUE rb_repo, VALUE rb_url)
  *  	call-seq:
  *   		Remote.add(repository, name, url) -> remote
  *
- *   	Add a new remote with +name+ from +url+ in +repository+
+ *   	Add a new remote with +name+ and +url+ to +repository+
  *	- +url+: a valid remote url
  *	- +name+: a valid remote name
  *
- *	Returns a new <tt>Rugged::Remote</tt> object
+ *	Returns a new Rugged::Remote object
  *
- *		Rugged::Remote.add(@repo, 'origin', "git://github.com/libgit2/libgit2.git") #=> #<Rugged::Remote:0x00000001fbfa80>
+ *		Rugged::Remote.add(@repo, 'origin', 'git://github.com/libgit2/rugged.git') #=> #<Rugged::Remote:0x00000001fbfa80>
  */
 static VALUE rb_git_remote_add(VALUE klass, VALUE rb_repo,VALUE rb_name, VALUE rb_url)
 {
@@ -137,7 +137,7 @@ static VALUE rb_git_remote_add(VALUE klass, VALUE rb_repo,VALUE rb_name, VALUE r
  *   	Return an existing remote with +name+ in +repository+:
  *	- +name+: a valid remote name
  *
- *	Returns a new <tt>Rugged::Remote</tt> object or +nil+ if the
+ *	Returns a new Rugged::Remote object or +nil+ if the
  *	remote doesn't exist
  *
  *		Rugged::Remote.lookup(@repo, 'origin') #=> #<Rugged::Remote:0x00000001fbfa80>
@@ -457,6 +457,12 @@ static VALUE rb_git_remote_add_push(VALUE self, VALUE rb_refspec)
 	return rb_git_remote_add_refspec(self, rb_refspec, GIT_DIRECTION_PUSH);
 }
 
+/*
+ *	call-seq:
+ *		remote.clear_refspecs -> nil
+ *
+ *	Remove all configured fetch and push refspecs from the remote.
+ */
 static VALUE rb_git_remote_clear_refspecs(VALUE self)
 {
 	git_remote *remote;
@@ -650,8 +656,8 @@ static VALUE rb_git_remote_each(VALUE klass, VALUE rb_repo)
  *
  * 	Saves the remote data ( url, fetchspecs, ...) to the config
  *
- *	One can't save a in-memory remote. Doing so will
- *	result in an exception being raised.
+ *	One can't save a in-memory remote created with Remote.new.
+ *	Doing so will result in an exception being raised.
 */
 static VALUE rb_git_remote_save(VALUE self)
 {
@@ -686,7 +692,8 @@ static int cb_remote__rename_problem(const char* refspec_name, void *payload)
  * 	that haven't been automatically updated and need potential manual
  * 	tweaking.
  *
- * 	A temporary in-memory remote cannot be given a name with this method.
+ * 	A temporary in-memory remote, created with Remote.new
+ * 	cannot be given a name with this method.
  * 		remote = Rugged::Remote.lookup(@repo, 'origin')
  * 		remote.rename!('upstream') #=> nil
  *
