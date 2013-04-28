@@ -35,7 +35,9 @@ static void rb_git_remote__free(git_remote *remote)
 
 VALUE rugged_remote_new(VALUE klass, VALUE owner, git_remote *remote)
 {
-	VALUE rb_remote = Data_Wrap_Struct(klass, NULL, &rb_git_remote__free, remote);
+	VALUE rb_remote;
+
+	rb_remote = Data_Wrap_Struct(klass, NULL, &rb_git_remote__free, remote);
 	rugged_set_owner(rb_remote, owner);
 	return rb_remote;
 }
@@ -82,7 +84,6 @@ static VALUE rb_git_remote_new(VALUE klass, VALUE rb_repo, VALUE rb_url)
 	rugged_validate_remote_url(rb_url);
 
 	Data_Get_Struct(rb_repo, git_repository, repo);
-
 
 	error = git_remote_create_inmemory(
 			&remote,
@@ -329,7 +330,9 @@ static VALUE rb_git_remote_set_url(VALUE self, VALUE rb_url)
 	rugged_validate_remote_url(rb_url);
 	Data_Get_Struct(self, git_remote, remote);
 
-	rugged_exception_check(git_remote_set_url(remote, StringValueCStr(rb_url)));
+	rugged_exception_check(
+		git_remote_set_url(remote, StringValueCStr(rb_url))
+	);
 	return rb_url;
 }
 
@@ -579,7 +582,9 @@ static VALUE rb_git_remote_update_tips(VALUE self)
 		if (exception)
 			rb_jump_tag(exception);
 	} else {
-		rugged_exception_check(git_remote_update_tips(remote));
+		rugged_exception_check(
+			git_remote_update_tips(remote)
+		);
 	}
 
 	return Qnil;
