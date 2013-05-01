@@ -1084,16 +1084,21 @@ static VALUE rb_git_repo_close(VALUE self)
  *    repo.namespace = new_namespace
  *
  *  Sets the active namespace for the repository.
+ *  If set to nil, no namespace will be active.
  */
 static VALUE rb_git_repo_set_namespace(VALUE self, VALUE rb_namespace)
 {
 	git_repository *repo;
 	int error;
 
-	Check_Type(rb_namespace, T_STRING);
-
 	Data_Get_Struct(self, git_repository, repo);
-	error = git_repository_set_namespace(repo, StringValueCStr(rb_namespace));
+
+	if (!NIL_P(rb_namespace)) {
+		Check_Type(rb_namespace, T_STRING);
+		error = git_repository_set_namespace(repo, StringValueCStr(rb_namespace));
+	} else {
+		error = git_repository_set_namespace(repo, NULL);
+	}
 	rugged_exception_check(error);
 
 	return Qnil;
