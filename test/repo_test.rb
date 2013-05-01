@@ -219,6 +219,39 @@ class RepositoryInitTest < Rugged::TestCase
   end
 end
 
+class RepositoryNamespaceTest < Rugged::SandboxedTestCase
+  def setup
+    super
+
+    @repo = sandbox_init("testrepo.git")
+  end
+
+  def test_no_namespace
+    assert_nil @repo.namespace
+  end
+
+  def test_changing_namespace
+    @repo.namespace = "foo"
+    assert_equal "foo", @repo.namespace
+
+    @repo.namespace = "bar"
+    assert_equal "bar", @repo.namespace
+
+    @repo.namespace = "foo/bar"
+    assert_equal "foo/bar", @repo.namespace
+
+    @repo.namespace = nil
+    assert_equal nil, @repo.namespace
+  end
+
+  def test_refs_in_namespaces
+    @repo.namespace = "foo"
+
+    # lolwut this fails
+    assert_equal [], @repo.refs
+  end
+end
+
 class RepositoryPushTest < Rugged::SandboxedTestCase
   def setup
     super

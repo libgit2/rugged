@@ -1079,6 +1079,48 @@ static VALUE rb_git_repo_close(VALUE self)
 	return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    repo.namespace = new_namespace
+ *
+ *  Sets the active namespace for the repository.
+ *  If set to nil, no namespace will be active.
+ */
+static VALUE rb_git_repo_set_namespace(VALUE self, VALUE rb_namespace)
+{
+	git_repository *repo;
+	int error;
+
+	Data_Get_Struct(self, git_repository, repo);
+
+	if (!NIL_P(rb_namespace)) {
+		Check_Type(rb_namespace, T_STRING);
+		error = git_repository_set_namespace(repo, StringValueCStr(rb_namespace));
+	} else {
+		error = git_repository_set_namespace(repo, NULL);
+	}
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
+/*
+ *  call-seq:
+ *    repo.namespace -> String
+ *
+ *  Returns the active namespace for the repository.
+ */
+static VALUE rb_git_repo_get_namespace(VALUE self)
+{
+	git_repository *repo;
+	const char *namespace;
+
+	Data_Get_Struct(self, git_repository, repo);
+
+	namespace = git_repository_get_namespace(repo);
+	return namespace ? rugged_str_new2(namespace, NULL) : Qnil;
+}
+
 void Init_rugged_repo()
 {
 	rb_cRuggedRepo = rb_define_class_under(rb_mRugged, "Repository", rb_cObject);
@@ -1121,6 +1163,9 @@ void Init_rugged_repo()
 	rb_define_method(rb_cRuggedRepo, "merge_base", rb_git_repo_merge_base, 2);
 	rb_define_method(rb_cRuggedRepo, "reset", rb_git_repo_reset, 2);
 	rb_define_method(rb_cRuggedRepo, "reset_path", rb_git_repo_reset_path, -1);
+
+	rb_define_method(rb_cRuggedRepo, "namespace=", rb_git_repo_set_namespace, 1);
+	rb_define_method(rb_cRuggedRepo, "namespace", rb_git_repo_get_namespace, 0);
 
 	rb_cRuggedOdbObject = rb_define_class_under(rb_mRugged, "OdbObject", rb_cObject);
 	rb_define_method(rb_cRuggedOdbObject, "data",  rb_git_odbobj_data,  0);
