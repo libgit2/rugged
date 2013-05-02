@@ -184,6 +184,18 @@ class IndexWorkdirTest < Rugged::TestCase
   end
 end
 
+class IndexConflictsTest < Rugged::SandboxedTestCase
+  def setup
+    super
+
+    @repo = sandbox_init("mergedrepo")
+  end
+
+  def test_conflicts
+    assert @repo.index.conflicts?
+  end
+end
+
 class IndexRepositoryTest < Rugged::TestCase
   include Rugged::TempRepositoryAccess
 
