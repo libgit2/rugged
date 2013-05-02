@@ -369,6 +369,19 @@ static VALUE rb_git_index_readtree(VALUE self, VALUE rb_tree)
 	return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    index.conflicts? -> true or false
+ *
+ *  Determines if the index contains entries representing conflicts.
+ */
+static VALUE rb_git_index_conflicts_p(VALUE self)
+{
+	git_index *index;
+	Data_Get_Struct(self, git_index, index);
+	return git_index_has_conflicts(index) ? Qtrue : Qfalse;
+}
+
 void Init_rugged_index()
 {
 	/*
@@ -384,6 +397,8 @@ void Init_rugged_index()
 	rb_define_method(rb_cRuggedIndex, "get", rb_git_index_get, -1);
 	rb_define_method(rb_cRuggedIndex, "[]", rb_git_index_get, -1);
 	rb_define_method(rb_cRuggedIndex, "each", rb_git_index_each, 0);
+
+	rb_define_method(rb_cRuggedIndex, "conflicts?", rb_git_index_conflicts_p, 0);
 
 	rb_define_method(rb_cRuggedIndex, "add", rb_git_index_add, 1);
 	rb_define_method(rb_cRuggedIndex, "update", rb_git_index_add, 1);
