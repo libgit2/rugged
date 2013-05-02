@@ -51,7 +51,7 @@ static inline void rugged_validate_remote_url(VALUE rb_url)
 
 static VALUE rugged_strarray_to_rb_ary(git_strarray *str_array)
 {
-	VALUE rb_array = rb_ary_new();
+	VALUE rb_array = rb_ary_new2(str_array->count);
 	size_t i;
 
 	for (i = 0; i < str_array->count; ++i) {
