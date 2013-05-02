@@ -250,7 +250,7 @@ static int cb_remote__ls(git_remote_head *head, void *payload)
  *		remote.ls() -> an_enumerator
  *		remote.ls() { |remote_head_hash| block }
  *
- *	List references avaliable in a connected +remote+ reposotory allong
+ *	List references available in a connected +remote+ repository along
  *	with the associated commit IDs.
  *
  * 	Call the given block once for each remote head in the +remote+ as a
