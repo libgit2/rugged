@@ -49,20 +49,6 @@ static inline void rugged_validate_remote_url(VALUE rb_url)
 		rb_raise(rb_eArgError, "Invalid URL format");
 }
 
-static VALUE rugged_strarray_to_rb_ary(git_strarray *str_array)
-{
-	VALUE rb_array = rb_ary_new2(str_array->count);
-	size_t i;
-
-	for (i = 0; i < str_array->count; ++i) {
-		rb_ary_push(
-			rb_array,
-			rugged_str_new2(str_array->strings[i], rb_utf8_encoding()));
-	}
-
-	return rb_array;
-}
-
 /*
  *  	call-seq:
  *   		Remote.new(repository, url) -> remote
