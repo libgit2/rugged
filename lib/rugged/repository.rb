@@ -172,7 +172,7 @@ module Rugged
       tree = Rugged::Commit.lookup(self, revision).tree
       begin
         blob_data = tree.path(path)
-      rescue Rugged::IndexerError
+      rescue Rugged::TreeError
         return nil
       end
       blob = Rugged::Blob.lookup(self, blob_data[:oid])

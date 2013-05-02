@@ -1,3 +1,4 @@
+require 'open-uri'
 require 'json'
 require 'set'
 
@@ -56,13 +57,15 @@ IGNORED_METHODS = %w(
   git_tree_id
   git_tree_lookup
   git_tree_lookup_prefix
+  git_strarray_copy
+  git_trace_set
   imaxdiv
 )
 
 method_list = nil
 
 # The list of methods in libgit2 that we want coverage for
-File.open("#{CWD}/HEAD.json") do |f|
+open('http://libgit2.github.com/libgit2/HEAD.json') do |f|
   json_data = JSON.parse(f.read())
   method_list = json_data['groups']
 end
@@ -97,6 +100,9 @@ total_methods = 0
 
 # Print the results for each group
 method_list.each do |group, group_methods|
+
+  # Skip the group if all methods are ignored
+  next if group_methods.size == 0
 
   # What are for we missing for this group?
   group_miss = group_methods.reject {|m| found.include? m}

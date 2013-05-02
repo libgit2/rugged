@@ -115,6 +115,12 @@ class RepositoryTest < Rugged::TestCase
     assert_equal "new file\n", blob.content
   end
 
+  def test_access_a_missing_file
+    sha = '36060c58702ed4c2a40832c51758d5344201d89a'
+    blob = @repo.blob_at(sha, 'file-not-found.txt')
+    assert_nil blob
+  end
+
   def test_garbage_collection
     Rugged::Repository.new(@path)
     ObjectSpace.garbage_collect
@@ -210,6 +216,39 @@ class RepositoryInitTest < Rugged::TestCase
   def test_init_non_bare_default
     repo = Rugged::Repository.init_at(@tmppath)
     refute repo.bare?
+  end
+end
+
+class RepositoryNamespaceTest < Rugged::SandboxedTestCase
+  def setup
+    super
+
+    @repo = sandbox_init("testrepo.git")
+  end
+
+  def test_no_namespace
+    assert_nil @repo.namespace
+  end
+
+  def test_changing_namespace
+    @repo.namespace = "foo"
+    assert_equal "foo", @repo.namespace
+
+    @repo.namespace = "bar"
+    assert_equal "bar", @repo.namespace
+
+    @repo.namespace = "foo/bar"
+    assert_equal "foo/bar", @repo.namespace
+
+    @repo.namespace = nil
+    assert_equal nil, @repo.namespace
+  end
+
+  def test_refs_in_namespaces
+    @repo.namespace = "foo"
+
+    # lolwut this fails
+    assert_equal [], @repo.refs
   end
 end
 
