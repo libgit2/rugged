@@ -85,7 +85,7 @@ VALUE rugged_otype_new(git_otype t)
 	}
 }
 
-void rugged_oid_get(git_oid *oid, git_repository *repo, VALUE p)
+int rugged_oid_get(git_oid *oid, git_repository *repo, VALUE p)
 {
 	git_object *object;
 	int error;
@@ -99,14 +99,16 @@ void rugged_oid_get(git_oid *oid, git_repository *repo, VALUE p)
 		/* Fast path: see if the 40-char string is an OID */
 		if (RSTRING_LEN(p) == 40 &&
 			git_oid_fromstr(oid, RSTRING_PTR(p)) == 0)
-			return;
+			return GIT_OK;
 
-		error = git_revparse_single(&object, repo, StringValueCStr(p));
-		rugged_exception_check(error);
+		if (error = git_revparse_single(&object, repo, StringValueCStr(p)))
+			return error;
 
 		git_oid_cpy(oid, git_object_id(object));
 		git_object_free(object);
 	}
+
+	return GIT_OK;
 }
 
 git_object *rugged_object_get(git_repository *repo, VALUE object_value, git_otype type)
