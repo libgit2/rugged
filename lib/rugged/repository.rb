@@ -116,7 +116,8 @@ module Rugged
 
     # All the remotes in the repository.
     #
-    # Returns an Enumerable::Enumerator containing all the String remote names.
+    # Returns an Enumerable::Enumerator containing all the Rugged::Remotes in
+    # the repository.
     def remotes
       Rugged::Remote.each(self)
     end
