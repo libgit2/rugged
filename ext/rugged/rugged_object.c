@@ -99,7 +99,7 @@ int rugged_oid_get(git_oid *oid, git_repository *repo, VALUE p)
 		/* Fast path: see if the 40-char string is an OID */
 		if (RSTRING_LEN(p) == 40 &&
 			git_oid_fromstr(oid, RSTRING_PTR(p)) == 0)
-			return;
+			return GIT_OK;
 
 		if (error = git_revparse_single(&object, repo, StringValueCStr(p)))
 			return error;
