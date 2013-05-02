@@ -287,11 +287,11 @@ class RemoteTransportTest < Rugged::TestCase
   def test_update_tips_callback
     @remote.connect(:fetch) do |r|
       r.download
-        r.update_tips! do |ref, source, destination|
-          assert Rugged::Reference.lookup(@repo, ref)
-          assert_nil source
-          assert destination
-        end
+      r.update_tips! do |ref, source, destination|
+        assert Rugged::Reference.lookup(@repo, ref)
+        assert_nil source
+        assert destination
+      end
     end
   end
 
