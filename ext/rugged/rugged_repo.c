@@ -364,13 +364,14 @@ static VALUE rb_git_repo_merge_base(VALUE self, VALUE rb_args)
 	int error = GIT_OK, i;
 	git_repository *repo;
 	git_oid base, *input_array = xmalloc(sizeof(git_oid) * RARRAY_LEN(rb_args));
+	int len = (int)RARRAY_LEN(rb_args);
 
-	if (RARRAY_LEN(rb_args) < 2)
-		rb_raise(rb_eArgError, "wrong number of arguments (%d for 2+)", (int)RARRAY_LEN(rb_args));
+	if (len < 2)
+		rb_raise(rb_eArgError, "wrong number of arguments (%d for 2+)", len);
 
 	Data_Get_Struct(self, git_repository, repo);
 
-	for (i = 0; !error && i < RARRAY_LEN(rb_args); ++i) {
+	for (i = 0; !error && i < len; ++i) {
 		error = rugged_oid_get(&input_array[i], repo, rb_ary_entry(rb_args, i));
 	}
 
@@ -379,7 +380,7 @@ static VALUE rb_git_repo_merge_base(VALUE self, VALUE rb_args)
 		rugged_exception_check(error);
 	}
 
-	error = git_merge_base_many(&base, repo, input_array, RARRAY_LEN(rb_args));
+	error = git_merge_base_many(&base, repo, input_array, len);
 	xfree(input_array);
 
 	if (error == GIT_ENOTFOUND)
