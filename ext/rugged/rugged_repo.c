@@ -352,28 +352,41 @@ static VALUE rb_git_repo_get_config(VALUE self)
 
 /*
  *	call-seq:
- *		repo.merge_base(oid1, oid2)
- *		repo.merge_base(ref1, ref2)
- *		repo.merge_base(commit1, commit2)
+ *		repo.merge_base(oid1, oid2, ...)
+ *		repo.merge_base(ref1, ref2, ...)
+ *		repo.merge_base(commit1, commit2, ...)
  *
- *	Find a merge base, given two commits or oids.
+ *	Find a merge base, given two or more commits or oids.
  *	Returns nil if a merge base is not found.
  */
-static VALUE rb_git_repo_merge_base(VALUE self, VALUE obj1, VALUE obj2)
+static VALUE rb_git_repo_merge_base(VALUE self, VALUE rb_args)
 {
-	int error;
-	git_oid oid1, oid2, base;
+	int error = GIT_OK, i;
 	git_repository *repo;
+	git_oid base, *input_array = xmalloc(sizeof(git_oid) * RARRAY_LEN(rb_args));
+
+	if (RARRAY_LEN(rb_args) < 2)
+		rb_raise(rb_eArgError, "wrong number of arguments (%d for 2+)", (int)RARRAY_LEN(rb_args));
 
 	Data_Get_Struct(self, git_repository, repo);
-	rugged_oid_get(&oid1, repo, obj1);
-	rugged_oid_get(&oid2, repo, obj2);
 
-	error = git_merge_base(&base, repo, &oid1, &oid2);
+	for (i = 0; !error && i < RARRAY_LEN(rb_args); ++i) {
+		error = rugged_oid_get(&input_array[i], repo, rb_ary_entry(rb_args, i));
+	}
+
+	if (error) {
+		xfree(input_array);
+		rugged_exception_check(error);
+	}
+
+	error = git_merge_base_many(&base, repo, input_array, RARRAY_LEN(rb_args));
+	xfree(input_array);
+
 	if (error == GIT_ENOTFOUND)
 		return Qnil;
 
 	rugged_exception_check(error);
+
 	return rugged_create_oid(&base);
 }
 
@@ -1160,7 +1173,7 @@ void Init_rugged_repo()
 	rb_define_method(rb_cRuggedRepo, "head_detached?",  rb_git_repo_head_detached,  0);
 	rb_define_method(rb_cRuggedRepo, "head_orphan?",  rb_git_repo_head_orphan,  0);
 
-	rb_define_method(rb_cRuggedRepo, "merge_base", rb_git_repo_merge_base, 2);
+	rb_define_method(rb_cRuggedRepo, "merge_base", rb_git_repo_merge_base, -2);
 	rb_define_method(rb_cRuggedRepo, "reset", rb_git_repo_reset, 2);
 	rb_define_method(rb_cRuggedRepo, "reset_path", rb_git_repo_reset_path, -1);
 
