@@ -220,7 +220,7 @@ static VALUE rugged_rhead_new(git_remote_head *head)
 	rb_hash_aset(rb_head, CSTR2SYM("oid"), rugged_create_oid(&head->oid));
 	rb_hash_aset(rb_head, CSTR2SYM("loid"),
 			git_oid_iszero(&head->loid) ? Qnil : rugged_create_oid(&head->loid));
-	rb_hash_aset(rb_head, CSTR2SYM("name"), rugged_str_new2(head->name, NULL));
+	rb_hash_aset(rb_head, CSTR2SYM("name"), rugged_str_new2(head->name, rb_utf8_encoding()));
 
 	return rb_head;
 }
@@ -283,7 +283,7 @@ static VALUE rb_git_remote_name(VALUE self)
 
 	name = git_remote_name(remote);
 
-	return name ? rugged_str_new2(name, NULL) : Qnil;
+	return name ? rugged_str_new2(name, rb_utf8_encoding()) : Qnil;
 }
 
 /*
