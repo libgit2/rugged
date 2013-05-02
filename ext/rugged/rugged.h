@@ -76,7 +76,7 @@ git_otype rugged_otype_get(VALUE rb_type);
 
 git_signature *rugged_signature_get(VALUE rb_person);
 git_object *rugged_object_get(git_repository *repo, VALUE object_value, git_otype type);
-void rugged_oid_get(git_oid *oid, git_repository *repo, VALUE p);
+int rugged_oid_get(git_oid *oid, git_repository *repo, VALUE p);
 
 VALUE rugged_strarray_to_rb_ary(git_strarray *str_array);
 
