@@ -133,7 +133,7 @@ static VALUE rb_git_branch_lookup(int argc, VALUE *argv, VALUE self)
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
 	Check_Type(rb_name, T_STRING);
-	
+
 	if (!NIL_P(rb_type))
 		branch_type = parse_branch_type(rb_type);
 
@@ -288,6 +288,13 @@ static VALUE rb_git_branch_move(int argc, VALUE *argv, VALUE self)
 	return rugged_branch_new(rugged_owner(self), new_branch);
 }
 
+static VALUE rb_git_branch_head_p(VALUE self)
+{
+	git_reference *branch;
+	Data_Get_Struct(self, git_reference, branch);
+	return git_branch_is_head(branch) ? Qtrue : Qfalse;
+}
+
 void Init_rugged_branch()
 {
 	rb_cRuggedBranch = rb_define_class_under(rb_mRugged, "Branch", rb_cRuggedReference);
@@ -300,4 +307,5 @@ void Init_rugged_branch()
 	rb_define_method(rb_cRuggedBranch, "delete!", rb_git_branch_delete, 0);
 	rb_define_method(rb_cRuggedBranch, "rename", rb_git_branch_move, -1);
 	rb_define_method(rb_cRuggedBranch, "move", rb_git_branch_move, -1);
+	rb_define_method(rb_cRuggedBranch, "head?", rb_git_branch_head_p, 0);
 }
