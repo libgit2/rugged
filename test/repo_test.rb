@@ -100,7 +100,7 @@ class RepositoryTest < Rugged::TestCase
 
   def test_return_all_remotes
     remotes = @repo.remotes
-    assert_equal 1, remotes.count
+    assert_equal 2, remotes.count
   end
 
   def test_lookup_head
@@ -162,6 +162,15 @@ class RepositoryTest < Rugged::TestCase
     commit2 = "refs/heads/master"
     base    = '5b5b025afb0b4c913b4c338a42934a3863bf3644'
     assert_equal base, @repo.merge_base(commit1, commit2)
+  end
+
+  def test_find_merge_base_between_many
+    commit1 = 'a4a7dce85cf63874e984719f4fdd239f5145052f'
+    commit2 = "refs/heads/packed"
+    commit3 = @repo.lookup('36060c58702ed4c2a40832c51758d5344201d89a')
+
+    base    = '5b5b025afb0b4c913b4c338a42934a3863bf3644'
+    assert_equal base, @repo.merge_base(commit1, commit2, commit3)
   end
 end
 

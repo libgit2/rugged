@@ -445,6 +445,20 @@ static VALUE rb_git_cache_usage(VALUE self)
 	return rb_ary_new3(2, LL2NUM(used), LL2NUM(max));
 }
 
+VALUE rugged_strarray_to_rb_ary(git_strarray *str_array)
+{
+	VALUE rb_array = rb_ary_new2(str_array->count);
+	size_t i;
+
+	for (i = 0; i < str_array->count; ++i) {
+		rb_ary_push(
+			rb_array,
+			rugged_str_new2(str_array->strings[i], rb_utf8_encoding()));
+	}
+
+	return rb_array;
+}
+
 void Init_rugged()
 {
 	rb_mRugged = rb_define_module("Rugged");
