@@ -152,6 +152,9 @@ static VALUE rb_git_diff_merge(VALUE self, VALUE rb_other)
 	git_diff_list *other;
 	int error;
 
+	if (!rb_obj_is_kind_of(rb_other, rb_cRuggedDiff))
+		rb_raise(rb_eTypeError, "A Rugged::Diff instance is required");
+
 	Data_Get_Struct(self, git_diff_list, diff);
 	Data_Get_Struct(rb_other, git_diff_list, other);
 
