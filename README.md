@@ -34,17 +34,16 @@ at each area individually.
 #### Instantiation
 
 The repository is naturally central to Git. Rugged has a `Repository` class that
-you can instantiate with a path:
+you can instantiate with a path to open an existing repository :
 
 ```ruby
 repo = Rugged::Repository.new('path/to/my/repository')
 # => #<Rugged::Repository:2228536260 {path: "path/to/my/repository/.git/"}>
 ```
 
-If you're working against a bare repository, you'll need to indicate that:
+You can create a new repository with `init_at`. Add a second parameter `:bare` to make a bare repository:
 
 ```ruby
-# Second parameter indicates whether the repo is a bare repository
 Rugged::Repository.init_at('.', :bare)
 ```
 
