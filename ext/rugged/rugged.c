@@ -276,8 +276,7 @@ static void cleanup_cb(void *unused)
 
 void rugged_exception_raise(int errorcode)
 {
-	VALUE err_klass = rb_eRuggedError;
-	VALUE err_obj;
+	VALUE err_klass, err_obj;
 	const git_error *error;
 	const char *err_message;
 
