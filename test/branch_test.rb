@@ -66,6 +66,13 @@ class BranchTest < Rugged::TestCase
     assert_nil Rugged::Branch.lookup(@repo, "test_branch")
   end
 
+  def test_is_head
+    assert Rugged::Branch.lookup(@repo, "master").head?
+    refute Rugged::Branch.lookup(@repo, "origin/master", :remote).head?
+    refute Rugged::Branch.lookup(@repo, "origin/packed", :remote).head?
+    refute @repo.create_branch("test_branch").head?
+  end
+
   def test_rename_branch
     branch = @repo.create_branch("test_branch")
 
