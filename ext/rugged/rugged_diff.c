@@ -150,11 +150,13 @@ static VALUE rb_git_diff_merge(VALUE self, VALUE rb_other)
 {
 	git_diff_list *diff;
 	git_diff_list *other;
+	int error;
 
 	Data_Get_Struct(self, git_diff_list, diff);
-	Data_Get_Struct(self, git_diff_list, other);
+	Data_Get_Struct(rb_other, git_diff_list, other);
 
-	git_diff_merge(diff, other);
+	error = git_diff_merge(diff, other);
+	rugged_exception_check(error);
 
 	return self;
 }

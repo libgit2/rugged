@@ -1,22 +1,165 @@
 require "test_helper"
 
 class TreeToTreeDiffTest < Rugged::SandboxedTestCase
-  def setup
-    super
+  def test_basic_diff
+    repo = sandbox_init("attr")
+    a = Rugged::Tree.lookup(repo, "605812a").tree
+    b = Rugged::Tree.lookup(repo, "370fe9ec22").tree
+    c = Rugged::Tree.lookup(repo, "f5b0af1fb4f5c").tree
 
-    @repo = sandbox_init("diff")
+    diff = a.diff(b, :context_lines => 1, :interhunk_lines => 1)
 
-    @a = @repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
-    @b = @repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
+    deltas = diff.deltas
+    patches = diff.patches
+    hunks = patches.map(&:hunks).flatten
+    lines = hunks.map(&:lines).flatten
+
+    assert_equal 5, diff.size
+    assert_equal 5, deltas.size
+    assert_equal 5, patches.size
+
+    assert_equal 2, deltas.select(&:added?).size
+    assert_equal 1, deltas.select(&:deleted?).size
+    assert_equal 2, deltas.select(&:modified?).size
+
+    assert_equal 5, hunks.size
+
+    assert_equal (7 + 24 + 1 + 6 + 6), lines.size
+    assert_equal (1), lines.select(&:context?).size
+    assert_equal (24 + 1 + 5 + 5), lines.select(&:addition?).size
+    assert_equal (7 + 1), lines.select(&:deletion?).size
+
+
+    diff = c.diff(b, :context_lines => 1, :interhunk_lines => 1)
+    deltas = diff.deltas
+    patches = diff.patches
+    hunks = patches.map(&:hunks).flatten
+    lines = hunks.map(&:lines).flatten
+
+    assert_equal 2, deltas.size
+    assert_equal 2, patches.size
+
+    assert_equal 0, deltas.select(&:added?).size
+    assert_equal 0, deltas.select(&:deleted?).size
+    assert_equal 2, deltas.select(&:modified?).size
+
+    assert_equal 2, hunks.size
+
+    assert_equal (8 + 15), lines.size
+    assert_equal (1), lines.select(&:context?).size
+    assert_equal (1), lines.select(&:addition?).size
+    assert_equal (7 + 14), lines.select(&:deletion?).size
+  end
+
+  def test_diff_merge
+    repo = sandbox_init("attr")
+    a = Rugged::Tree.lookup(repo, "605812a").tree
+    b = Rugged::Tree.lookup(repo, "370fe9ec22").tree
+    c = Rugged::Tree.lookup(repo, "f5b0af1fb4f5c").tree
+
+    diff = a.diff(b).merge!(c.diff(b))
+    
+    deltas = diff.deltas
+    patches = diff.patches
+    hunks = patches.map(&:hunks).flatten
+    lines = hunks.map(&:lines).flatten
+
+    assert_equal 6, diff.size
+    assert_equal 6, patches.size
+    assert_equal 6, deltas.size
+
+    assert_equal 2, deltas.select(&:added?).size
+    assert_equal 1, deltas.select(&:deleted?).size
+    assert_equal 3, deltas.select(&:modified?).size
+
+    assert_equal 6, hunks.size
+
+    assert_equal 59, lines.size
+    assert_equal 1, lines.select(&:context?).size
+    assert_equal 36, lines.select(&:addition?).size
+    assert_equal 22, lines.select(&:deletion?).size
+  end
+
+  def test_symlink_blob_mode_changed_to_regular_file
+    repo = sandbox_init("unsymlinked.git")
+
+    a = Rugged::Tree.lookup(repo, "7fccd7").tree
+    b = Rugged::Tree.lookup(repo, "806999").tree
+
+    diff = a.diff(b)
+
+    deltas = diff.deltas
+    patches = diff.patches
+ 
+    assert_equal 3, diff.size
+    assert_equal 3, patches.size
+    assert_equal 3, deltas.size
+
+    assert_equal 1, deltas.select(&:added?).size
+    assert_equal 2, deltas.select(&:deleted?).size
+    assert_equal 0, deltas.select(&:modified?).size
+    assert_equal 0, deltas.select(&:typechange?).size
+  end
+
+  def test_symlink_blob_mode_changed_to_regular_file_as_typechange
+    repo = sandbox_init("unsymlinked.git")
+
+    a = Rugged::Tree.lookup(repo, "7fccd7").tree
+    b = Rugged::Tree.lookup(repo, "806999").tree
+
+    diff = a.diff(b, :include_typechange => true)
+
+    deltas = diff.deltas
+    patches = diff.patches
+ 
+    assert_equal 2, diff.size
+    assert_equal 2, patches.size
+    assert_equal 2, deltas.size
+
+    assert_equal 0, deltas.select(&:added?).size
+    assert_equal 1, deltas.select(&:deleted?).size
+    assert_equal 0, deltas.select(&:modified?).size
+    assert_equal 1, deltas.select(&:typechange?).size
+  end
+
+  def test_regular_blob_mode_changed_to_executable_file
+    repo = sandbox_init("unsymlinked.git")
+
+    a = Rugged::Tree.lookup(repo, "806999").tree
+    b = Rugged::Tree.lookup(repo, "a8595c").tree
+
+    diff = a.diff(b)
+
+    deltas = diff.deltas
+    patches = diff.patches
+ 
+    assert_equal 1, diff.size
+    assert_equal 1, patches.size
+    assert_equal 1, deltas.size
+
+    assert_equal 0, deltas.select(&:added?).size
+    assert_equal 0, deltas.select(&:deleted?).size
+    assert_equal 1, deltas.select(&:modified?).size
+    assert_equal 0, deltas.select(&:typechange?).size
   end
 
   def test_size
-    diff = @a.tree.diff(@b.tree)
+    repo = sandbox_init("diff")
+
+    a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+    b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
+
+    diff = a.tree.diff(b.tree)
     assert_equal 2, diff.size
   end
 
   def test_each_delta
-    diff = @a.tree.diff(@b.tree)
+    repo = sandbox_init("diff")
+
+    a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+    b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
+
+    diff = a.tree.diff(b.tree)
 
     deltas = []
     diff.each_delta do |delta|
@@ -38,7 +181,12 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
   end
 
   def test_diff_treats_files_bigger_as_max_size_as_binary
-    diff = @a.tree.diff(@b.tree, :max_size => 10)
+    repo = sandbox_init("diff")
+
+    a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+    b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
+
+    diff = a.tree.diff(b.tree, :max_size => 10)
     assert_equal 2, diff.patches.size
     assert_equal <<-EOS, diff.patch
 diff --git a/another.txt b/another.txt
@@ -51,7 +199,12 @@ EOS
   end
 
   def test_diff_prefiltering
-    diff = @a.tree.diff(@b.tree) do |diff_so_far, delta_to_be_added, matched_pathspec|
+    repo = sandbox_init("diff")
+
+    a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+    b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
+
+    diff = a.tree.diff(b.tree) do |diff_so_far, delta_to_be_added, matched_pathspec|
       delta_to_be_added.old_file[:path] == "readme.txt"
     end
 
@@ -59,24 +212,34 @@ EOS
   end
 
   def test_contraining_paths
-    diff = @a.tree.diff(@b.tree, :paths => ["readme.txt"])
+    repo = sandbox_init("diff")
+
+    a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+    b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
+
+    diff = a.tree.diff(b.tree, :paths => ["readme.txt"])
     assert_equal "M\treadme.txt\n", diff.patch(:compact => true)
 
-    diff = @a.tree.diff(@b.tree, :paths => ["r*.txt"])
+    diff = a.tree.diff(b.tree, :paths => ["r*.txt"])
     assert_equal "M\treadme.txt\n", diff.patch(:compact => true)
 
-    diff = @a.tree.diff(@b.tree, :paths => ["*.txt"])
+    diff = a.tree.diff(b.tree, :paths => ["*.txt"])
     assert_equal "M\tanother.txt\nM\treadme.txt\n", diff.patch(:compact => true)
 
-    diff = @a.tree.diff(@b.tree, :paths => ["*.txt"], :disable_pathspec_match => true)
+    diff = a.tree.diff(b.tree, :paths => ["*.txt"], :disable_pathspec_match => true)
     assert_equal "", diff.patch(:compact => true)
 
-    diff = @a.tree.diff(@b.tree, :paths => ["readme.txt"], :disable_pathspec_match => true)
+    diff = a.tree.diff(b.tree, :paths => ["readme.txt"], :disable_pathspec_match => true)
     assert_equal "M\treadme.txt\n", diff.patch(:compact => true)
   end
 
   def test_options
-    diff = @a.tree.diff(@b.tree, :context_lines => 0)
+    repo = sandbox_init("diff")
+
+    a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+    b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
+
+    diff = a.tree.diff(b.tree, :context_lines => 0)
 
     assert_equal <<-EOS, diff.patch
 diff --git a/another.txt b/another.txt
@@ -120,7 +283,12 @@ EOS
   end
 
   def test_iteration
-    diff = @a.tree.diff(@b.tree)
+    repo = sandbox_init("diff")
+
+    a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+    b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
+
+    diff = a.tree.diff(b.tree)
 
     patches = []
 
@@ -186,7 +354,12 @@ EOS
   end
 
   def test_each_patch_returns_enumerator
-    diff = @a.tree.diff(@b.tree)
+    repo = sandbox_init("diff")
+
+    a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+    b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
+
+    diff = a.tree.diff(b.tree)
 
     assert_instance_of Enumerator, diff.each_patch
 
@@ -199,7 +372,12 @@ EOS
   end
 
   def test_each_hunk_returns_enumerator
-    diff = @a.tree.diff(@b.tree)
+    repo = sandbox_init("diff")
+
+    a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+    b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
+
+    diff = a.tree.diff(b.tree)
 
     diff.each_patch do |patch|
       assert_instance_of Enumerator, patch.each_hunk
@@ -207,7 +385,12 @@ EOS
   end
 
   def test_each_line_returns_enumerator
-    diff = @a.tree.diff(@b.tree)
+    repo = sandbox_init("diff")
+
+    a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+    b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
+
+    diff = a.tree.diff(b.tree)
 
     diff.each_patch do |patch|
       patch.each_hunk do |hunk|
@@ -217,7 +400,12 @@ EOS
   end
 
   def test_patch
-    diff = @a.tree.diff(@b.tree)
+    repo = sandbox_init("diff")
+
+    a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+    b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
+
+    diff = a.tree.diff(b.tree)
 
     assert_equal <<-EOS, diff.patch
 diff --git a/another.txt b/another.txt
@@ -293,7 +481,12 @@ EOS
   end
 
   def test_patch_compact
-    diff = @a.tree.diff(@b.tree)
+    repo = sandbox_init("diff")
+
+    a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+    b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
+
+    diff = a.tree.diff(b.tree)
 
     assert_equal <<-EOS, diff.patch(:compact => true)
 M\tanother.txt

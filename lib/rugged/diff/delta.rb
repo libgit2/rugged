@@ -9,35 +9,35 @@ module Rugged
       alias binary? binary
 
       def added?
-        @status == :unmodified
+        status == :added
       end
 
       def deleted?
-        @status == :deleted
+        status == :deleted
       end
 
       def modified?
-        @status == :modified
+        status == :modified
       end
 
       def renamed?
-        @status == :renamed
+        status == :renamed
       end
 
       def copied?
-        @status == :copied
+        status == :copied
       end
 
       def ignored?
-        @status == :ignored
+        status == :ignored
       end
 
       def untracked?
-        @status == :untracked
+        status == :untracked
       end
 
       def typechange?
-        @status == :typechange
+        status == :typechange
       end
 
       def inspect
