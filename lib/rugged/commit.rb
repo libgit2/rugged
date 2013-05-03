@@ -9,12 +9,11 @@ module Rugged
       "#<Rugged::Commit:#{object_id} {message: #{message.inspect}, tree: #{tree.inspect}, parents: #{parent_oids}>"
     end
 
-    def diff(other)
-      if !other.is_a?(Rugged::Commit)
-        raise ArgumentError, "Rugged::Commit expected, given #{other.class.name}"
-      end
-
-      self.tree.diff(other.tree)
+    # Return a diff between this commit and the workspace, another commit or a tree.
+    #
+    # See `Rugged::Tree#diff` for more details.
+    def diff(*args)
+      self.tree.diff(*args)
     end
 
     # The time when this commit was made effective. This is the same value
