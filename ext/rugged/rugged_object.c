@@ -101,7 +101,7 @@ int rugged_oid_get(git_oid *oid, git_repository *repo, VALUE p)
 			git_oid_fromstr(oid, RSTRING_PTR(p)) == 0)
 			return GIT_OK;
 
-		if (error = git_revparse_single(&object, repo, StringValueCStr(p)))
+		if ((error = git_revparse_single(&object, repo, StringValueCStr(p))))
 			return error;
 
 		git_oid_cpy(oid, git_object_id(object));
