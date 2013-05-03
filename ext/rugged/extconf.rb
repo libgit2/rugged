@@ -1,5 +1,7 @@
 require 'mkmf'
 
+RbConfig::MAKEFILE_CONFIG['CC'] = ENV['CC'] if ENV['CC']
+
 def sys(cmd)
   puts " -- #{cmd}"
   unless ret = xsystem(cmd)
