@@ -33,9 +33,10 @@ VALUE rb_cRuggedBlob;
 
 /*
  *	call-seq:
- *		blob.text(max_lines = -1, encoding = Encoding.default_external) -> String
+ *		blob.text(max_lines = -1, encoding = Encoding.default_external) -> string
  *
  *	Return up to +max_lines+ of text from a blob as a +String+.
+ *	If +max_lines+ is less than 0, the full string is returned.
  *
  *	In Ruby 1.9.x, the string is created with the given +encoding+,
  *	defaulting to Encoding.default_external.
@@ -95,10 +96,10 @@ static VALUE rb_git_blob_text_GET(int argc, VALUE *argv, VALUE self)
 
 /*
  *	call-seq:
- *		blob.content(max_bytes=-1) -> String
+ *		blob.content(max_bytes=-1) -> string
  *
  *	Return up to +max_bytes+ from the contents of a blob as bytes +String+.
- *	If max_bytes is less than 0, the full string is returned.
+ *	If +max_bytes+ is less than 0, the full string is returned.
  *
  *	In Ruby 1.9.x, this string is tagged with the ASCII-8BIT encoding: the
  *	bytes are returned as-is, since Git is encoding agnostic.
@@ -210,7 +211,7 @@ static VALUE rb_git_blob_from_workdir(VALUE self, VALUE rb_repo, VALUE rb_path)
 
 /*
  *	call-seq:
- *		blob.sloc -> Integer
+ *		blob.sloc -> int
  *
  *	Return the number of non-empty code lines for the blob,
  *	assuming the blob is plaintext (i.e. not binary)
