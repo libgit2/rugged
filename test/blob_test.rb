@@ -115,4 +115,15 @@ class BlobWriteTest < Rugged::TestCase
       Rugged::Blob.from_workdir(@repo, "README")
   end
 
+  def test_write_blob_from_disk
+    file_path = File.join(TEST_DIR, (File.join('fixtures', 'archive.tar.gz')))
+    File.open(file_path, 'rb') do |file|
+      oid = Rugged::Blob.from_disk(@repo, file.path)
+      assert oid
+
+      blob = @repo.lookup(oid)
+      file.rewind
+      assert_equal file.read, blob.content
+    end
+  end
 end

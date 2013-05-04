@@ -189,6 +189,7 @@ static VALUE rb_git_blob_create(VALUE self, VALUE rb_repo, VALUE rb_buffer)
  *
  *	Write the file specified in +file_path+ to a blob in +repository+.
  *	+file_path+ must be relative to the repository's working folder.
+ *	The repository cannot be bare.
  *
  *		Blob.from_workdir(repo, 'src/blob.h') #=> '9d09060c850defbc7711d08b57def0d14e742f4e'
  */
@@ -204,6 +205,32 @@ static VALUE rb_git_blob_from_workdir(VALUE self, VALUE rb_repo, VALUE rb_path)
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
 	error = git_blob_create_fromworkdir(&oid, repo, StringValueCStr(rb_path));
+	rugged_exception_check(error);
+
+	return rugged_create_oid(&oid);
+}
+
+/*
+ *	call-seq:
+ *		Blob.from_disk(repository, file_path) -> oid
+ *
+ *	Write the file specified in +file_path+ to a blob in +repository+.
+ *	The repository can be bare or not.
+ *
+ *		Blob.from_disk(repo, '/var/repos/blob.h') #=> '5b5b025afb0b4c913b4c338a42934a3863bf3643'
+ */
+static VALUE rb_git_blob_from_disk(VALUE self, VALUE rb_repo, VALUE rb_path)
+{
+	int error;
+	git_oid oid;
+	git_repository *repo;
+
+	Check_Type(rb_path, T_STRING);
+	rugged_check_repo(rb_repo);
+
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	error = git_blob_create_fromdisk(&oid, repo, StringValueCStr(rb_path));
 	rugged_exception_check(error);
 
 	return rugged_create_oid(&oid);
@@ -259,4 +286,5 @@ void Init_rugged_blob()
 
 	rb_define_singleton_method(rb_cRuggedBlob, "create", rb_git_blob_create, 2);
 	rb_define_singleton_method(rb_cRuggedBlob, "from_workdir", rb_git_blob_from_workdir, 2);
+	rb_define_singleton_method(rb_cRuggedBlob, "from_disk", rb_git_blob_from_disk, 2);
 }
