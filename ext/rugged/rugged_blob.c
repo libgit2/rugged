@@ -76,9 +76,9 @@ static VALUE rb_git_blob_text_GET(int argc, VALUE *argv, VALUE self)
 				if (content[i++] == '\n')
 					lines++;
 			}
+			size = (size_t)i;
 		}
 
-		size = (size_t)i;
 	}
 
 #ifdef HAVE_RUBY_ENCODING_H
