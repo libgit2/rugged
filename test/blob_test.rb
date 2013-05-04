@@ -10,6 +10,83 @@ class BlobTest < Rugged::TestCase
     assert_equal "new file\n", blob.content
     assert_equal :blob, blob.type
     assert_equal oid, blob.oid
+    assert_equal "new file\n", blob.text
+  end
+
+  def test_blob_sloc
+    oid = "7771329dfa3002caf8c61a0ceb62a31d09023f37"
+    blob = @repo.lookup(oid)
+    assert_equal 328, blob.sloc
+  end
+
+  def test_blob_content_with_size
+    oid = "7771329dfa3002caf8c61a0ceb62a31d09023f37"
+    blob = @repo.lookup(oid)
+    content =  blob.content(10)
+    assert_equal "# Rugged\n*", content
+    assert_equal 10, content.size
+  end
+
+  def test_blob_content_with_size_gt_file_size
+    oid = "7771329dfa3002caf8c61a0ceb62a31d09023f37"
+    blob = @repo.lookup(oid)
+    content =  blob.content(1000000)
+    assert_equal blob.size, content.size
+  end
+
+  def test_blob_content_with_zero_size
+    oid = "7771329dfa3002caf8c61a0ceb62a31d09023f37"
+    blob = @repo.lookup(oid)
+    content =  blob.content(0)
+    assert_equal '', content
+  end
+
+  def test_blob_content_with_negative_size
+    oid = "7771329dfa3002caf8c61a0ceb62a31d09023f37"
+    blob = @repo.lookup(oid)
+    content =  blob.content(-100)
+    assert_equal blob.size, content.size
+  end
+
+  def test_blob_text_with_max_lines
+    oid = "7771329dfa3002caf8c61a0ceb62a31d09023f37"
+    blob = @repo.lookup(oid)
+    assert_equal "# Rugged\n", blob.text(1)
+  end
+
+  def test_blob_text_with_lines_gt_file_lines
+    oid = "7771329dfa3002caf8c61a0ceb62a31d09023f37"
+    blob = @repo.lookup(oid)
+    text = blob.text(1000000)
+    assert_equal 464, text.lines.count
+  end
+
+  def test_blob_text_with_zero_lines
+    oid = "7771329dfa3002caf8c61a0ceb62a31d09023f37"
+    blob = @repo.lookup(oid)
+    text = blob.text(0)
+    assert_equal '', text
+  end
+
+  def test_blob_text_with_negative_lines
+    oid = "7771329dfa3002caf8c61a0ceb62a31d09023f37"
+    blob = @repo.lookup(oid)
+    text = blob.text(-100)
+    assert_equal 464, text.lines.count
+  end
+
+  def test_blob_text_default_encoding
+    skip unless String.method_defined?(:encoding)
+    oid = "7771329dfa3002caf8c61a0ceb62a31d09023f37"
+    blob = @repo.lookup(oid)
+    assert_equal Encoding::UTF_8, blob.text.encoding
+  end
+
+  def test_blob_text_set_encoding
+    skip unless String.method_defined?(:encoding)
+    oid = "7771329dfa3002caf8c61a0ceb62a31d09023f37"
+    blob = @repo.lookup(oid)
+    assert_equal Encoding::ASCII_8BIT, blob.text(0, Encoding::ASCII_8BIT).encoding
   end
 end
 
@@ -29,6 +106,13 @@ class BlobWriteTest < Rugged::TestCase
   end
 
   def test_write_blob_data
-    Rugged::Blob.create(@repo, "a new blob content")
+    assert_equal '1d83f106355e4309a293e42ad2a2c4b8bdbe77ae',
+      Rugged::Blob.create(@repo, "a new blob content")
   end
+
+  def test_write_blob_from_workdir
+    assert_equal '1385f264afb75a56a5bec74243be9b367ba4ca08',
+      Rugged::Blob.from_workdir(@repo, "README")
+  end
+
 end
