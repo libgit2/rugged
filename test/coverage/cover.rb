@@ -8,6 +8,8 @@ IGNORED_METHODS = %w(
   git_blob_free
   git_blob_lookup
   git_blob_lookup_prefix
+  git_blob_id
+  git_blob_owner
   git_commit_create_v
   git_commit_free
   git_commit_id
