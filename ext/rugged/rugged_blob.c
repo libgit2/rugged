@@ -28,6 +28,7 @@
 extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedObject;
 extern VALUE rb_cRuggedRepo;
+static ID id_read;
 
 VALUE rb_cRuggedBlob;
 
@@ -236,6 +237,94 @@ static VALUE rb_git_blob_from_disk(VALUE self, VALUE rb_repo, VALUE rb_path)
 	return rugged_create_oid(&oid);
 }
 
+static VALUE rb_read_check(VALUE *args) {
+	return rb_funcall(args[0], id_read, 1, args[1]);
+}
+
+static VALUE rb_read_failed(void) {
+	return Qnil;
+}
+
+static int cb_blob__get__chunk(char *content, size_t max_length, void *rb_io)
+{
+	VALUE rb_buffer, args[2];
+	size_t str_len, safe_len;
+
+	args[0] = (VALUE)rb_io;
+	args[1] = INT2FIX(max_length);
+
+	rb_buffer = rb_rescue(rb_read_check, (VALUE)args, rb_read_failed, 0);
+
+	if (NIL_P(rb_buffer) || TYPE(rb_buffer) != T_STRING )
+		return 0;
+
+	str_len = (size_t)RSTRING_LEN(rb_buffer);
+	safe_len = str_len > max_length ? max_length : str_len;
+	memcpy(content, StringValuePtr(rb_buffer), safe_len);
+
+	return (int)safe_len;
+}
+
+/*
+ *	call-seq:
+ *		Blob.from_chunks(repository, io [, hint_path]) -> oid
+ *
+ *	Write a loose blob to the +repository+ from a provider
+ *	of chunks of data.
+
+ *	The repository can be bare or not.
+ *
+ *	The data provider +io+ should respond to a <code>read(size)</code>
+ *	method. Generally any instance of a class based on Ruby's +IO+ class
+ *	should work(ex. +File+). On each +read+ call it should
+ *	return a +String+ with maximum size of +size+.
+ *
+ *	<b> NOTE: </b>If an exception is raised in the +io+ object's
+ *	+read+ method, a blob will be created with the data up to that point
+ *	and the exception will be rescued.
+ *	It's recommended to compare the +blob.size+ with the expected data size
+ *	to check if all the data was written.
+ *
+ *	Provided the +hint_path+ parameter is given, its value
+ *	will help to determine what git filters should be applied
+ *	to the object before it can be placed to the object database.
+ *
+ *		File.open('/path/to/file') do |file|
+ *		  Blob.from_chunks(repo, file, 'hint/blob.h') #=> '42cab3c0cde61e2b5a2392e1eadbeffa20ffa171'
+ *		end
+ */
+static VALUE rb_git_blob_from_chunks(int argc, VALUE *argv, VALUE klass)
+{
+	VALUE rb_repo, rb_io, rb_hint_path;
+	const char * hint_path = NULL;
+
+	int error;
+	git_oid oid;
+	git_repository *repo;
+
+	rb_scan_args(argc, argv, "21", &rb_repo, &rb_io, &rb_hint_path);
+
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	if (!NIL_P(rb_hint_path)) {
+		Check_Type(rb_hint_path, T_STRING);
+		hint_path = StringValueCStr(rb_hint_path);
+	}
+
+	error = git_blob_create_fromchunks(
+			&oid,
+			repo,
+			hint_path,
+			cb_blob__get__chunk,
+			(void *)rb_io);
+
+	rugged_exception_check(error);
+
+	return rugged_create_oid(&oid);
+}
+
+
 /*
  *	call-seq:
  *		blob.sloc -> int
@@ -277,6 +366,8 @@ static VALUE rb_git_blob_sloc(VALUE self)
 
 void Init_rugged_blob()
 {
+	id_read = rb_intern("read");
+
 	rb_cRuggedBlob = rb_define_class_under(rb_mRugged, "Blob", rb_cRuggedObject);
 
 	rb_define_method(rb_cRuggedBlob, "size", rb_git_blob_rawsize, 0);
@@ -287,4 +378,6 @@ void Init_rugged_blob()
 	rb_define_singleton_method(rb_cRuggedBlob, "create", rb_git_blob_create, 2);
 	rb_define_singleton_method(rb_cRuggedBlob, "from_workdir", rb_git_blob_from_workdir, 2);
 	rb_define_singleton_method(rb_cRuggedBlob, "from_disk", rb_git_blob_from_disk, 2);
+	rb_define_singleton_method(rb_cRuggedBlob, "from_chunks", rb_git_blob_from_chunks, -1);
+
 }

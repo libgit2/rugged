@@ -127,3 +127,68 @@ class BlobWriteTest < Rugged::TestCase
     end
   end
 end
+
+class BlobCreateFromChunksTest < Rugged::TestCase
+  include Rugged::TempRepositoryAccess
+
+  def test_write_blob_from_chunks_with_hintpath
+    file_path= File.join(TEST_DIR, (File.join('fixtures', 'archive.tar.gz')))
+    File.open(file_path, 'rb') do |io|
+      oid = Rugged::Blob.from_chunks(@repo, io, 'archive.tar.gz2')
+      io.rewind
+      blob = @repo.lookup(oid)
+      assert_equal io.read, blob.content
+    end
+  end
+
+  def test_write_blob_from_chunks_without_hintpath
+    file_path= File.join(TEST_DIR, (File.join('fixtures', 'archive.tar.gz')))
+    File.open(file_path, 'rb') do |io|
+      oid = Rugged::Blob.from_chunks(@repo, io)
+      io.rewind
+      blob = @repo.lookup(oid)
+      assert_equal io.read, blob.content
+    end
+  end
+
+  class BrokenIO
+    def read(length)
+      raise IOError
+    end
+  end
+
+  def test_write_blob_from_chunks_broken_io
+    oid = Rugged::Blob.from_chunks(@repo, BrokenIO.new)
+    blob = @repo.lookup(oid)
+    assert_equal 'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391',
+      blob.oid
+    assert_equal 0, blob.size
+  end
+
+  class OverflowIO
+    def initialize()
+      @called = false
+    end
+
+    def read(size)
+      res = @called ? nil : 'a' * size * 4
+      @called = true
+      res
+    end
+  end
+
+  def test_write_blob_from_chunks_overflow_io
+    assert Rugged::Blob.from_chunks(@repo, OverflowIO.new)
+  end
+
+  class BadIO
+    def read(length)
+      :invalid_data
+    end
+  end
+
+  def test_write_blob_from_chunks_bad_io
+    assert Rugged::Blob.from_chunks(@repo, BadIO.new)
+  end
+
+end
