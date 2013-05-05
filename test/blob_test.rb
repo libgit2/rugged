@@ -107,7 +107,7 @@ class BlobWriteTest < Rugged::TestCase
 
   def test_write_blob_data
     assert_equal '1d83f106355e4309a293e42ad2a2c4b8bdbe77ae',
-      Rugged::Blob.create(@repo, "a new blob content")
+      Rugged::Blob.from_buffer(@repo, "a new blob content")
   end
 
   def test_write_blob_from_workdir
