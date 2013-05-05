@@ -364,6 +364,24 @@ static VALUE rb_git_blob_sloc(VALUE self)
 	return INT2FIX(sloc);
 }
 
+/*
+ *	call-seq:
+ *		blob.binary?-> true or false
+ *
+ *	Determine if the blob content is most certainly binary or not.
+ *
+ *	The heuristic used to guess if a file is binary is taken from core git:
+ *	Searching for NUL bytes and looking for a reasonable ratio of printable
+ *	to non-printable characters among the first 4000 bytes.
+ *
+ */
+static VALUE rb_git_blob_is_binary(VALUE self)
+{
+	git_blob *blob;
+	Data_Get_Struct(self, git_blob, blob);
+	return git_blob_is_binary(blob) ? Qtrue : Qfalse;
+}
+
 void Init_rugged_blob()
 {
 	id_read = rb_intern("read");
@@ -374,6 +392,7 @@ void Init_rugged_blob()
 	rb_define_method(rb_cRuggedBlob, "content", rb_git_blob_content_GET, -1);
 	rb_define_method(rb_cRuggedBlob, "text", rb_git_blob_text_GET, -1);
 	rb_define_method(rb_cRuggedBlob, "sloc", rb_git_blob_sloc, 0);
+	rb_define_method(rb_cRuggedBlob, "binary?", rb_git_blob_is_binary, 0);
 
 	rb_define_singleton_method(rb_cRuggedBlob, "create", rb_git_blob_create, 2);
 	rb_define_singleton_method(rb_cRuggedBlob, "from_workdir", rb_git_blob_from_workdir, 2);

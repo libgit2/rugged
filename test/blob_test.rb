@@ -126,6 +126,17 @@ class BlobWriteTest < Rugged::TestCase
       assert_equal file.read, blob.content
     end
   end
+
+  def test_blob_is_binary
+    binary_file_path = File.join(TEST_DIR, (File.join('fixtures', 'archive.tar.gz')))
+    binary_blob = @repo.lookup(Rugged::Blob.from_disk(@repo, binary_file_path))
+    assert binary_blob.binary?
+
+    text_file_path = File.join(TEST_DIR, (File.join('fixtures', 'text_file.md')))
+    text_blob = @repo.lookup(Rugged::Blob.from_disk(@repo, text_file_path))
+    refute text_blob.binary?
+  end
+
 end
 
 class BlobCreateFromChunksTest < Rugged::TestCase
