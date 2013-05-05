@@ -79,10 +79,7 @@ static VALUE rb_git_branch_create(int argc, VALUE *argv, VALUE self)
 
 	rb_scan_args(argc, argv, "31", &rb_repo, &rb_name, &rb_target, &rb_force);
 
-	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo)) {
-		rb_raise(rb_eTypeError, "Expecting a Rugged::Repository instance");
-	}
-
+	rugged_check_repo(rb_repo);
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
 	Check_Type(rb_name, T_STRING);
@@ -126,10 +123,7 @@ static VALUE rb_git_branch_lookup(int argc, VALUE *argv, VALUE self)
 
 	rb_scan_args(argc, argv, "21", &rb_repo, &rb_name, &rb_type);
 
-	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo)) {
-		rb_raise(rb_eTypeError, "Expecting a Rugged::Repository instance");
-	}
-
+	rugged_check_repo(rb_repo);
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
 	Check_Type(rb_name, T_STRING);
@@ -208,9 +202,7 @@ static VALUE each_branch(int argc, VALUE *argv, VALUE self, int branch_names_onl
 		return rb_funcall(self, rb_intern("to_enum"), 3, symbol, rb_repo, rb_filter);
 	}
 
-	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo)) {
-		rb_raise(rb_eTypeError, "Expecting a Rugged::Repository instance");
-	}
+	rugged_check_repo(rb_repo);
 
 	if (!NIL_P(rb_filter))
 		filter = parse_branch_type(rb_filter);
