@@ -480,7 +480,7 @@ static VALUE rb_git_index_readtree(VALUE self, VALUE rb_tree)
 static VALUE rb_git_index_diff(int argc, VALUE *argv, VALUE self)
 {
 	git_index *index;
-	git_diff_options opts;
+	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
 	git_repository *repo;
 	git_diff_list *diff;
 	VALUE owner, rb_other, rb_options, rb_block;
@@ -493,7 +493,7 @@ static VALUE rb_git_index_diff(int argc, VALUE *argv, VALUE self)
 		}
 	}
 
-	opts = rugged_parse_diff_options(rb_options, rb_block);
+	rugged_parse_diff_options(&opts, rb_options, rb_block);
 
 	Data_Get_Struct(self, git_index, index);
 	owner = rugged_owner(self);

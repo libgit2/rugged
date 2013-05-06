@@ -384,7 +384,7 @@ static VALUE rb_git_tree_path(VALUE self, VALUE rb_path)
 static VALUE rb_git_tree_diff(int argc, VALUE *argv, VALUE self)
 {
 	git_tree *tree;
-	git_diff_options opts;
+	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
 	git_repository *repo;
 	git_diff_list *diff;
 	VALUE owner, rb_other, rb_options, rb_block;
@@ -397,7 +397,7 @@ static VALUE rb_git_tree_diff(int argc, VALUE *argv, VALUE self)
 		}
 	}
 
-	opts = rugged_parse_diff_options(rb_options, rb_block);
+	rugged_parse_diff_options(&opts, rb_options, rb_block);
 
 	Data_Get_Struct(self, git_tree, tree);
 	owner = rugged_owner(self);

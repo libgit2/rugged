@@ -208,13 +208,11 @@ static int rugged__diff_notify_cb(
 /**
  * The caller has to free the returned git_diff_options pathspec strings array.
  */
-git_diff_options rugged_parse_diff_options(VALUE rb_options, VALUE rb_block)
+VALUE rugged_parse_diff_options(git_diff_options *opts, VALUE rb_options, VALUE rb_block)
 {
-	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
-
 	if (!NIL_P(rb_block)) {
-		opts.notify_cb = &rugged__diff_notify_cb;
-		opts.notify_payload = (void*)rb_block_proc();
+		opts->notify_cb = &rugged__diff_notify_cb;
+		opts->notify_payload = (void*)rb_block_proc();
 	}
 
 	if (!NIL_P(rb_options)) {
@@ -229,107 +227,107 @@ git_diff_options rugged_parse_diff_options(VALUE rb_options, VALUE rb_block)
 			for (i = 0; i < RARRAY_LEN(rb_value); ++i)
 				Check_Type(rb_ary_entry(rb_value, i), T_STRING);
 
-			opts.pathspec.count = RARRAY_LEN(rb_value);
-			opts.pathspec.strings = xmalloc(opts.pathspec.count * sizeof(char *));
+			opts->pathspec.count = RARRAY_LEN(rb_value);
+			opts->pathspec.strings = xmalloc(opts->pathspec.count * sizeof(char *));
 
 			for (i = 0; i < RARRAY_LEN(rb_value); ++i) {
 				VALUE rb_path = rb_ary_entry(rb_value, i);
-				opts.pathspec.strings[i] = StringValueCStr(rb_path);
+				opts->pathspec.strings[i] = StringValueCStr(rb_path);
 			}
 		}
 
 		rb_value = rb_hash_aref(rb_options, CSTR2SYM("max_size"));
 		if (!NIL_P(rb_value)) {
 			Check_Type(rb_value, T_FIXNUM);
-			opts.max_size = FIX2INT(rb_value);
+			opts->max_size = FIX2INT(rb_value);
 		}
 
 		rb_value = rb_hash_aref(rb_options, CSTR2SYM("context_lines"));
 		if (!NIL_P(rb_value)) {
 			Check_Type(rb_value, T_FIXNUM);
-			opts.context_lines = FIX2INT(rb_value);
+			opts->context_lines = FIX2INT(rb_value);
 		}
 
 		rb_value = rb_hash_aref(rb_options, CSTR2SYM("interhunk_lines"));
 		if (!NIL_P(rb_value)) {
 			Check_Type(rb_value, T_FIXNUM);
-			opts.interhunk_lines = FIX2INT(rb_value);
+			opts->interhunk_lines = FIX2INT(rb_value);
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("reverse")))) {
-			opts.flags |= GIT_DIFF_REVERSE;
+			opts->flags |= GIT_DIFF_REVERSE;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("force_text")))) {
-			opts.flags |= GIT_DIFF_FORCE_TEXT;
+			opts->flags |= GIT_DIFF_FORCE_TEXT;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("ignore_whitespace")))) {
-			opts.flags |= GIT_DIFF_IGNORE_WHITESPACE;
+			opts->flags |= GIT_DIFF_IGNORE_WHITESPACE;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("ignore_whitespace_change")))) {
-			opts.flags |= GIT_DIFF_IGNORE_WHITESPACE_CHANGE;
+			opts->flags |= GIT_DIFF_IGNORE_WHITESPACE_CHANGE;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("ignore_whitespace_eol")))) {
-			opts.flags |= GIT_DIFF_IGNORE_WHITESPACE_EOL;
+			opts->flags |= GIT_DIFF_IGNORE_WHITESPACE_EOL;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("ignore_submodules")))) {
-			opts.flags |= GIT_DIFF_IGNORE_SUBMODULES;
+			opts->flags |= GIT_DIFF_IGNORE_SUBMODULES;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("patience")))) {
-			opts.flags |= GIT_DIFF_PATIENCE;
+			opts->flags |= GIT_DIFF_PATIENCE;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("include_ignored")))) {
-			opts.flags |= GIT_DIFF_INCLUDE_IGNORED;
+			opts->flags |= GIT_DIFF_INCLUDE_IGNORED;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("include_untracked")))) {
-			opts.flags |= GIT_DIFF_INCLUDE_UNTRACKED;
+			opts->flags |= GIT_DIFF_INCLUDE_UNTRACKED;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("include_unmodified")))) {
-			opts.flags |= GIT_DIFF_INCLUDE_UNMODIFIED;
+			opts->flags |= GIT_DIFF_INCLUDE_UNMODIFIED;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("recurse_untracked_dirs")))) {
-			opts.flags |= GIT_DIFF_RECURSE_UNTRACKED_DIRS;
+			opts->flags |= GIT_DIFF_RECURSE_UNTRACKED_DIRS;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("disable_pathspec_match")))) {
-			opts.flags |= GIT_DIFF_DISABLE_PATHSPEC_MATCH;
+			opts->flags |= GIT_DIFF_DISABLE_PATHSPEC_MATCH;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("include_untracked_content")))) {
-			opts.flags |= GIT_DIFF_INCLUDE_UNTRACKED_CONTENT ;
+			opts->flags |= GIT_DIFF_INCLUDE_UNTRACKED_CONTENT ;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("skip_binary_check")))) {
-			opts.flags |= GIT_DIFF_SKIP_BINARY_CHECK;
+			opts->flags |= GIT_DIFF_SKIP_BINARY_CHECK;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("include_typechange")))) {
-			opts.flags |= GIT_DIFF_INCLUDE_TYPECHANGE;
+			opts->flags |= GIT_DIFF_INCLUDE_TYPECHANGE;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("include_typechange_trees")))) {
-			opts.flags |= GIT_DIFF_INCLUDE_TYPECHANGE_TREES;
+			opts->flags |= GIT_DIFF_INCLUDE_TYPECHANGE_TREES;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("ignore_filemode")))) {
-			opts.flags |= GIT_DIFF_IGNORE_FILEMODE;
+			opts->flags |= GIT_DIFF_IGNORE_FILEMODE;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("recurse_ignored_dirs")))) {
-			opts.flags |= GIT_DIFF_RECURSE_IGNORED_DIRS;
+			opts->flags |= GIT_DIFF_RECURSE_IGNORED_DIRS;
 		}
 	}
 
-	return opts;
+	return Qnil;
 }
 
 /*
