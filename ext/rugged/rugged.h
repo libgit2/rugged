@@ -82,7 +82,7 @@ VALUE rugged_diff_delta_new(VALUE owner, const git_diff_delta *delta);
 VALUE rugged_diff_hunk_new(VALUE owner, int hunk_idx, const git_diff_range *range, const char *header, size_t header_len, size_t lines_in_hunk);
 VALUE rugged_diff_line_new(VALUE owner, const char line_origin, const char *content, size_t content_len, int old_lineno, int new_lineno);
 
-VALUE rugged_parse_diff_options(git_diff_options *opts, VALUE rb_options, VALUE rb_block);
+void rugged_parse_diff_options(git_diff_options *opts, VALUE rb_options, VALUE rb_block);
 
 VALUE rugged_otype_new(git_otype t);
 git_otype rugged_otype_get(VALUE rb_type);

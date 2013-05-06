@@ -208,7 +208,7 @@ static int rugged__diff_notify_cb(
 /**
  * The caller has to free the returned git_diff_options pathspec strings array.
  */
-VALUE rugged_parse_diff_options(git_diff_options *opts, VALUE rb_options, VALUE rb_block)
+void rugged_parse_diff_options(git_diff_options *opts, VALUE rb_options, VALUE rb_block)
 {
 	if (!NIL_P(rb_block)) {
 		opts->notify_cb = &rugged__diff_notify_cb;
@@ -326,8 +326,6 @@ VALUE rugged_parse_diff_options(git_diff_options *opts, VALUE rb_options, VALUE 
 			}
 		}
 	}
-
-	return Qnil;
 }
 
 /*
