@@ -219,23 +219,6 @@ VALUE rugged_parse_diff_options(git_diff_options *opts, VALUE rb_options, VALUE 
 		VALUE rb_value;
 		Check_Type(rb_options, T_HASH);
 
-		rb_value = rb_hash_aref(rb_options, CSTR2SYM("paths"));
-		if (!NIL_P(rb_value)) {
-			int i;
-			Check_Type(rb_value, T_ARRAY);
-
-			for (i = 0; i < RARRAY_LEN(rb_value); ++i)
-				Check_Type(rb_ary_entry(rb_value, i), T_STRING);
-
-			opts->pathspec.count = RARRAY_LEN(rb_value);
-			opts->pathspec.strings = xmalloc(opts->pathspec.count * sizeof(char *));
-
-			for (i = 0; i < RARRAY_LEN(rb_value); ++i) {
-				VALUE rb_path = rb_ary_entry(rb_value, i);
-				opts->pathspec.strings[i] = StringValueCStr(rb_path);
-			}
-		}
-
 		rb_value = rb_hash_aref(rb_options, CSTR2SYM("max_size"));
 		if (!NIL_P(rb_value)) {
 			Check_Type(rb_value, T_FIXNUM);
@@ -324,6 +307,23 @@ VALUE rugged_parse_diff_options(git_diff_options *opts, VALUE rb_options, VALUE 
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("recurse_ignored_dirs")))) {
 			opts->flags |= GIT_DIFF_RECURSE_IGNORED_DIRS;
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("paths"));
+		if (!NIL_P(rb_value)) {
+			int i;
+			Check_Type(rb_value, T_ARRAY);
+
+			for (i = 0; i < RARRAY_LEN(rb_value); ++i)
+				Check_Type(rb_ary_entry(rb_value, i), T_STRING);
+
+			opts->pathspec.count = RARRAY_LEN(rb_value);
+			opts->pathspec.strings = xmalloc(opts->pathspec.count * sizeof(char *));
+
+			for (i = 0; i < RARRAY_LEN(rb_value); ++i) {
+				VALUE rb_path = rb_ary_entry(rb_value, i);
+				opts->pathspec.strings[i] = StringValueCStr(rb_path);
+			}
 		}
 	}
 
