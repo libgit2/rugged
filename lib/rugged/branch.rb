@@ -24,5 +24,16 @@ module Rugged
     def name
       super.gsub(%r{^(refs/heads/|refs/remotes/)}, '')
     end
+
+    # Get the remote the branch belongs to.
+    #
+    # If the branch is remote returns the remote it belongs to.
+    # In case of local branch, it returns the remote of the branch
+    # it tracks or nil if there is no tracking branch.
+    #
+    def remote
+      remote_name = self.remote_name
+      Rugged::Remote.lookup(@owner, remote_name) if remote_name
+    end
   end
 end

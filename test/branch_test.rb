@@ -196,4 +196,21 @@ class BranchTest < Rugged::TestCase
       @repo.create_branch("test_branch", "packed")
     end
   end
+
+  def test_branch_remote_remote_branch
+    assert_equal 'origin',
+      Rugged::Branch.lookup(@repo, "origin/master", :remote).remote.name
+  end
+
+  def test_branch_remote_local_tracking_remote_branch
+    assert_equal 'origin',
+      Rugged::Branch.lookup(@repo, "master", :local).remote.name
+  end
+
+  def test_branch_remote_local_non_tracking_branch
+    branch = @repo.create_branch('test_branch',
+                                 '5b5b025afb0b4c913b4c338a42934a3863bf3644')
+    assert_nil branch.remote
+  end
+
 end

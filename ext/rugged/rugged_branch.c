@@ -304,6 +304,60 @@ static VALUE rb_git_branch_head_p(VALUE self)
 	return git_branch_is_head(branch) ? Qtrue : Qfalse;
 }
 
+static VALUE rb_git_branch__remote_name(VALUE rb_repo, const char *canonical_name)
+{
+	git_repository *repo;
+
+	char *remote_name;
+	size_t remote_name_size;
+	int error;
+	VALUE result = Qnil;
+
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	remote_name_size = git_branch_remote_name(NULL, 0, repo, canonical_name);
+	rugged_exception_check(remote_name_size);
+
+	remote_name = xmalloc(remote_name_size * sizeof(char));
+
+	error = git_branch_remote_name(
+			remote_name, remote_name_size,
+			repo, canonical_name);
+
+	if (error > 0)
+		result = rb_enc_str_new(
+				remote_name, remote_name_size - 1,
+				rb_utf8_encoding());
+
+	xfree(remote_name);
+	rugged_exception_check(error);
+	return result;
+}
+
+/* :nodoc: */
+static VALUE rb_git_branch_remote_name(VALUE self)
+{
+	git_reference *branch, *remote_ref;
+	int error = 0;
+
+	Data_Get_Struct(self, git_reference, branch);
+
+	if (git_reference_is_remote(branch)) {
+		remote_ref = branch;
+	} else {
+		error = git_branch_upstream(&remote_ref, branch);
+
+		if (error == GIT_ENOTFOUND)
+			return Qnil;
+
+		rugged_exception_check(error);
+	}
+
+	return rb_git_branch__remote_name(
+			rugged_owner(self),
+			git_reference_name(remote_ref));
+}
+
 void Init_rugged_branch(void)
 {
 	rb_cRuggedBranch = rb_define_class_under(rb_mRugged, "Branch", rb_cRuggedReference);
@@ -317,4 +371,5 @@ void Init_rugged_branch(void)
 	rb_define_method(rb_cRuggedBranch, "rename", rb_git_branch_move, -1);
 	rb_define_method(rb_cRuggedBranch, "move", rb_git_branch_move, -1);
 	rb_define_method(rb_cRuggedBranch, "head?", rb_git_branch_head_p, 0);
+	rb_define_method(rb_cRuggedBranch, "remote_name", rb_git_branch_remote_name, 0);
 }
