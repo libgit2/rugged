@@ -16,13 +16,8 @@ module Rugged
     #
     # This is the same as calling Reference#name for the reference behind
     # the path
-    alias_method 'canonical_name', 'name'
-
-    # The name of the branch, without a fully-qualified reference path
-    #
-    # E.g. 'master' instead of 'refs/heads/master'
-    def name
-      super.gsub(%r{^(refs/heads/|refs/remotes/)}, '')
+    def cannonical_name
+      super
     end
 
     # Get the remote the branch belongs to.

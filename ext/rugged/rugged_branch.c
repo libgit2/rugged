@@ -304,6 +304,23 @@ static VALUE rb_git_branch_head_p(VALUE self)
 	return git_branch_is_head(branch) ? Qtrue : Qfalse;
 }
 
+/*  call-seq:
+ *    name -> string
+ *
+ *  The name of the branch, without a fully-qualified reference path
+ *
+ *  E.g. 'master' instead of 'refs/heads/master'
+ */
+static VALUE rb_git_branch_name(VALUE self)
+{
+	git_reference *branch;
+	const char *branch_name;
+	Data_Get_Struct(self, git_reference, branch);
+
+	git_branch_name(&branch_name, branch);
+	return rb_str_new_utf8(branch_name);
+}
+
 static VALUE rb_git_branch__remote_name(VALUE rb_repo, const char *canonical_name)
 {
 	git_repository *repo;
@@ -371,5 +388,6 @@ void Init_rugged_branch(void)
 	rb_define_method(rb_cRuggedBranch, "rename", rb_git_branch_move, -1);
 	rb_define_method(rb_cRuggedBranch, "move", rb_git_branch_move, -1);
 	rb_define_method(rb_cRuggedBranch, "head?", rb_git_branch_head_p, 0);
+	rb_define_method(rb_cRuggedBranch, "name", rb_git_branch_name, 0);
 	rb_define_method(rb_cRuggedBranch, "remote_name", rb_git_branch_remote_name, 0);
 }
