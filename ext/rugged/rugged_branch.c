@@ -375,6 +375,33 @@ static VALUE rb_git_branch_remote_name(VALUE self)
 			git_reference_name(remote_ref));
 }
 
+/*  call-seq:
+ *    upstream -> branch
+ *
+ *  Return the remote tracking branch.
+ *
+ *  Returns +nil+ if the branch is local or has no tracking branch.
+ */
+static VALUE rb_git_branch_upstream(VALUE self)
+{
+	git_reference *branch, *upstream_branch;
+	int error;
+
+	Data_Get_Struct(self, git_reference, branch);
+
+	if (git_reference_is_remote(branch))
+		return Qnil;
+
+	error = git_branch_upstream(&upstream_branch, branch);
+
+	if (error == GIT_ENOTFOUND)
+		return Qnil;
+
+	rugged_exception_check(error);
+
+	return rugged_branch_new(rugged_owner(self), upstream_branch);
+}
+
 void Init_rugged_branch(void)
 {
 	rb_cRuggedBranch = rb_define_class_under(rb_mRugged, "Branch", rb_cRuggedReference);
@@ -390,4 +417,5 @@ void Init_rugged_branch(void)
 	rb_define_method(rb_cRuggedBranch, "head?", rb_git_branch_head_p, 0);
 	rb_define_method(rb_cRuggedBranch, "name", rb_git_branch_name, 0);
 	rb_define_method(rb_cRuggedBranch, "remote_name", rb_git_branch_remote_name, 0);
+	rb_define_method(rb_cRuggedBranch, "upstream", rb_git_branch_upstream, 0);
 }
