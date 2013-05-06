@@ -33,21 +33,10 @@ static VALUE rugged_git_note_message(const git_note *note)
 	message = git_note_message(note);
 
 	/*
-	 * the note object is just a blob, normally it should be human readable
-	 * and in unicode like annotated tag's message,
-	 * since git allows attaching any blob as a note message
-	 * we're just making sure this works for everyone and it doesn't
-	 * reencode things it shouldn't.
-	 *
-	 * since we don't really ever know the encoding of a blob
-	 * lets default to the binary encoding (ascii-8bit)
-	 * If there is a way to tell, we should just pass 0/null here instead
-	 *
-	 * we're skipping the use of STR_NEW because we don't want our string to
-	 * eventually end up converted to Encoding.default_internal because this
-	 * string could very well be binary data
+	 * assume the note message is utf8 compatible, because that's
+	 * the sensible thing to do.
 	 */
-	return rugged_str_ascii(message, strlen(message));
+	return rb_str_new_utf8(message);
 }
 
 static VALUE rugged_git_note_oid(const git_note* note)
@@ -363,7 +352,7 @@ static VALUE rb_git_note_default_ref_GET(VALUE self)
 		git_note_default_ref(&ref_name, repo)
 	);
 
-	return rugged_str_new2(ref_name, NULL);
+	return rb_str_new_utf8(ref_name);
 }
 
 void Init_rugged_notes(void)

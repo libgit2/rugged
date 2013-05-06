@@ -39,11 +39,8 @@ VALUE rb_cRuggedBlob;
  *  Return up to +max_lines+ of text from a blob as a +String+.
  *  If +max_lines+ is less than 0, the full string is returned.
  *
- *  In Ruby 1.9.x, the string is created with the given +encoding+,
- *  defaulting to Encoding.default_external.
- *
- *  In previous versions, the +encoding+ argument is dummy and has no
- *  effect on the returned string.
+ *  The string is created with the given +encoding+, defaulting to
+ *  Encoding.default_external.
  *
  *  When limiting the size of the text with +max_lines+, the string is
  *  expected to have an ASCII-compatible encoding, and is checked
@@ -51,10 +48,6 @@ VALUE rb_cRuggedBlob;
  */
 static VALUE rb_git_blob_text_GET(int argc, VALUE *argv, VALUE self)
 {
-#ifdef HAVE_RUBY_ENCODING_H
-	rb_encoding *encoding = rb_default_external_encoding();
-#endif
-
 	git_blob *blob;
 	size_t size;
 	const char *content;
@@ -83,16 +76,11 @@ static VALUE rb_git_blob_text_GET(int argc, VALUE *argv, VALUE self)
 
 	}
 
-#ifdef HAVE_RUBY_ENCODING_H
 	if (!NIL_P(rb_encoding)) {
-		encoding = rb_to_encoding(rb_encoding);
+		return rb_enc_str_new(content, size, rb_to_encoding(rb_encoding));
 	}
-#endif
 
-	if (size == 0)
-		return rugged_str_new("", 0, encoding);
-
-	return rugged_str_new(content, size, encoding);
+	return rb_external_str_new(content, size);
 }
 
 /*
@@ -102,8 +90,8 @@ static VALUE rb_git_blob_text_GET(int argc, VALUE *argv, VALUE self)
  *  Return up to +max_bytes+ from the contents of a blob as bytes +String+.
  *  If +max_bytes+ is less than 0, the full string is returned.
  *
- *  In Ruby 1.9.x, this string is tagged with the ASCII-8BIT encoding: the
- *  bytes are returned as-is, since Git is encoding agnostic.
+ *  This string is tagged with the ASCII-8BIT encoding: the bytes are
+ *  returned as-is, since Git is encoding agnostic.
  */
 static VALUE rb_git_blob_content_GET(int argc, VALUE *argv, VALUE self)
 {
@@ -128,19 +116,11 @@ static VALUE rb_git_blob_content_GET(int argc, VALUE *argv, VALUE self)
 			size = (size_t)maxbytes;
 	}
 
-	if (size == 0)
-		return rugged_str_ascii("", 0);
-
 	/*
 	 * since we don't really ever know the encoding of a blob
 	 * lets default to the binary encoding (ascii-8bit)
-	 * If there is a way to tell, we should just pass 0/null here instead
-	 *
-	 * we're skipping the use of STR_NEW because we don't want our string to
-	 * eventually end up converted to Encoding.default_internal because this
-	 * string could very well be binary data
 	 */
-	return rugged_str_ascii(content, size);
+	return rb_str_new(content, size);
 }
 
 /*

@@ -31,15 +31,17 @@
 #define RSTRING_NOT_MODIFIED
 
 #include <ruby.h>
+#include <ruby/encoding.h>
 
-#ifdef HAVE_RUBY_ENCODING_H
-#	include <ruby/encoding.h>
+#ifndef HAVE_RUBY_ENCODING_H
+#error "Rugged requires Ruby 1.9+ to build"
 #endif
 
 #include <assert.h>
 #include <git2.h>
 #include <git2/odb_backend.h>
 
+#define rb_str_new_utf8(str) rb_enc_str_new(str, strlen(str), rb_utf8_encoding())
 #define CSTR2SYM(s) (ID2SYM(rb_intern((s))))
 
 /*
@@ -133,23 +135,11 @@ static inline void rugged_check_repo(VALUE rb_repo)
 		rb_raise(rb_eTypeError, "Expecting a Rugged Repository");
 }
 
-/* support for string encodings in 1.9 */
-#ifdef HAVE_RUBY_ENCODING_H
-#	define rugged_str_new(str, len, enc) rb_enc_str_new(str, len, enc)
-#	define rugged_str_new2(str, enc) rb_enc_str_new(str, strlen(str), enc)
-#	define rugged_str_ascii(str, len) rb_enc_str_new(str, len, rb_ascii8bit_encoding());
-
-#else
-#	define rugged_str_new(str, len, rb_enc)  rb_str_new(str, len)
-#	define rugged_str_new2(str, rb_enc) rb_str_new2(str)
-#	define rugged_str_ascii(str, len) rb_str_new(str, len)
-#endif
-
 static inline VALUE rugged_create_oid(const git_oid *oid)
 {
 	char out[40];
 	git_oid_fmt(out, oid);
-	return rugged_str_new(out, 40, NULL);
+	return rb_str_new(out, 40);
 }
 
 #endif

@@ -47,7 +47,7 @@ VALUE rugged_diff_hunk_new(
 	rb_hash_aset(rb_range, CSTR2SYM("new_lines"), INT2FIX(range->new_lines));
 	rb_iv_set(rb_hunk, "@range", rb_range);
 
-	rb_iv_set(rb_hunk, "@header", rugged_str_new(header, header_len, NULL));
+	rb_iv_set(rb_hunk, "@header", rb_str_new(header, header_len));
 	rb_iv_set(rb_hunk, "@line_count", INT2FIX(lines_in_hunk));
 	rb_iv_set(rb_hunk, "@hunk_index", INT2FIX(hunk_idx));
 

@@ -336,8 +336,8 @@ int rugged__index_matched_path_cb(const char *path, const char *matched_pathspec
 	int *exception = (int *)payload;
 
 	VALUE rb_result, rb_args = rb_ary_new2(2);
-	rb_ary_push(rb_args, rugged_str_new2(path, NULL));
-	rb_ary_push(rb_args, matched_pathspec == NULL ? Qnil : rugged_str_new2(matched_pathspec, NULL));
+	rb_ary_push(rb_args, rb_str_new2(path));
+	rb_ary_push(rb_args, matched_pathspec == NULL ? Qnil : rb_str_new2(matched_pathspec));
 
 	rb_result = rb_protect(rb_yield_splat, rb_args, exception);
 
@@ -530,7 +530,7 @@ static VALUE rb_git_indexentry_fromC(const git_index_entry *entry)
 
 	rb_entry = rb_hash_new();
 
-	rb_hash_aset(rb_entry, CSTR2SYM("path"), rugged_str_new2(entry->path, NULL));
+	rb_hash_aset(rb_entry, CSTR2SYM("path"), rb_str_new_utf8(entry->path));
 	rb_hash_aset(rb_entry, CSTR2SYM("oid"), rugged_create_oid(&entry->oid));
 
 	rb_hash_aset(rb_entry, CSTR2SYM("dev"), INT2FIX(entry->dev));

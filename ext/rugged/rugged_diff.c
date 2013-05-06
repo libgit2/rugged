@@ -182,7 +182,7 @@ static int diff_print_cb(
 static VALUE rb_git_diff_patch(int argc, VALUE *argv, VALUE self)
 {
 	git_diff_list *diff;
-	VALUE rb_str = rugged_str_new(NULL, 0, NULL);
+	VALUE rb_str = rb_str_new(NULL, 0);
 	VALUE rb_opts;
 
 	rb_scan_args(argc, argv, "01", &rb_opts);
@@ -210,7 +210,7 @@ static int diff_write_cb(
 	size_t content_len,
 	void *payload)
 {
-	VALUE rb_io = (VALUE)payload, str = rugged_str_new(content, content_len, NULL);
+	VALUE rb_io = (VALUE)payload, str = rb_str_new(content, content_len);
 
 	rb_io_write(rb_io, str);
 
