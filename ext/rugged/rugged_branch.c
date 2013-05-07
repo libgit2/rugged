@@ -402,6 +402,39 @@ static VALUE rb_git_branch_upstream(VALUE self)
 	return rugged_branch_new(rugged_owner(self), upstream_branch);
 }
 
+/*  call-seq:
+ *    upstream = branch -> branch
+ *
+ *  Set the upstream configuration for a given local branch.
+ *
+ *  Takes a local or remote Rugged::Branch instance
+ */
+static VALUE rb_git_branch_set_upstream(VALUE self, VALUE rb_branch)
+{
+	git_reference *branch, *target_branch;
+	const char *target_branch_name;
+
+	Data_Get_Struct(self, git_reference, branch);
+	if (!NIL_P(rb_branch)) {
+		if (!rb_obj_is_kind_of(rb_branch, rb_cRuggedBranch))
+			rb_raise(rb_eTypeError, "Expecting a Rugged::Branch instance");
+
+		Data_Get_Struct(rb_branch, git_reference, target_branch);
+
+		rugged_exception_check(
+			git_branch_name(&target_branch_name, target_branch)
+		);
+	} else {
+		target_branch_name = NULL;
+	}
+
+	rugged_exception_check(
+		git_branch_set_upstream(branch, target_branch_name)
+	);
+
+	return rb_branch;
+}
+
 void Init_rugged_branch(void)
 {
 	rb_cRuggedBranch = rb_define_class_under(rb_mRugged, "Branch", rb_cRuggedReference);
@@ -418,4 +451,5 @@ void Init_rugged_branch(void)
 	rb_define_method(rb_cRuggedBranch, "name", rb_git_branch_name, 0);
 	rb_define_method(rb_cRuggedBranch, "remote_name", rb_git_branch_remote_name, 0);
 	rb_define_method(rb_cRuggedBranch, "upstream", rb_git_branch_upstream, 0);
+	rb_define_method(rb_cRuggedBranch, "upstream=", rb_git_branch_set_upstream, 1);
 }
