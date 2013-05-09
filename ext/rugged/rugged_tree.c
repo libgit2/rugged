@@ -27,6 +27,9 @@
 extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedObject;
 extern VALUE rb_cRuggedRepo;
+extern VALUE rb_cRuggedDiff;
+extern VALUE rb_cRuggedIndex;
+extern VALUE rb_cRuggedCommit;
 
 VALUE rb_cRuggedTree;
 VALUE rb_cRuggedTreeBuilder;
@@ -123,13 +126,13 @@ static VALUE rb_git_tree_get_entry(VALUE self, VALUE entry_id)
  *		tree.get_entry_by_oid(rb_oid) -> entry
  *
  *	Return one of the entries from a tree as a +Hash+, based off the oid SHA.
- *	
+ *
  *	If the entry doesn't exist, +nil+ will be returned.
  *
  *	This does a full traversal of the every element in the tree, so this method
  *	is not especially fast.
  *
- *		tree.get_entry_by_oid("d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f") 
+ *		tree.get_entry_by_oid("d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f")
  *		#=> {:name => "foo.txt", :type => :blob, :oid => "d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f", :filemode => 0}
  *
  */
@@ -258,6 +261,177 @@ static VALUE rb_git_tree_path(VALUE self, VALUE rb_path)
 	git_tree_entry_free(entry);
 
 	return rb_entry;
+}
+
+/*
+ *  call-seq:
+ *    tree.diff([options]) -> diff
+ *    tree.diff([options]) { |diff_so_far, delta_to_add, matched_pathspec| block } -> diff
+ *    tree.diff(diffable[, options]) -> diff
+ *    tree.diff(diffable[, options]) { |diff_so_far, delta_to_add, matched_pathspec| block } -> diff
+ *
+ *  The first two forms return a diff between the tree and the current working
+ *  directory.
+ *
+ *  The last two forms return a diff between the tree and the diffable object
+ *  was given. +diffable+ can either be a `Rugged::Commit`, a `Rugged::Tree`, or
+ *  a `Rugged::Index`.
+ *
+ *  The tree will be used as the "old file" side of the diff, while the working
+ *  directory or the +diffable+ will be used for the "new file" side.
+ *
+ *  Can be passed an optional block to filter unwanted delta objects before
+ *  they're added to the diff.
+ *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :paths ::
+ *    An array of paths / fnmatch patterns to constrain the diff to a specific
+ *    set of files. Also see +:disable_pathspec_match+.
+ *
+ *  :max_size ::
+ *    An integer specifying the maximum byte size of a file before a it will
+ *    be treated as binary. The default value is 512MB.
+ *
+ *  :context_lines ::
+ *    The number of unchanged lines that define the boundary of a hunk (and
+ *    to display before and after the actual changes). The default is 3.
+ *
+ *  :interhunk_lines ::
+ *    The maximum number of unchanged lines between hunk boundaries before the hunks
+ *    will be merged into a one. The default is 0.
+ *
+ *  :reverse ::
+ *    If true, the sides of the diff will be reversed.
+ *
+ *  :force_text ::
+ *    If true, all files will be treated as text, disabling binary attributes & detection.
+ *
+ *  :ignore_whitespace ::
+ *    If true, all whitespace will be ignored.
+ *
+ *  :ignore_whitespace_change ::
+ *    If true, changes in amount of whitespace will be ignored.
+ *
+ *  :ignore_whitespace_eol ::
+ *    If true, whitespace at end of line will be ignored.
+ *
+ *  :ignore_submodules ::
+ *    if true, submodules will be excluded from the diff completely.
+ *
+ *  :patience ::
+ *    If true, the "patience diff" algorithm will be used (currenlty unimplemented).
+ *
+ *  :include_ignored ::
+ *    If true, ignored files will be included in the diff.
+ *
+ *  :include_untracked ::
+ *   If true, untracked files will be included in the diff.
+ *
+ *  :include_unmodified ::
+ *    If true, unmodified files will be included in the diff.
+ *
+ *  :recurse_untracked_dirs ::
+ *		Even if `:include_untracked` is true, untracked directories will only be
+ *    marked with a single entry in the diff. If this flag is set to true,
+ *    all files under ignored directories will be included in the diff, too.
+ *
+ *  :disable_pathspec_match ::
+ *    If true, the given +:paths+ will be applied as exact matches, instead of
+ *    as fnmatch patterns.
+ *
+ *  :deltas_are_icase ::
+ *    If true, filename comparisons will be made with case-insensitivity.
+ *
+ *  :include_untracked_content ::
+ *    if true, untracked content will be contained in the the diff patch text.
+ *
+ *  :skip_binary_check ::
+ *    If true, diff deltas will be generated without spending time on binary
+ *    detection. This is useful to improve performance in cases where the actual
+ *    file content difference is not needed.
+ *
+ *  :include_typechange ::
+ *    If true, type changes for files will not be interpreted as deletion of
+ *    the "old file" and addition of the "new file", but will generate
+ *    typechange records.
+ *
+ *  :include_typechange_trees ::
+ *    Even if `:include_typechange` is true, blob -> tree changes will still
+ *    usually be handled as a deletion of the blob. If this flag is set to true,
+ *    blob -> tree changes will be marked as typechanges.
+ *
+ *  :ignore_filemode ::
+ *    If true, file mode changes will be ignored.
+ *
+ *  :recurse_ignored_dirs ::
+ *    Even if `:include_ignored` is true, ignored directories will only be
+ *    marked with a single entry in the diff. If this flag is set to true,
+ *    all files under ignored directories will be included in the diff, too.
+ *
+ *  Examples:
+ *
+ *    # Emulating `git diff <treeish>`
+ *    tree = Rugged::Tree.lookup(repo, "d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+ *    diff = tree.diff(repo.index)
+ *    diff.merge!(tree.diff)
+ *
+ *    # Tree-to-Tree Diff
+ *    tree = Rugged::Tree.lookup(repo, "d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+ *    other_tree = Rugged::Tree.lookup(repo, "7a9e0b02e63179929fed24f0a3e0f19168114d10")
+ *    diff = tree.diff(other_tree)
+ */
+static VALUE rb_git_tree_diff(int argc, VALUE *argv, VALUE self)
+{
+	git_tree *tree;
+	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
+	git_repository *repo;
+	git_diff_list *diff;
+	VALUE owner, rb_other, rb_options, rb_block;
+	int error;
+
+	if (rb_scan_args(argc, argv, "02&", &rb_other, &rb_options, &rb_block) == 1) {
+		if (TYPE(rb_other) == T_HASH) {
+			rb_options = rb_other;
+			rb_other = Qnil;
+		}
+	}
+
+	rugged_parse_diff_options(&opts, rb_options, rb_block);
+
+	Data_Get_Struct(self, git_tree, tree);
+	owner = rugged_owner(self);
+	Data_Get_Struct(owner, git_repository, repo);
+
+	if (NIL_P(rb_other)) {
+		error = git_diff_tree_to_workdir(&diff, repo, tree, &opts);
+	} else {
+		if (rb_obj_is_kind_of(rb_other, rb_cRuggedCommit)) {
+			git_tree *other_tree;
+			git_commit *commit;
+			Data_Get_Struct(rb_other, git_commit, commit);
+			error = git_commit_tree(&other_tree, commit);
+
+			if (!error)
+				error = git_diff_tree_to_tree(&diff, repo, tree, other_tree, &opts);
+		} else if (rb_obj_is_kind_of(rb_other, rb_cRuggedTree)) {
+			git_tree *other_tree;
+			Data_Get_Struct(rb_other, git_tree, other_tree);
+			error = git_diff_tree_to_tree(&diff, repo, tree, other_tree, &opts);
+		} else if (rb_obj_is_kind_of(rb_other, rb_cRuggedIndex)) {
+			git_index *index;
+			Data_Get_Struct(rb_other, git_index, index);
+			error = git_diff_tree_to_index(&diff, repo, tree, index, &opts);
+		} else {
+			xfree(opts.pathspec.strings);
+			rb_raise(rb_eTypeError, "A Rugged::Commit, Rugged::Tree or Rugged::Index instance is required");
+		}
+	}
+
+	xfree(opts.pathspec.strings);
+	rugged_exception_check(error);
+
+	return rugged_diff_new(rb_cRuggedDiff, self, diff);
 }
 
 static void rb_git_treebuilder_free(git_treebuilder *bld)
@@ -403,6 +577,7 @@ void Init_rugged_tree()
 	rb_define_method(rb_cRuggedTree, "get_entry", rb_git_tree_get_entry, 1);
 	rb_define_method(rb_cRuggedTree, "get_entry_by_oid", rb_git_tree_get_entry_by_oid, 1);
 	rb_define_method(rb_cRuggedTree, "path", rb_git_tree_path, 1);
+	rb_define_method(rb_cRuggedTree, "diff", rb_git_tree_diff, -1);
 	rb_define_method(rb_cRuggedTree, "[]", rb_git_tree_get_entry, 1);
 	rb_define_method(rb_cRuggedTree, "each", rb_git_tree_each, 0);
 	rb_define_method(rb_cRuggedTree, "walk", rb_git_tree_walk, 1);
