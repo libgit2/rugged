@@ -6,6 +6,12 @@ module Rugged
       attr_reader :owner
       alias diff owner
 
+      attr_reader :old_file
+      attr_reader :new_file
+      attr_reader :similarity
+      attr_reader :status
+      attr_reader :binary
+
       alias binary? binary
 
       def added?
@@ -41,7 +47,7 @@ module Rugged
       end
 
       def inspect
-        "#<#{self.class.name}:#{object_id} {old_file: #{old_file.inspect}, new_file: #{new_file.inspect}, similarity: #{similarity.inspect}, status: #{status.inspect}, binary: #{binary.inspect}>"
+        "#<#{self.class.name}:#{object_id} {old_file: #{old_file.inspect}, new_file: #{new_file.inspect}, similarity: #{similarity.inspect}, status: #{status.inspect}>"
       end
     end
   end

@@ -27,14 +27,6 @@
 extern VALUE rb_cRuggedDiff;
 VALUE rb_cRuggedDiffDelta;
 
-VALUE rugged_diff_delta_new(VALUE owner, const git_diff_delta *delta)
-{
-	// TODO: Is it okay to cast away the const-ness of the delta here?
-	VALUE rb_delta = Data_Wrap_Struct(rb_cRuggedDiffDelta, NULL, NULL, (git_diff_delta *)delta);
-	rugged_set_owner(rb_delta, owner);
-	return rb_delta;
-}
-
 static VALUE rb_git_delta_file_fromC(const git_diff_file *file)
 {
 	VALUE rb_file;
@@ -53,61 +45,9 @@ static VALUE rb_git_delta_file_fromC(const git_diff_file *file)
 	return rb_file;
 }
 
-/*
- *  call-seq: delta.old_file -> Hash
- *
- *  Returns a Hash describing the left side of a diff delta.
- */
-static VALUE rb_git_diff_delta_old_file(VALUE self)
+static VALUE rb_git_delta_status_fromC(git_delta_t status)
 {
-	const git_diff_delta *delta;
-
-	Data_Get_Struct(self, git_diff_delta, delta);
-
-	return rb_git_delta_file_fromC(&delta->old_file);
-}
-
-/*
- *  call-seq: delta.new_file -> Hash
- *
- *  Returns a Hash describing the right side of a diff delta.
- */
-static VALUE rb_git_diff_delta_new_file(VALUE self)
-{
-	const git_diff_delta *delta;
-
-	Data_Get_Struct(self, git_diff_delta, delta);
-
-	return rb_git_delta_file_fromC(&delta->new_file);
-}
-
-/*
- *  call-seq: delta.similarity -> Fixnum
- *
- *  A value between 0-100, indicating the similarity between +old_file+ and +new_file+.
- *  Only valid/set for deltas with a status of +:renamed+ or +:copied:.
- */
-static VALUE rb_git_diff_delta_similarity(VALUE self)
-{
-	const git_diff_delta *delta;
-
-	Data_Get_Struct(self, git_diff_delta, delta);
-
-	return INT2FIX(delta->similarity);
-}
-
-/*
- *  call-seq: delta.status -> Symbol
- *
- *  Returns the delta status, indicating the type of change.
- */
-static VALUE rb_git_diff_delta_status(VALUE self)
-{
-	const git_diff_delta *delta;
-
-	Data_Get_Struct(self, git_diff_delta, delta);
-
-	switch(delta->status) {
+	switch(status) {
 		case GIT_DELTA_UNMODIFIED:
 			return CSTR2SYM("unmodified");
 		case GIT_DELTA_ADDED:
@@ -127,32 +67,28 @@ static VALUE rb_git_diff_delta_status(VALUE self)
 		case GIT_DELTA_TYPECHANGE:
 			return CSTR2SYM("typechange");
 		default:
-			/* FIXME: raise here instead? */
 			return CSTR2SYM("unknown");
 	}
 }
 
-/*
- *  call-seq: delta.binary -> true or false
- *
- *  Returns true if this delta was recognized as binary.
- */
-static VALUE rb_git_diff_delta_binary(VALUE self)
+VALUE rugged_diff_delta_new(VALUE owner, const git_diff_delta *delta)
 {
-	const git_diff_delta *delta;
+	VALUE rb_delta = rb_class_new_instance(0, NULL, rb_cRuggedDiffDelta);
 
-	Data_Get_Struct(self, git_diff_delta, delta);
+	rugged_set_owner(rb_delta, owner);
+	rb_iv_set(rb_delta, "@old_file", rb_git_delta_file_fromC(&delta->old_file));
+	rb_iv_set(rb_delta, "@new_file", rb_git_delta_file_fromC(&delta->new_file));
+	rb_iv_set(rb_delta, "@similarity", INT2FIX(delta->similarity));
+	rb_iv_set(rb_delta, "@status", rb_git_delta_status_fromC(delta->status));
+	rb_iv_set(rb_delta, "@binary",
+		(!(delta->flags & GIT_DIFF_FLAG_NOT_BINARY) &&
+		 (delta->flags & GIT_DIFF_FLAG_BINARY)) ? Qtrue : Qfalse
+	);
 
-	return (!(delta->flags & GIT_DIFF_FLAG_NOT_BINARY) && (delta->flags & GIT_DIFF_FLAG_BINARY)) ? Qtrue : Qfalse;
+	return rb_delta;
 }
 
 void Init_rugged_diff_delta()
 {
 	rb_cRuggedDiffDelta = rb_define_class_under(rb_cRuggedDiff, "Delta", rb_cObject);
-
-	rb_define_method(rb_cRuggedDiffDelta, "old_file", rb_git_diff_delta_old_file, 0);
-	rb_define_method(rb_cRuggedDiffDelta, "new_file", rb_git_diff_delta_new_file, 0);
-	rb_define_method(rb_cRuggedDiffDelta, "similarity", rb_git_diff_delta_similarity, 0);
-	rb_define_method(rb_cRuggedDiffDelta, "status", rb_git_diff_delta_status, 0);
-	rb_define_method(rb_cRuggedDiffDelta, "binary", rb_git_diff_delta_binary, 0);
 }
