@@ -375,21 +375,16 @@ static VALUE rb_git_index_readtree(VALUE self, VALUE rb_tree)
 /*
  *  call-seq:
  *    index.diff([options]) -> diff
- *    index.diff([options]) { |diff_so_far, delta_to_add, matched_pathspec| block } -> diff
  *    index.diff(diffable[, options]) -> diff
- *    index.diff(diffable[, options]) { |diff_so_far, delta_to_add, matched_pathspec| block } -> diff
  *
- *  The first two forms return a diff between the index and the current working
+ *  The first form returns a diff between the index and the current working
  *  directory.
  *
- *  The last two forms return a diff between the index and the given diffable object.
+ *  The second form returns a diff between the index and the given diffable object.
  *  +diffable+ can either be a `Rugged::Commit` or a `Rugged::Tree`.
  *
  *  The index will be used as the "old file" side of the diff, while the working
  *  directory or the +diffable+ will be used for the "new file" side.
- *
- *  Can be passed an optional block to filter unwanted delta objects before
- *  they're added to the diff.
  *
  *  The following options can be passed in the +options+ Hash:
  *
@@ -483,17 +478,17 @@ static VALUE rb_git_index_diff(int argc, VALUE *argv, VALUE self)
 	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
 	git_repository *repo;
 	git_diff_list *diff;
-	VALUE owner, rb_other, rb_options, rb_block;
+	VALUE owner, rb_other, rb_options;
 	int error;
 
-	if (rb_scan_args(argc, argv, "02&", &rb_other, &rb_options, &rb_block) == 1) {
+	if (rb_scan_args(argc, argv, "02", &rb_other, &rb_options) == 1) {
 		if (TYPE(rb_other) == T_HASH) {
 			rb_options = rb_other;
 			rb_other = Qnil;
 		}
 	}
 
-	rugged_parse_diff_options(&opts, rb_options, rb_block);
+	rugged_parse_diff_options(&opts, rb_options);
 
 	Data_Get_Struct(self, git_index, index);
 	owner = rugged_owner(self);

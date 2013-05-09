@@ -39,40 +39,11 @@ VALUE rugged_diff_new(VALUE klass, VALUE owner, git_diff_list *diff)
 	return rb_diff;
 }
 
-/*
- * Create a new Diff object from a constant git_diff_list, where we don't
- * need to manage memory ourself.
- */
-VALUE rugged_diff_new2(const git_diff_list *diff)
-{
-	return Data_Wrap_Struct(rb_cRuggedDiff, NULL, NULL, (git_diff_list *)diff);
-}
-
-static int rugged__diff_notify_cb(
-	const git_diff_list *diff_so_far,
-	const git_diff_delta *delta_to_add,
-	const char *matched_pathspec,
-	void *payload
-) {
-	VALUE rb_diff = rugged_diff_new2(diff_so_far);
-	VALUE rb_result = rb_funcall((VALUE)payload, rb_intern("call"), 3, rb_diff,
-		rugged_diff_delta_new(rb_diff, delta_to_add),
-		(matched_pathspec == NULL ? Qnil : rugged_str_new2(matched_pathspec, NULL))
-	);
-
-	return RTEST(rb_result) ? 0 : 1;
-}
-
 /**
  * The caller has to free the returned git_diff_options pathspec strings array.
  */
-void rugged_parse_diff_options(git_diff_options *opts, VALUE rb_options, VALUE rb_block)
+void rugged_parse_diff_options(git_diff_options *opts, VALUE rb_options)
 {
-	if (!NIL_P(rb_block)) {
-		opts->notify_cb = &rugged__diff_notify_cb;
-		opts->notify_payload = (void*)rb_block_proc();
-	}
-
 	if (!NIL_P(rb_options)) {
 		VALUE rb_value;
 		Check_Type(rb_options, T_HASH);

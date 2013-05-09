@@ -24,10 +24,10 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
 
     assert_equal 5, hunks.size
 
-    assert_equal (7 + 24 + 1 + 6 + 6), lines.size
-    assert_equal (1), lines.select(&:context?).size
-    assert_equal (24 + 1 + 5 + 5), lines.select(&:addition?).size
-    assert_equal (7 + 1), lines.select(&:deletion?).size
+    assert_equal((7 + 24 + 1 + 6 + 6), lines.size)
+    assert_equal((1), lines.select(&:context?).size)
+    assert_equal((24 + 1 + 5 + 5), lines.select(&:addition?).size)
+    assert_equal((7 + 1), lines.select(&:deletion?).size)
 
 
     diff = c.diff(b, :context_lines => 1, :interhunk_lines => 1)
@@ -45,10 +45,10 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
 
     assert_equal 2, hunks.size
 
-    assert_equal (8 + 15), lines.size
-    assert_equal (1), lines.select(&:context?).size
-    assert_equal (1), lines.select(&:addition?).size
-    assert_equal (7 + 14), lines.select(&:deletion?).size
+    assert_equal((8 + 15), lines.size)
+    assert_equal((1), lines.select(&:context?).size)
+    assert_equal((1), lines.select(&:addition?).size)
+    assert_equal((7 + 14), lines.select(&:deletion?).size)
   end
 
   def test_diff_merge
@@ -196,19 +196,6 @@ diff --git a/readme.txt b/readme.txt
 index 7b808f7..29ab705 100644
 Binary files a/readme.txt and b/readme.txt differ
 EOS
-  end
-
-  def test_diff_prefiltering
-    repo = sandbox_init("diff")
-
-    a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
-    b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
-
-    diff = a.tree.diff(b.tree) do |diff_so_far, delta_to_be_added, matched_pathspec|
-      delta_to_be_added.old_file[:path] == "readme.txt"
-    end
-
-    assert_equal "M\treadme.txt\n", diff.patch(:compact => true)
   end
 
   def test_contraining_paths
