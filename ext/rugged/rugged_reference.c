@@ -156,7 +156,7 @@ static VALUE rb_git_ref_dereference(VALUE self)
 		return Qnil;
 	} else {
 		git_oid_tostr(oid, oid_len, git_object_id(object));
-		return rb_str_new2(oid);
+		return rugged_str_new2(oid, rb_utf8_encoding());
 	}
 }
 
