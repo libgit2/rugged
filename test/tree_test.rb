@@ -94,6 +94,7 @@ class TreeEncodingTest < Rugged::TestCase
   include Rugged::TempRepositoryAccess
 
   def test_tree_encoding
+    skip unless String.method_defined?(:encoding)
     entry = {:type => :blob,
              :name => "\u00e0",
              :oid  => "1385f264afb75a56a5bec74243be9b367ba4ca08",
