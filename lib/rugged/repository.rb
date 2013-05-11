@@ -179,5 +179,23 @@ module Rugged
       blob = Rugged::Blob.lookup(self, blob_data[:oid])
       (blob.type == :blob) ? blob : nil
     end
+
+    # Add the entry to the repository's index.
+    # It iterates over the files under and adds them if the entry is a directory.
+    #
+    # entry - The String path.
+    #
+    # Returns nothing.
+    def add(entry)
+      real_entry = File.join(workdir, entry)
+      if File.directory?(real_entry)
+        Dir.glob(File.join(real_entry, '*')).each do |file|
+          relative_file = File.expand_path(file).sub(/^#{workdir}/, '')
+          add(relative_file)
+        end
+      else
+        index.add(entry)
+      end
+    end
   end
 end

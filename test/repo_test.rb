@@ -311,3 +311,57 @@ class RepositoryPushTest < Rugged::SandboxedTestCase
     assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @remote_repo.ref("refs/heads/master").target
   end
 end
+
+class RepositoryAddTest < Rugged::SandboxedTestCase
+  def setup
+    @tmppath = File.realdirpath(Dir.mktmpdir)
+
+    Dir.chdir @tmppath do
+      @tmpfile  = FileUtils.touch('file')
+      @tmpempty = FileUtils.mkdir('empty')
+      @tmpnonempty = FileUtils.mkdir('nonempty')
+      Dir.chdir 'nonempty' do
+        FileUtils.mkdir('nonempty2')
+        Dir.chdir 'nonempty2' do
+          FileUtils.mkdir('nonempty3')
+          FileUtils.touch('nonempty3/file')
+          FileUtils.touch('file')
+        end
+        FileUtils.touch('file')
+      end
+    end
+  end
+
+  def teardown
+    FileUtils.remove_entry_secure(@tmppath)
+  end
+
+  def test_add_a_file
+    repo = Rugged::Repository.init_at(@tmppath, false)
+    repo.add('file')
+    assert_equal 1, repo.index.count
+    assert_equal ['file'], repo.index.map {|entry| entry[:path]}
+  end
+
+  def test_add_directories_recursively
+    repo = Rugged::Repository.init_at(@tmppath, false)
+    repo.add('nonempty')
+    assert_equal 3, repo.index.count
+    expected = ['nonempty/file', 'nonempty/nonempty2/file', 'nonempty/nonempty2/nonempty3/file']
+    assert_equal expected, repo.index.map {|entry| entry[:path]}
+  end
+
+  def test_add_an_empty_directory
+    repo = Rugged::Repository.init_at(@tmppath, false)
+    repo.add('empty')
+    assert_equal 0, repo.index.count
+  end
+
+  def test_add_dot
+    repo = Rugged::Repository.init_at(@tmppath, false)
+    repo.add('.')
+    assert_equal 4, repo.index.count
+    expected = ['file', 'nonempty/file', 'nonempty/nonempty2/file', 'nonempty/nonempty2/nonempty3/file']
+    assert_equal expected, repo.index.map {|entry| entry[:path]}
+  end
+end
