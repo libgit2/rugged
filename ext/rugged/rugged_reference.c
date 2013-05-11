@@ -48,12 +48,12 @@ static int ref_foreach__block(const char *ref_name, void *opaque)
 
 /*
  *	call-seq:
- *		Reference.each(repository, filter = :all, glob = nil) { |ref_name| block }
- *		Reference.each(repository, filter = :all, glob = nil) -> Iterator
+ *		Reference.each(repository, glob = nil) { |ref_name| block }
+ *		Reference.each(repository, glob = nil) -> Iterator
  *
- *	Iterate through all the references in +repository+. Iteration can be
- *	optionally filtered to only +:oid+ or +:symbolic+ references, or to
- *	the ones matching the given +glob+, a standard Unix filename glob.
+ *	Iterate through all the references in +repository+. Iteration
+ *	can be optionally filtered to the ones matching the given
+ *	+glob+, a standard Unix filename glob.
  *
  *	The given block will be called once with the name of each reference.
  *	If no block is given, an iterator will be returned.
@@ -61,42 +61,25 @@ static int ref_foreach__block(const char *ref_name, void *opaque)
 static VALUE rb_git_ref_each(int argc, VALUE *argv, VALUE self)
 {
 	git_repository *repo;
-	int error, flags = GIT_REF_LISTALL;
-	VALUE rb_repo, rb_list, rb_glob, rb_block;
+	int error;
+	VALUE rb_repo, rb_glob, rb_block;
 
-	rb_scan_args(argc, argv, "12&", &rb_repo, &rb_list, &rb_glob, &rb_block);
+	rb_scan_args(argc, argv, "11&", &rb_repo, &rb_glob, &rb_block);
 
 	if (!rb_block_given_p())
-		return rb_funcall(self, rb_intern("to_enum"), 4, CSTR2SYM("each"), rb_repo, rb_list, rb_glob);
+		return rb_funcall(self, rb_intern("to_enum"), 3, CSTR2SYM("each"), rb_repo, rb_glob);
 
 	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo))
 		rb_raise(rb_eTypeError, "Expecting a Rugged::Repository instance");
 
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
-	if (!NIL_P(rb_list)) {
-		ID list;
-
-		Check_Type(rb_list, T_SYMBOL);
-		list = SYM2ID(rb_list);
-
-		if (list == rb_intern("all"))
-			flags = GIT_REF_LISTALL;
-		else if (list == rb_intern("oid"))
-			flags = GIT_REF_OID;
-		else if (list == rb_intern("symbolic"))
-			flags = GIT_REF_SYMBOLIC;
-		else {
-			rb_raise(rb_eArgError, "Invalid list value (must be `all`, `oid` or `symbolic`)");
-		}
-	}
-
 	if (!NIL_P(rb_glob)) {
 		Check_Type(rb_glob, T_STRING);
 		error = git_reference_foreach_glob(repo,
-			StringValueCStr(rb_glob), flags, &ref_foreach__block, (void *)rb_block);
+			StringValueCStr(rb_glob), &ref_foreach__block, (void *)rb_block);
 	} else {
-		error = git_reference_foreach(repo, flags, &ref_foreach__block, (void *)rb_block);
+		error = git_reference_foreach(repo, &ref_foreach__block, (void *)rb_block);
 	}
 
 	rugged_exception_check(error);
