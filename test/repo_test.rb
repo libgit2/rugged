@@ -314,7 +314,7 @@ end
 
 class RepositoryAddTest < Rugged::SandboxedTestCase
   def setup
-    @tmppath = File.realdirpath(Dir.mktmpdir)
+    @tmppath = Pathname.new(Dir.mktmpdir).cleanpath.to_s
 
     Dir.chdir @tmppath do
       @tmpfile  = FileUtils.touch('file')
