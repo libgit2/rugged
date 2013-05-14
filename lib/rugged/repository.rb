@@ -4,11 +4,6 @@ module Rugged
   # to you.
   class Repository
 
-    def self.clone_at(source, destination)
-      system 'git', 'clone', '-q', source, destination or raise "error (in #{Dir.pwd}: git clone #{source} #{destination}"
-      new(destination)
-    end
-
     # Pretty formatting of a Repository.
     #
     # Returns a very pretty String.

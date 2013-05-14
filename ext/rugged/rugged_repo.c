@@ -271,6 +271,31 @@ static VALUE rb_git_repo_init_at(int argc, VALUE *argv, VALUE klass)
 	return rugged_repo_new(klass, repo);
 }
 
+/*
+ *	call-seq:
+ *		clone_at(url, local_path) -> repository
+ *
+ *	Clone a repository from +url+ to +local_path+.
+ */
+static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
+{
+	git_repository *repo;
+	char command[1000];
+	VALUE url, local_path;
+	int error;
+
+	rb_scan_args(argc, argv, "20", &url, &local_path);
+	Check_Type(url, T_STRING);
+	Check_Type(local_path, T_STRING);
+
+	sprintf(command, "git clone -q %s %s", StringValueCStr(url), StringValueCStr(local_path));
+	if (0 != system(command))
+		rb_raise(rb_eRuntimeError, "Unable to clone");
+
+	error = git_repository_init(&repo, StringValueCStr(local_path), 0);
+	return rugged_repo_new(klass, repo);
+}
+
 #define RB_GIT_REPO_OWNED_GET(_klass, _object) \
 	VALUE rb_data = rb_iv_get(self, "@" #_object); \
 	if (NIL_P(rb_data)) { \
@@ -1145,6 +1170,7 @@ void Init_rugged_repo()
 	rb_define_singleton_method(rb_cRuggedRepo, "hash_file",   rb_git_repo_hashfile,  2);
 	rb_define_singleton_method(rb_cRuggedRepo, "init_at", rb_git_repo_init_at, -1);
 	rb_define_singleton_method(rb_cRuggedRepo, "discover", rb_git_repo_discover, -1);
+	rb_define_singleton_method(rb_cRuggedRepo, "clone_at", rb_git_repo_clone_at, -1);
 
 	rb_define_method(rb_cRuggedRepo, "close", rb_git_repo_close, 0);
 
