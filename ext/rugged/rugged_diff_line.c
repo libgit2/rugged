@@ -51,8 +51,14 @@ VALUE rugged_diff_line_new(
 		case GIT_DIFF_LINE_DELETION:
 			rb_line_origin = CSTR2SYM("deletion");
 			break;
-		case GIT_DIFF_LINE_DEL_EOFNL: /**< LF was removed at end of file */
-			rb_line_origin = CSTR2SYM("eof_newline");
+		case GIT_DIFF_LINE_CONTEXT_EOFNL: /* neither file has newline at the end */
+			rb_line_origin = CSTR2SYM("eof_no_newline");
+			break;
+		case GIT_DIFF_LINE_ADD_EOFNL: /* added at end of old file */
+			rb_line_origin = CSTR2SYM("eof_newline_added");
+			break;
+		case GIT_DIFF_LINE_DEL_EOFNL: /* removed at end of old file */
+			rb_line_origin = CSTR2SYM("eof_newline_removed");
 			break;
 		default:
 			/* FIXME: raise here instead? */
