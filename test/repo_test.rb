@@ -228,6 +228,27 @@ class RepositoryInitTest < Rugged::TestCase
   end
 end
 
+class RepositoryCloneTest < Rugged::TestCase
+  def setup
+    @tmppath = Dir.mktmpdir
+    @source_path = File.join(Rugged::TestCase::TEST_DIR, 'fixtures', 'testrepo.git')
+  end
+
+  def teardown
+    FileUtils.remove_entry_secure(@tmppath)
+  end
+
+  def test_clone
+    repo = Rugged::Repository.clone_at(@source_path, @tmppath)
+    refute repo.bare?
+  end
+
+  def test_clone_bare
+    repo = Rugged::Repository.clone_at(@source_path, @tmppath, :bare => true)
+    assert repo.bare?
+  end
+end
+
 class RepositoryNamespaceTest < Rugged::SandboxedTestCase
   def setup
     super

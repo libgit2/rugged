@@ -271,26 +271,43 @@ static VALUE rb_git_repo_init_at(int argc, VALUE *argv, VALUE klass)
 	return rugged_repo_new(klass, repo);
 }
 
+static void rb_git__parse_checkout_options(git_clone_options *options, VALUE rb_options_hash)
+{
+	VALUE bare;
+
+	bare = rb_hash_aref(rb_options_hash, ID2SYM(rb_intern("bare")));
+	if (RTEST(bare))
+		options->bare = 1;
+}
+
 /*
  *	call-seq:
  *		clone_at(url, local_path) -> repository
+ *		clone_at(url, local_path, options) -> repository
  *
  *	Clone a repository from +url+ to +local_path+.
+ *
+ *	Options is a hash with the following keys:
+ *
+ *	*  `:bare` (default: `false`) - clone to a bare repository.
  */
 static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
 {
 	git_clone_options options = GIT_CLONE_OPTIONS_INIT;
 	git_checkout_opts checkout_opts = GIT_CHECKOUT_OPTS_INIT;
 	git_repository *repo;
-	VALUE url, local_path;
+	VALUE url, local_path, rb_options_hash;
 	int error;
 
 	checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE_CREATE;
 	options.checkout_opts = checkout_opts;
 
-	rb_scan_args(argc, argv, "20", &url, &local_path);
+	rb_scan_args(argc, argv, "21", &url, &local_path, &rb_options_hash);
 	Check_Type(url, T_STRING);
 	Check_Type(local_path, T_STRING);
+
+	if (!NIL_P(rb_options_hash))
+		rb_git__parse_checkout_options(&options, rb_options_hash);
 
 	error = git_clone(&repo, StringValueCStr(url), StringValueCStr(local_path), &options);
 	rugged_exception_check(error);
