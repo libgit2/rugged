@@ -279,20 +279,22 @@ static VALUE rb_git_repo_init_at(int argc, VALUE *argv, VALUE klass)
  */
 static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
 {
+	git_clone_options options = GIT_CLONE_OPTIONS_INIT;
+	git_checkout_opts checkout_opts = GIT_CHECKOUT_OPTS_INIT;
 	git_repository *repo;
-	char command[1000];
 	VALUE url, local_path;
 	int error;
+
+	checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE_CREATE;
+	options.checkout_opts = checkout_opts;
 
 	rb_scan_args(argc, argv, "20", &url, &local_path);
 	Check_Type(url, T_STRING);
 	Check_Type(local_path, T_STRING);
 
-	sprintf(command, "git clone -q %s %s", StringValueCStr(url), StringValueCStr(local_path));
-	if (0 != system(command))
-		rb_raise(rb_eRuntimeError, "Unable to clone");
+	error = git_clone(&repo, StringValueCStr(url), StringValueCStr(local_path), &options);
+	rugged_exception_check(error);
 
-	error = git_repository_init(&repo, StringValueCStr(local_path), 0);
 	return rugged_repo_new(klass, repo);
 }
 

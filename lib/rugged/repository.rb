@@ -3,7 +3,6 @@ module Rugged
   # interface between your app and the main Git objects Rugged makes available
   # to you.
   class Repository
-
     # Pretty formatting of a Repository.
     #
     # Returns a very pretty String.

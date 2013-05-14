@@ -52,9 +52,11 @@ module Rugged
     end
 
     def sandbox_clone(repository, name)
-      repository = File.join(@_sandbox_path, repository)
-      name       = File.join(@_sandbox_path, name)
-      Rugged::Repository.clone_at(repository, name)
+      Dir.chdir(@_sandbox_path) do
+        `git clone #{repository} #{name}`
+      end
+
+      Rugged::Repository.new(File.join(@_sandbox_path, name))
     end
   end
 
@@ -79,7 +81,7 @@ module Rugged
     def temp_repo(repo)
       dir = Dir.mktmpdir 'dir'
       repo_dir = File.join(TestCase::TEST_DIR, (File.join('fixtures', repo, '.')))
-      Rugged::Repository.clone_at(repo_dir, dir)
+      `git clone #{repo_dir} #{dir}`
       dir
     end
 
