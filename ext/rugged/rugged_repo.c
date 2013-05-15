@@ -274,25 +274,40 @@ static VALUE rb_git_repo_init_at(int argc, VALUE *argv, VALUE klass)
 struct clone_fetch_callback_payload
 {
 	VALUE proc;
+	VALUE exception;
+	const git_transfer_progress *stats;
 };
 
-static int rb_git__clone_fetch_callback(const git_transfer_progress *stats, void *payload)
+static VALUE rb_git__clone_fetch_callback_inner(struct clone_fetch_callback_payload *fetch_payload)
 {
-	struct clone_fetch_callback_payload  *fetch_payload;
 	VALUE rb_progress;
 	VALUE result;
 
 	rb_progress = rb_hash_new();
-	rb_hash_aset(rb_progress, CSTR2SYM("total_objects"),    UINT2NUM(stats->total_objects));
-	rb_hash_aset(rb_progress, CSTR2SYM("indexed_objects"),  UINT2NUM(stats->indexed_objects));
-	rb_hash_aset(rb_progress, CSTR2SYM("received_objects"), UINT2NUM(stats->received_objects));
-	rb_hash_aset(rb_progress, CSTR2SYM("received_bytes"),   INT2FIX(stats->received_bytes));
+	rb_hash_aset(rb_progress, CSTR2SYM("total_objects"),    UINT2NUM(fetch_payload->stats->total_objects));
+	rb_hash_aset(rb_progress, CSTR2SYM("indexed_objects"),  UINT2NUM(fetch_payload->stats->indexed_objects));
+	rb_hash_aset(rb_progress, CSTR2SYM("received_objects"), UINT2NUM(fetch_payload->stats->received_objects));
+	rb_hash_aset(rb_progress, CSTR2SYM("received_bytes"),   INT2FIX(fetch_payload->stats->received_bytes));
 
-	fetch_payload = payload;
-
-	rb_funcall(fetch_payload->proc, rb_intern("call"), 1,
+	return rb_funcall(fetch_payload->proc, rb_intern("call"), 1,
 		rb_progress);
+}
 
+static VALUE rb_git__clone_fetch_callback_rescue(struct clone_fetch_callback_payload *fetch_payload)
+{
+	fetch_payload->exception = rb_errinfo();
+	return Qnil;
+}
+
+static int rb_git__clone_fetch_callback(const git_transfer_progress *stats, void *payload)
+{
+	struct clone_fetch_callback_payload *fetch_payload;
+	fetch_payload = payload;
+	fetch_payload->stats = stats;
+	rb_rescue(rb_git__clone_fetch_callback_inner, (VALUE) fetch_payload,
+		rb_git__clone_fetch_callback_rescue, (VALUE) fetch_payload);
+	if (RTEST(fetch_payload->exception))
+		return -1;
 	return 0;
 }
 
@@ -355,9 +370,12 @@ static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
 	Check_Type(local_path, T_STRING);
 
 	fetch_payload.proc = Qnil;
+	fetch_payload.exception = Qnil;
 	rb_git__parse_clone_options(&options, rb_options_hash, &fetch_payload);
 
 	error = git_clone(&repo, StringValueCStr(url), StringValueCStr(local_path), &options);
+	if (RTEST(fetch_payload.exception))
+		rb_funcall(rb_mKernel, rb_intern("raise"), 1, fetch_payload.exception);
 	rugged_exception_check(error);
 
 	return rugged_repo_new(klass, repo);
