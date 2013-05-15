@@ -26,7 +26,7 @@ class ReferenceTest < Rugged::TestCase
     assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", ref.target
     assert_equal :direct, ref.type
     assert_equal "refs/heads/master", ref.name
-    assert_nil ref.dereference
+    assert_nil ref.peel
   end
 
   def test_looking_up_missing_ref_returns_nil
@@ -73,7 +73,7 @@ class ReferenceTest < Rugged::TestCase
     ref = Rugged::Reference.lookup(@repo, "refs/tags/v1.0")
 
     assert_equal "0c37a5391bbff43c37f0d0371823a5509eed5b1d", ref.target
-    assert_equal "5b5b025afb0b4c913b4c338a42934a3863bf3644", ref.dereference
+    assert_equal "5b5b025afb0b4c913b4c338a42934a3863bf3644", ref.peel
   end
 end
 

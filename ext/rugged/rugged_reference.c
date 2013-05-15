@@ -130,12 +130,12 @@ static VALUE rb_git_ref_lookup(VALUE klass, VALUE rb_repo, VALUE rb_name)
 
 /*
  *	call-seq:
- *		ref.dereference -> oid
+ *		ref.peel -> oid
  *
- *	Dereferences tag objects to the sha that they point at. Replicates
+ *	Peels tag objects to the sha that they point at. Replicates
  *	git show-ref --dereference
  */
-static VALUE rb_git_ref_dereference(VALUE self)
+static VALUE rb_git_ref_peel(VALUE self)
 {
 	/* Leave room for \0 */
 	git_reference *ref;
@@ -589,7 +589,7 @@ void Init_rugged_reference()
 	rb_define_singleton_method(rb_cRuggedReference, "each", rb_git_ref_each, -1);
 
 	rb_define_method(rb_cRuggedReference, "target", rb_git_ref_target, 0);
-	rb_define_method(rb_cRuggedReference, "dereference", rb_git_ref_dereference, 0);
+	rb_define_method(rb_cRuggedReference, "peel", rb_git_ref_peel, 0);
 	rb_define_method(rb_cRuggedReference, "set_target", rb_git_ref_set_target, 1);
 
 	rb_define_method(rb_cRuggedReference, "type", rb_git_ref_type, 0);
