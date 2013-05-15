@@ -258,6 +258,15 @@ class RepositoryCloneTest < Rugged::TestCase
     assert_kind_of Fixnum, progress_info[:received_objects]
     assert_kind_of Fixnum, progress_info[:received_bytes]
   end
+
+  def test_clone_quits_on_error
+    begin
+      Rugged::Repository.clone_at(@source_path, @tmppath, :progress => lambda { |_| raise 'boom' })
+    rescue => e
+      assert_equal 'boom', e.message
+    end
+    assert_equal true, $git_clone_finished
+  end
 end
 
 class RepositoryNamespaceTest < Rugged::SandboxedTestCase

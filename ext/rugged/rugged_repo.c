@@ -317,6 +317,8 @@ static void rb_git__parse_clone_options(git_clone_options *ret, VALUE rb_options
 	*ret = clone_options;
 }
 
+static VALUE rb_global__git_clone_finished;
+
 /*
  *	call-seq:
  *		clone_at(url, local_path) -> repository
@@ -346,7 +348,9 @@ static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
 
 	rb_git__parse_clone_options(&options, rb_options_hash);
 
+	rb_global__git_clone_finished = Qfalse;
 	error = git_clone(&repo, StringValueCStr(url), StringValueCStr(local_path), &options);
+	rb_global__git_clone_finished = Qtrue;
 	rugged_exception_check(error);
 
 	return rugged_repo_new(klass, repo);
@@ -1268,4 +1272,6 @@ void Init_rugged_repo()
 	rb_define_method(rb_cRuggedOdbObject, "len",  rb_git_odbobj_size,  0);
 	rb_define_method(rb_cRuggedOdbObject, "type",  rb_git_odbobj_type,  0);
 	rb_define_method(rb_cRuggedOdbObject, "oid",  rb_git_odbobj_oid,  0);
+
+	rb_define_variable("git_clone_finished", &rb_global__git_clone_finished);
 }
