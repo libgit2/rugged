@@ -271,8 +271,14 @@ static VALUE rb_git_repo_init_at(int argc, VALUE *argv, VALUE klass)
 	return rugged_repo_new(klass, repo);
 }
 
-static int rb_git__clone_fetch_callback(const git_transfer_progress *stats, void *ruby_callback)
+struct clone_fetch_callback_payload
 {
+	VALUE proc;
+};
+
+static int rb_git__clone_fetch_callback(const git_transfer_progress *stats, void *payload)
+{
+	struct clone_fetch_callback_payload  *fetch_payload;
 	VALUE rb_progress;
 	VALUE result;
 
@@ -282,13 +288,15 @@ static int rb_git__clone_fetch_callback(const git_transfer_progress *stats, void
 	rb_hash_aset(rb_progress, CSTR2SYM("received_objects"), UINT2NUM(stats->received_objects));
 	rb_hash_aset(rb_progress, CSTR2SYM("received_bytes"),   INT2FIX(stats->received_bytes));
 
-	rb_funcall((VALUE)ruby_callback, rb_intern("call"), 1,
+	fetch_payload = payload;
+
+	rb_funcall(fetch_payload->proc, rb_intern("call"), 1,
 		rb_progress);
 
 	return 0;
 }
 
-static void rb_git__parse_clone_options(git_clone_options *ret, VALUE rb_options_hash)
+static void rb_git__parse_clone_options(git_clone_options *ret, VALUE rb_options_hash, struct clone_fetch_callback_payload *fetch_progress_payload)
 {
 	git_clone_options clone_options = GIT_CLONE_OPTIONS_INIT;
 	git_checkout_opts checkout_opts = GIT_CHECKOUT_OPTS_INIT;
@@ -307,7 +315,8 @@ static void rb_git__parse_clone_options(git_clone_options *ret, VALUE rb_options
 		val = rb_hash_aref(rb_options_hash, CSTR2SYM("progress"));
 		if (RTEST(val) && rb_respond_to(val, rb_intern("call")))
 		{
-			clone_options.fetch_progress_payload = (void*)val;
+			fetch_progress_payload->proc = val;
+			clone_options.fetch_progress_payload = fetch_progress_payload;
 			clone_options.fetch_progress_cb = rb_git__clone_fetch_callback;
 		}
 	}
@@ -337,6 +346,7 @@ static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
 {
 	git_clone_options options;
 	git_repository *repo;
+	struct clone_fetch_callback_payload fetch_payload;
 	VALUE url, local_path, rb_options_hash;
 	int error;
 
@@ -344,7 +354,8 @@ static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
 	Check_Type(url, T_STRING);
 	Check_Type(local_path, T_STRING);
 
-	rb_git__parse_clone_options(&options, rb_options_hash);
+	fetch_payload.proc = Qnil;
+	rb_git__parse_clone_options(&options, rb_options_hash, &fetch_payload);
 
 	error = git_clone(&repo, StringValueCStr(url), StringValueCStr(local_path), &options);
 	rugged_exception_check(error);
