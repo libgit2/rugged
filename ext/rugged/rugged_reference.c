@@ -138,10 +138,9 @@ static VALUE rb_git_ref_lookup(VALUE klass, VALUE rb_repo, VALUE rb_name)
 static VALUE rb_git_ref_dereference(VALUE self)
 {
 	/* Leave room for \0 */
-	int oid_len = GIT_OID_HEXSZ + 1;
 	git_reference *ref;
 	git_object *object;
-	char oid[oid_len];
+	char oid[GIT_OID_HEXSZ + 1];
 	int error;
 
 	Data_Get_Struct(self, git_reference, ref);
@@ -153,9 +152,11 @@ static VALUE rb_git_ref_dereference(VALUE self)
 		rugged_exception_check(error);
 
 	if (!git_oid_cmp(git_object_id(object), git_reference_target(ref))) {
+		git_object_free(object);
 		return Qnil;
 	} else {
-		git_oid_tostr(oid, oid_len, git_object_id(object));
+		git_oid_tostr(oid, sizeof(oid), git_object_id(object));
+		git_object_free(object);
 		return rugged_str_new2(oid, rb_utf8_encoding());
 	}
 }
