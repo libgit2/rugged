@@ -271,7 +271,24 @@ static VALUE rb_git_repo_init_at(int argc, VALUE *argv, VALUE klass)
 	return rugged_repo_new(klass, repo);
 }
 
-static void rb_git__parse_checkout_options(git_clone_options *ret, VALUE rb_options_hash)
+static int rb_git__clone_fetch_callback(const git_transfer_progress *stats, void *ruby_callback)
+{
+	VALUE rb_progress;
+	VALUE result;
+
+	rb_progress = rb_hash_new();
+	rb_hash_aset(rb_progress, CSTR2SYM("total_objects"),    UINT2NUM(stats->total_objects));
+	rb_hash_aset(rb_progress, CSTR2SYM("indexed_objects"),  UINT2NUM(stats->indexed_objects));
+	rb_hash_aset(rb_progress, CSTR2SYM("received_objects"), UINT2NUM(stats->received_objects));
+	rb_hash_aset(rb_progress, CSTR2SYM("received_bytes"),   INT2FIX(stats->received_bytes));
+
+	rb_funcall((VALUE)ruby_callback, rb_intern("call"), 1,
+		rb_progress);
+
+	return 0;
+}
+
+static void rb_git__parse_clone_options(git_clone_options *ret, VALUE rb_options_hash)
 {
 	git_clone_options clone_options = GIT_CLONE_OPTIONS_INIT;
 	git_checkout_opts checkout_opts = GIT_CHECKOUT_OPTS_INIT;
@@ -283,9 +300,16 @@ static void rb_git__parse_checkout_options(git_clone_options *ret, VALUE rb_opti
 	if (!NIL_P(rb_options_hash))
 	{
 		/* Options passed to `Rugged::Repository.clone_at` */
-		val = rb_hash_aref(rb_options_hash, ID2SYM(rb_intern("bare")));
+		val = rb_hash_aref(rb_options_hash, CSTR2SYM("bare"));
 		if (RTEST(val))
 			clone_options.bare = 1;
+
+		val = rb_hash_aref(rb_options_hash, CSTR2SYM("progress"));
+		if (RTEST(val) && rb_respond_to(val, rb_intern("call")))
+		{
+			clone_options.fetch_progress_payload = (void*)val;
+			clone_options.fetch_progress_cb = rb_git__clone_fetch_callback;
+		}
 	}
 
 	clone_options.checkout_opts = checkout_opts;
@@ -303,6 +327,11 @@ static void rb_git__parse_checkout_options(git_clone_options *ret, VALUE rb_opti
  *	Options is a hash with the following keys:
  *
  *	*  `:bare` (default: `false`) - clone to a bare repository.
+ *
+ *	*  `:progress` (default: none) - fetch progress callback.
+ *	   This Proc-like object will be called with one argument,
+ *	   a hash with keys `:total_objects`, `:indexed_objects`,
+ *	   `:received_objects`, and `:received_bytes`.
  */
 static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
 {
@@ -315,7 +344,7 @@ static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
 	Check_Type(url, T_STRING);
 	Check_Type(local_path, T_STRING);
 
-	rb_git__parse_checkout_options(&options, rb_options_hash);
+	rb_git__parse_clone_options(&options, rb_options_hash);
 
 	error = git_clone(&repo, StringValueCStr(url), StringValueCStr(local_path), &options);
 	rugged_exception_check(error);

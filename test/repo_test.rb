@@ -247,6 +247,17 @@ class RepositoryCloneTest < Rugged::TestCase
     repo = Rugged::Repository.clone_at(@source_path, @tmppath, :bare => true)
     assert repo.bare?
   end
+
+  def test_clone_with_progress
+    progress_info = nil
+    repo = Rugged::Repository.clone_at(@source_path, @tmppath,
+      :progress => lambda { |info| progress_info = info })
+    assert_kind_of Hash, progress_info
+    assert_kind_of Fixnum, progress_info[:total_objects]
+    assert_kind_of Fixnum, progress_info[:indexed_objects]
+    assert_kind_of Fixnum, progress_info[:received_objects]
+    assert_kind_of Fixnum, progress_info[:received_bytes]
+  end
 end
 
 class RepositoryNamespaceTest < Rugged::SandboxedTestCase
