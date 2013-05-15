@@ -265,7 +265,7 @@ class RepositoryCloneTest < Rugged::TestCase
     rescue => e
       assert_equal 'boom', e.message
     end
-    assert_equal true, $git_clone_finished
+    assert_equal [], Dir[File.join(@tmppath, ".git/**")], "new repository's .git dir should not exist"
   end
 end
 
