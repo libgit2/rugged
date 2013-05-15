@@ -240,7 +240,11 @@ class RepositoryCloneTest < Rugged::TestCase
 
   def test_clone
     repo = Rugged::Repository.clone_at(@source_path, @tmppath)
-    refute repo.bare?
+    assert_equal "hey", File.read(File.join(@tmppath, "README")).chomp
+    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", repo.head.target
+    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", repo.ref("refs/heads/master").target
+    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", repo.ref("refs/remotes/origin/master").target
+    assert_equal "41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9", repo.ref("refs/remotes/origin/packed").target
   end
 
   def test_clone_bare
