@@ -27,10 +27,8 @@ module Rugged
       tree2 = right if right.is_a?(Rugged::Tree)
       tree2 = right.tree if right.is_a?(Rugged::Commit)
 
-      raise ArgumentError, "Rugged::Tree or Rugged::Commit expected for left side of diff, got #{left.class.name}" unless tree1.is_a?(Rugged::Tree)
-      raise ArgumentError, "Rugged::Tree or Rugged::Commit expected for right side of diff, got #{right.class.name}" unless tree2.is_a?(Rugged::Tree)
-
-      tree1.diff(tree2)
+      tree1.diff(tree2) if tree1 && tree2.nil?
+      tree2.diff(tree1) if tree2 && tree1.nil?
     end
 
     # Walks over a set of commits using Rugged::Walker.
