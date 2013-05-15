@@ -399,7 +399,7 @@ static VALUE rb_git_tree_diff(int argc, VALUE *argv, VALUE self)
 	Data_Get_Struct(owner, git_repository, repo);
 
 	if (NIL_P(rb_other)) {
-		error = git_diff_tree_to_workdir(&diff, repo, tree, &opts);
+		error = git_diff_tree_to_tree(&diff, repo, tree, NULL, &opts);
 	} else {
 		if (rb_obj_is_kind_of(rb_other, rb_cRuggedCommit)) {
 			git_tree *other_tree;

@@ -17,7 +17,7 @@ module Rugged
       self.lookup self.head.target
     end
 
-    def diff(left, right)
+    def diff(left, right, opts={})
       tree1 = nil
       tree2 = nil
 
@@ -27,8 +27,11 @@ module Rugged
       tree2 = right if right.is_a?(Rugged::Tree)
       tree2 = right.tree if right.is_a?(Rugged::Commit)
 
-      tree1.diff(tree2) if tree1 && tree2.nil?
-      tree2.diff(tree1) if tree2 && tree1.nil?
+      if tree1 && tree2.nil?
+        tree1.diff(tree2, opts)
+      elsif tree2 && tree1.nil?
+        tree2.diff(tree1, opts)
+      end
     end
 
     def diff_workdir(left, opts={})
