@@ -27,9 +27,9 @@ module Rugged
       tree2 = right if right.is_a?(Rugged::Tree)
       tree2 = right.tree if right.is_a?(Rugged::Commit)
 
-      if tree1 && tree2.nil?
+      if tree1
         tree1.diff(tree2, opts)
-      elsif tree2 && tree1.nil?
+      elsif tree2
         tree2.diff(tree1, opts)
       end
     end
