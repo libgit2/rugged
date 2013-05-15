@@ -31,6 +31,14 @@ module Rugged
       tree2.diff(tree1) if tree2 && tree1.nil?
     end
 
+    def diff_workdir(left, opts={})
+      tree1 = nil
+      tree1 = left if left.is_a?(Rugged::Tree)
+      tree1 = left.tree if left.is_a?(Rugged::Commit)
+
+      tree1.diff_workdir(opts) if tree1
+    end
+
     # Walks over a set of commits using Rugged::Walker.
     #
     # from    - The String SHA1 to push onto Walker to begin our walk.

@@ -429,6 +429,33 @@ static VALUE rb_git_tree_diff(int argc, VALUE *argv, VALUE self)
 	return rugged_diff_new(rb_cRuggedDiff, self, diff);
 }
 
+static VALUE rb_git_tree_diff_workdir(int argc, VALUE *argv, VALUE self)
+{
+	git_tree *tree;
+	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
+	git_repository *repo;
+	git_diff_list *diff;
+	VALUE owner, rb_options;
+	int error;
+
+	if (rb_scan_args(argc, argv, "01", &rb_options) == 1) {
+		Check_Type(rb_options, T_HASH);
+	}
+
+	rugged_parse_diff_options(&opts, rb_options);
+
+	Data_Get_Struct(self, git_tree, tree);
+	owner = rugged_owner(self);
+	Data_Get_Struct(owner, git_repository, repo);
+
+	error = git_diff_tree_to_workdir(&diff, repo, tree, &opts);
+
+	xfree(opts.pathspec.strings);
+	rugged_exception_check(error);
+
+	return rugged_diff_new(rb_cRuggedDiff, self, diff);
+}
+
 static void rb_git_treebuilder_free(git_treebuilder *bld)
 {
 	git_treebuilder_free(bld);
@@ -573,6 +600,7 @@ void Init_rugged_tree()
 	rb_define_method(rb_cRuggedTree, "get_entry_by_oid", rb_git_tree_get_entry_by_oid, 1);
 	rb_define_method(rb_cRuggedTree, "path", rb_git_tree_path, 1);
 	rb_define_method(rb_cRuggedTree, "diff", rb_git_tree_diff, -1);
+	rb_define_method(rb_cRuggedTree, "diff_workdir", rb_git_tree_diff_workdir, -1);
 	rb_define_method(rb_cRuggedTree, "[]", rb_git_tree_get_entry, 1);
 	rb_define_method(rb_cRuggedTree, "each", rb_git_tree_each, 0);
 	rb_define_method(rb_cRuggedTree, "walk", rb_git_tree_walk, 1);
