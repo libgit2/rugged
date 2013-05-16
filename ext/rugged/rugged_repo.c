@@ -307,29 +307,28 @@ static int rb_git__clone_fetch_callback(const git_transfer_progress *stats, void
 	rb_rescue(rb_git__clone_fetch_callback_inner, (VALUE) fetch_payload,
 		rb_git__clone_fetch_callback_rescue, (VALUE) fetch_payload);
 	if (RTEST(fetch_payload->exception))
-		return -1;
-	return 0;
+		return GIT_ERROR;
+	return GIT_OK;
 }
 
 static void rb_git__parse_clone_options(git_clone_options *ret, VALUE rb_options_hash, struct clone_fetch_callback_payload *fetch_progress_payload)
 {
 	git_clone_options clone_options = GIT_CLONE_OPTIONS_INIT;
 	git_checkout_opts checkout_opts = GIT_CHECKOUT_OPTS_INIT;
-	VALUE val;
 
 	/* Defaults */
 	checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE_CREATE;
 
-	if (!NIL_P(rb_options_hash))
-	{
-		/* Options passed to `Rugged::Repository.clone_at` */
+	/* Options passed to `Rugged::Repository.clone_at` */
+	if (!NIL_P(rb_options_hash)) {
+		VALUE val;
+
 		val = rb_hash_aref(rb_options_hash, CSTR2SYM("bare"));
 		if (RTEST(val))
 			clone_options.bare = 1;
 
 		val = rb_hash_aref(rb_options_hash, CSTR2SYM("progress"));
-		if (RTEST(val) && rb_respond_to(val, rb_intern("call")))
-		{
+		if (RTEST(val) && rb_respond_to(val, rb_intern("call"))) {
 			fetch_progress_payload->proc = val;
 			clone_options.fetch_progress_payload = fetch_progress_payload;
 			clone_options.fetch_progress_cb = rb_git__clone_fetch_callback;
@@ -337,7 +336,6 @@ static void rb_git__parse_clone_options(git_clone_options *ret, VALUE rb_options
 	}
 
 	clone_options.checkout_opts = checkout_opts;
-
 	*ret = clone_options;
 }
 
