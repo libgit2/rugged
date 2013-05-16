@@ -278,7 +278,7 @@ struct clone_fetch_callback_payload
 	const git_transfer_progress *stats;
 };
 
-static VALUE rb_git__clone_fetch_callback_inner(struct clone_fetch_callback_payload *fetch_payload)
+static VALUE clone_fetch_callback_inner(struct clone_fetch_callback_payload *fetch_payload)
 {
 	VALUE rb_progress;
 	VALUE result;
@@ -293,25 +293,25 @@ static VALUE rb_git__clone_fetch_callback_inner(struct clone_fetch_callback_payl
 		rb_progress);
 }
 
-static VALUE rb_git__clone_fetch_callback_rescue(struct clone_fetch_callback_payload *fetch_payload)
+static VALUE clone_fetch_callback_rescue(struct clone_fetch_callback_payload *fetch_payload)
 {
 	fetch_payload->exception = rb_errinfo();
 	return Qnil;
 }
 
-static int rb_git__clone_fetch_callback(const git_transfer_progress *stats, void *payload)
+static int clone_fetch_callback(const git_transfer_progress *stats, void *payload)
 {
 	struct clone_fetch_callback_payload *fetch_payload;
 	fetch_payload = payload;
 	fetch_payload->stats = stats;
-	rb_rescue(rb_git__clone_fetch_callback_inner, (VALUE) fetch_payload,
-		rb_git__clone_fetch_callback_rescue, (VALUE) fetch_payload);
+	rb_rescue(clone_fetch_callback_inner, (VALUE) fetch_payload,
+		clone_fetch_callback_rescue, (VALUE) fetch_payload);
 	if (RTEST(fetch_payload->exception))
 		return GIT_ERROR;
 	return GIT_OK;
 }
 
-static void rb_git__parse_clone_options(git_clone_options *ret, VALUE rb_options_hash, struct clone_fetch_callback_payload *fetch_progress_payload)
+static void parse_clone_options(git_clone_options *ret, VALUE rb_options_hash, struct clone_fetch_callback_payload *fetch_progress_payload)
 {
 	if (!NIL_P(rb_options_hash)) {
 		VALUE val;
@@ -324,7 +324,7 @@ static void rb_git__parse_clone_options(git_clone_options *ret, VALUE rb_options
 		if (RTEST(val) && rb_respond_to(val, rb_intern("call"))) {
 			fetch_progress_payload->proc = val;
 			ret->fetch_progress_payload = fetch_progress_payload;
-			ret->fetch_progress_cb = rb_git__clone_fetch_callback;
+			ret->fetch_progress_cb = clone_fetch_callback;
 		}
 	}
 }
@@ -359,7 +359,7 @@ static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
 
 	fetch_payload.proc = Qnil;
 	fetch_payload.exception = Qnil;
-	rb_git__parse_clone_options(&options, rb_options_hash, &fetch_payload);
+	parse_clone_options(&options, rb_options_hash, &fetch_payload);
 
 	error = git_clone(&repo, StringValueCStr(url), StringValueCStr(local_path), &options);
 	if (RTEST(fetch_payload.exception))
