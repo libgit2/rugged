@@ -293,9 +293,9 @@ static VALUE clone_fetch_callback_inner(struct clone_fetch_callback_payload *fet
 		rb_progress);
 }
 
-static VALUE clone_fetch_callback_rescue(struct clone_fetch_callback_payload *fetch_payload)
+static VALUE clone_fetch_callback_rescue(struct clone_fetch_callback_payload *fetch_payload, VALUE exception)
 {
-	fetch_payload->exception = rb_errinfo();
+	fetch_payload->exception = exception;
 	return Qnil;
 }
 
