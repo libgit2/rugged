@@ -269,7 +269,18 @@ class RepositoryCloneTest < Rugged::TestCase
     rescue => e
       assert_equal 'boom', e.message
     end
-    assert_equal [], Dir[File.join(@tmppath, ".git/**")], "new repository's .git dir should not exist"
+    assert_no_dotgit_dir(@tmppath)
+  end
+
+  def test_clone_with_bad_progress_callback
+    assert_raises ArgumentError do
+      Rugged::Repository.clone_at(@source_path, @tmppath, :progress => Object.new)
+    end
+    assert_no_dotgit_dir(@tmppath)
+  end
+
+  def assert_no_dotgit_dir(path)
+    assert_equal [], Dir[File.join(path, ".git/**")], "new repository's .git dir should not exist"
   end
 end
 

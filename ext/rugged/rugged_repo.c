@@ -327,10 +327,14 @@ static void parse_clone_options(git_clone_options *ret, VALUE rb_options_hash, s
 			ret->bare = 1;
 
 		val = rb_hash_aref(rb_options_hash, CSTR2SYM("progress"));
-		if (RTEST(val) && rb_respond_to(val, rb_intern("call"))) {
-			fetch_progress_payload->proc = val;
-			ret->fetch_progress_payload = fetch_progress_payload;
-			ret->fetch_progress_cb = clone_fetch_callback;
+		if (RTEST(val)) {
+			if (rb_respond_to(val, rb_intern("call"))) {
+				fetch_progress_payload->proc = val;
+				ret->fetch_progress_payload = fetch_progress_payload;
+				ret->fetch_progress_cb = clone_fetch_callback;
+			} else {
+				rb_raise(rb_eArgError, "Expected a Proc or an object that responds to call (:progress).");
+			}
 		}
 	}
 }
