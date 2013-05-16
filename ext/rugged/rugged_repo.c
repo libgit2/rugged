@@ -313,30 +313,20 @@ static int rb_git__clone_fetch_callback(const git_transfer_progress *stats, void
 
 static void rb_git__parse_clone_options(git_clone_options *ret, VALUE rb_options_hash, struct clone_fetch_callback_payload *fetch_progress_payload)
 {
-	git_clone_options clone_options = GIT_CLONE_OPTIONS_INIT;
-	git_checkout_opts checkout_opts = GIT_CHECKOUT_OPTS_INIT;
-
-	/* Defaults */
-	checkout_opts.checkout_strategy = GIT_CHECKOUT_SAFE_CREATE;
-
-	/* Options passed to `Rugged::Repository.clone_at` */
 	if (!NIL_P(rb_options_hash)) {
 		VALUE val;
 
 		val = rb_hash_aref(rb_options_hash, CSTR2SYM("bare"));
 		if (RTEST(val))
-			clone_options.bare = 1;
+			ret->bare = 1;
 
 		val = rb_hash_aref(rb_options_hash, CSTR2SYM("progress"));
 		if (RTEST(val) && rb_respond_to(val, rb_intern("call"))) {
 			fetch_progress_payload->proc = val;
-			clone_options.fetch_progress_payload = fetch_progress_payload;
-			clone_options.fetch_progress_cb = rb_git__clone_fetch_callback;
+			ret->fetch_progress_payload = fetch_progress_payload;
+			ret->fetch_progress_cb = rb_git__clone_fetch_callback;
 		}
 	}
-
-	clone_options.checkout_opts = checkout_opts;
-	*ret = clone_options;
 }
 
 /*
@@ -357,7 +347,7 @@ static void rb_git__parse_clone_options(git_clone_options *ret, VALUE rb_options
  */
 static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
 {
-	git_clone_options options;
+	git_clone_options options = GIT_CLONE_OPTIONS_INIT;
 	git_repository *repo;
 	struct clone_fetch_callback_payload fetch_payload;
 	VALUE url, local_path, rb_options_hash;
