@@ -36,10 +36,6 @@ VALUE rb_cRuggedRepo;
 VALUE rb_cRuggedOdbObject;
 
 static ID id_call;
-static VALUE sym_total_objects;
-static VALUE sym_indexed_objects;
-static VALUE sym_received_objects;
-static VALUE sym_received_bytes;
 
 /*
  *	call-seq:
@@ -286,17 +282,11 @@ struct clone_fetch_callback_payload
 
 static VALUE clone_fetch_callback_inner(struct clone_fetch_callback_payload *fetch_payload)
 {
-	VALUE rb_progress;
-	VALUE result;
-
-	rb_progress = rb_hash_new();
-	rb_hash_aset(rb_progress, sym_total_objects,    UINT2NUM(fetch_payload->stats->total_objects));
-	rb_hash_aset(rb_progress, sym_indexed_objects,  UINT2NUM(fetch_payload->stats->indexed_objects));
-	rb_hash_aset(rb_progress, sym_received_objects, UINT2NUM(fetch_payload->stats->received_objects));
-	rb_hash_aset(rb_progress, sym_received_bytes,   INT2FIX(fetch_payload->stats->received_bytes));
-
-	return rb_funcall(fetch_payload->proc, id_call, 1,
-		rb_progress);
+	return rb_funcall(fetch_payload->proc, id_call, 4,
+	        UINT2NUM(fetch_payload->stats->total_objects),
+	        UINT2NUM(fetch_payload->stats->indexed_objects),
+	        UINT2NUM(fetch_payload->stats->received_objects),
+	        INT2FIX(fetch_payload->stats->received_bytes));
 }
 
 static VALUE clone_fetch_callback_rescue(struct clone_fetch_callback_payload *fetch_payload, VALUE exception)
@@ -351,9 +341,7 @@ static void parse_clone_options(git_clone_options *ret, VALUE rb_options_hash, s
  *	*  `:bare` (default: `false`) - clone to a bare repository.
  *
  *	*  `:progress` (default: none) - fetch progress callback.
- *	   This Proc-like object will be called with one argument,
- *	   a hash with keys `:total_objects`, `:indexed_objects`,
- *	   `:received_objects`, and `:received_bytes`.
+ *	   example: `lambda { |total_objects, indexed_objects, received_objects, received_bytes| }`
  */
 static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
 {
@@ -1246,10 +1234,6 @@ static VALUE rb_git_repo_get_namespace(VALUE self)
 void Init_rugged_repo()
 {
 	id_call = rb_intern("call");
-	sym_total_objects    = CSTR2SYM("total_objects");
-	sym_indexed_objects  = CSTR2SYM("indexed_objects");
-	sym_received_objects = CSTR2SYM("received_objects");
-	sym_received_bytes   = CSTR2SYM("received_bytes");
 
 	rb_cRuggedRepo = rb_define_class_under(rb_mRugged, "Repository", rb_cObject);
 

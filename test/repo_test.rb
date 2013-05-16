@@ -253,19 +253,20 @@ class RepositoryCloneTest < Rugged::TestCase
   end
 
   def test_clone_with_progress
-    progress_info = nil
+    total_objects = indexed_objects = received_objects = received_bytes = nil
+    callsback = 0
     repo = Rugged::Repository.clone_at(@source_path, @tmppath,
-      :progress => lambda { |info| progress_info = info })
-    assert_kind_of Hash, progress_info
-    assert_kind_of Fixnum, progress_info[:total_objects]
-    assert_kind_of Fixnum, progress_info[:indexed_objects]
-    assert_kind_of Fixnum, progress_info[:received_objects]
-    assert_kind_of Fixnum, progress_info[:received_bytes]
+      :progress => lambda { |*args| callsback += 1 ; total_objects, indexed_objects, received_objects, received_bytes = args })
+    assert_equal 22,   callsback
+    assert_equal 19,   total_objects
+    assert_equal 19,   indexed_objects
+    assert_equal 19,   received_objects
+    assert_equal 1563, received_bytes
   end
 
   def test_clone_quits_on_error
     begin
-      Rugged::Repository.clone_at(@source_path, @tmppath, :progress => lambda { |_| raise 'boom' })
+      Rugged::Repository.clone_at(@source_path, @tmppath, :progress => lambda { |*_| raise 'boom' })
     rescue => e
       assert_equal 'boom', e.message
     end
