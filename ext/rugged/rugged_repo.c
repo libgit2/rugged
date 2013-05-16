@@ -282,29 +282,26 @@ struct clone_fetch_callback_payload
 
 static VALUE clone_fetch_callback_inner(struct clone_fetch_callback_payload *fetch_payload)
 {
-	return rb_funcall(fetch_payload->proc, id_call, 4,
+	rb_funcall(fetch_payload->proc, id_call, 4,
 		UINT2NUM(fetch_payload->stats->total_objects),
 		UINT2NUM(fetch_payload->stats->indexed_objects),
 		UINT2NUM(fetch_payload->stats->received_objects),
 		INT2FIX(fetch_payload->stats->received_bytes));
+	return GIT_OK;
 }
 
 static VALUE clone_fetch_callback_rescue(struct clone_fetch_callback_payload *fetch_payload, VALUE exception)
 {
 	fetch_payload->exception = exception;
-	return Qnil;
+	return GIT_ERROR;
 }
 
 static int clone_fetch_callback(const git_transfer_progress *stats, void *payload)
 {
-	struct clone_fetch_callback_payload *fetch_payload;
-	fetch_payload = payload;
+	struct clone_fetch_callback_payload *fetch_payload = payload;
 	fetch_payload->stats = stats;
-	rb_rescue(clone_fetch_callback_inner, (VALUE) fetch_payload,
+	return rb_rescue(clone_fetch_callback_inner, (VALUE) fetch_payload,
 		clone_fetch_callback_rescue, (VALUE) fetch_payload);
-	if (RTEST(fetch_payload->exception))
-		return GIT_ERROR;
-	return GIT_OK;
 }
 
 static void parse_clone_options(git_clone_options *ret, VALUE rb_options_hash, struct clone_fetch_callback_payload *fetch_progress_payload)
@@ -345,10 +342,10 @@ static void parse_clone_options(git_clone_options *ret, VALUE rb_options_hash, s
  */
 static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
 {
-	git_clone_options options = GIT_CLONE_OPTIONS_INIT;
-	git_repository *repo;
-	struct clone_fetch_callback_payload fetch_payload;
 	VALUE url, local_path, rb_options_hash;
+	git_clone_options options = GIT_CLONE_OPTIONS_INIT;
+	struct clone_fetch_callback_payload fetch_payload;
+	git_repository *repo;
 	int error;
 
 	rb_scan_args(argc, argv, "21", &url, &local_path, &rb_options_hash);
