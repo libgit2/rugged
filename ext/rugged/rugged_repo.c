@@ -361,7 +361,7 @@ static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
 
 	error = git_clone(&repo, StringValueCStr(url), StringValueCStr(local_path), &options);
 	if (RTEST(fetch_payload.exception))
-		rb_funcall(rb_mKernel, rb_intern("raise"), 1, fetch_payload.exception);
+		rb_exc_raise(fetch_payload.exception);
 	rugged_exception_check(error);
 
 	return rugged_repo_new(klass, repo);
