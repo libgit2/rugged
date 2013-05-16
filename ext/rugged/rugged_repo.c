@@ -283,10 +283,10 @@ struct clone_fetch_callback_payload
 static VALUE clone_fetch_callback_inner(struct clone_fetch_callback_payload *fetch_payload)
 {
 	return rb_funcall(fetch_payload->proc, id_call, 4,
-	        UINT2NUM(fetch_payload->stats->total_objects),
-	        UINT2NUM(fetch_payload->stats->indexed_objects),
-	        UINT2NUM(fetch_payload->stats->received_objects),
-	        INT2FIX(fetch_payload->stats->received_bytes));
+		UINT2NUM(fetch_payload->stats->total_objects),
+		UINT2NUM(fetch_payload->stats->indexed_objects),
+		UINT2NUM(fetch_payload->stats->received_objects),
+		INT2FIX(fetch_payload->stats->received_bytes));
 }
 
 static VALUE clone_fetch_callback_rescue(struct clone_fetch_callback_payload *fetch_payload, VALUE exception)
