@@ -228,6 +228,63 @@ class RepositoryInitTest < Rugged::TestCase
   end
 end
 
+class RepositoryCloneTest < Rugged::TestCase
+  def setup
+    @tmppath = Dir.mktmpdir
+    @source_path = File.join(Rugged::TestCase::TEST_DIR, 'fixtures', 'testrepo.git')
+  end
+
+  def teardown
+    FileUtils.remove_entry_secure(@tmppath)
+  end
+
+  def test_clone
+    repo = Rugged::Repository.clone_at(@source_path, @tmppath)
+    assert_equal "hey", File.read(File.join(@tmppath, "README")).chomp
+    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", repo.head.target
+    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", repo.ref("refs/heads/master").target
+    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", repo.ref("refs/remotes/origin/master").target
+    assert_equal "41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9", repo.ref("refs/remotes/origin/packed").target
+  end
+
+  def test_clone_bare
+    repo = Rugged::Repository.clone_at(@source_path, @tmppath, :bare => true)
+    assert repo.bare?
+  end
+
+  def test_clone_with_progress
+    total_objects = indexed_objects = received_objects = received_bytes = nil
+    callsback = 0
+    repo = Rugged::Repository.clone_at(@source_path, @tmppath,
+      :progress => lambda { |*args| callsback += 1 ; total_objects, indexed_objects, received_objects, received_bytes = args })
+    assert_equal 22,   callsback
+    assert_equal 19,   total_objects
+    assert_equal 19,   indexed_objects
+    assert_equal 19,   received_objects
+    assert_equal 1563, received_bytes
+  end
+
+  def test_clone_quits_on_error
+    begin
+      Rugged::Repository.clone_at(@source_path, @tmppath, :progress => lambda { |*_| raise 'boom' })
+    rescue => e
+      assert_equal 'boom', e.message
+    end
+    assert_no_dotgit_dir(@tmppath)
+  end
+
+  def test_clone_with_bad_progress_callback
+    assert_raises ArgumentError do
+      Rugged::Repository.clone_at(@source_path, @tmppath, :progress => Object.new)
+    end
+    assert_no_dotgit_dir(@tmppath)
+  end
+
+  def assert_no_dotgit_dir(path)
+    assert_equal [], Dir[File.join(path, ".git/**")], "new repository's .git dir should not exist"
+  end
+end
+
 class RepositoryNamespaceTest < Rugged::SandboxedTestCase
   def setup
     super

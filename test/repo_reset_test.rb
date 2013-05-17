@@ -1,3 +1,5 @@
+require "test_helper"
+
 class RepositoryResetTest < Rugged::TestCase
   include Rugged::TempRepositoryAccess
 

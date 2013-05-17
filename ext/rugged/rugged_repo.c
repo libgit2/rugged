@@ -35,6 +35,8 @@ extern VALUE rb_cRuggedRemote;
 VALUE rb_cRuggedRepo;
 VALUE rb_cRuggedOdbObject;
 
+static ID id_call;
+
 /*
  *	call-seq:
  *		odb_obj.oid -> hex_oid
@@ -266,6 +268,97 @@ static VALUE rb_git_repo_init_at(int argc, VALUE *argv, VALUE klass)
 		is_bare = rb_is_bare ? 1 : 0;
 
 	error = git_repository_init(&repo, StringValueCStr(rb_path), is_bare);
+	rugged_exception_check(error);
+
+	return rugged_repo_new(klass, repo);
+}
+
+struct clone_fetch_callback_payload
+{
+	VALUE proc;
+	VALUE exception;
+	const git_transfer_progress *stats;
+};
+
+static VALUE clone_fetch_callback_inner(struct clone_fetch_callback_payload *fetch_payload)
+{
+	rb_funcall(fetch_payload->proc, id_call, 4,
+		UINT2NUM(fetch_payload->stats->total_objects),
+		UINT2NUM(fetch_payload->stats->indexed_objects),
+		UINT2NUM(fetch_payload->stats->received_objects),
+		INT2FIX(fetch_payload->stats->received_bytes));
+	return GIT_OK;
+}
+
+static VALUE clone_fetch_callback_rescue(struct clone_fetch_callback_payload *fetch_payload, VALUE exception)
+{
+	fetch_payload->exception = exception;
+	return GIT_ERROR;
+}
+
+static int clone_fetch_callback(const git_transfer_progress *stats, void *payload)
+{
+	struct clone_fetch_callback_payload *fetch_payload = payload;
+	fetch_payload->stats = stats;
+	return rb_rescue(clone_fetch_callback_inner, (VALUE) fetch_payload,
+		clone_fetch_callback_rescue, (VALUE) fetch_payload);
+}
+
+static void parse_clone_options(git_clone_options *ret, VALUE rb_options_hash, struct clone_fetch_callback_payload *fetch_progress_payload)
+{
+	if (!NIL_P(rb_options_hash)) {
+		VALUE val;
+
+		val = rb_hash_aref(rb_options_hash, CSTR2SYM("bare"));
+		if (RTEST(val))
+			ret->bare = 1;
+
+		val = rb_hash_aref(rb_options_hash, CSTR2SYM("progress"));
+		if (RTEST(val)) {
+			if (rb_respond_to(val, rb_intern("call"))) {
+				fetch_progress_payload->proc = val;
+				ret->fetch_progress_payload = fetch_progress_payload;
+				ret->fetch_progress_cb = clone_fetch_callback;
+			} else {
+				rb_raise(rb_eArgError, "Expected a Proc or an object that responds to call (:progress).");
+			}
+		}
+	}
+}
+
+/*
+ *	call-seq:
+ *		clone_at(url, local_path) -> repository
+ *		clone_at(url, local_path, options) -> repository
+ *
+ *	Clone a repository from +url+ to +local_path+.
+ *
+ *	Options is a hash with the following keys:
+ *
+ *	*  `:bare` (default: `false`) - clone to a bare repository.
+ *
+ *	*  `:progress` (default: none) - fetch progress callback.
+ *	   example: `lambda { |total_objects, indexed_objects, received_objects, received_bytes| }`
+ */
+static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
+{
+	VALUE url, local_path, rb_options_hash;
+	git_clone_options options = GIT_CLONE_OPTIONS_INIT;
+	struct clone_fetch_callback_payload fetch_payload;
+	git_repository *repo;
+	int error;
+
+	rb_scan_args(argc, argv, "21", &url, &local_path, &rb_options_hash);
+	Check_Type(url, T_STRING);
+	Check_Type(local_path, T_STRING);
+
+	fetch_payload.proc = Qnil;
+	fetch_payload.exception = Qnil;
+	parse_clone_options(&options, rb_options_hash, &fetch_payload);
+
+	error = git_clone(&repo, StringValueCStr(url), StringValueCStr(local_path), &options);
+	if (RTEST(fetch_payload.exception))
+		rb_exc_raise(fetch_payload.exception);
 	rugged_exception_check(error);
 
 	return rugged_repo_new(klass, repo);
@@ -1137,6 +1230,8 @@ static VALUE rb_git_repo_get_namespace(VALUE self)
 
 void Init_rugged_repo()
 {
+	id_call = rb_intern("call");
+
 	rb_cRuggedRepo = rb_define_class_under(rb_mRugged, "Repository", rb_cObject);
 
 	rb_define_singleton_method(rb_cRuggedRepo, "new", rb_git_repo_new, -1);
@@ -1145,6 +1240,7 @@ void Init_rugged_repo()
 	rb_define_singleton_method(rb_cRuggedRepo, "hash_file",   rb_git_repo_hashfile,  2);
 	rb_define_singleton_method(rb_cRuggedRepo, "init_at", rb_git_repo_init_at, -1);
 	rb_define_singleton_method(rb_cRuggedRepo, "discover", rb_git_repo_discover, -1);
+	rb_define_singleton_method(rb_cRuggedRepo, "clone_at", rb_git_repo_clone_at, -1);
 
 	rb_define_method(rb_cRuggedRepo, "close", rb_git_repo_close, 0);
 
