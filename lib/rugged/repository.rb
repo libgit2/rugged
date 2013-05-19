@@ -17,6 +17,22 @@ module Rugged
       self.lookup self.head.target
     end
 
+    def diff(left, right)
+      tree1 = nil
+      tree2 = nil
+
+      tree1 = left if left.is_a?(Rugged::Tree)
+      tree1 = left.tree if left.is_a?(Rugged::Commit)
+
+      tree2 = right if right.is_a?(Rugged::Tree)
+      tree2 = right.tree if right.is_a?(Rugged::Commit)
+
+      raise ArgumentError, "Rugged::Tree or Rugged::Commit expected for left side of diff, got #{left.class.name}" unless tree1.is_a?(Rugged::Tree)
+      raise ArgumentError, "Rugged::Tree or Rugged::Commit expected for right side of diff, got #{right.class.name}" unless tree2.is_a?(Rugged::Tree)
+
+      tree1.diff(tree2)
+    end
+
     # Walks over a set of commits using Rugged::Walker.
     #
     # from    - The String SHA1 to push onto Walker to begin our walk.

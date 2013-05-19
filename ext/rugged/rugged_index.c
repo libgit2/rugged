@@ -24,8 +24,11 @@
 
 #include "rugged.h"
 
-extern VALUE rb_mRugged;
 VALUE rb_cRuggedIndex;
+extern VALUE rb_mRugged;
+extern VALUE rb_cRuggedCommit;
+extern VALUE rb_cRuggedDiff;
+extern VALUE rb_cRuggedTree;
 
 static void rb_git_indexentry_toC(git_index_entry *entry, VALUE rb_entry);
 static VALUE rb_git_indexentry_fromC(const git_index_entry *entry);
@@ -371,6 +374,158 @@ static VALUE rb_git_index_readtree(VALUE self, VALUE rb_tree)
 
 /*
  *  call-seq:
+ *    index.diff([options]) -> diff
+ *    index.diff(diffable[, options]) -> diff
+ *
+ *  The first form returns a diff between the index and the current working
+ *  directory.
+ *
+ *  The second form returns a diff between the index and the given diffable object.
+ *  +diffable+ can either be a `Rugged::Commit` or a `Rugged::Tree`.
+ *
+ *  The index will be used as the "old file" side of the diff, while the working
+ *  directory or the +diffable+ will be used for the "new file" side.
+ *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :paths ::
+ *    An array of paths / fnmatch patterns to constrain the diff to a specific
+ *    set of files. Also see +:disable_pathspec_match+.
+ *
+ *  :max_size ::
+ *    An integer specifying the maximum byte size of a file before a it will
+ *    be treated as binary. The default value is 512MB.
+ *
+ *  :context_lines ::
+ *    The number of unchanged lines that define the boundary of a hunk (and
+ *    to display before and after the actual changes). The default is 3.
+ *
+ *  :interhunk_lines ::
+ *    The maximum number of unchanged lines between hunk boundaries before the hunks
+ *    will be merged into a one. The default is 0.
+ *
+ *  :reverse ::
+ *    If true, the sides of the diff will be reversed.
+ *
+ *  :force_text ::
+ *    If true, all files will be treated as text, disabling binary attributes & detection.
+ *
+ *  :ignore_whitespace ::
+ *    If true, all whitespace will be ignored.
+ *
+ *  :ignore_whitespace_change ::
+ *    If true, changes in amount of whitespace will be ignored.
+ *
+ *  :ignore_whitespace_eol ::
+ *    If true, whitespace at end of line will be ignored.
+ *
+ *  :ignore_submodules ::
+ *    if true, submodules will be excluded from the diff completely.
+ *
+ *  :patience ::
+ *    If true, the "patience diff" algorithm will be used (currenlty unimplemented).
+ *
+ *  :include_ignored ::
+ *    If true, ignored files will be included in the diff.
+ *
+ *  :include_untracked ::
+ *   If true, untracked files will be included in the diff.
+ *
+ *  :include_unmodified ::
+ *    If true, unmodified files will be included in the diff.
+ *
+ *  :recurse_untracked_dirs ::
+ *		Even if `:include_untracked` is true, untracked directories will only be
+ *    marked with a single entry in the diff. If this flag is set to true,
+ *    all files under ignored directories will be included in the diff, too.
+ *
+ *  :disable_pathspec_match ::
+ *    If true, the given +:paths+ will be applied as exact matches, instead of
+ *    as fnmatch patterns.
+ *
+ *  :deltas_are_icase ::
+ *    If true, filename comparisons will be made with case-insensitivity.
+ *
+ *  :include_untracked_content ::
+ *    if true, untracked content will be contained in the the diff patch text.
+ *
+ *  :skip_binary_check ::
+ *    If true, diff deltas will be generated without spending time on binary
+ *    detection. This is useful to improve performance in cases where the actual
+ *    file content difference is not needed.
+ *
+ *  :include_typechange ::
+ *    If true, type changes for files will not be interpreted as deletion of
+ *    the "old file" and addition of the "new file", but will generate
+ *    typechange records.
+ *
+ *  :include_typechange_trees ::
+ *    Even if `:include_typechange` is true, blob -> tree changes will still
+ *    usually be handled as a deletion of the blob. If this flag is set to true,
+ *    blob -> tree changes will be marked as typechanges.
+ *
+ *  :ignore_filemode ::
+ *    If true, file mode changes will be ignored.
+ *
+ *  :recurse_ignored_dirs ::
+ *    Even if `:include_ignored` is true, ignored directories will only be
+ *    marked with a single entry in the diff. If this flag is set to true,
+ *    all files under ignored directories will be included in the diff, too.
+ */
+static VALUE rb_git_index_diff(int argc, VALUE *argv, VALUE self)
+{
+	git_index *index;
+	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
+	git_repository *repo;
+	git_diff_list *diff;
+	VALUE owner, rb_other, rb_options;
+	int error;
+
+	if (rb_scan_args(argc, argv, "02", &rb_other, &rb_options) == 1) {
+		if (TYPE(rb_other) == T_HASH) {
+			rb_options = rb_other;
+			rb_other = Qnil;
+		}
+	}
+
+	rugged_parse_diff_options(&opts, rb_options);
+
+	Data_Get_Struct(self, git_index, index);
+	owner = rugged_owner(self);
+	Data_Get_Struct(owner, git_repository, repo);
+
+	if (NIL_P(rb_other)) {
+		error = git_diff_index_to_workdir(&diff, repo, index, &opts);
+	} else {
+		// Need to flip the reverse option, so that the index is by default
+		// the "old file" side of the diff.
+		opts.flags ^= GIT_DIFF_REVERSE;
+
+		if (rb_obj_is_kind_of(rb_other, rb_cRuggedCommit)) {
+			git_tree *other_tree;
+			git_commit *commit;
+			Data_Get_Struct(rb_other, git_commit, commit);
+			error = git_commit_tree(&other_tree, commit);
+
+			if (!error)
+				error = git_diff_tree_to_index(&diff, repo, other_tree, index, &opts);
+		} else if (rb_obj_is_kind_of(rb_other, rb_cRuggedTree)) {
+			git_tree *other_tree;
+			Data_Get_Struct(rb_other, git_tree, other_tree);
+			error = git_diff_tree_to_index(&diff, repo, other_tree, index, &opts);
+		} else {
+			xfree(opts.pathspec.strings);
+			rb_raise(rb_eTypeError, "A Rugged::Commit or Rugged::Tree instance is required");
+		}
+	}
+
+	xfree(opts.pathspec.strings);
+	rugged_exception_check(error);
+
+	return rugged_diff_new(rb_cRuggedDiff, self, diff);
+}
+
+/*  call-seq:
  *    index.conflicts? -> true or false
  *
  *  Determines if the index contains entries representing conflicts.
@@ -397,6 +552,7 @@ void Init_rugged_index()
 	rb_define_method(rb_cRuggedIndex, "get", rb_git_index_get, -1);
 	rb_define_method(rb_cRuggedIndex, "[]", rb_git_index_get, -1);
 	rb_define_method(rb_cRuggedIndex, "each", rb_git_index_each, 0);
+	rb_define_method(rb_cRuggedIndex, "diff", rb_git_index_diff, -1);
 
 	rb_define_method(rb_cRuggedIndex, "conflicts?", rb_git_index_conflicts_p, 0);
 

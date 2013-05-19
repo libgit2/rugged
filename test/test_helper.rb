@@ -8,6 +8,9 @@ require 'pp'
 
 module Rugged
   class TestCase < MiniTest::Unit::TestCase
+    # Ruby 1.8 / 1.9 Shim
+    Enumerator = defined?(::Enumerator) ? ::Enumerator : ::Enumerable::Enumerator
+
     TEST_DIR = File.dirname(File.expand_path(__FILE__))
 
     protected
@@ -65,12 +68,12 @@ module Rugged
   end
 
   module TempRepositoryAccess
-    def setup 
+    def setup
       @path = temp_repo("testrepo.git")
       @repo = Rugged::Repository.new(@path)
     end
 
-    def teardown 
+    def teardown
       destroy_temp_repo(@path)
     end
 
