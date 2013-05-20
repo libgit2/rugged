@@ -18,28 +18,19 @@ module Rugged
     end
 
     def diff(left, right, opts={})
-      tree1 = nil
-      tree2 = nil
-
-      tree1 = left if left.is_a?(Rugged::Tree)
-      tree1 = left.tree if left.is_a?(Rugged::Commit)
-
-      tree2 = right if right.is_a?(Rugged::Tree)
-      tree2 = right.tree if right.is_a?(Rugged::Commit)
-
-      if tree1
-        tree1.diff(tree2, opts)
-      elsif tree2
-        tree2.diff(tree1, opts)
+      if !left.is_a?(Rugged::Tree) && !left.is_a?(Rugged::Commit)
+        raise TypeError, "Expected a Rugged::Tree or Rugged::Commit instance"
       end
+
+      left.diff(right, opts)
     end
 
     def diff_workdir(left, opts={})
-      tree1 = nil
-      tree1 = left if left.is_a?(Rugged::Tree)
-      tree1 = left.tree if left.is_a?(Rugged::Commit)
+      if !left.is_a?(Rugged::Tree) && !left.is_a?(Rugged::Commit)
+        raise TypeError, "Expected a Rugged::Tree or Rugged::Commit instance"
+      end
 
-      tree1.diff_workdir(opts) if tree1
+      left.diff_workdir(opts)
     end
 
     # Walks over a set of commits using Rugged::Walker.
