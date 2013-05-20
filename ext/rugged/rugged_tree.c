@@ -428,6 +428,17 @@ static VALUE rb_git_tree_diff(int argc, VALUE *argv, VALUE self)
 	return rugged_diff_new(rb_cRuggedDiff, self, diff);
 }
 
+/*
+ *  call-seq:
+ *    tree.diff_workdir([options]) -> diff
+ *
+ *  Returns a diff between a tree and the current workdir.
+ *
+ *  The +tree+ object will be used as the "old file" side of the diff, while the
+ *  content of the current workdir will be used for the "new file" side.
+ *
+ *  See Rugged::Tree#diff for a list of options that can be passed.
+ */
 static VALUE rb_git_tree_diff_workdir(int argc, VALUE *argv, VALUE self)
 {
 	git_tree *tree;
