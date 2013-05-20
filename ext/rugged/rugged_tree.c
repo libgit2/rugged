@@ -265,17 +265,18 @@ static VALUE rb_git_tree_path(VALUE self, VALUE rb_path)
 
 /*
  *  call-seq:
- *    tree.diff([options]) -> diff
  *    tree.diff(diffable[, options]) -> diff
  *
  *  The first form returns a diff between the tree and its parent.
  *
- *  The second form returns a diff between the tree and the diffable object that
- *  was given. +diffable+ can either be a `Rugged::Commit`, a `Rugged::Tree`, or
- *  a `Rugged::Index`.
+ *  Returns a diff between the tree and the diffable object that was given.
+ *  +diffable+ can either be a `Rugged::Commit`, a `Rugged::Tree`, a `Rugged::Index`,
+ *  or +nil+.
  *
  *  The +tree+ object will be used as the "old file" side of the diff, while the
  *  parent tree or the +diffable+ object will be used for the "new file" side.
+ *
+ *  If +diffable+ is nil, it will be treated as an empty tree.
  *
  *  The following options can be passed in the +options+ Hash:
  *
@@ -384,11 +385,8 @@ static VALUE rb_git_tree_diff(int argc, VALUE *argv, VALUE self)
 	VALUE owner, rb_other, rb_options;
 	int error;
 
-	if (rb_scan_args(argc, argv, "02", &rb_other, &rb_options) == 1) {
-		if (TYPE(rb_other) == T_HASH) {
-			rb_options = rb_other;
-			rb_other = Qnil;
-		}
+	if (rb_scan_args(argc, argv, "11", &rb_other, &rb_options) == 2) {
+		Check_Type(rb_options, T_HASH);
 	}
 
 	rugged_parse_diff_options(&opts, rb_options);
@@ -399,27 +397,25 @@ static VALUE rb_git_tree_diff(int argc, VALUE *argv, VALUE self)
 
 	if (NIL_P(rb_other)) {
 		error = git_diff_tree_to_tree(&diff, repo, tree, NULL, &opts);
-	} else {
-		if (rb_obj_is_kind_of(rb_other, rb_cRuggedCommit)) {
-			git_tree *other_tree;
-			git_commit *commit;
-			Data_Get_Struct(rb_other, git_commit, commit);
-			error = git_commit_tree(&other_tree, commit);
+	} else if (rb_obj_is_kind_of(rb_other, rb_cRuggedCommit)) {
+		git_tree *other_tree;
+		git_commit *commit;
+		Data_Get_Struct(rb_other, git_commit, commit);
+		error = git_commit_tree(&other_tree, commit);
 
-			if (!error)
-				error = git_diff_tree_to_tree(&diff, repo, tree, other_tree, &opts);
-		} else if (rb_obj_is_kind_of(rb_other, rb_cRuggedTree)) {
-			git_tree *other_tree;
-			Data_Get_Struct(rb_other, git_tree, other_tree);
+		if (!error)
 			error = git_diff_tree_to_tree(&diff, repo, tree, other_tree, &opts);
-		} else if (rb_obj_is_kind_of(rb_other, rb_cRuggedIndex)) {
-			git_index *index;
-			Data_Get_Struct(rb_other, git_index, index);
-			error = git_diff_tree_to_index(&diff, repo, tree, index, &opts);
-		} else {
-			xfree(opts.pathspec.strings);
-			rb_raise(rb_eTypeError, "A Rugged::Commit, Rugged::Tree or Rugged::Index instance is required");
-		}
+	} else if (rb_obj_is_kind_of(rb_other, rb_cRuggedTree)) {
+		git_tree *other_tree;
+		Data_Get_Struct(rb_other, git_tree, other_tree);
+		error = git_diff_tree_to_tree(&diff, repo, tree, other_tree, &opts);
+	} else if (rb_obj_is_kind_of(rb_other, rb_cRuggedIndex)) {
+		git_index *index;
+		Data_Get_Struct(rb_other, git_index, index);
+		error = git_diff_tree_to_index(&diff, repo, tree, index, &opts);
+	} else {
+		xfree(opts.pathspec.strings);
+		rb_raise(rb_eTypeError, "A Rugged::Commit, Rugged::Tree or Rugged::Index instance is required");
 	}
 
 	xfree(opts.pathspec.strings);
