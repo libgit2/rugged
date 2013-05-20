@@ -9,7 +9,7 @@ module Rugged
       "#<Rugged::Commit:#{object_id} {message: #{message.inspect}, tree: #{tree.inspect}, parents: #{parent_oids}>"
     end
 
-    # Return a diff between this commit and the workspace, another commit or a tree.
+    # Return a diff between this commit and it's parent or another commit or tree.
     #
     # See `Rugged::Tree#diff` for more details.
     def diff(*args)
