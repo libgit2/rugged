@@ -9,18 +9,18 @@ module Rugged
       "#<Rugged::Commit:#{object_id} {message: #{message.inspect}, tree: #{tree.inspect}, parents: #{parent_oids}>"
     end
 
-    # Return a diff between this commit and it's parent or another commit or tree.
+    # Return a diff between this commit and its first parent or another commit or tree.
     #
     # See `Rugged::Tree#diff` for more details.
-    def diff(*args)
-      self.tree.diff(*args)
+    def diff(other = parents.first, options = {})
+      self.tree.diff(other, options)
     end
 
     # Return a diff between this commit and the workdir.
     #
     # See `Rugged::Tree#workdir_diff` for more details.
-    def workdir_diff(*args)
-      self.tree.workdir_diff(*args)
+    def workdir_diff(options = {})
+      self.tree.workdir_diff(options)
     end
 
     # The time when this commit was made effective. This is the same value
