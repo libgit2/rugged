@@ -268,15 +268,14 @@ static VALUE rb_git_tree_path(VALUE self, VALUE rb_path)
  *    tree.diff([options]) -> diff
  *    tree.diff(diffable[, options]) -> diff
  *
- *  The first form returns a diff between the tree and the current working
- *  directory.
+ *  The first form returns a diff between the tree and its parent.
  *
- *  The second form retursn a diff between the tree and the diffable object
+ *  The second form returns a diff between the tree and the diffable object that
  *  was given. +diffable+ can either be a `Rugged::Commit`, a `Rugged::Tree`, or
  *  a `Rugged::Index`.
  *
- *  The tree will be used as the "old file" side of the diff, while the working
- *  directory or the +diffable+ will be used for the "new file" side.
+ *  The +tree+ object will be used as the "old file" side of the diff, while the
+ *  parent tree or the +diffable+ object will be used for the "new file" side.
  *
  *  The following options can be passed in the +options+ Hash:
  *
