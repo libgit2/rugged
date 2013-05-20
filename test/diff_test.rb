@@ -1,5 +1,61 @@
 require "test_helper"
 
+class CommitDiffTest < Rugged::SandboxedTestCase
+  def test_diff_with_parent
+    repo = sandbox_init("attr")
+    commit = Rugged::Commit.lookup(repo, "605812a")
+
+    diff = commit.diff(:context_lines => 1, :interhunk_lines => 1)
+
+    deltas = diff.deltas
+    patches = diff.patches
+    hunks = patches.map(&:hunks).flatten
+    lines = hunks.map(&:lines).flatten
+
+    assert_equal 5, diff.size
+    assert_equal 5, deltas.size
+    assert_equal 5, patches.size
+
+    assert_equal 0, deltas.select(&:added?).size
+    assert_equal 3, deltas.select(&:deleted?).size
+    assert_equal 2, deltas.select(&:modified?).size
+
+    assert_equal 4, hunks.size
+
+    assert_equal(51, lines.size)
+    assert_equal(2, lines.select(&:context?).size)
+    assert_equal(3, lines.select(&:addition?).size)
+    assert_equal(46, lines.select(&:deletion?).size)
+  end
+
+  def test_diff_with_parent_for_initial_commit
+    repo = sandbox_init("attr")
+    commit = Rugged::Commit.lookup(repo, "6bab5c79cd5140d0f800917f550eb2a3dc32b0da")
+
+    diff = commit.diff(:context_lines => 1, :interhunk_lines => 1, :reverse => true)
+
+    deltas = diff.deltas
+    patches = diff.patches
+    hunks = patches.map(&:hunks).flatten
+    lines = hunks.map(&:lines).flatten
+
+    assert_equal 13, diff.size
+    assert_equal 13, deltas.size
+    assert_equal 13, patches.size
+
+    assert_equal 13, deltas.select(&:added?).size
+    assert_equal 0, deltas.select(&:deleted?).size
+    assert_equal 0, deltas.select(&:modified?).size
+
+    assert_equal 13, hunks.size
+
+    assert_equal(72, lines.size)
+    assert_equal(0, lines.select(&:context?).size)
+    assert_equal(70, lines.select(&:addition?).size)
+    assert_equal(0, lines.select(&:deletion?).size)
+  end
+end
+
 class TreeToTreeDiffTest < Rugged::SandboxedTestCase
   def test_basic_diff
     repo = sandbox_init("attr")
