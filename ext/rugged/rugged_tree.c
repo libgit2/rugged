@@ -267,8 +267,6 @@ static VALUE rb_git_tree_path(VALUE self, VALUE rb_path)
  *  call-seq:
  *    tree.diff(diffable[, options]) -> diff
  *
- *  The first form returns a diff between the tree and its parent.
- *
  *  Returns a diff between the tree and the diffable object that was given.
  *  +diffable+ can either be a `Rugged::Commit`, a `Rugged::Tree`, a `Rugged::Index`,
  *  or +nil+.
