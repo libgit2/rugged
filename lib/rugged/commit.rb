@@ -16,6 +16,13 @@ module Rugged
       self.tree.diff(*args)
     end
 
+    # Return a diff between this commit and the workdir.
+    #
+    # See `Rugged::Tree#workdir_diff` for more details.
+    def workdir_diff(*args)
+      self.tree.workdir_diff(*args)
+    end
+
     # The time when this commit was made effective. This is the same value
     # as the +:time+ attribute for +commit.committer+.
     #
