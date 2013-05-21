@@ -1,5 +1,82 @@
 require "test_helper"
 
+class RepoDiffTest < Rugged::SandboxedTestCase
+  def test_with_oid_string
+    repo = sandbox_init("attr")
+    diff = repo.diff("605812a", "370fe9ec22", :context_lines => 1, :interhunk_lines => 1)
+
+    deltas = diff.deltas
+    patches = diff.patches
+    hunks = patches.map(&:hunks).flatten
+    lines = hunks.map(&:lines).flatten
+
+    assert_equal 5, diff.size
+    assert_equal 5, deltas.size
+    assert_equal 5, patches.size
+
+    assert_equal 2, deltas.select(&:added?).size
+    assert_equal 1, deltas.select(&:deleted?).size
+    assert_equal 2, deltas.select(&:modified?).size
+
+    assert_equal 5, hunks.size
+
+    assert_equal((7 + 24 + 1 + 6 + 6), lines.size)
+    assert_equal((1), lines.select(&:context?).size)
+    assert_equal((24 + 1 + 5 + 5), lines.select(&:addition?).size)
+    assert_equal((7 + 1), lines.select(&:deletion?).size)
+  end
+
+  def test_with_nil_on_left_side
+    repo = sandbox_init("attr")
+    diff = repo.diff("605812a", nil, :context_lines => 1, :interhunk_lines => 1)
+
+    deltas = diff.deltas
+    patches = diff.patches
+    hunks = patches.map(&:hunks).flatten
+    lines = hunks.map(&:lines).flatten
+
+    assert_equal 16, diff.size
+    assert_equal 16, deltas.size
+    assert_equal 16, patches.size
+
+    assert_equal 0, deltas.select(&:added?).size
+    assert_equal 16, deltas.select(&:deleted?).size
+    assert_equal 0, deltas.select(&:modified?).size
+
+    assert_equal 15, hunks.size
+
+    assert_equal 115, lines.size
+    assert_equal 0, lines.select(&:context?).size
+    assert_equal 0, lines.select(&:addition?).size
+    assert_equal 113, lines.select(&:deletion?).size
+  end
+
+  def test_with_nil_on_right_side
+    repo = sandbox_init("attr")
+    diff = repo.diff(nil, "605812a", :context_lines => 1, :interhunk_lines => 1)
+
+    deltas = diff.deltas
+    patches = diff.patches
+    hunks = patches.map(&:hunks).flatten
+    lines = hunks.map(&:lines).flatten
+
+    assert_equal 16, diff.size
+    assert_equal 16, deltas.size
+    assert_equal 16, patches.size
+
+    assert_equal 16, deltas.select(&:added?).size
+    assert_equal 0, deltas.select(&:deleted?).size
+    assert_equal 0, deltas.select(&:modified?).size
+
+    assert_equal 15, hunks.size
+
+    assert_equal 115, lines.size
+    assert_equal 0, lines.select(&:context?).size
+    assert_equal 113, lines.select(&:addition?).size
+    assert_equal 0, lines.select(&:deletion?).size
+  end
+end
+
 class CommitDiffTest < Rugged::SandboxedTestCase
   def test_diff_with_parent
     repo = sandbox_init("attr")

@@ -17,12 +17,23 @@ module Rugged
       self.lookup self.head.target
     end
 
-    def diff(left, right, opts={})
-      if !left.is_a?(Rugged::Tree) && !left.is_a?(Rugged::Commit)
+    def diff(left, right, opts = {})      
+      left = self.lookup(left) if left.kind_of?(String)
+      right = self.lookup(right) if right.kind_of?(String)
+
+      if !left.is_a?(Rugged::Tree) && !left.is_a?(Rugged::Commit) && !left.nil?
         raise TypeError, "Expected a Rugged::Tree or Rugged::Commit instance"
       end
 
-      left.diff(right, opts)
+      if !right.is_a?(Rugged::Tree) && !right.is_a?(Rugged::Commit) && !right.nil?
+        raise TypeError, "Expected a Rugged::Tree or Rugged::Commit instance"
+      end
+
+      if left
+        left.diff(right, opts)
+      elsif right
+        right.diff(left, opts.merge(:reverse => !opts[:reverse]))
+      end
     end
 
     def diff_workdir(left, opts={})
