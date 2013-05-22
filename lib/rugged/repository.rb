@@ -36,7 +36,9 @@ module Rugged
       end
     end
 
-    def diff_workdir(left, opts={})
+    def diff_workdir(left, opts = {})
+      left = rev_parse(left) if left.kind_of?(String)
+
       if !left.is_a?(Rugged::Tree) && !left.is_a?(Rugged::Commit)
         raise TypeError, "Expected a Rugged::Tree or Rugged::Commit instance"
       end
