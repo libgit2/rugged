@@ -403,13 +403,17 @@ static VALUE rb_git_tree_diff(int argc, VALUE *argv, VALUE self)
 		if (rb_obj_is_kind_of(rb_other, rb_cRuggedCommit)) {
 			git_tree *other_tree;
 			git_commit *commit;
+
 			Data_Get_Struct(rb_other, git_commit, commit);
 			error = git_commit_tree(&other_tree, commit);
 
-			if (!error)
+			if (!error) {
 				error = git_diff_tree_to_tree(&diff, repo, tree, other_tree, &opts);
+				git_tree_free(other_tree);
+			}
 		} else if (rb_obj_is_kind_of(rb_other, rb_cRuggedTree)) {
 			git_tree *other_tree;
+
 			Data_Get_Struct(rb_other, git_tree, other_tree);
 			error = git_diff_tree_to_tree(&diff, repo, tree, other_tree, &opts);
 		} else if (rb_obj_is_kind_of(rb_other, rb_cRuggedIndex)) {
