@@ -113,6 +113,39 @@ static VALUE rb_git_ref_lookup(VALUE klass, VALUE rb_repo, VALUE rb_name)
 
 /*
  *	call-seq:
+ *		ref.peel -> oid
+ *
+ *	Peels tag objects to the sha that they point at. Replicates
+ *	git show-ref --dereference
+ */
+static VALUE rb_git_ref_peel(VALUE self)
+{
+	/* Leave room for \0 */
+	git_reference *ref;
+	git_object *object;
+	char oid[GIT_OID_HEXSZ + 1];
+	int error;
+
+	Data_Get_Struct(self, git_reference, ref);
+
+	error = git_reference_peel(&object, ref, GIT_OBJ_ANY);
+	if (error == GIT_ENOTFOUND)
+		return Qnil;
+	else
+		rugged_exception_check(error);
+
+	if (!git_oid_cmp(git_object_id(object), git_reference_target(ref))) {
+		git_object_free(object);
+		return Qnil;
+	} else {
+		git_oid_tostr(oid, sizeof(oid), git_object_id(object));
+		git_object_free(object);
+		return rugged_str_new2(oid, rb_utf8_encoding());
+	}
+}
+
+/*
+ *	call-seq:
  *		Reference.exist?(repository, ref_name) -> true or false
  *		Reference.exists?(repository, ref_name) -> true or false
  *
@@ -539,6 +572,7 @@ void Init_rugged_reference()
 	rb_define_singleton_method(rb_cRuggedReference, "each", rb_git_ref_each, -1);
 
 	rb_define_method(rb_cRuggedReference, "target", rb_git_ref_target, 0);
+	rb_define_method(rb_cRuggedReference, "peel", rb_git_ref_peel, 0);
 	rb_define_method(rb_cRuggedReference, "set_target", rb_git_ref_set_target, 1);
 
 	rb_define_method(rb_cRuggedReference, "type", rb_git_ref_type, 0);
