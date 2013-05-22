@@ -211,6 +211,33 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
     assert_equal 113, lines.select(&:deletion?).size
   end
 
+  def test_diff_with_rev_string
+    repo = sandbox_init("attr")
+    a = Rugged::Tree.lookup(repo, "605812a").tree
+
+    diff = a.diff("370fe9ec22", :context_lines => 1, :interhunk_lines => 1)
+
+    deltas = diff.deltas
+    patches = diff.patches
+    hunks = patches.map(&:hunks).flatten
+    lines = hunks.map(&:lines).flatten
+
+    assert_equal 5, diff.size
+    assert_equal 5, deltas.size
+    assert_equal 5, patches.size
+
+    assert_equal 2, deltas.select(&:added?).size
+    assert_equal 1, deltas.select(&:deleted?).size
+    assert_equal 2, deltas.select(&:modified?).size
+
+    assert_equal 5, hunks.size
+
+    assert_equal((7 + 24 + 1 + 6 + 6), lines.size)
+    assert_equal((1), lines.select(&:context?).size)
+    assert_equal((24 + 1 + 5 + 5), lines.select(&:addition?).size)
+    assert_equal((7 + 1), lines.select(&:deletion?).size)
+  end
+
   def test_diff_merge
     repo = sandbox_init("attr")
     a = Rugged::Tree.lookup(repo, "605812a").tree

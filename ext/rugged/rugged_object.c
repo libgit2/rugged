@@ -242,7 +242,7 @@ VALUE rb_git_object_lookup(VALUE klass, VALUE rb_repo, VALUE rb_hex)
 	return rugged_object_new(rb_repo, object);
 }
 
-static VALUE rugged_object_rev_parse(VALUE klass, VALUE rb_repo, VALUE rb_spec, int as_obj)
+VALUE rugged_object_rev_parse(VALUE rb_repo, VALUE rb_spec, int as_obj)
 {
 	git_object *object;
 	const char *spec;
@@ -271,12 +271,12 @@ static VALUE rugged_object_rev_parse(VALUE klass, VALUE rb_repo, VALUE rb_spec, 
 
 VALUE rb_git_object_rev_parse(VALUE klass, VALUE rb_repo, VALUE rb_spec)
 {
-	return rugged_object_rev_parse(klass, rb_repo, rb_spec, 1);
+	return rugged_object_rev_parse(rb_repo, rb_spec, 1);
 }
 
 VALUE rb_git_object_rev_parse_oid(VALUE klass, VALUE rb_repo, VALUE rb_spec)
 {
-	return rugged_object_rev_parse(klass, rb_repo, rb_spec, 0);
+	return rugged_object_rev_parse(rb_repo, rb_spec, 0);
 }
 
 static VALUE rb_git_object_equal(VALUE self, VALUE other)
