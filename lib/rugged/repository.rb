@@ -17,9 +17,9 @@ module Rugged
       self.lookup self.head.target
     end
 
-    def diff(left, right, opts = {})      
-      left = self.lookup(left) if left.kind_of?(String)
-      right = self.lookup(right) if right.kind_of?(String)
+    def diff(left, right, opts = {})
+      left = rev_parse(left) if left.kind_of?(String)
+      right = rev_parse(right) if right.kind_of?(String)
 
       if !left.is_a?(Rugged::Tree) && !left.is_a?(Rugged::Commit) && !left.nil?
         raise TypeError, "Expected a Rugged::Tree or Rugged::Commit instance"
