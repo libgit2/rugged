@@ -131,11 +131,13 @@ static inline void rugged_check_repo(VALUE rb_repo)
 #	define rugged_str_new(str, len, enc) rb_enc_str_new(str, len, enc)
 #	define rugged_str_new2(str, enc) rb_enc_str_new(str, strlen(str), enc)
 #	define rugged_str_ascii(str, len) rb_enc_str_new(str, len, rb_ascii8bit_encoding());
+#	define rugged_external_str_new(str, len) rb_external_str_new(str, len)
 
 #else
 #	define rugged_str_new(str, len, rb_enc)  rb_str_new(str, len)
 #	define rugged_str_new2(str, rb_enc) rb_str_new2(str)
 #	define rugged_str_ascii(str, len) rb_str_new(str, len)
+#	define rugged_external_str_new(str, len) rb_str_new(str, len)
 #endif
 
 static inline VALUE rugged_create_oid(const git_oid *oid)

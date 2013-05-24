@@ -89,3 +89,23 @@ class TreeWriteTest < Rugged::TestCase
     assert_equal 38, obj.read_raw.len
   end
 end
+
+class TreeEncodingTest < Rugged::TestCase
+  include Rugged::TempRepositoryAccess
+
+  def test_tree_encoding
+    skip unless String.method_defined?(:encoding)
+    entry = {:type => :blob,
+             :name => "\u00e0",
+             :oid  => "1385f264afb75a56a5bec74243be9b367ba4ca08",
+             :filemode => 33188}
+
+    builder = Rugged::Tree::Builder.new
+    builder << entry
+    sha = builder.write(@repo)
+    
+    obj = @repo.lookup(sha)
+    assert_equal Encoding.default_external, obj.first[:name].encoding
+    assert_equal "\u00e0", obj.first[:name]
+  end
+end

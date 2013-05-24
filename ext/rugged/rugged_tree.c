@@ -38,13 +38,15 @@ static VALUE rb_git_treeentry_fromC(const git_tree_entry *entry)
 {
 	VALUE rb_entry;
 	VALUE type;
+	char *entry_name;
 
 	if (!entry)
 		return Qnil;
 
 	rb_entry = rb_hash_new();
 
-	rb_hash_aset(rb_entry, CSTR2SYM("name"), rugged_str_new2(git_tree_entry_name(entry), NULL));
+	entry_name = git_tree_entry_name(entry);
+	rb_hash_aset(rb_entry, CSTR2SYM("name"), rugged_external_str_new(entry_name, strlen(entry_name)));
 	rb_hash_aset(rb_entry, CSTR2SYM("oid"), rugged_create_oid(git_tree_entry_id(entry)));
 
 	rb_hash_aset(rb_entry, CSTR2SYM("filemode"), INT2FIX(git_tree_entry_filemode(entry)));
