@@ -30,6 +30,11 @@ else
   LIBGIT2_LIB_PATH = "#{CWD}/libgit2_embed.a"
 
   if !File.exists?(LIBGIT2_LIB_PATH)
+    if !File.exists?(File.join(LIBGIT2_DIR, "Makefile.embed")) and File.exists?(File.join(CWD, '..', '..', '.git'))
+      Dir.chdir(File.join(CWD, '..', '..')) do
+        sys("git submodule update --init")
+      end
+    end
     Dir.chdir(LIBGIT2_DIR) do
       sys("#{MAKE_PROGRAM} -f Makefile.embed")
       FileUtils.cp 'libgit2.a', LIBGIT2_LIB_PATH
