@@ -172,6 +172,24 @@ class RepositoryTest < Rugged::TestCase
     base    = '5b5b025afb0b4c913b4c338a42934a3863bf3644'
     assert_equal base, @repo.merge_base(commit1, commit2, commit3)
   end
+
+  def test_ahead_behind_with_oids
+    ahead, behind = @repo.ahead_behind(
+      'a4a7dce85cf63874e984719f4fdd239f5145052f',
+      '36060c58702ed4c2a40832c51758d5344201d89a'
+    )
+    assert_equal 1, ahead
+    assert_equal 4, behind
+  end
+
+  def test_ahead_behind_with_commits
+    ahead, behind = @repo.ahead_behind(
+      @repo.lookup('a4a7dce85cf63874e984719f4fdd239f5145052f'),
+      @repo.lookup('36060c58702ed4c2a40832c51758d5344201d89a')
+    )
+    assert_equal 1, ahead
+    assert_equal 4, behind
+  end
 end
 
 class RepositoryWriteTest < Rugged::TestCase
