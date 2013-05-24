@@ -1228,6 +1228,40 @@ static VALUE rb_git_repo_get_namespace(VALUE self)
 	return namespace ? rugged_str_new2(namespace, NULL) : Qnil;
 }
 
+/*
+ *  call-seq:
+ *    repo.ahead_behind(local, upstream) -> Array
+ *
+ *  Returns a 2 element Array containing the number of commits
+ *  that the upstream object is ahead and behind the local object.
+ *
+ *  +local+ and +upstream+ can either be strings containing SHA1 OIDs or
+ *  Rugged::Object instances.
+ */
+static VALUE rb_git_repo_ahead_behind(VALUE self, VALUE rb_local, VALUE rb_upstream) {
+	git_repository *repo;
+	int error;
+	git_oid local, upstream;
+	size_t ahead, behind;
+	VALUE rb_result;
+
+	Data_Get_Struct(self, git_repository, repo);
+
+	error = rugged_oid_get(&local, repo, rb_local);
+	rugged_exception_check(error);
+
+	error = rugged_oid_get(&upstream, repo, rb_upstream);
+	rugged_exception_check(error);
+
+	error = git_graph_ahead_behind(&ahead, &behind, repo, &local, &upstream);
+	rugged_exception_check(error);
+
+	rb_result = rb_ary_new2(2);
+	rb_ary_push(rb_result, INT2FIX((int) ahead));
+	rb_ary_push(rb_result, INT2FIX((int) behind));
+	return rb_result;
+}
+
 void Init_rugged_repo()
 {
 	id_call = rb_intern("call");
@@ -1276,6 +1310,8 @@ void Init_rugged_repo()
 
 	rb_define_method(rb_cRuggedRepo, "namespace=", rb_git_repo_set_namespace, 1);
 	rb_define_method(rb_cRuggedRepo, "namespace", rb_git_repo_get_namespace, 0);
+
+	rb_define_method(rb_cRuggedRepo, "ahead_behind", rb_git_repo_ahead_behind, 2);
 
 	rb_cRuggedOdbObject = rb_define_class_under(rb_mRugged, "OdbObject", rb_cObject);
 	rb_define_method(rb_cRuggedOdbObject, "data",  rb_git_odbobj_data,  0);
