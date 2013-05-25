@@ -17,20 +17,33 @@ module Rugged
       self.lookup self.head.target
     end
 
-    def diff(left, right)
-      tree1 = nil
-      tree2 = nil
+    def diff(left, right, opts = {})
+      left = rev_parse(left) if left.kind_of?(String)
+      right = rev_parse(right) if right.kind_of?(String)
 
-      tree1 = left if left.is_a?(Rugged::Tree)
-      tree1 = left.tree if left.is_a?(Rugged::Commit)
+      if !left.is_a?(Rugged::Tree) && !left.is_a?(Rugged::Commit) && !left.nil?
+        raise TypeError, "Expected a Rugged::Tree or Rugged::Commit instance"
+      end
 
-      tree2 = right if right.is_a?(Rugged::Tree)
-      tree2 = right.tree if right.is_a?(Rugged::Commit)
+      if !right.is_a?(Rugged::Tree) && !right.is_a?(Rugged::Commit) && !right.nil?
+        raise TypeError, "Expected a Rugged::Tree or Rugged::Commit instance"
+      end
 
-      raise ArgumentError, "Rugged::Tree or Rugged::Commit expected for left side of diff, got #{left.class.name}" unless tree1.is_a?(Rugged::Tree)
-      raise ArgumentError, "Rugged::Tree or Rugged::Commit expected for right side of diff, got #{right.class.name}" unless tree2.is_a?(Rugged::Tree)
+      if left
+        left.diff(right, opts)
+      elsif right
+        right.diff(left, opts.merge(:reverse => !opts[:reverse]))
+      end
+    end
 
-      tree1.diff(tree2)
+    def diff_workdir(left, opts = {})
+      left = rev_parse(left) if left.kind_of?(String)
+
+      if !left.is_a?(Rugged::Tree) && !left.is_a?(Rugged::Commit)
+        raise TypeError, "Expected a Rugged::Tree or Rugged::Commit instance"
+      end
+
+      left.diff_workdir(opts)
     end
 
     # Walks over a set of commits using Rugged::Walker.

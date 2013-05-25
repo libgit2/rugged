@@ -1,5 +1,241 @@
 require "test_helper"
 
+class RepoDiffTest < Rugged::SandboxedTestCase
+  def test_with_oid_string
+    repo = sandbox_init("attr")
+    diff = repo.diff("605812a", "370fe9ec22", :context_lines => 1, :interhunk_lines => 1)
+
+    deltas = diff.deltas
+    patches = diff.patches
+    hunks = patches.map(&:hunks).flatten
+    lines = hunks.map(&:lines).flatten
+
+    assert_equal 5, diff.size
+    assert_equal 5, deltas.size
+    assert_equal 5, patches.size
+
+    assert_equal 2, deltas.select(&:added?).size
+    assert_equal 1, deltas.select(&:deleted?).size
+    assert_equal 2, deltas.select(&:modified?).size
+
+    assert_equal 5, hunks.size
+
+    assert_equal((7 + 24 + 1 + 6 + 6), lines.size)
+    assert_equal((1), lines.select(&:context?).size)
+    assert_equal((24 + 1 + 5 + 5), lines.select(&:addition?).size)
+    assert_equal((7 + 1), lines.select(&:deletion?).size)
+  end
+
+  def test_with_nil_on_left_side
+    repo = sandbox_init("attr")
+    diff = repo.diff("605812a", nil, :context_lines => 1, :interhunk_lines => 1)
+
+    deltas = diff.deltas
+    patches = diff.patches
+    hunks = patches.map(&:hunks).flatten
+    lines = hunks.map(&:lines).flatten
+
+    assert_equal 16, diff.size
+    assert_equal 16, deltas.size
+    assert_equal 16, patches.size
+
+    assert_equal 0, deltas.select(&:added?).size
+    assert_equal 16, deltas.select(&:deleted?).size
+    assert_equal 0, deltas.select(&:modified?).size
+
+    assert_equal 15, hunks.size
+
+    assert_equal 115, lines.size
+    assert_equal 0, lines.select(&:context?).size
+    assert_equal 0, lines.select(&:addition?).size
+    assert_equal 113, lines.select(&:deletion?).size
+  end
+
+  def test_with_nil_on_right_side
+    repo = sandbox_init("attr")
+    diff = repo.diff(nil, "605812a", :context_lines => 1, :interhunk_lines => 1)
+
+    deltas = diff.deltas
+    patches = diff.patches
+    hunks = patches.map(&:hunks).flatten
+    lines = hunks.map(&:lines).flatten
+
+    assert_equal 16, diff.size
+    assert_equal 16, deltas.size
+    assert_equal 16, patches.size
+
+    assert_equal 16, deltas.select(&:added?).size
+    assert_equal 0, deltas.select(&:deleted?).size
+    assert_equal 0, deltas.select(&:modified?).size
+
+    assert_equal 15, hunks.size
+
+    assert_equal 115, lines.size
+    assert_equal 0, lines.select(&:context?).size
+    assert_equal 113, lines.select(&:addition?).size
+    assert_equal 0, lines.select(&:deletion?).size
+  end
+end
+
+class RepoWorkdirDiffTest < Rugged::SandboxedTestCase
+  def test_basic_diff
+    repo = sandbox_init("status")
+    diff = repo.diff_workdir("26a125ee1bf",
+      :context_lines => 3,
+      :interhunk_lines => 1,
+      :include_ignored => true,
+      :include_untracked => true
+    )
+
+    deltas = diff.deltas
+    patches = diff.patches
+    hunks = patches.map(&:hunks).flatten
+    lines = hunks.map(&:lines).flatten
+
+    assert_equal 14, deltas.size
+    assert_equal 14, patches.size
+
+    assert_equal 0, deltas.select(&:added?).size
+    assert_equal 4, deltas.select(&:deleted?).size
+    assert_equal 4, deltas.select(&:modified?).size
+    assert_equal 1, deltas.select(&:ignored?).size
+    assert_equal 5, deltas.select(&:untracked?).size
+
+    assert_equal 8, hunks.size
+
+    assert_equal 13, lines.size
+    assert_equal 4, lines.select(&:context?).size
+    assert_equal 5, lines.select(&:addition?).size
+    assert_equal 4, lines.select(&:deletion?).size
+  end
+end
+
+class CommitDiffTest < Rugged::SandboxedTestCase
+  def test_diff_with_parent
+    repo = sandbox_init("attr")
+    commit = Rugged::Commit.lookup(repo, "605812a")
+
+    diff = commit.diff(:context_lines => 1, :interhunk_lines => 1)
+
+    deltas = diff.deltas
+    patches = diff.patches
+    hunks = patches.map(&:hunks).flatten
+    lines = hunks.map(&:lines).flatten
+
+    assert_equal 5, diff.size
+    assert_equal 5, deltas.size
+    assert_equal 5, patches.size
+
+    assert_equal 0, deltas.select(&:added?).size
+    assert_equal 3, deltas.select(&:deleted?).size
+    assert_equal 2, deltas.select(&:modified?).size
+
+    assert_equal 4, hunks.size
+
+    assert_equal(51, lines.size)
+    assert_equal(2, lines.select(&:context?).size)
+    assert_equal(3, lines.select(&:addition?).size)
+    assert_equal(46, lines.select(&:deletion?).size)
+  end
+
+  def test_diff_with_parent_for_initial_commit
+    repo = sandbox_init("attr")
+    commit = Rugged::Commit.lookup(repo, "6bab5c79cd5140d0f800917f550eb2a3dc32b0da")
+
+    diff = commit.diff(:context_lines => 1, :interhunk_lines => 1, :reverse => true)
+
+    deltas = diff.deltas
+    patches = diff.patches
+    hunks = patches.map(&:hunks).flatten
+    lines = hunks.map(&:lines).flatten
+
+    assert_equal 13, diff.size
+    assert_equal 13, deltas.size
+    assert_equal 13, patches.size
+
+    assert_equal 13, deltas.select(&:added?).size
+    assert_equal 0, deltas.select(&:deleted?).size
+    assert_equal 0, deltas.select(&:modified?).size
+
+    assert_equal 13, hunks.size
+
+    assert_equal(72, lines.size)
+    assert_equal(0, lines.select(&:context?).size)
+    assert_equal(70, lines.select(&:addition?).size)
+    assert_equal(0, lines.select(&:deletion?).size)
+  end
+end
+
+class CommitToWorkdirDiffTest < Rugged::SandboxedTestCase
+  def test_basic_diff
+    repo = sandbox_init("status")
+    a = Rugged::Commit.lookup(repo, "26a125ee1bf")
+
+    diff = a.diff_workdir(
+      :context_lines => 3,
+      :interhunk_lines => 1,
+      :include_ignored => true,
+      :include_untracked => true
+    )
+
+    deltas = diff.deltas
+    patches = diff.patches
+    hunks = patches.map(&:hunks).flatten
+    lines = hunks.map(&:lines).flatten
+
+    assert_equal 14, deltas.size
+    assert_equal 14, patches.size
+
+    assert_equal 0, deltas.select(&:added?).size
+    assert_equal 4, deltas.select(&:deleted?).size
+    assert_equal 4, deltas.select(&:modified?).size
+    assert_equal 1, deltas.select(&:ignored?).size
+    assert_equal 5, deltas.select(&:untracked?).size
+
+    assert_equal 8, hunks.size
+
+    assert_equal 13, lines.size
+    assert_equal 4, lines.select(&:context?).size
+    assert_equal 5, lines.select(&:addition?).size
+    assert_equal 4, lines.select(&:deletion?).size
+  end
+end
+
+class TreeToWorkdirDiffTest < Rugged::SandboxedTestCase
+  def test_basic_diff
+    repo = sandbox_init("status")
+    a = Rugged::Tree.lookup(repo, "26a125ee1bf").tree
+
+    diff = a.diff_workdir(
+      :context_lines => 3,
+      :interhunk_lines => 1,
+      :include_ignored => true,
+      :include_untracked => true
+    )
+
+    deltas = diff.deltas
+    patches = diff.patches
+    hunks = patches.map(&:hunks).flatten
+    lines = hunks.map(&:lines).flatten
+
+    assert_equal 14, deltas.size
+    assert_equal 14, patches.size
+
+    assert_equal 0, deltas.select(&:added?).size
+    assert_equal 4, deltas.select(&:deleted?).size
+    assert_equal 4, deltas.select(&:modified?).size
+    assert_equal 1, deltas.select(&:ignored?).size
+    assert_equal 5, deltas.select(&:untracked?).size
+
+    assert_equal 8, hunks.size
+
+    assert_equal 13, lines.size
+    assert_equal 4, lines.select(&:context?).size
+    assert_equal 5, lines.select(&:addition?).size
+    assert_equal 4, lines.select(&:deletion?).size
+  end
+end
+
 class TreeToTreeDiffTest < Rugged::SandboxedTestCase
   def test_basic_diff
     repo = sandbox_init("attr")
@@ -49,6 +285,60 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
     assert_equal((1), lines.select(&:context?).size)
     assert_equal((1), lines.select(&:addition?).size)
     assert_equal((7 + 14), lines.select(&:deletion?).size)
+  end
+
+  def test_diff_with_empty_tree
+    repo = sandbox_init("attr")
+    a = Rugged::Tree.lookup(repo, "605812a").tree
+
+    diff = a.diff(nil, :context_lines => 1, :interhunk_lines => 1)
+
+    deltas = diff.deltas
+    patches = diff.patches
+    hunks = patches.map(&:hunks).flatten
+    lines = hunks.map(&:lines).flatten
+
+    assert_equal 16, diff.size
+    assert_equal 16, deltas.size
+    assert_equal 16, patches.size
+
+    assert_equal 0, deltas.select(&:added?).size
+    assert_equal 16, deltas.select(&:deleted?).size
+    assert_equal 0, deltas.select(&:modified?).size
+
+    assert_equal 15, hunks.size
+
+    assert_equal 115, lines.size
+    assert_equal 0, lines.select(&:context?).size
+    assert_equal 0, lines.select(&:addition?).size
+    assert_equal 113, lines.select(&:deletion?).size
+  end
+
+  def test_diff_with_rev_string
+    repo = sandbox_init("attr")
+    a = Rugged::Tree.lookup(repo, "605812a").tree
+
+    diff = a.diff("370fe9ec22", :context_lines => 1, :interhunk_lines => 1)
+
+    deltas = diff.deltas
+    patches = diff.patches
+    hunks = patches.map(&:hunks).flatten
+    lines = hunks.map(&:lines).flatten
+
+    assert_equal 5, diff.size
+    assert_equal 5, deltas.size
+    assert_equal 5, patches.size
+
+    assert_equal 2, deltas.select(&:added?).size
+    assert_equal 1, deltas.select(&:deleted?).size
+    assert_equal 2, deltas.select(&:modified?).size
+
+    assert_equal 5, hunks.size
+
+    assert_equal((7 + 24 + 1 + 6 + 6), lines.size)
+    assert_equal((1), lines.select(&:context?).size)
+    assert_equal((24 + 1 + 5 + 5), lines.select(&:addition?).size)
+    assert_equal((7 + 1), lines.select(&:deletion?).size)
   end
 
   def test_diff_merge

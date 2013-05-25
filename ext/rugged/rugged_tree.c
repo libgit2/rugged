@@ -265,18 +265,16 @@ static VALUE rb_git_tree_path(VALUE self, VALUE rb_path)
 
 /*
  *  call-seq:
- *    tree.diff([options]) -> diff
  *    tree.diff(diffable[, options]) -> diff
  *
- *  The first form returns a diff between the tree and the current working
- *  directory.
+ *  Returns a diff between the tree and the diffable object that was given.
+ *  +diffable+ can either be a `Rugged::Commit`, a `Rugged::Tree`, a `Rugged::Index`,
+ *  or +nil+.
  *
- *  The second form retursn a diff between the tree and the diffable object
- *  was given. +diffable+ can either be a `Rugged::Commit`, a `Rugged::Tree`, or
- *  a `Rugged::Index`.
+ *  The +tree+ object will be used as the "old file" side of the diff, while the
+ *  parent tree or the +diffable+ object will be used for the "new file" side.
  *
- *  The tree will be used as the "old file" side of the diff, while the working
- *  directory or the +diffable+ will be used for the "new file" side.
+ *  If +diffable+ is nil, it will be treated as an empty tree.
  *
  *  The following options can be passed in the +options+ Hash:
  *
@@ -385,11 +383,8 @@ static VALUE rb_git_tree_diff(int argc, VALUE *argv, VALUE self)
 	VALUE owner, rb_other, rb_options;
 	int error;
 
-	if (rb_scan_args(argc, argv, "02", &rb_other, &rb_options) == 1) {
-		if (TYPE(rb_other) == T_HASH) {
-			rb_options = rb_other;
-			rb_other = Qnil;
-		}
+	if (rb_scan_args(argc, argv, "11", &rb_other, &rb_options) == 2) {
+		Check_Type(rb_options, T_HASH);
 	}
 
 	rugged_parse_diff_options(&opts, rb_options);
@@ -399,18 +394,26 @@ static VALUE rb_git_tree_diff(int argc, VALUE *argv, VALUE self)
 	Data_Get_Struct(owner, git_repository, repo);
 
 	if (NIL_P(rb_other)) {
-		error = git_diff_tree_to_workdir(&diff, repo, tree, &opts);
+		error = git_diff_tree_to_tree(&diff, repo, tree, NULL, &opts);
 	} else {
+		if (TYPE(rb_other) == T_STRING) {
+			rb_other = rugged_object_rev_parse(owner, rb_other, 1);
+		}
+
 		if (rb_obj_is_kind_of(rb_other, rb_cRuggedCommit)) {
 			git_tree *other_tree;
 			git_commit *commit;
+
 			Data_Get_Struct(rb_other, git_commit, commit);
 			error = git_commit_tree(&other_tree, commit);
 
-			if (!error)
+			if (!error) {
 				error = git_diff_tree_to_tree(&diff, repo, tree, other_tree, &opts);
+				git_tree_free(other_tree);
+			}
 		} else if (rb_obj_is_kind_of(rb_other, rb_cRuggedTree)) {
 			git_tree *other_tree;
+
 			Data_Get_Struct(rb_other, git_tree, other_tree);
 			error = git_diff_tree_to_tree(&diff, repo, tree, other_tree, &opts);
 		} else if (rb_obj_is_kind_of(rb_other, rb_cRuggedIndex)) {
@@ -422,6 +425,44 @@ static VALUE rb_git_tree_diff(int argc, VALUE *argv, VALUE self)
 			rb_raise(rb_eTypeError, "A Rugged::Commit, Rugged::Tree or Rugged::Index instance is required");
 		}
 	}
+
+	xfree(opts.pathspec.strings);
+	rugged_exception_check(error);
+
+	return rugged_diff_new(rb_cRuggedDiff, self, diff);
+}
+
+/*
+ *  call-seq:
+ *    tree.diff_workdir([options]) -> diff
+ *
+ *  Returns a diff between a tree and the current workdir.
+ *
+ *  The +tree+ object will be used as the "old file" side of the diff, while the
+ *  content of the current workdir will be used for the "new file" side.
+ *
+ *  See Rugged::Tree#diff for a list of options that can be passed.
+ */
+static VALUE rb_git_tree_diff_workdir(int argc, VALUE *argv, VALUE self)
+{
+	git_tree *tree;
+	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
+	git_repository *repo;
+	git_diff_list *diff;
+	VALUE owner, rb_options;
+	int error;
+
+	if (rb_scan_args(argc, argv, "01", &rb_options) == 1) {
+		Check_Type(rb_options, T_HASH);
+	}
+
+	rugged_parse_diff_options(&opts, rb_options);
+
+	Data_Get_Struct(self, git_tree, tree);
+	owner = rugged_owner(self);
+	Data_Get_Struct(owner, git_repository, repo);
+
+	error = git_diff_tree_to_workdir(&diff, repo, tree, &opts);
 
 	xfree(opts.pathspec.strings);
 	rugged_exception_check(error);
@@ -573,6 +614,7 @@ void Init_rugged_tree()
 	rb_define_method(rb_cRuggedTree, "get_entry_by_oid", rb_git_tree_get_entry_by_oid, 1);
 	rb_define_method(rb_cRuggedTree, "path", rb_git_tree_path, 1);
 	rb_define_method(rb_cRuggedTree, "diff", rb_git_tree_diff, -1);
+	rb_define_method(rb_cRuggedTree, "diff_workdir", rb_git_tree_diff_workdir, -1);
 	rb_define_method(rb_cRuggedTree, "[]", rb_git_tree_get_entry, 1);
 	rb_define_method(rb_cRuggedTree, "each", rb_git_tree_each, 0);
 	rb_define_method(rb_cRuggedTree, "walk", rb_git_tree_walk, 1);
