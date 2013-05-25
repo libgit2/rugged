@@ -133,6 +133,41 @@ class CommitDiffTest < Rugged::SandboxedTestCase
   end
 end
 
+class TreeToWorkdirTest < Rugged::SandboxedTestCase
+  def test_basic_diff
+    repo = sandbox_init("status")
+    a = Rugged::Tree.lookup(repo, "26a125ee1bf").tree
+
+    diff = a.diff_workdir(
+      :context_lines => 3,
+      :interhunk_lines => 1,
+      :include_ignored => true,
+      :include_untracked => true
+    )
+
+    deltas = diff.deltas
+    patches = diff.patches
+    hunks = patches.map(&:hunks).flatten
+    lines = hunks.map(&:lines).flatten
+
+    assert_equal 14, deltas.size
+    assert_equal 14, patches.size
+
+    assert_equal 0, deltas.select(&:added?).size
+    assert_equal 4, deltas.select(&:deleted?).size
+    assert_equal 4, deltas.select(&:modified?).size
+    assert_equal 1, deltas.select(&:ignored?).size
+    assert_equal 5, deltas.select(&:untracked?).size
+
+    assert_equal 8, hunks.size
+
+    assert_equal 13, lines.size
+    assert_equal 4, lines.select(&:context?).size
+    assert_equal 5, lines.select(&:addition?).size
+    assert_equal 4, lines.select(&:deletion?).size
+  end
+end
+
 class TreeToTreeDiffTest < Rugged::SandboxedTestCase
   def test_basic_diff
     repo = sandbox_init("attr")
