@@ -19,9 +19,9 @@ module Rugged
 
     # Return a diff between this commit and the workdir.
     #
-    # See `Rugged::Tree#workdir_diff` for more details.
-    def workdir_diff(options = {})
-      self.tree.workdir_diff(options)
+    # See `Rugged::Tree#diff_workdir` for more details.
+    def diff_workdir(options = {})
+      self.tree.diff_workdir(options)
     end
 
     # The time when this commit was made effective. This is the same value
