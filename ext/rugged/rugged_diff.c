@@ -301,7 +301,7 @@ static VALUE rb_git_diff_merge(VALUE self, VALUE rb_other)
  *  :break_rewrite_threshold ::
  *    An integer specifying the similarity to split modify into delete/add pair (default 60).
  *
- *  :target_limit ::
+ *  :rename_limit ::
  *    An integer specifying the maximum amount of similarity sources to examine
  *    (a la diff's `-l` option or the `diff.renameLimit` config) (default 200).
  *
@@ -366,10 +366,10 @@ static VALUE rb_git_diff_find_similar(int argc, VALUE *argv, VALUE self)
 			opts.break_rewrite_threshold = FIX2INT(rb_value);
 		}
 
-		rb_value = rb_hash_aref(rb_options, CSTR2SYM("target_limit"));
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("rename_limit"));
 		if (!NIL_P(rb_value)) {
 			Check_Type(rb_value, T_FIXNUM);
-			opts.target_limit = FIX2INT(rb_value);
+			opts.rename_limit = FIX2INT(rb_value);
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("renames")))) {
