@@ -46,6 +46,12 @@ static int ref_foreach__block(const char *ref_name, void *opaque)
 	return GIT_OK;
 }
 
+static VALUE rugged_protect__ref_each(VALUE payload)
+{
+	VALUE *args = (VALUE *)payload;
+	return rb_funcall(args[0], rb_intern("call"), 1, args[1]);
+}
+
 /*
  *	call-seq:
  *		Reference.each(repository, glob = nil) { |ref_name| block }
@@ -87,8 +93,19 @@ static VALUE rb_git_ref_each(int argc, VALUE *argv, VALUE self)
 	do {
 		const char *ref_name;
 		error = git_reference_next(&ref_name, iter);
+
 		if (error != GIT_ITEROVER) {
-			rb_funcall(rb_block, rb_intern("call"), 1, rugged_str_new2(ref_name, rb_utf8_encoding()));
+			int state;
+			VALUE args[2];
+
+			args[0] = rb_block;
+			args[1] = rugged_str_new2(ref_name, rb_utf8_encoding());
+
+			rb_protect(rugged_protect__ref_each, (VALUE)args, &state);
+			if (state != 0) {
+				git_reference_iterator_free(iter);
+				rb_jump_tag(state);
+			}
 		}
 	} while (!error);
 
