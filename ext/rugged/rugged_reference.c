@@ -64,6 +64,7 @@ static VALUE rb_git_ref_each(int argc, VALUE *argv, VALUE self)
 	git_reference_iterator *iter;
 	int error;
 	VALUE rb_repo, rb_glob, rb_block;
+	const char *ref_name;
 
 	rb_scan_args(argc, argv, "11&", &rb_repo, &rb_glob, &rb_block);
 
@@ -84,24 +85,19 @@ static VALUE rb_git_ref_each(int argc, VALUE *argv, VALUE self)
 	}
 	rugged_exception_check(error);
 
-	do {
-		const char *ref_name;
-		error = git_reference_next(&ref_name, iter);
+	while ((error = git_reference_next(&ref_name, iter)) == GIT_OK) {
+		int state;
+		VALUE args[2];
 
-		if (error != GIT_ITEROVER) {
-			int state;
-			VALUE args[2];
+		args[0] = rb_block;
+		args[1] = rugged_str_new2(ref_name, rb_utf8_encoding());
 
-			args[0] = rb_block;
-			args[1] = rugged_str_new2(ref_name, rb_utf8_encoding());
-
-			rb_protect(rugged_protect__ref_yield, (VALUE)args, &state);
-			if (state != 0) {
-				git_reference_iterator_free(iter);
-				rb_jump_tag(state);
-			}
+		rb_protect(rugged_protect__ref_yield, (VALUE)args, &state);
+		if (state != 0) {
+			git_reference_iterator_free(iter);
+			rb_jump_tag(state);
 		}
-	} while (!error);
+	}
 
 	git_reference_iterator_free(iter);
 
