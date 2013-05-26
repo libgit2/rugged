@@ -6,6 +6,14 @@ class ReferenceTest < Rugged::TestCase
 
   UNICODE_REF_NAME = "A\314\212ngstro\314\210m"
 
+  def test_each_can_handle_exceptions
+    assert_raises Exception do
+      Rugged::Reference.each(@repo) do
+        raise Exception.new("fail")
+      end
+    end
+  end
+
   def test_list_references
     refs = @repo.refs.map { |r| r.name.gsub("refs/", '') }.sort.join(':')
     assert_equal "heads/master:heads/packed:notes/commits:tags/v0.9:tags/v1.0", refs
