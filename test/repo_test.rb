@@ -273,7 +273,7 @@ class RepositoryCloneTest < Rugged::TestCase
   def test_clone_with_progress
     total_objects = indexed_objects = received_objects = received_bytes = nil
     callsback = 0
-    repo = Rugged::Repository.clone_at(@source_path, @tmppath,
+    Rugged::Repository.clone_at(@source_path, @tmppath,
       :progress => lambda { |*args| callsback += 1 ; total_objects, indexed_objects, received_objects, received_bytes = args })
     assert_equal 22,   callsback
     assert_equal 19,   total_objects
