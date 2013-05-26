@@ -61,6 +61,7 @@ static int ref_foreach__block(const char *ref_name, void *opaque)
 static VALUE rb_git_ref_each(int argc, VALUE *argv, VALUE self)
 {
 	git_repository *repo;
+	git_reference_iterator *iter;
 	int error;
 	VALUE rb_repo, rb_glob, rb_block;
 
@@ -76,13 +77,26 @@ static VALUE rb_git_ref_each(int argc, VALUE *argv, VALUE self)
 
 	if (!NIL_P(rb_glob)) {
 		Check_Type(rb_glob, T_STRING);
-		error = git_reference_foreach_glob(repo,
-			StringValueCStr(rb_glob), &ref_foreach__block, (void *)rb_block);
-	} else {
-		error = git_reference_foreach(repo, &ref_foreach__block, (void *)rb_block);
-	}
 
+		error = git_reference_iterator_glob_new(&iter, repo, StringValueCStr(rb_glob));
+	} else {
+		error = git_reference_iterator_new(&iter, repo);
+	}
 	rugged_exception_check(error);
+
+	do {
+		const char *ref_name;
+		error = git_reference_next(&ref_name, iter);
+		if (error != GIT_ITEROVER) {
+			rb_funcall(rb_block, rb_intern("call"), 1, rugged_str_new2(ref_name, rb_utf8_encoding()));
+		}
+	} while (!error);
+
+	git_reference_iterator_free(iter);
+
+	if (error != GIT_ITEROVER)
+		rugged_exception_check(error);
+
 	return Qnil;
 }
 
