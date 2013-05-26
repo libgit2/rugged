@@ -40,10 +40,10 @@ VALUE rugged_ref_new(VALUE klass, VALUE owner, git_reference *ref)
 	return rb_ref;
 }
 
-static int ref_foreach__block(const char *ref_name, void *opaque)
+static VALUE rugged_protect__ref_yield(VALUE payload)
 {
-	rb_funcall((VALUE)opaque, rb_intern("call"), 1, rugged_str_new2(ref_name, rb_utf8_encoding()));
-	return GIT_OK;
+	VALUE *args = (VALUE *)payload;
+	return rb_funcall(args[0], rb_intern("call"), 1, args[1]);
 }
 
 /*
@@ -61,8 +61,10 @@ static int ref_foreach__block(const char *ref_name, void *opaque)
 static VALUE rb_git_ref_each(int argc, VALUE *argv, VALUE self)
 {
 	git_repository *repo;
+	git_reference_iterator *iter;
 	int error;
 	VALUE rb_repo, rb_glob, rb_block;
+	const char *ref_name;
 
 	rb_scan_args(argc, argv, "11&", &rb_repo, &rb_glob, &rb_block);
 
@@ -76,13 +78,32 @@ static VALUE rb_git_ref_each(int argc, VALUE *argv, VALUE self)
 
 	if (!NIL_P(rb_glob)) {
 		Check_Type(rb_glob, T_STRING);
-		error = git_reference_foreach_glob(repo,
-			StringValueCStr(rb_glob), &ref_foreach__block, (void *)rb_block);
+
+		error = git_reference_iterator_glob_new(&iter, repo, StringValueCStr(rb_glob));
 	} else {
-		error = git_reference_foreach(repo, &ref_foreach__block, (void *)rb_block);
+		error = git_reference_iterator_new(&iter, repo);
+	}
+	rugged_exception_check(error);
+
+	while ((error = git_reference_next(&ref_name, iter)) == GIT_OK) {
+		int state;
+		VALUE args[2];
+
+		args[0] = rb_block;
+		args[1] = rugged_str_new2(ref_name, rb_utf8_encoding());
+
+		rb_protect(rugged_protect__ref_yield, (VALUE)args, &state);
+		if (state != 0) {
+			git_reference_iterator_free(iter);
+			rb_jump_tag(state);
+		}
 	}
 
-	rugged_exception_check(error);
+	git_reference_iterator_free(iter);
+
+	if (error != GIT_ITEROVER)
+		rugged_exception_check(error);
+
 	return Qnil;
 }
 
