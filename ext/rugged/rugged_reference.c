@@ -40,12 +40,6 @@ VALUE rugged_ref_new(VALUE klass, VALUE owner, git_reference *ref)
 	return rb_ref;
 }
 
-static int ref_foreach__block(const char *ref_name, void *opaque)
-{
-	rb_funcall((VALUE)opaque, rb_intern("call"), 1, rugged_str_new2(ref_name, rb_utf8_encoding()));
-	return GIT_OK;
-}
-
 static VALUE rugged_protect__ref_each(VALUE payload)
 {
 	VALUE *args = (VALUE *)payload;
