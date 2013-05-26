@@ -40,7 +40,7 @@ VALUE rugged_ref_new(VALUE klass, VALUE owner, git_reference *ref)
 	return rb_ref;
 }
 
-static VALUE rugged_protect__ref_each(VALUE payload)
+static VALUE rugged_protect__ref_yield(VALUE payload)
 {
 	VALUE *args = (VALUE *)payload;
 	return rb_funcall(args[0], rb_intern("call"), 1, args[1]);
@@ -95,7 +95,7 @@ static VALUE rb_git_ref_each(int argc, VALUE *argv, VALUE self)
 			args[0] = rb_block;
 			args[1] = rugged_str_new2(ref_name, rb_utf8_encoding());
 
-			rb_protect(rugged_protect__ref_each, (VALUE)args, &state);
+			rb_protect(rugged_protect__ref_yield, (VALUE)args, &state);
 			if (state != 0) {
 				git_reference_iterator_free(iter);
 				rb_jump_tag(state);
