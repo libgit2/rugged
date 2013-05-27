@@ -37,6 +37,17 @@ class ReferenceTest < Rugged::TestCase
     assert_nil ref.peel
   end
 
+  def test_can_open_a_symbolic_reference
+    ref = Rugged::Reference.lookup(@repo, "HEAD")
+    assert_equal "refs/heads/master", ref.target
+    assert_equal :symbolic, ref.type
+
+    resolved = ref.resolve
+    assert_equal :direct, resolved.type
+    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", resolved.target
+    assert_equal resolved.target, ref.peel
+  end
+
   def test_looking_up_missing_ref_returns_nil
     ref = Rugged::Reference.lookup(@repo, "lol/wut")
     assert_equal nil, ref

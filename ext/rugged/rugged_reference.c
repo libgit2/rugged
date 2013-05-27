@@ -155,7 +155,8 @@ static VALUE rb_git_ref_peel(VALUE self)
 	else
 		rugged_exception_check(error);
 
-	if (!git_oid_cmp(git_object_id(object), git_reference_target(ref))) {
+	if (git_reference_type(ref) == GIT_REF_OID &&
+			!git_oid_cmp(git_object_id(object), git_reference_target(ref))) {
 		git_object_free(object);
 		return Qnil;
 	} else {
