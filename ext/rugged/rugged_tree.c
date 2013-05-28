@@ -494,7 +494,8 @@ static VALUE rb_git_tree_merge(int argc, VALUE *argv, VALUE self)
 		}
 	}
 
-	Check_Type(rb_options, T_HASH);
+	if (!NIL_P(rb_options))
+		Check_Type(rb_options, T_HASH);
 
 	if (!rb_obj_is_kind_of(rb_other_tree, rb_cRuggedTree))
 		rb_raise(rb_eTypeError, "Expecting a Rugged::Tree instance");
