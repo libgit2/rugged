@@ -469,6 +469,51 @@ static VALUE rb_git_tree_diff_workdir(int argc, VALUE *argv, VALUE self)
 	return rugged_diff_new(rb_cRuggedDiff, self, diff);
 }
 
+void rugged_parse_merge_options(git_merge_tree_opts *opts, VALUE rb_options)
+{
+	if (!NIL_P(rb_options)) {
+		VALUE rb_value;
+		Check_Type(rb_options, T_HASH);
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("rename_threshold"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_FIXNUM);
+			opts->rename_threshold = FIX2UINT(rb_value);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("target_limit"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_FIXNUM);
+			opts->target_limit = FIX2UINT(rb_value);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("automerge"));
+		if (!NIL_P(rb_value)) {
+			ID id_automerge;
+
+			Check_Type(rb_value, T_SYMBOL);
+			id_automerge = SYM2ID(rb_value);
+
+			if (id_automerge == rb_intern("normal")) {
+				opts->automerge_flags = GIT_MERGE_AUTOMERGE_NORMAL;
+			} else if (id_automerge == rb_intern("none")) {
+				opts->automerge_flags = GIT_MERGE_AUTOMERGE_NONE;
+			} else if (id_automerge == rb_intern("favor_ours")) {
+				opts->automerge_flags = GIT_MERGE_AUTOMERGE_FAVOR_OURS;
+			} else if (id_automerge == rb_intern("favor_theirs")) {
+				opts->automerge_flags = GIT_MERGE_AUTOMERGE_FAVOR_THEIRS;
+			} else {
+				rb_raise(rb_eTypeError,
+					"Invalid automerge mode. Expected `:normal`, `:none`, `:favor_ours` or `:favor_theirs`");
+			}
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("renames")))) {
+			opts->flags |= GIT_MERGE_TREE_FIND_RENAMES;
+		}
+	}
+}
+
 /*
  *  tree.merge(other_tree[, ancestor_tree[, options]]) -> Rugged::Index
  *  tree.merge(other_tree[, options]) -> Rugged::Index
@@ -494,8 +539,10 @@ static VALUE rb_git_tree_merge(int argc, VALUE *argv, VALUE self)
 		}
 	}
 
-	if (!NIL_P(rb_options))
+	if (!NIL_P(rb_options)) {
 		Check_Type(rb_options, T_HASH);
+		rugged_parse_merge_options(&opts, rb_options);
+	}
 
 	if (!rb_obj_is_kind_of(rb_other_tree, rb_cRuggedTree))
 		rb_raise(rb_eTypeError, "Expecting a Rugged::Tree instance");
