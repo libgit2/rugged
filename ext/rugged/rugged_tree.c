@@ -520,6 +520,24 @@ void rugged_parse_merge_options(git_merge_tree_opts *opts, VALUE rb_options)
  *
  *  Merges two trees and returns the a Rugged::Index object that reflects
  *  the result of the merge.
+ *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :renames ::
+ *    If true, looking for renames will be enabled (`--find-renames`).
+ *
+ *  :rename_threshold ::
+ *    An integer specifying the minimum similarity of a file to be
+ *    seen as an eligible rename source (default 50).
+ *
+ *  :target_limit ::
+ *    An integer specifying the maximum byte size of a file before a it will
+ *    be treated as binary. The default value is 512MB.
+ *
+ *  :automerge ::
+ *    Specifies how and if conflicts are auto-resolved by favoring a specific
+ *    version. Can be one of `:normal`, `:none`, `:favor_ours` or `:favor_theirs`.
+ *
  */
 static VALUE rb_git_tree_merge(int argc, VALUE *argv, VALUE self)
 {
