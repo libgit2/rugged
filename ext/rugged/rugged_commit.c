@@ -31,17 +31,17 @@ extern VALUE rb_cRuggedSignature;
 VALUE rb_cRuggedCommit;
 
 /*
- *	call-seq:
- *		commit.message -> msg
+ *  call-seq:
+ *    commit.message -> msg
  *
- *	Return the message of this commit. This includes the full body of the
- *	message, with the short description, detailed descritpion, and any
- *	optional footers or signatures after it.
+ *  Return the message of this commit. This includes the full body of the
+ *  message, with the short description, detailed descritpion, and any
+ *  optional footers or signatures after it.
  *
- *	In Ruby 1.9.X, the returned string will be encoded with the encoding
- *	specified in the +Encoding+ header of the commit, if available.
+ *  In Ruby 1.9.X, the returned string will be encoded with the encoding
+ *  specified in the +Encoding+ header of the commit, if available.
  *
- *		commit.message #=> "add a lot of RDoc docs\n\nthis includes docs for commit and blob"
+ *    commit.message #=> "add a lot of RDoc docs\n\nthis includes docs for commit and blob"
  */
 static VALUE rb_git_commit_message_GET(VALUE self)
 {
@@ -64,20 +64,20 @@ static VALUE rb_git_commit_message_GET(VALUE self)
 }
 
 /*
- *	call-seq:
- *		commit.committer -> signature
+ *  call-seq:
+ *    commit.committer -> signature
  *
- *	Return the signature for the committer of this +commit+. The signature
- *	is returned as a +Hash+ containing +:name+, +:email+ of the author
- *	and +:time+ of the change.
+ *  Return the signature for the committer of this +commit+. The signature
+ *  is returned as a +Hash+ containing +:name+, +:email+ of the author
+ *  and +:time+ of the change.
  *
- *	The committer of a commit is the person who actually applied the changes
- *	of the commit; in most cases it's the same as the author.
+ *  The committer of a commit is the person who actually applied the changes
+ *  of the commit; in most cases it's the same as the author.
  *
- *	In Ruby 1.9.X, the returned string will be encoded with the encoding
- *	specified in the +Encoding+ header of the commit, if available.
+ *  In Ruby 1.9.X, the returned string will be encoded with the encoding
+ *  specified in the +Encoding+ header of the commit, if available.
  *
- *		commit.committer #=> {:email=>"tanoku@gmail.com", :time=>Tue Jan 24 05:42:45 UTC 2012, :name=>"Vicent Mart\303\255"}
+ *    commit.committer #=> {:email=>"tanoku@gmail.com", :time=>Tue Jan 24 05:42:45 UTC 2012, :name=>"Vicent Mart\303\255"}
  */
 static VALUE rb_git_commit_committer_GET(VALUE self)
 {
@@ -90,19 +90,19 @@ static VALUE rb_git_commit_committer_GET(VALUE self)
 }
 
 /*
- *	call-seq:
- *		commit.author -> signature
+ *  call-seq:
+ *    commit.author -> signature
  *
- *	Return the signature for the author of this +commit+. The signature
- *	is returned as a +Hash+ containing +:name+, +:email+ of the author
- *	and +:time+ of the change.
+ *  Return the signature for the author of this +commit+. The signature
+ *  is returned as a +Hash+ containing +:name+, +:email+ of the author
+ *  and +:time+ of the change.
  *
- *	The author of the commit is the person who intially created the changes.
+ *  The author of the commit is the person who intially created the changes.
  *
- *	In Ruby 1.9.X, the returned string will be encoded with the encoding
- *	specified in the +Encoding+ header of the commit, if available.
+ *  In Ruby 1.9.X, the returned string will be encoded with the encoding
+ *  specified in the +Encoding+ header of the commit, if available.
  *
- *		commit.author #=> {:email=>"tanoku@gmail.com", :time=>Tue Jan 24 05:42:45 UTC 2012, :name=>"Vicent Mart\303\255"}
+ *    commit.author #=> {:email=>"tanoku@gmail.com", :time=>Tue Jan 24 05:42:45 UTC 2012, :name=>"Vicent Mart\303\255"}
  */
 static VALUE rb_git_commit_author_GET(VALUE self)
 {
@@ -115,14 +115,14 @@ static VALUE rb_git_commit_author_GET(VALUE self)
 }
 
 /*
- *	call-seq:
- *		commit.epoch_time -> t
+ *  call-seq:
+ *    commit.epoch_time -> t
  *
- *	Return the time when this commit was made effective. This is the same value
- *	as the +:time+ attribute for +commit.committer+, but represented as an +Integer+
- *	value in seconds since the Epoch.
+ *  Return the time when this commit was made effective. This is the same value
+ *  as the +:time+ attribute for +commit.committer+, but represented as an +Integer+
+ *  value in seconds since the Epoch.
  *
- *		commit.time #=> 1327383765
+ *    commit.time #=> 1327383765
  */
 static VALUE rb_git_commit_epoch_time_GET(VALUE self)
 {
@@ -133,13 +133,13 @@ static VALUE rb_git_commit_epoch_time_GET(VALUE self)
 }
 
 /*
- *	call-seq:
- *		commit.tree -> tree
+ *  call-seq:
+ *    commit.tree -> tree
  *
- *	Return the tree pointed at by this +commit+. The tree is
- *	returned as a +Rugged::Tree+ object.
+ *  Return the tree pointed at by this +commit+. The tree is
+ *  returned as a +Rugged::Tree+ object.
  *
- *		commit.tree #=> #<Rugged::Tree:0x10882c680>
+ *    commit.tree #=> #<Rugged::Tree:0x10882c680>
  */
 static VALUE rb_git_commit_tree_GET(VALUE self)
 {
@@ -158,13 +158,13 @@ static VALUE rb_git_commit_tree_GET(VALUE self)
 }
 
 /*
- *	call-seq:
- *		commit.tree_id -> oid
+ *  call-seq:
+ *    commit.tree_id -> oid
  *
- *	Return the tree oid pointed at by this +commit+. The tree is
- *	returned as a String object.
+ *  Return the tree oid pointed at by this +commit+. The tree is
+ *  returned as a String object.
  *
- *		commit.tree_id #=> "f148106ca58764adc93ad4e2d6b1d168422b9796"
+ *    commit.tree_id #=> "f148106ca58764adc93ad4e2d6b1d168422b9796"
  */
 static VALUE rb_git_commit_tree_id_GET(VALUE self)
 {
@@ -179,15 +179,15 @@ static VALUE rb_git_commit_tree_id_GET(VALUE self)
 }
 
 /*
- *	call-seq:
- *		commit.parents -> [commit, ...]
+ *  call-seq:
+ *    commit.parents -> [commit, ...]
  *
- *	Return the parent(s) of this commit as an array of +Rugged::Commit+
- *	objects. An array is always returned even when the commit has only
- *	one or zero parents.
+ *  Return the parent(s) of this commit as an array of +Rugged::Commit+
+ *  objects. An array is always returned even when the commit has only
+ *  one or zero parents.
  *
- *		commit.parents #=> => [#<Rugged::Commit:0x108828918>]
- *		root.parents #=> []
+ *    commit.parents #=> => [#<Rugged::Commit:0x108828918>]
+ *    root.parents #=> []
  */
 static VALUE rb_git_commit_parents_GET(VALUE self)
 {
@@ -213,15 +213,15 @@ static VALUE rb_git_commit_parents_GET(VALUE self)
 }
 
 /*
- *	call-seq:
- *		commit.parent_ids -> [oid, ...]
+ *  call-seq:
+ *    commit.parent_ids -> [oid, ...]
  *
- *	Return the parent oid(s) of this commit as an array of oid String
- *	objects. An array is always returned even when the commit has only
- *	one or zero parents.
+ *  Return the parent oid(s) of this commit as an array of oid String
+ *  objects. An array is always returned even when the commit has only
+ *  one or zero parents.
  *
- *		commit.parent_ids #=> => ["2cb831a8aea28b2c1b9c63385585b864e4d3bad1", ...]
- *		root.parent_ids #=> []
+ *    commit.parent_ids #=> => ["2cb831a8aea28b2c1b9c63385585b864e4d3bad1", ...]
+ *    root.parent_ids #=> []
  */
 static VALUE rb_git_commit_parent_ids_GET(VALUE self)
 {
@@ -246,33 +246,33 @@ static VALUE rb_git_commit_parent_ids_GET(VALUE self)
 }
 
 /*
- *	call-seq:
- *		Commit.create(repository, data = {}) -> oid
+ *  call-seq:
+ *    Commit.create(repository, data = {}) -> oid
  *
- *	Write a new +Commit+ object to +repository+, with the given +data+
- *	arguments, passed as a +Hash+:
+ *  Write a new +Commit+ object to +repository+, with the given +data+
+ *  arguments, passed as a +Hash+:
  *
- *	- +:message+: a string with the full text for the commit's message
- *	- +:committer+: a hash with the signature for the committer
- *	- +:author+: a hash with the signature for the author
- *	- +:parents+: an +Array+ with zero or more parents for this commit,
- *	  represented as <tt>Rugged::Commit</tt> instances, or OID +String+.
- *	- +:tree+: the tree for this commit, represented as a <tt>Rugged::Tree</tt>
- *	  instance or an OID +String+.
- *	- +:update_ref+ (optional): a +String+ with the name of a reference in the
- *	repository which should be updated to point to this commit (e.g. "HEAD")
+ *  - +:message+: a string with the full text for the commit's message
+ *  - +:committer+: a hash with the signature for the committer
+ *  - +:author+: a hash with the signature for the author
+ *  - +:parents+: an +Array+ with zero or more parents for this commit,
+ *    represented as <tt>Rugged::Commit</tt> instances, or OID +String+.
+ *  - +:tree+: the tree for this commit, represented as a <tt>Rugged::Tree</tt>
+ *    instance or an OID +String+.
+ *  - +:update_ref+ (optional): a +String+ with the name of a reference in the
+ *  repository which should be updated to point to this commit (e.g. "HEAD")
  *
- *	When the commit is successfully written to disk, its +oid+ will be
- *	returned as a hex +String+.
+ *  When the commit is successfully written to disk, its +oid+ will be
+ *  returned as a hex +String+.
  *
- *		author = {:email=>"tanoku@gmail.com", :time=>Time.now, :name=>"Vicent Mart\303\255"}
+ *    author = {:email=>"tanoku@gmail.com", :time=>Time.now, :name=>"Vicent Mart\303\255"}
  *
- *		Rugged::Commit.create(r,
- *			:author => author,
- *			:message => "Hello world\n\n",
- *			:committer => author,
- *			:parents => ["2cb831a8aea28b2c1b9c63385585b864e4d3bad1"],
- *			:tree => some_tree) #=> "f148106ca58764adc93ad4e2d6b1d168422b9796"
+ *    Rugged::Commit.create(r,
+ *      :author => author,
+ *      :message => "Hello world\n\n",
+ *      :committer => author,
+ *      :parents => ["2cb831a8aea28b2c1b9c63385585b864e4d3bad1"],
+ *      :tree => some_tree) #=> "f148106ca58764adc93ad4e2d6b1d168422b9796"
  */
 static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 {

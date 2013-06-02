@@ -59,15 +59,15 @@ static VALUE rugged_git_note_oid(const git_note* note)
 }
 
 /*
- *	call-seq:
- *		obj.notes(notes_ref = 'refs/notes/commits') -> hash
+ *  call-seq:
+ *    obj.notes(notes_ref = 'refs/notes/commits') -> hash
  *
- *	Lookup a note for +obj+ from +notes_ref+:
- *	- +notes_ref+: (optional): cannonical name of the reference to use, defaults to "refs/notes/commits"
+ *  Lookup a note for +obj+ from +notes_ref+:
+ *  - +notes_ref+: (optional): cannonical name of the reference to use, defaults to "refs/notes/commits"
  *
- *	Returns a new Hash object.
+ *  Returns a new Hash object.
  *
- *		obj.notes #=> {:message=>"note text\n", :oid=>"94eca2de348d5f672faf56b0decafa5937e3235e"}
+ *    obj.notes #=> {:message=>"note text\n", :oid=>"94eca2de348d5f672faf56b0decafa5937e3235e"}
  */
 static VALUE rb_git_note_lookup(int argc, VALUE *argv, VALUE self)
 {
@@ -109,29 +109,29 @@ static VALUE rb_git_note_lookup(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- *	call-seq:
- *		obj.create_note(data = {}) -> oid
+ *  call-seq:
+ *    obj.create_note(data = {}) -> oid
  *
- *	Write a new +note+ to +object+, with the given +data+
- *	arguments, passed as a +Hash+:
+ *  Write a new +note+ to +object+, with the given +data+
+ *  arguments, passed as a +Hash+:
  *
- *	- +:message+: the content of the note to add to the object
- *	- +:committer+: a hash with the signature for the committer
- *	- +:author+: a hash with the signature for the author
- *	- +:ref+: (optional): cannonical name of the reference to use, defaults to "refs/notes/commits"
- *	- +:force+: (optional): overwrite existing note (disabled by default)
+ *  - +:message+: the content of the note to add to the object
+ *  - +:committer+: a hash with the signature for the committer
+ *  - +:author+: a hash with the signature for the author
+ *  - +:ref+: (optional): cannonical name of the reference to use, defaults to "refs/notes/commits"
+ *  - +:force+: (optional): overwrite existing note (disabled by default)
  *
- *	When the note is successfully written to disk, its +oid+ will be
- *	returned as a hex +String+.
+ *  When the note is successfully written to disk, its +oid+ will be
+ *  returned as a hex +String+.
  *
- *		author = {:email=>"tanoku@gmail.com", :time=>Time.now, :name=>"Vicent Mart\303\255"}
+ *    author = {:email=>"tanoku@gmail.com", :time=>Time.now, :name=>"Vicent Mart\303\255"}
  *
- *		obj.create_note(
- *			:author    => author,
- *			:committer => author,
- *			:message   => "Hello world\n\n",
- *			:ref       => 'refs/notes/builds'
- *			)
+ *    obj.create_note(
+ *      :author    => author,
+ *      :committer => author,
+ *      :message   => "Hello world\n\n",
+ *      :ref       => 'refs/notes/builds'
+ *    )
  */
 static VALUE rb_git_note_create(VALUE self, VALUE rb_data)
 {
@@ -197,26 +197,26 @@ static VALUE rb_git_note_create(VALUE self, VALUE rb_data)
 }
 
 /*
- *	call-seq:
- *		obj.remove_note(data = {}) -> boolean
+ *  call-seq:
+ *    obj.remove_note(data = {}) -> boolean
  *
- *	Removes a +note+ from +object+, with the given +data+
- *	arguments, passed as a +Hash+:
+ *  Removes a +note+ from +object+, with the given +data+
+ *  arguments, passed as a +Hash+:
  *
- *	- +:committer+: a hash with the signature for the committer
- *	- +:author+: a hash with the signature for the author
- *	- +:ref+: (optional): cannonical name of the reference to use, defaults to "refs/notes/commits"
+ *  - +:committer+: a hash with the signature for the committer
+ *  - +:author+: a hash with the signature for the author
+ *  - +:ref+: (optional): cannonical name of the reference to use, defaults to "refs/notes/commits"
  *
- *	When the note is successfully removed +true+ will be
- *	returned as a +Boolean+.
+ *  When the note is successfully removed +true+ will be
+ *  returned as a +Boolean+.
  *
- *		author = {:email=>"tanoku@gmail.com", :time=>Time.now, :name=>"Vicent Mart\303\255"}
+ *    author = {:email=>"tanoku@gmail.com", :time=>Time.now, :name=>"Vicent Mart\303\255"}
  *
- *		obj.remove_note(
- *			:author    => author,
- *			:committer => author,
- *			:ref       => 'refs/notes/builds'
- *			)
+ *    obj.remove_note(
+ *      :author    => author,
+ *      :committer => author,
+ *      :ref       => 'refs/notes/builds'
+ *    )
  */
 static VALUE rb_git_note_remove(VALUE self, VALUE rb_data)
 {
@@ -298,18 +298,18 @@ static int cb_note__each(const git_oid *blob_id, const git_oid *annotated_object
 }
 
 /*
- *	call-seq:
- *		repo.each_note(notes_ref = "refs/notes/commits") { |note_blob, annotated_object| block }
- *		repo.each_note(notes_ref = "refs/notes/commits") -> an_enumerator
+ *  call-seq:
+ *    repo.each_note(notes_ref = "refs/notes/commits") { |note_blob, annotated_object| block }
+ *    repo.each_note(notes_ref = "refs/notes/commits") -> an_enumerator
  *
- *	Call the given block once for each note_blob/annotated_object pair in +repository+
- *	- +notes_ref+: (optional): cannonical name of the reference to use defaults to "refs/notes/commits"
+ *  Call the given block once for each note_blob/annotated_object pair in +repository+
+ *  - +notes_ref+: (optional): cannonical name of the reference to use defaults to "refs/notes/commits"
  *
- *	If no block is given, an +Enumerator+ is returned.
+ *  If no block is given, an +Enumerator+ is returned.
  *
- *		@repo.each_note do |note_blob, annotated_object|
- *			puts "#{note_blob.oid} => #{annotated_object.oid}"
- *		end
+ *    @repo.each_note do |note_blob, annotated_object|
+ *      puts "#{note_blob.oid} => #{annotated_object.oid}"
+ *    end
  */
 static VALUE rb_git_note_each(int argc, VALUE *argv, VALUE self)
 {
@@ -338,14 +338,14 @@ static VALUE rb_git_note_each(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- *	call-seq:
- *		repo.notes_default_ref() -> string
+ *  call-seq:
+ *    repo.notes_default_ref() -> string
  *
- *	Get the default notes reference for a +repository+:
+ *  Get the default notes reference for a +repository+:
  *
- *	Returns a new String object.
+ *  Returns a new String object.
  *
- *		repo.default_notes_ref #=> "refs/notes/commits"
+ *    repo.default_notes_ref #=> "refs/notes/commits"
  */
 static VALUE rb_git_note_default_ref_GET(VALUE self)
 {

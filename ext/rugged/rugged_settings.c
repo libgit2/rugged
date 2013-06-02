@@ -37,11 +37,10 @@
 extern VALUE rb_mRugged;
 
 /*
- *	call-seq:
- *		Rugged.Settings[option] = value
+ *  call-seq:
+ *    Rugged.Settings[option] = value
  *
- *	Sets a libgit2 library option
- *
+ *  Sets a libgit2 library option
  */
 static VALUE rb_git_set_option(VALUE self, VALUE option, VALUE value)
 {
@@ -72,11 +71,10 @@ static VALUE rb_git_set_option(VALUE self, VALUE option, VALUE value)
 }
 
 /*
- *	call-seq:
- *		val = Rugged.Settings[option] 
+ *  call-seq:
+ *    val = Rugged.Settings[option] 
  *
- *	Gets the value of a libgit2 library option
- *
+ *  Gets the value of a libgit2 library option
  */
 static VALUE rb_git_get_option(VALUE self, VALUE option)
 {

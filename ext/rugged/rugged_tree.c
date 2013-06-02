@@ -72,14 +72,14 @@ static VALUE rb_git_treeentry_fromC(const git_tree_entry *entry)
  */
 
 /*
- *	call-seq:
- *		tree.count -> count
- *		tree.length -> count
+ *  call-seq:
+ *    tree.count -> count
+ *    tree.length -> count
  *
- *	Return the number of entries contained in the tree.
+ *  Return the number of entries contained in the tree.
  *
- *	Note that this only applies to entries in the root of the tree,
- *	not any other entries contained in sub-folders.
+ *  Note that this only applies to entries in the root of the tree,
+ *  not any other entries contained in sub-folders.
  */
 static VALUE rb_git_tree_entrycount(VALUE self)
 {
@@ -90,21 +90,19 @@ static VALUE rb_git_tree_entrycount(VALUE self)
 }
 
 /*
- *	call-seq:
- *		tree[e] -> entry
- *		tree.get_entry(e) -> entry
+ *  call-seq:
+ *    tree[e] -> entry
+ *    tree.get_entry(e) -> entry
  *
- *	Return one of the entries from a tree as a +Hash+. If +e+ is a number, the +e+nth entry
- *	from the tree will be returned. If +e+ is a string, the entry with that name
- *	will be returned.
+ *  Return one of the entries from a tree as a +Hash+. If +e+ is a number, the +e+nth entry
+ *  from the tree will be returned. If +e+ is a string, the entry with that name
+ *  will be returned.
  *
- *	If the entry doesn't exist, +nil+ will be returned.
+ *  If the entry doesn't exist, +nil+ will be returned.
  *
- *		tree[3] #=> {:name => "foo.txt", :type => :blob, :oid => "d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f", :filemode => 0}
- *
- *		tree['bar.txt'] #=> {:name => "bar.txt", :type => :blob, :oid => "de5ba987198bcf2518885f0fc1350e5172cded78", :filemode => 0}
- *
- *		tree['baz.txt'] #=> nil
+ *    tree[3] #=> {:name => "foo.txt", :type => :blob, :oid => "d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f", :filemode => 0}
+ *    tree['bar.txt'] #=> {:name => "bar.txt", :type => :blob, :oid => "de5ba987198bcf2518885f0fc1350e5172cded78", :filemode => 0}
+ *    tree['baz.txt'] #=> nil
  */
 static VALUE rb_git_tree_get_entry(VALUE self, VALUE entry_id)
 {
@@ -122,18 +120,18 @@ static VALUE rb_git_tree_get_entry(VALUE self, VALUE entry_id)
 }
 
 /*
- *	call-seq:
- *		tree.get_entry_by_oid(rb_oid) -> entry
+ *  call-seq:
+ *    tree.get_entry_by_oid(rb_oid) -> entry
  *
- *	Return one of the entries from a tree as a +Hash+, based off the oid SHA.
+ *  Return one of the entries from a tree as a +Hash+, based off the oid SHA.
  *
- *	If the entry doesn't exist, +nil+ will be returned.
+ *  If the entry doesn't exist, +nil+ will be returned.
  *
- *	This does a full traversal of the every element in the tree, so this method
- *	is not especially fast.
+ *  This does a full traversal of the every element in the tree, so this method
+ *  is not especially fast.
  *
- *		tree.get_entry_by_oid("d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f")
- *		#=> {:name => "foo.txt", :type => :blob, :oid => "d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f", :filemode => 0}
+ *    tree.get_entry_by_oid("d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f")
+ *    #=> {:name => "foo.txt", :type => :blob, :oid => "d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f", :filemode => 0}
  *
  */
 static VALUE rb_git_tree_get_entry_by_oid(VALUE self, VALUE rb_oid)
@@ -149,23 +147,23 @@ static VALUE rb_git_tree_get_entry_by_oid(VALUE self, VALUE rb_oid)
 }
 
 /*
- *	call-seq:
- *		tree.each { |entry| block }
- *		tree.each -> Iterator
+ *  call-seq:
+ *    tree.each { |entry| block }
+ *    tree.each -> Iterator
  *
- *	Call +block+ with each of the entries of the subtree as a +Hash+. If no +block+
- *	is given, an +Iterator+ is returned instead.
+ *  Call +block+ with each of the entries of the subtree as a +Hash+. If no +block+
+ *  is given, an +Iterator+ is returned instead.
  *
- *	Note that only the entries in the root of the tree are yielded; if you need to
- *	list also entries in subfolders, use +tree.walk+ instead.
+ *  Note that only the entries in the root of the tree are yielded; if you need to
+ *  list also entries in subfolders, use +tree.walk+ instead.
  *
- *		tree.each { |entry| puts entry.inspect }
+ *    tree.each { |entry| puts entry.inspect }
  *
- *	generates:
+ *  generates:
  *
- *		{:name => "foo.txt", :type => :blob, :oid => "d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f", :filemode => 0}
- *		{:name => "bar.txt", :type => :blob, :oid => "de5ba987198bcf2518885f0fc1350e5172cded78", :filemode => 0}
- *		...
+ *    {:name => "foo.txt", :type => :blob, :oid => "d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f", :filemode => 0}
+ *    {:name => "bar.txt", :type => :blob, :oid => "de5ba987198bcf2518885f0fc1350e5172cded78", :filemode => 0}
+ *    ...
  */
 static VALUE rb_git_tree_each(VALUE self)
 {
@@ -196,26 +194,26 @@ static int rugged__treewalk_cb(const char *root, const git_tree_entry *entry, vo
 }
 
 /*
- *	call-seq:
- *		tree.walk(mode) { |root, entry| block }
- *		tree.walk(mode) -> Iterator
+ *  call-seq:
+ *    tree.walk(mode) { |root, entry| block }
+ *    tree.walk(mode) -> Iterator
  *
- *	Walk +tree+ with the given mode (either +:preorder+ or +:postorder+) and yield
- *	to +block+ every entry in +tree+ and all its subtrees, as a +Hash+. The +block+
- *	also takes a +root+, the relative path in the traversal, starting from the root
- *	of the original tree.
+ *  Walk +tree+ with the given mode (either +:preorder+ or +:postorder+) and yield
+ *  to +block+ every entry in +tree+ and all its subtrees, as a +Hash+. The +block+
+ *  also takes a +root+, the relative path in the traversal, starting from the root
+ *  of the original tree.
  *
- *	If no +block+ is given, an +Iterator+ is returned instead.
+ *  If no +block+ is given, an +Iterator+ is returned instead.
  *
- *		tree.walk(:postorder) { |root, entry| puts "#{root}#{entry[:name]} [#{entry[:oid]}]" }
+ *    tree.walk(:postorder) { |root, entry| puts "#{root}#{entry[:name]} [#{entry[:oid]}]" }
  *
- *	generates:
+ *  generates:
  *
- *		USAGE.rb [02bae86c91f96b5fdb6b1cf06f5aa3612139e318]
- *		ext [23f135b3c576b6ac4785821888991d7089f35db1]
- *		ext/rugged [25c88faa9302e34e16664eb9c990deb2bcf77849]
- *		ext/rugged/extconf.rb [40c1aa8a8cec8ca444ed5758e3f00ecff093070a]
- *		...
+ *    USAGE.rb [02bae86c91f96b5fdb6b1cf06f5aa3612139e318]
+ *    ext [23f135b3c576b6ac4785821888991d7089f35db1]
+ *    ext/rugged [25c88faa9302e34e16664eb9c990deb2bcf77849]
+ *    ext/rugged/extconf.rb [40c1aa8a8cec8ca444ed5758e3f00ecff093070a]
+ *    ...
  */
 static VALUE rb_git_tree_walk(VALUE self, VALUE rb_mode)
 {
@@ -268,7 +266,7 @@ static VALUE rb_git_tree_path(VALUE self, VALUE rb_path)
  *    tree.diff(diffable[, options]) -> diff
  *
  *  Returns a diff between the tree and the diffable object that was given.
- *  +diffable+ can either be a `Rugged::Commit`, a `Rugged::Tree`, a `Rugged::Index`,
+ *  +diffable+ can either be a +Rugged::Commit+, a +Rugged::Tree+, a +Rugged::Index+,
  *  or +nil+.
  *
  *  The +tree+ object will be used as the "old file" side of the diff, while the
@@ -325,7 +323,7 @@ static VALUE rb_git_tree_path(VALUE self, VALUE rb_path)
  *    If true, unmodified files will be included in the diff.
  *
  *  :recurse_untracked_dirs ::
- *		Even if `:include_untracked` is true, untracked directories will only be
+ *    Even if +:include_untracked+ is true, untracked directories will only be
  *    marked with a single entry in the diff. If this flag is set to true,
  *    all files under ignored directories will be included in the diff, too.
  *
@@ -350,7 +348,7 @@ static VALUE rb_git_tree_path(VALUE self, VALUE rb_path)
  *    typechange records.
  *
  *  :include_typechange_trees ::
- *    Even if `:include_typechange` is true, blob -> tree changes will still
+ *    Even if +:include_typechange+ is true, blob -> tree changes will still
  *    usually be handled as a deletion of the blob. If this flag is set to true,
  *    blob -> tree changes will be marked as typechanges.
  *
@@ -358,7 +356,7 @@ static VALUE rb_git_tree_path(VALUE self, VALUE rb_path)
  *    If true, file mode changes will be ignored.
  *
  *  :recurse_ignored_dirs ::
- *    Even if `:include_ignored` is true, ignored directories will only be
+ *    Even if +:include_ignored+ is true, ignored directories will only be
  *    marked with a single entry in the diff. If this flag is set to true,
  *    all files under ignored directories will be included in the diff, too.
  *

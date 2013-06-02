@@ -50,15 +50,15 @@ static inline void rugged_validate_remote_url(VALUE rb_url)
 }
 
 /*
- *  	call-seq:
- *   		Remote.new(repository, url) -> remote
+ *  call-seq:
+ *    Remote.new(repository, url) -> remote
  *
- *   	Return a new remote with +url+ in +repository+ , the remote is not persisted:
- *	- +url+: a valid remote url
+ *  Return a new remote with +url+ in +repository+ , the remote is not persisted:
+ *  - +url+: a valid remote url
  *
- *	Returns a new Rugged::Remote object
+ *  Returns a new Rugged::Remote object
  *
- *		Rugged::Remote.new(@repo, 'git://github.com/libgit2/libgit2.git') #=> #<Rugged::Remote:0x00000001fbfa80>
+ *    Rugged::Remote.new(@repo, 'git://github.com/libgit2/libgit2.git') #=> #<Rugged::Remote:0x00000001fbfa80>
  */
 static VALUE rb_git_remote_new(VALUE klass, VALUE rb_repo, VALUE rb_url)
 {
@@ -83,16 +83,16 @@ static VALUE rb_git_remote_new(VALUE klass, VALUE rb_repo, VALUE rb_url)
 }
 
 /*
- *  	call-seq:
- *   		Remote.add(repository, name, url) -> remote
+ *  call-seq:
+ *     Remote.add(repository, name, url) -> remote
  *
- *   	Add a new remote with +name+ and +url+ to +repository+
- *	- +url+: a valid remote url
- *	- +name+: a valid remote name
+ *  Add a new remote with +name+ and +url+ to +repository+
+ *  - +url+: a valid remote url
+ *  - +name+: a valid remote name
  *
- *	Returns a new Rugged::Remote object
+ *  Returns a new Rugged::Remote object
  *
- *		Rugged::Remote.add(@repo, 'origin', 'git://github.com/libgit2/rugged.git') #=> #<Rugged::Remote:0x00000001fbfa80>
+ *    Rugged::Remote.add(@repo, 'origin', 'git://github.com/libgit2/rugged.git') #=> #<Rugged::Remote:0x00000001fbfa80>
  */
 static VALUE rb_git_remote_add(VALUE klass, VALUE rb_repo,VALUE rb_name, VALUE rb_url)
 {
@@ -118,16 +118,16 @@ static VALUE rb_git_remote_add(VALUE klass, VALUE rb_repo,VALUE rb_name, VALUE r
 }
 
 /*
- *  	call-seq:
- *   		Remote.lookup(repository, name) -> remote or nil
+ *  call-seq:
+ *    Remote.lookup(repository, name) -> remote or nil
  *
- *   	Return an existing remote with +name+ in +repository+:
- *	- +name+: a valid remote name
+ *  Return an existing remote with +name+ in +repository+:
+ *  - +name+: a valid remote name
  *
- *	Returns a new Rugged::Remote object or +nil+ if the
- *	remote doesn't exist
+ *  Returns a new Rugged::Remote object or +nil+ if the
+ *  remote doesn't exist
  *
- *		Rugged::Remote.lookup(@repo, 'origin') #=> #<Rugged::Remote:0x00000001fbfa80>
+ *    Rugged::Remote.lookup(@repo, 'origin') #=> #<Rugged::Remote:0x00000001fbfa80>
  */
 static VALUE rb_git_remote_lookup(VALUE klass, VALUE rb_repo, VALUE rb_name)
 {
@@ -150,10 +150,10 @@ static VALUE rb_git_remote_lookup(VALUE klass, VALUE rb_repo, VALUE rb_name)
 }
 
 /*
- * 	call-seq:
- * 		remote.disconnect() -> nil
+ *  call-seq:
+ *    remote.disconnect() -> nil
  *
- *	Disconnect from the remote, closes the connection to the remote
+ *  Disconnect from the remote, closes the connection to the remote
  */
 static VALUE rb_git_remote_disconnect(VALUE self)
 {
@@ -165,23 +165,23 @@ static VALUE rb_git_remote_disconnect(VALUE self)
 }
 
 /*
- *	call-seq:
- *		remote.connect(direction) -> nil
- *		remote.connect(direction) { |connected_remote| block }
+ *  call-seq:
+ *    remote.connect(direction) -> nil
+ *    remote.connect(direction) { |connected_remote| block }
  *
- * 	Open a connection to a remote:
- * 	- +direction+: +:fetch+ or +:pull+
+ *  Open a connection to a remote:
+ *  - +direction+: +:fetch+ or +:pull+
  *
- * 	If a block is given it will be passed the connected remote as argument
- * 	and the remote will be disconnected when the block terminates.
+ *  If a block is given it will be passed the connected remote as argument
+ *  and the remote will be disconnected when the block terminates.
  *
- *	The transport is selected based on the URL.
+ *  The transport is selected based on the URL.
  *
- *		remote.connect(:fetch) #=> nil
+ *    remote.connect(:fetch) #=> nil
  *
- *		remote.connect(:fetch) do |r|
- *		  r.connected?  #=> true
- *		end
+ *    remote.connect(:fetch) do |r|
+ *      r.connected?  #=> true
+ *    end
  *
  */
 static VALUE rb_git_remote_connect(VALUE self, VALUE rb_direction)
@@ -232,24 +232,24 @@ static int cb_remote__ls(git_remote_head *head, void *payload)
 }
 
 /*
- *	call-seq:
- *		remote.ls() -> an_enumerator
- *		remote.ls() { |remote_head_hash| block }
+ *  call-seq:
+ *    remote.ls() -> an_enumerator
+ *    remote.ls() { |remote_head_hash| block }
  *
- *	List references available in a connected +remote+ repository along
- *	with the associated commit IDs.
+ *  List references available in a connected +remote+ repository along
+ *  with the associated commit IDs.
  *
- * 	Call the given block once for each remote head in the +remote+ as a
- * 	+Hash+.
- * 	If no block is given an Enumerator is returned.
+ *  Call the given block once for each remote head in the +remote+ as a
+ *  +Hash+.
+ *  If no block is given an Enumerator is returned.
  *
- *		remote.connect(:fetch) do |r|
- *		  r.ls.to_a #=> [{:local?=>false, :oid=>"b3ee97a91b02e91c35394950bda6ea622044baad", :loid=> nil, :name=>"refs/heads/development"}]
- *		end
+ *    remote.connect(:fetch) do |r|
+ *      r.ls.to_a #=> [{:local?=>false, :oid=>"b3ee97a91b02e91c35394950bda6ea622044baad", :loid=> nil, :name=>"refs/heads/development"}]
+ *    end
  *
- *	remote head hash includes:
- * 	[:oid] oid of the remote head
- * 	[:name] name of the remote head
+ *  remote head hash includes:
+ *  [:oid] oid of the remote head
+ *  [:name] name of the remote head
  *
  *
  */
@@ -269,11 +269,11 @@ static VALUE rb_git_remote_ls(VALUE self)
 }
 
 /*
- * 	call-seq:
- * 		remote.name() -> string
+ *  call-seq:
+ *    remote.name() -> string
  *
  *	Returns the remote's name
- *		remote.name #=> "origin"
+ *	  remote.name #=> "origin"
  */
 static VALUE rb_git_remote_name(VALUE self)
 {
@@ -287,11 +287,11 @@ static VALUE rb_git_remote_name(VALUE self)
 }
 
 /*
- * 	call-seq:
- * 		remote.url() -> string
+ *  call-seq:
+ *    remote.url() -> string
  *
- *	Returns the remote's url
- *		remote.url #=> "git://github.com/libgit2/rugged.git"
+ *  Returns the remote's url
+ *    remote.url #=> "git://github.com/libgit2/rugged.git"
  */
 static VALUE rb_git_remote_url(VALUE self)
 {
@@ -302,12 +302,12 @@ static VALUE rb_git_remote_url(VALUE self)
 }
 
 /*
- * 	call-seq:
- * 		remote.url = url -> url
+ *  call-seq:
+ *    remote.url = url -> url
  *
- *	Sets the remote's url without persisting it in the config.
- *	Existing connections will not be updated.
- *		remote.url = 'git://github.com/libgit2/rugged.git' #=> "git://github.com/libgit2/rugged.git"
+ *  Sets the remote's url without persisting it in the config.
+ *  Existing connections will not be updated.
+ *    remote.url = 'git://github.com/libgit2/rugged.git' #=> "git://github.com/libgit2/rugged.git"
  */
 static VALUE rb_git_remote_set_url(VALUE self, VALUE rb_url)
 {
@@ -323,12 +323,12 @@ static VALUE rb_git_remote_set_url(VALUE self, VALUE rb_url)
 }
 
 /*
- * 	call-seq:
- * 		remote.push_url() -> string or nil
+ *  call-seq:
+ *    remote.push_url() -> string or nil
  *
- *	Returns the remote's url for pushing or nil if no special url for
- *	pushing is set.
- *		remote.push_url #=> "git://github.com/libgit2/rugged.git"
+ *  Returns the remote's url for pushing or nil if no special url for
+ *  pushing is set.
+ *    remote.push_url #=> "git://github.com/libgit2/rugged.git"
  */
 static VALUE rb_git_remote_push_url(VALUE self)
 {
@@ -342,12 +342,12 @@ static VALUE rb_git_remote_push_url(VALUE self)
 }
 
 /*
- * 	call-seq:
- * 		remote.push_url = url -> url
+ *  call-seq:
+ *    remote.push_url = url -> url
  *
- *	Sets the remote's url for pushing without persisting it in the config.
- *	Existing connections will not be updated.
- *		remote.push_url = 'git@github.com/libgit2/rugged.git' #=> "git@github.com/libgit2/rugged.git"
+ *  Sets the remote's url for pushing without persisting it in the config.
+ *  Existing connections will not be updated.
+ *    remote.push_url = 'git@github.com/libgit2/rugged.git' #=> "git@github.com/libgit2/rugged.git"
  */
 static VALUE rb_git_remote_set_push_url(VALUE self, VALUE rb_url)
 {
@@ -385,10 +385,10 @@ static VALUE rb_git_remote_refspecs(VALUE self, git_direction direction)
 }
 
 /*
- *	call-seq:
- *	remote.fetch_refspecs -> array
+ *  call-seq:
+ *  remote.fetch_refspecs -> array
  *
- *	Get the remote's list of fetch refspecs as +array+
+ *  Get the remote's list of fetch refspecs as +array+
  */
 static VALUE rb_git_remote_fetch_refspecs(VALUE self)
 {
@@ -396,10 +396,10 @@ static VALUE rb_git_remote_fetch_refspecs(VALUE self)
 }
 
 /*
- *	call-seq:
- *	remote.push_refspecs -> array
+ *  call-seq:
+ *  remote.push_refspecs -> array
  *
- *	Get the remote's list of push refspecs as +array+
+ *  Get the remote's list of push refspecs as +array+
  */
 static VALUE rb_git_remote_push_refspecs(VALUE self)
 {
@@ -426,10 +426,10 @@ static VALUE rb_git_remote_add_refspec(VALUE self, VALUE rb_refspec, git_directi
 }
 
 /*
- *	call-seq:
- *		remote.add_fetch(refspec) -> nil
+ *  call-seq:
+ *    remote.add_fetch(refspec) -> nil
  *
- *	Add a fetch refspec to the remote
+ *  Add a fetch refspec to the remote
  */
 static VALUE rb_git_remote_add_fetch(VALUE self, VALUE rb_refspec)
 {
@@ -437,10 +437,10 @@ static VALUE rb_git_remote_add_fetch(VALUE self, VALUE rb_refspec)
 }
 
 /*
- *	call-seq:
- *		remote.add_push(refspec) -> nil
+ *  call-seq:
+ *    remote.add_push(refspec) -> nil
  *
- *	Add a push refspec to the remote
+ *  Add a push refspec to the remote
  */
 static VALUE rb_git_remote_add_push(VALUE self, VALUE rb_refspec)
 {
@@ -448,10 +448,10 @@ static VALUE rb_git_remote_add_push(VALUE self, VALUE rb_refspec)
 }
 
 /*
- *	call-seq:
- *		remote.clear_refspecs -> nil
+ *  call-seq:
+ *    remote.clear_refspecs -> nil
  *
- *	Remove all configured fetch and push refspecs from the remote.
+ *  Remove all configured fetch and push refspecs from the remote.
  */
 static VALUE rb_git_remote_clear_refspecs(VALUE self)
 {
@@ -465,14 +465,14 @@ static VALUE rb_git_remote_clear_refspecs(VALUE self)
 }
 
 /*
- * 	call-seq:
- * 		remote.connected? -> true or false
+ *  call-seq:
+ *    remote.connected? -> true or false
  *
- *	Returns if the remote is connected
+ *  Returns if the remote is connected
  *
- *		remote.connected? #=> false
- *		remote.connect(:fetch)
- *		remote.connected? #=> true
+ *    remote.connected? #=> false
+ *    remote.connect(:fetch)
+ *    remote.connected? #=> true
  */
 static VALUE rb_git_remote_connected(VALUE self)
 {
@@ -483,17 +483,17 @@ static VALUE rb_git_remote_connected(VALUE self)
 }
 
 /*
- * 	call-seq:
- * 		remote.download() -> nil
+ *  call-seq:
+ *    remote.download() -> nil
  *
- * 	Download the packfile from a connected remote
+ *  Download the packfile from a connected remote
  *
- *	Negotiate what objects should be downloaded and download the
- *	packfile with those objects.
+ *  Negotiate what objects should be downloaded and download the
+ *  packfile with those objects.
  *
- *		remote.connect(:fetch) do |r|
- *		  r.download
- *		end
+ *    remote.connect(:fetch) do |r|
+ *      r.download
+ *    end
  */
 static VALUE rb_git_remote_download(VALUE self)
 {
@@ -532,16 +532,16 @@ static VALUE rb_git_remote__update_tips(VALUE self)
 }
 
 /*
- * 	call-seq:
- * 		remote.update_tips! -> nil
- * 		remote.update_tips! { |reference, source, destination| block }
+ *  call-seq:
+ *    remote.update_tips! -> nil
+ *    remote.update_tips! { |reference, source, destination| block }
  *
- *	Update the tips to a new state from a connected remote. The target
- *	objects must be downloaded before the tips are updated.
+ *  Update the tips to a new state from a connected remote. The target
+ *  objects must be downloaded before the tips are updated.
  *
- *		  r.update_tips! do |ref, src, dst|
- *		    puts "#{ref}: #{src}..#{dst}"
- *		  end
+ *      r.update_tips! do |ref, src, dst|
+ *        puts "#{ref}: #{src}..#{dst}"
+ *      end
  */
 static VALUE rb_git_remote_update_tips(VALUE self)
 {
@@ -577,12 +577,12 @@ static VALUE rb_git_remote_update_tips(VALUE self)
 }
 
 /*
- *	call-seq:
- *		Remote.names(repository) -> array
+ *  call-seq:
+ *    Remote.names(repository) -> array
  *
- *	Returns the names of all remotes in +repository+
+ *  Returns the names of all remotes in +repository+
  *
- *		Rugged::Remote.names(@repo) #=> ['origin', 'upstream']
+ *    Rugged::Remote.names(@repo) #=> ['origin', 'upstream']
  */
 
 static VALUE rb_git_remote_names(VALUE klass, VALUE rb_repo)
@@ -643,13 +643,13 @@ static VALUE rb_git_remote_each(VALUE klass, VALUE rb_repo)
 }
 
 /*
- * 	call-seq:
- * 		remote.save -> true
+ *  call-seq:
+ *    remote.save -> true
  *
- * 	Saves the remote data ( url, fetchspecs, ...) to the config
+ *  Saves the remote data ( url, fetchspecs, ...) to the config
  *
- *	One can't save a in-memory remote created with Remote.new.
- *	Doing so will result in an exception being raised.
+ *  One can't save a in-memory remote created with Remote.new.
+ *  Doing so will result in an exception being raised.
 */
 static VALUE rb_git_remote_save(VALUE self)
 {
@@ -672,22 +672,22 @@ static int cb_remote__rename_problem(const char* refspec_name, void *payload)
 }
 
 /*
- * 	call-seq:
- * 		remote.rename!(new_name) -> array or nil
+ *  call-seq:
+ *    remote.rename!(new_name) -> array or nil
  *
- * 	Renames a remote
+ *  Renames a remote
  *
- * 	All remote-tracking branches and configuration settings
- * 	for the remote are updated.
+ *  All remote-tracking branches and configuration settings
+ *  for the remote are updated.
  *
- * 	Returns +nil+ if everything was updated or array of fetch refspecs
- * 	that haven't been automatically updated and need potential manual
- * 	tweaking.
+ *  Returns +nil+ if everything was updated or array of fetch refspecs
+ *  that haven't been automatically updated and need potential manual
+ *  tweaking.
  *
- * 	A temporary in-memory remote, created with Remote.new
- * 	cannot be given a name with this method.
- * 		remote = Rugged::Remote.lookup(@repo, 'origin')
- * 		remote.rename!('upstream') #=> nil
+ *  A temporary in-memory remote, created with Remote.new
+ *  cannot be given a name with this method.
+ *    remote = Rugged::Remote.lookup(@repo, 'origin')
+ *    remote.rename!('upstream') #=> nil
  *
 */
 static VALUE rb_git_remote_rename(VALUE self, VALUE rb_new_name)

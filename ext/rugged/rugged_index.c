@@ -349,13 +349,13 @@ static VALUE rb_git_index_writetree(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- *	call-seq:
- *		index.read_tree(tree)
+ *  call-seq:
+ *    index.read_tree(tree)
  *
- *      Clear the current index and start the index again on top of +tree+
+ *  Clear the current index and start the index again on top of +tree+
  *
- *      Further index operations (+add+, +update+, +remove+, etc) will
- *      be considered changes on top of +tree+.
+ *  Further index operations (+add+, +update+, +remove+, etc) will
+ *  be considered changes on top of +tree+.
  */
 static VALUE rb_git_index_readtree(VALUE self, VALUE rb_tree)
 {
@@ -381,7 +381,7 @@ static VALUE rb_git_index_readtree(VALUE self, VALUE rb_tree)
  *  directory.
  *
  *  The second form returns a diff between the index and the given diffable object.
- *  +diffable+ can either be a `Rugged::Commit` or a `Rugged::Tree`.
+ *  +diffable+ can either be a +Rugged::Commit+ or a +Rugged::Tree+.
  *
  *  The index will be used as the "old file" side of the diff, while the working
  *  directory or the +diffable+ will be used for the "new file" side.
@@ -435,7 +435,7 @@ static VALUE rb_git_index_readtree(VALUE self, VALUE rb_tree)
  *    If true, unmodified files will be included in the diff.
  *
  *  :recurse_untracked_dirs ::
- *		Even if `:include_untracked` is true, untracked directories will only be
+ *    Even if +:include_untracked+ is true, untracked directories will only be
  *    marked with a single entry in the diff. If this flag is set to true,
  *    all files under ignored directories will be included in the diff, too.
  *
@@ -460,7 +460,7 @@ static VALUE rb_git_index_readtree(VALUE self, VALUE rb_tree)
  *    typechange records.
  *
  *  :include_typechange_trees ::
- *    Even if `:include_typechange` is true, blob -> tree changes will still
+ *    Even if +:include_typechange+ is true, blob -> tree changes will still
  *    usually be handled as a deletion of the blob. If this flag is set to true,
  *    blob -> tree changes will be marked as typechanges.
  *
@@ -468,7 +468,7 @@ static VALUE rb_git_index_readtree(VALUE self, VALUE rb_tree)
  *    If true, file mode changes will be ignored.
  *
  *  :recurse_ignored_dirs ::
- *    Even if `:include_ignored` is true, ignored directories will only be
+ *    Even if +:include_ignored+ is true, ignored directories will only be
  *    marked with a single entry in the diff. If this flag is set to true,
  *    all files under ignored directories will be included in the diff, too.
  */

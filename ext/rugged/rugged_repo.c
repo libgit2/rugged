@@ -38,13 +38,13 @@ VALUE rb_cRuggedOdbObject;
 static ID id_call;
 
 /*
- *	call-seq:
- *		odb_obj.oid -> hex_oid
+ *  call-seq:
+ *    odb_obj.oid -> hex_oid
  *
- *	Return the Object ID (a 40 character SHA1 hash) for this raw
- *	object.
+ *  Return the Object ID (a 40 character SHA1 hash) for this raw
+ *  object.
  *
- *		odb_obj.oid #=> "d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f"
+ *    odb_obj.oid #=> "d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f"
  */
 static VALUE rb_git_odbobj_oid(VALUE self)
 {
@@ -54,15 +54,15 @@ static VALUE rb_git_odbobj_oid(VALUE self)
 }
 
 /*
- *	call-seq:
- *		odb_obj.data -> buffer
+ *  call-seq:
+ *    odb_obj.data -> buffer
  *
- *	Return an ASCII buffer with the raw bytes that form the Git object.
+ *  Return an ASCII buffer with the raw bytes that form the Git object.
  *
- *		odb_obj.data #=> "tree 87ebee8367f9cc5ac04858b3bd5610ca74f04df9\n"
- *		             #=> "parent 68d041ee999cb07c6496fbdd4f384095de6ca9e1\n"
- *		             #=> "author Vicent Martí <tanoku@gmail.com> 1326863045 -0800\n"
- *		             #=> ...
+ *    odb_obj.data #=> "tree 87ebee8367f9cc5ac04858b3bd5610ca74f04df9\n"
+ *                 #=> "parent 68d041ee999cb07c6496fbdd4f384095de6ca9e1\n"
+ *                 #=> "author Vicent Martí <tanoku@gmail.com> 1326863045 -0800\n"
+ *                 #=> ...
  */
 static VALUE rb_git_odbobj_data(VALUE self)
 {
@@ -72,13 +72,13 @@ static VALUE rb_git_odbobj_data(VALUE self)
 }
 
 /*
- *	call-seq:
- *		odb_obj.size -> size
+ *  call-seq:
+ *    odb_obj.size -> size
  *
- *	Return the size in bytes of the Git object after decompression. This is
- *	also the size of the +obj.data+ buffer.
+ *  Return the size in bytes of the Git object after decompression. This is
+ *  also the size of the +obj.data+ buffer.
  *
- *		odb_obj.size #=> 231
+ *    odb_obj.size #=> 231
  */
 static VALUE rb_git_odbobj_size(VALUE self)
 {
@@ -88,13 +88,13 @@ static VALUE rb_git_odbobj_size(VALUE self)
 }
 
 /*
- *	call-seq:
- *		odb_obj.type -> Symbol
+ *  call-seq:
+ *    odb_obj.type -> Symbol
  *
- *	Return a Ruby symbol representing the basic Git type of this object.
- *	Possible values are +:tree+, +:blob+, +:commit+ and +:tag+
+ *  Return a Ruby symbol representing the basic Git type of this object.
+ *  Possible values are +:tree+, +:blob+, +:commit+ and +:tag+
  *
- *		odb_obj.type #=> :tag
+ *    odb_obj.type #=> :tag
  */
 static VALUE rb_git_odbobj_type(VALUE self)
 {
@@ -203,25 +203,25 @@ static VALUE rb_git_repo_open_bare(int argc, VALUE *argv, VALUE klass)
 }
 
 /*
- *	call-seq:
- *		Rugged::Repository.new(path, options = {}) -> repository
+ *  call-seq:
+ *    Rugged::Repository.new(path, options = {}) -> repository
  *
- *	Open a Git repository in the given +path+ and return a +Repository+ object
- *	representing it. An exception will be thrown if +path+ doesn't point to a
- *	valid repository. If you need to create a repository from scratch, use
- *	+Rugged::Repository.init+ instead.
+ *  Open a Git repository in the given +path+ and return a +Repository+ object
+ *  representing it. An exception will be thrown if +path+ doesn't point to a
+ *  valid repository. If you need to create a repository from scratch, use
+ *  +Rugged::Repository.init+ instead.
  *
- *	The +path+ must point to the actual folder (+.git+) of a Git repository.
- *	If you're unsure of where is this located, use +Rugged::Repository.discover+
- *	instead.
+ *  The +path+ must point to the actual folder (+.git+) of a Git repository.
+ *  If you're unsure of where is this located, use +Rugged::Repository.discover+
+ *  instead.
  *
- *		Rugged::Repository.new('~/test/.git') #=> #<Rugged::Repository:0x108849488>
+ *    Rugged::Repository.new('~/test/.git') #=> #<Rugged::Repository:0x108849488>
  *
- *	+options+ is an optional hash with the following keys:
+ *  +options+ is an optional hash with the following keys:
  *
- *	- +:alternates+: +Array+ with a list of alternate object folders, e.g.
+ *  - +:alternates+: +Array+ with a list of alternate object folders, e.g.
  *
- *		Rugged::Repository.new(path, :alternates => ['./other/repo/.git/objects'])
+ *    Rugged::Repository.new(path, :alternates => ['./other/repo/.git/objects'])
  */
 static VALUE rb_git_repo_new(int argc, VALUE *argv, VALUE klass)
 {
@@ -240,20 +240,20 @@ static VALUE rb_git_repo_new(int argc, VALUE *argv, VALUE klass)
 }
 
 /*
- *	call-seq:
- *		init_at(path, is_bare = false) -> repository
+ *  call-seq:
+ *    init_at(path, is_bare = false) -> repository
  *
- *	Initialize a Git repository in +path+. This implies creating all the
- *	necessary files on the FS, or re-initializing an already existing
- *	repository if the files have already been created.
+ *  Initialize a Git repository in +path+. This implies creating all the
+ *  necessary files on the FS, or re-initializing an already existing
+ *  repository if the files have already been created.
  *
- *	The +is_bare+ (optional, defaults to false) attribute specifies whether
- *	the Repository should be created on disk as bare or not.
- *	Bare repositories have no working directory and are created in the root
- *	of +path+. Non-bare repositories are created in a +.git+ folder and
- *	use +path+ as working directory.
+ *  The +is_bare+ (optional, defaults to false) attribute specifies whether
+ *  the Repository should be created on disk as bare or not.
+ *  Bare repositories have no working directory and are created in the root
+ *  of +path+. Non-bare repositories are created in a +.git+ folder and
+ *  use +path+ as working directory.
  *
- *		Rugged::Repository.init_at('~/repository', :bare) #=> #<Rugged::Repository:0x108849488>
+ *    Rugged::Repository.init_at('~/repository', :bare) #=> #<Rugged::Repository:0x108849488>
  */
 static VALUE rb_git_repo_init_at(int argc, VALUE *argv, VALUE klass)
 {
@@ -327,18 +327,18 @@ static void parse_clone_options(git_clone_options *ret, VALUE rb_options_hash, s
 }
 
 /*
- *	call-seq:
- *		clone_at(url, local_path) -> repository
- *		clone_at(url, local_path, options) -> repository
+ *  call-seq:
+ *    clone_at(url, local_path) -> repository
+ *    clone_at(url, local_path, options) -> repository
  *
- *	Clone a repository from +url+ to +local_path+.
+ *  Clone a repository from +url+ to +local_path+.
  *
- *	Options is a hash with the following keys:
+ *  Options is a hash with the following keys:
  *
- *	*  `:bare` (default: `false`) - clone to a bare repository.
+ *  *  `:bare` (default: `false`) - clone to a bare repository.
  *
- *	*  `:progress` (default: none) - fetch progress callback.
- *	   example: `lambda { |total_objects, indexed_objects, received_objects, received_bytes| }`
+ *  *  `:progress` (default: none) - fetch progress callback.
+ *     example: `lambda { |total_objects, indexed_objects, received_objects, received_bytes| }`
  */
 static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
 {
@@ -399,16 +399,16 @@ static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
 
 
 /*
- *	call-seq:
- *		repo.index = idx
+ *  call-seq:
+ *    repo.index = idx
  *
- *	Set the index for this +Repository+. +idx+ must be a instance of
- *	+Rugged::Index+. This index will be used internally by all
- *	operations that use the Git index on +repo+.
+ *  Set the index for this +Repository+. +idx+ must be a instance of
+ *  +Rugged::Index+. This index will be used internally by all
+ *  operations that use the Git index on +repo+.
  *
- *	Note that it's not necessary to set the +index+ for any repository;
- *	by default repositories are loaded with the index file that can be
- *	located on the +.git+ folder in the filesystem.
+ *  Note that it's not necessary to set the +index+ for any repository;
+ *  by default repositories are loaded with the index file that can be
+ *  located on the +.git+ folder in the filesystem.
  */
 static VALUE rb_git_repo_set_index(VALUE self, VALUE rb_data)
 {
@@ -421,17 +421,17 @@ static VALUE rb_git_repo_get_index(VALUE self)
 }
 
 /*
- *	call-seq:
- *		repo.config = cfg
+ *  call-seq:
+ *    repo.config = cfg
  *
- *	Set the configuration file for this +Repository+. +cfg+ must be a instance of
- *	+Rugged::Config+. This config file will be used internally by all
- *	operations that need to lookup configuration settings on +repo+.
+ *  Set the configuration file for this +Repository+. +cfg+ must be a instance of
+ *  +Rugged::Config+. This config file will be used internally by all
+ *  operations that need to lookup configuration settings on +repo+.
  *
- *	Note that it's not necessary to set the +config+ for any repository;
- *	by default repositories are loaded with their relevant config files
- *	on the filesystem, and the corresponding global and system files if
- *	they can be found.
+ *  Note that it's not necessary to set the +config+ for any repository;
+ *  by default repositories are loaded with their relevant config files
+ *  on the filesystem, and the corresponding global and system files if
+ *  they can be found.
  */
 static VALUE rb_git_repo_set_config(VALUE self, VALUE rb_data)
 {
@@ -444,13 +444,13 @@ static VALUE rb_git_repo_get_config(VALUE self)
 }
 
 /*
- *	call-seq:
- *		repo.merge_base(oid1, oid2, ...)
- *		repo.merge_base(ref1, ref2, ...)
- *		repo.merge_base(commit1, commit2, ...)
+ *  call-seq:
+ *    repo.merge_base(oid1, oid2, ...)
+ *    repo.merge_base(ref1, ref2, ...)
+ *    repo.merge_base(commit1, commit2, ...)
  *
- *	Find a merge base, given two or more commits or oids.
- *	Returns nil if a merge base is not found.
+ *  Find a merge base, given two or more commits or oids.
+ *  Returns nil if a merge base is not found.
  */
 static VALUE rb_git_repo_merge_base(VALUE self, VALUE rb_args)
 {
@@ -485,14 +485,14 @@ static VALUE rb_git_repo_merge_base(VALUE self, VALUE rb_args)
 }
 
 /*
- *	call-seq:
- *		repo.include?(oid) -> true or false
- *		repo.exists?(oid) -> true or false
+ *  call-seq:
+ *    repo.include?(oid) -> true or false
+ *    repo.exists?(oid) -> true or false
  *
- *	Return whether an object with the given SHA1 OID (represented as
- *	a 40-character string) exists in the repository.
+ *  Return whether an object with the given SHA1 OID (represented as
+ *  a 40-character string) exists in the repository.
  *
- *		repo.include?("d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f") #=> true
+ *    repo.include?("d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f") #=> true
  */
 static VALUE rb_git_repo_exists(VALUE self, VALUE hex)
 {
@@ -563,16 +563,16 @@ static VALUE rb_git_repo_read_header(VALUE self, VALUE hex)
 }
 
 /*
- *	call-seq:
- *		Repository.hash(buffer, type) -> oid
+ *  call-seq:
+ *    Repository.hash(buffer, type) -> oid
  *
- *	Hash the contents of +buffer+ as raw bytes (ignoring any encoding
- *	information) and adding the relevant header corresponding to +type+,
- *	and return a hex string representing the result from the hash.
+ *  Hash the contents of +buffer+ as raw bytes (ignoring any encoding
+ *  information) and adding the relevant header corresponding to +type+,
+ *  and return a hex string representing the result from the hash.
  *
- *		Repository.hash('hello world', :commit) #=> "de5ba987198bcf2518885f0fc1350e5172cded78"
+ *    Repository.hash('hello world', :commit) #=> "de5ba987198bcf2518885f0fc1350e5172cded78"
  *
- *		Repository.hash('hello_world', :tag) #=> "9d09060c850defbc7711d08b57def0d14e742f4e"
+ *    Repository.hash('hello_world', :tag) #=> "9d09060c850defbc7711d08b57def0d14e742f4e"
  */
 static VALUE rb_git_repo_hash(VALUE self, VALUE rb_buffer, VALUE rb_type)
 {
@@ -592,16 +592,16 @@ static VALUE rb_git_repo_hash(VALUE self, VALUE rb_buffer, VALUE rb_type)
 }
 
 /*
- *	call-seq:
- *		Repository.hash_file(path, type) -> oid
+ *  call-seq:
+ *    Repository.hash_file(path, type) -> oid
  *
- *	Hash the contents of the file pointed at by +path+, assuming
- *	that it'd be stored in the ODB with the given +type+, and return
- *	a hex string representing the SHA1 OID resulting from the hash.
+ *  Hash the contents of the file pointed at by +path+, assuming
+ *  that it'd be stored in the ODB with the given +type+, and return
+ *  a hex string representing the SHA1 OID resulting from the hash.
  *
- *		Repository.hash_file('foo.txt', :commit) #=> "de5ba987198bcf2518885f0fc1350e5172cded78"
+ *    Repository.hash_file('foo.txt', :commit) #=> "de5ba987198bcf2518885f0fc1350e5172cded78"
  *
- *		Repository.hash_file('foo.txt', :tag) #=> "9d09060c850defbc7711d08b57def0d14e742f4e"
+ *    Repository.hash_file('foo.txt', :tag) #=> "9d09060c850defbc7711d08b57def0d14e742f4e"
  */
 static VALUE rb_git_repo_hashfile(VALUE self, VALUE rb_path, VALUE rb_type)
 {
@@ -661,11 +661,11 @@ static VALUE rb_git_repo_write(VALUE self, VALUE rb_buffer, VALUE rub_type)
 	return error ? Qtrue : Qfalse; \
 
 /*
- *	call-seq:
- *		repo.bare? -> true or false
+ *  call-seq:
+ *    repo.bare? -> true or false
  *
- *	Return whether a repository is bare or not. A bare repository has no
- *	working directory.
+ *  Return whether a repository is bare or not. A bare repository has no
+ *  working directory.
  */
 static VALUE rb_git_repo_is_bare(VALUE self)
 {
@@ -674,11 +674,11 @@ static VALUE rb_git_repo_is_bare(VALUE self)
 
 
 /*
- *	call-seq:
- *		repo.empty? -> true or false
+ *  call-seq:
+ *    repo.empty? -> true or false
  *
- *	Return whether a repository is empty or not. An empty repository has just
- *	been initialized and has no commits yet.
+ *  Return whether a repository is empty or not. An empty repository has just
+ *  been initialized and has no commits yet.
  */
 static VALUE rb_git_repo_is_empty(VALUE self)
 {
@@ -686,10 +686,10 @@ static VALUE rb_git_repo_is_empty(VALUE self)
 }
 
 /*
- *	call-seq:
- *		repo.head_detached? -> true or false
+ *  call-seq:
+ *    repo.head_detached? -> true or false
  *
- *	Return whether the +HEAD+ of a repository is detached or not.
+ *  Return whether the +HEAD+ of a repository is detached or not.
  */
 static VALUE rb_git_repo_head_detached(VALUE self)
 {
@@ -697,10 +697,10 @@ static VALUE rb_git_repo_head_detached(VALUE self)
 }
 
 /*
- *	call-seq:
- *		repo.head_orphan? -> true or false
+ *  call-seq:
+ *    repo.head_orphan? -> true or false
  *
- *	Return whether the +HEAD+ of a repository is orphaned or not.
+ *  Return whether the +HEAD+ of a repository is orphaned or not.
  */
 static VALUE rb_git_repo_head_orphan(VALUE self)
 {
@@ -708,13 +708,13 @@ static VALUE rb_git_repo_head_orphan(VALUE self)
 }
 
 /*
- *	call-seq:
- *		repo.path -> path
+ *  call-seq:
+ *    repo.path -> path
  *
- *	Return the full, normalized path to this repository. For non-bare repositories,
- *	this is the path of the actual +.git+ folder, not the working directory.
+ *  Return the full, normalized path to this repository. For non-bare repositories,
+ *  this is the path of the actual +.git+ folder, not the working directory.
  *
- *		repo.path #=> "/home/foo/workthing/.git"
+ *    repo.path #=> "/home/foo/workthing/.git"
  */
 static VALUE rb_git_repo_path(VALUE self)
 {
@@ -724,17 +724,17 @@ static VALUE rb_git_repo_path(VALUE self)
 }
 
 /*
- *	call-seq:
- *		repo.workdir -> path or nil
+ *  call-seq:
+ *    repo.workdir -> path or nil
  *
- *	Return the working directory for this repository, or +nil+ if
- *	the repository is bare.
+ *  Return the working directory for this repository, or +nil+ if
+ *  the repository is bare.
  *
- *		repo1.bare? #=> false
- *		repo1.workdir # => "/home/foo/workthing/"
+ *    repo1.bare? #=> false
+ *    repo1.workdir #=> "/home/foo/workthing/"
  *
- *		repo2.bare? #=> true
- *		repo2.workdir #=> nil
+ *    repo2.bare? #=> true
+ *    repo2.workdir #=> nil
  */
 static VALUE rb_git_repo_workdir(VALUE self)
 {
@@ -748,20 +748,20 @@ static VALUE rb_git_repo_workdir(VALUE self)
 }
 
 /*
- *	call-seq:
- *		repo.workdir = path
+ *  call-seq:
+ *    repo.workdir = path
  *
- *	Sets the working directory of +repo+ to +path+. All internal
- *	operations on +repo+ that affect the working directory will
- *	instead use +path+.
+ *  Sets the working directory of +repo+ to +path+. All internal
+ *  operations on +repo+ that affect the working directory will
+ *  instead use +path+.
  *
- *	The +workdir+ can be set on bare repositories to temporarily
- *	turn them into normal repositories.
+ *  The +workdir+ can be set on bare repositories to temporarily
+ *  turn them into normal repositories.
  *
- *		repo.bare? #=> true
- *		repo.workdir = "/tmp/workdir"
- *		repo.bare? #=> false
- *		repo.checkout
+ *    repo.bare? #=> true
+ *    repo.workdir = "/tmp/workdir"
+ *    repo.bare? #=> false
+ *    repo.checkout
  */
 static VALUE rb_git_repo_set_workdir(VALUE self, VALUE rb_workdir)
 {
@@ -778,19 +778,19 @@ static VALUE rb_git_repo_set_workdir(VALUE self, VALUE rb_workdir)
 }
 
 /*
- *	call-seq:
- *		Repository.discover(path = nil, across_fs = true) -> repository
+ *  call-seq:
+ *    Repository.discover(path = nil, across_fs = true) -> repository
  *
- *	Traverse +path+ upwards until a Git working directory with a +.git+
- *	folder has been found, open it and return it as a +Repository+
- *	object.
+ *  Traverse +path+ upwards until a Git working directory with a +.git+
+ *  folder has been found, open it and return it as a +Repository+
+ *  object.
  *
- *	If +path+ is +nil+, the current working directory will be used as
- *	a starting point.
+ *  If +path+ is +nil+, the current working directory will be used as
+ *  a starting point.
  *
- *	If +across_fs+ is +true+, the traversal won't stop when reaching
- *	a different device than the one that contained +path+ (only applies
- *	to UNIX-based OSses).
+ *  If +across_fs+ is +true+, the traversal won't stop when reaching
+ *  a different device than the one that contained +path+ (only applies
+ *  to UNIX-based OSses).
  */
 static VALUE rb_git_repo_discover(int argc, VALUE *argv, VALUE self)
 {
@@ -858,40 +858,40 @@ static int rugged__status_cb(const char *path, unsigned int flags, void *payload
 }
 
 /*
- *	call-seq:
- *		repo.status { |status_data| block }
- *		repo.status(path) -> status_data
+ *  call-seq:
+ *    repo.status { |status_data| block }
+ *    repo.status(path) -> status_data
  *
- *	Returns the status for one or more files in the working directory
- *	of the repository. This is equivalent to the +git status+ command.
+ *  Returns the status for one or more files in the working directory
+ *  of the repository. This is equivalent to the +git status+ command.
  *
- *	The returned +status_data+ is always an array containing one or more
- *	status flags as Ruby symbols. Possible flags are:
+ *  The returned +status_data+ is always an array containing one or more
+ *  status flags as Ruby symbols. Possible flags are:
  *
- *	- +:index_new+: the file is new in the index
- *	- +:index_modified+: the file has been modified in the index
- *	- +:index_deleted+: the file has been deleted from the index
- *	- +:worktree_new+: the file is new in the working directory
- *	- +:worktree_modified+: the file has been modified in the working directory
- *	- +:worktree_deleted+: the file has been deleted from the working directory
+ *  - +:index_new+: the file is new in the index
+ *  - +:index_modified+: the file has been modified in the index
+ *  - +:index_deleted+: the file has been deleted from the index
+ *  - +:worktree_new+: the file is new in the working directory
+ *  - +:worktree_modified+: the file has been modified in the working directory
+ *  - +:worktree_deleted+: the file has been deleted from the working directory
  *
- *	If a +block+ is given, status information will be gathered for every
- *	single file on the working dir. The +block+ will be called with the
- *	status data for each file.
+ *  If a +block+ is given, status information will be gathered for every
+ *  single file on the working dir. The +block+ will be called with the
+ *  status data for each file.
  *
- *		repo.status { |status_data| puts status_data.inspect }
+ *    repo.status { |status_data| puts status_data.inspect }
  *
- *	results in, for example:
+ *  results in, for example:
  *
- *		[:index_new, :worktree_new]
- *		[:worktree_modified]
+ *    [:index_new, :worktree_new]
+ *    [:worktree_modified]
  *
- *	If a +path+ is given instead, the function will return the +status_data+ for
- *	the file pointed to by path, or raise an exception if the path doesn't exist.
+ *  If a +path+ is given instead, the function will return the +status_data+ for
+ *  the file pointed to by path, or raise an exception if the path doesn't exist.
  *
- *	+path+ must be relative to the repository's working directory.
+ *  +path+ must be relative to the repository's working directory.
  *
- *		repo.status('src/diff.c') #=> [:index_new, :worktree_new]
+ *    repo.status('src/diff.c') #=> [:index_new, :worktree_new]
  */
 static VALUE rb_git_repo_status(int argc, VALUE *argv, VALUE self)
 {
@@ -932,13 +932,13 @@ static int rugged__each_id_cb(const git_oid *id, void *payload)
 }
 
 /*
- *	call-seq:
- *		repo.each_id { |id| block }
- *		repo.each_id -> Iterator
+ *  call-seq:
+ *    repo.each_id { |id| block }
+ *    repo.each_id -> Iterator
  *
- *	Call the given +block+ once with every object ID found in +repo+
- *	and all its alternates. Object IDs are passed as 40-character
- *	strings.
+ *  Call the given +block+ once with every object ID found in +repo+
+ *  and all its alternates. Object IDs are passed as 40-character
+ *  strings.
  */
 static VALUE rb_git_repo_each_id(VALUE self)
 {
@@ -981,22 +981,22 @@ static int parse_reset_type(VALUE rb_reset_type)
 }
 
 /*
- *	call-seq:
- *		repo.reset(target, reset_type) -> nil
+ *  call-seq:
+ *    repo.reset(target, reset_type) -> nil
  *
- *	Sets the current head to the specified commit oid and optionally
- *	resets the index and working tree to match.
- *	- +target+: Rugged::Commit, Rugged::Tag or rev that resolves to a commit or tag object
- *	- +reset_type+: :soft, :mixed: or :hard
- *	[:soft] the head will be moved to the commit.
- * 	[:mixed] will trigger a +:soft+ reset, plus the index will be replaced
- * 		 with the content of the commit tree.
- * 	[:hard] will trigger a +:mixed+ reset and the working directory will be
- * 		replaced with the content of the index. (Untracked and ignored files
- * 		will be left alone)
+ *  Sets the current head to the specified commit oid and optionally
+ *  resets the index and working tree to match.
+ *  - +target+: Rugged::Commit, Rugged::Tag or rev that resolves to a commit or tag object
+ *  - +reset_type+: :soft, :mixed: or :hard
+ *  [:soft] the head will be moved to the commit.
+ *   [:mixed] will trigger a +:soft+ reset, plus the index will be replaced
+ *      with the content of the commit tree.
+ *   [:hard] will trigger a +:mixed+ reset and the working directory will be
+ *     replaced with the content of the index. (Untracked and ignored files
+ *     will be left alone)
  *
- * 	Examples:
- * 		repo.reset('origin/master', :hard) #=> nil
+ *   Examples:
+ *     repo.reset('origin/master', :hard) #=> nil
  */
 static VALUE rb_git_repo_reset(VALUE self, VALUE rb_target, VALUE rb_reset_type)
 {
@@ -1019,20 +1019,20 @@ static VALUE rb_git_repo_reset(VALUE self, VALUE rb_target, VALUE rb_reset_type)
 }
 
 /*
- *	call-seq:
- *		repo.reset_path(pathspecs, target=nil) -> nil
+ *  call-seq:
+ *    repo.reset_path(pathspecs, target=nil) -> nil
  *
- *	Updates entries in the index from the +target+ commit tree, matching
- *	the given +pathspecs+.
+ *  Updates entries in the index from the +target+ commit tree, matching
+ *  the given +pathspecs+.
  *
- * 	Passing a nil +target+ will result in removing
- *	entries in the index matching the provided pathspecs.
+ *  Passing a nil +target+ will result in removing
+ *  entries in the index matching the provided pathspecs.
  *
- *	- +pahtspecs+: list of pathspecs to operate on (+String+ or +Array+ of +String+ objects)
- *	- +target+(optional): Rugged::Commit, Rugged::Tag or rev that resolves to a commit or tag object.
+ *  - +pahtspecs+: list of pathspecs to operate on (+String+ or +Array+ of +String+ objects)
+ *  - +target+(optional): Rugged::Commit, Rugged::Tag or rev that resolves to a commit or tag object.
  *
- *	Examples:
- *		reset_path(File.join('subdir','file.txt'), '441034f860c1d5d90e4188d11ae0d325176869a8') #=> nil
+ *  Examples:
+ *    reset_path(File.join('subdir','file.txt'), '441034f860c1d5d90e4188d11ae0d325176869a8') #=> nil
  */
 static VALUE rb_git_repo_reset_path(int argc, VALUE *argv, VALUE self)
 {
@@ -1087,8 +1087,8 @@ static int rugged__push_status_cb(const char *ref, const char *msg, void *payloa
 }
 
 /*
- *	call-seq:
- *		repo.push("origin", ["refs/heads/master", ":refs/heads/to_be_deleted"])
+ *  call-seq:
+ *    repo.push("origin", ["refs/heads/master", ":refs/heads/to_be_deleted"])
  *
  *  Pushes the given refspecs to the given remote. Returns a hash that contains key-value pairs that
  *  reflect pushed refs and error messages, if applicable.
@@ -1167,8 +1167,8 @@ cleanup:
 }
 
 /*
- *	call-seq:
- *		repo.close
+ *  call-seq:
+ *    repo.close
  *
  *  Frees all the resources used by this repository immediately. The repository can
  *  still be used after this call. Resources will be opened as necessary.

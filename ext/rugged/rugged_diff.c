@@ -303,22 +303,22 @@ static VALUE rb_git_diff_merge(VALUE self, VALUE rb_other)
  *
  *  :rename_limit ::
  *    An integer specifying the maximum amount of similarity sources to examine
- *    (a la diff's `-l` option or the `diff.renameLimit` config) (default 200).
+ *    (a la diff's +-l+ option or the +diff.renameLimit+ config) (default 200).
  *
  *  :renames ::
- *    If true, looking for renames will be enabled (`--find-renames`).
+ *    If true, looking for renames will be enabled (+--find-renames+).
  *
  *  :renames_from_rewrites ::
- *    If true, the "old side" of modified files will be considered for renames (`--break-rewrites=N`).
+ *    If true, the "old side" of modified files will be considered for renames (+--break-rewrites=N+).
  *
  *  :copies ::
- *    If true, looking for copies will be enabled (`--find-copies`).
+ *    If true, looking for copies will be enabled (+--find-copies+).
  *
  *  :copies_from_unmodified ::
- *    If true, unmodified files will be considered as copy sources (`--find-copies-harder`).
+ *    If true, unmodified files will be considered as copy sources (+--find-copies-harder+).
  *
  *  :break_rewrites ::
- *    If true, larger rewrites will be split into delete/add pairs (`--break-rewrites=/M`).
+ *    If true, larger rewrites will be split into delete/add pairs (+--break-rewrites=/M+).
  *
  *  :all ::
  *    If true, enables all finding features.

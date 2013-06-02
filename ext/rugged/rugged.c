@@ -51,15 +51,14 @@ VALUE rb_eRuggedErrors[RUGGED_ERROR_COUNT];
 static VALUE rb_mShutdownHook;
 
 /*
- *	call-seq:
- * 		Rugged.libgit2_version -> version
+ *  call-seq:
+ *     Rugged.libgit2_version -> version
  *
- *	Returns an array representing the current libgit2 version in use. Using
- *	the array makes it easier for the end-user to take conditional actions
- *	based on each respective version attribute: major, minor, rev.
+ *  Returns an array representing the current libgit2 version in use. Using
+ *  the array makes it easier for the end-user to take conditional actions
+ *  based on each respective version attribute: major, minor, rev.
  *
- *	Rugged.libgit2_version
- *		#=> [0, 17, 0]
+ *  Rugged.libgit2_version #=> [0, 17, 0]
  */
 static VALUE rb_git_libgit2_version(VALUE self)
 {
@@ -74,18 +73,17 @@ static VALUE rb_git_libgit2_version(VALUE self)
 }
 
 /*
- *	call-seq:
- * 		Rugged.capabilities-> capabilities
+ *  call-seq:
+ *     Rugged.capabilities -> capabilities
  *
- *	Returns an array representing the 'capabilities' that libgit2 was compiled
- *	with — this includes GIT_CAP_THREADS (thread support) and GIT_CAP_HTTPS (https).
- *	This is implemented in libgit2 with simple bitwise ops; we offer Rubyland an array
- *	of symbols representing the capabilities.
+ *  Returns an array representing the 'capabilities' that libgit2 was compiled
+ *  with — this includes GIT_CAP_THREADS (thread support) and GIT_CAP_HTTPS (https).
+ *  This is implemented in libgit2 with simple bitwise ops; we offer Rubyland an array
+ *  of symbols representing the capabilities.
  *
- *	The possible capabilities are "threads" and "https".
+ *  The possible capabilities are "threads" and "https".
  *
- *	Rugged.capabilities
- *		#=> [:threads, :https]
+ *  Rugged.capabilities #=> [:threads, :https]
  */
 static VALUE rb_git_capabilities(VALUE self)
 {
@@ -103,14 +101,14 @@ static VALUE rb_git_capabilities(VALUE self)
 }
 
 /*
- *	call-seq:
- *		Rugged.hex_to_raw(oid) -> raw_buffer
+ *  call-seq:
+ *    Rugged.hex_to_raw(oid) -> raw_buffer
  *
- *	Turn a string of 40 hexadecimal characters into the buffer of
- *	20 bytes it represents.
+ *  Turn a string of 40 hexadecimal characters into the buffer of
+ *  20 bytes it represents.
  *
- *		Rugged.hex_to_raw('d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f')
- *		#=> "\330xk\374\227H^\215{\031\262\037\270\214\216\361\361\231\374?"
+ *    Rugged.hex_to_raw('d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f')
+ *    #=> "\330xk\374\227H^\215{\031\262\037\270\214\216\361\361\231\374?"
  */
 static VALUE rb_git_hex_to_raw(VALUE self, VALUE hex)
 {
@@ -123,14 +121,14 @@ static VALUE rb_git_hex_to_raw(VALUE self, VALUE hex)
 }
 
 /*
- *	call-seq:
- *		Rugged.raw_to_hex(buffer) -> hex_oid
+ *  call-seq:
+ *    Rugged.raw_to_hex(buffer) -> hex_oid
  *
- *	Turn a buffer of 20 bytes (representing a SHA1 OID) into its
- *	readable hexadecimal representation.
+ *  Turn a buffer of 20 bytes (representing a SHA1 OID) into its
+ *  readable hexadecimal representation.
  *
- *		Rugged.raw_to_hex("\330xk\374\227H^\215{\031\262\037\270\214\216\361\361\231\374?")
- *		#=> "d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f"
+ *    Rugged.raw_to_hex("\330xk\374\227H^\215{\031\262\037\270\214\216\361\361\231\374?")
+ *    #=> "d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f"
  */
 static VALUE rb_git_raw_to_hex(VALUE self, VALUE raw)
 {
@@ -149,11 +147,11 @@ static VALUE rb_git_raw_to_hex(VALUE self, VALUE raw)
 }
 
 /*
- *	call-seq:
- *		Rugged.prettify_message(message, strip_comments) -> clean_message
+ *  call-seq:
+ *    Rugged.prettify_message(message, strip_comments) -> clean_message
  *
- *	Process a commit or tag message into standard form, by stripping trailing spaces and
- *	comments, and making sure that the message has a proper header line.
+ *  Process a commit or tag message into standard form, by stripping trailing spaces and
+ *  comments, and making sure that the message has a proper header line.
  */
 static VALUE rb_git_prettify_message(VALUE self, VALUE rb_message, VALUE rb_strip_comments)
 {
@@ -191,45 +189,45 @@ static VALUE minimize_yield(VALUE rb_oid, VALUE *data)
 }
 
 /*
- *	call-seq:
- *		Rugged.minimize_oid(oid_iterator, min_length = 7) { |short_oid| block }
- *		Rugged.minimize_oid(oid_iterator, min_length = 7) -> min_length
+ *  call-seq:
+ *    Rugged.minimize_oid(oid_iterator, min_length = 7) { |short_oid| block }
+ *    Rugged.minimize_oid(oid_iterator, min_length = 7) -> min_length
  *
- *	Iterate through +oid_iterator+, which should yield any number of SHA1 OIDs
- *	(represented as 40-character hexadecimal strings), and tries to minify them.
+ *  Iterate through +oid_iterator+, which should yield any number of SHA1 OIDs
+ *  (represented as 40-character hexadecimal strings), and tries to minify them.
  *
- *	Minifying a set of a SHA1 strings means finding the shortest root substring
- *	for each string that uniquely identifies it.
+ *  Minifying a set of a SHA1 strings means finding the shortest root substring
+ *  for each string that uniquely identifies it.
  *
- *	If no +block+ is given, the function will return the minimal length as an
- *	integer value:
+ *  If no +block+ is given, the function will return the minimal length as an
+ *  integer value:
  *
- *		oids = [
- *			'd8786bfc974aaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
- *			'd8786bfc974bbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
- *			'd8786bfc974ccccccccccccccccccccccccccccc',
- *			'68d041ee999cb07c6496fbdd4f384095de6ca9e1',
- *		]
+ *    oids = [
+ *      'd8786bfc974aaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+ *      'd8786bfc974bbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+ *      'd8786bfc974ccccccccccccccccccccccccccccc',
+ *      '68d041ee999cb07c6496fbdd4f384095de6ca9e1',
+ *    ]
  *
- *		Rugged.minimize_oids(oids) #=> 12
+ *    Rugged.minimize_oids(oids) #=> 12
  *
- *	If a +block+ is given, it will be called with each OID from +iterator+
- *	in its minified form:
+ *  If a +block+ is given, it will be called with each OID from +iterator+
+ *  in its minified form:
  *
- *		Rugged.minimize_oids(oids) { |oid| puts oid }
+ *    Rugged.minimize_oids(oids) { |oid| puts oid }
  *
- *	produces:
+ *  produces:
  *
- *		d8786bfc974a
- *		d8786bfc974b
- *		d8786bfc974c
- *		68d041ee999c
+ *    d8786bfc974a
+ *    d8786bfc974b
+ *    d8786bfc974c
+ *    68d041ee999c
  *
- *	The optional +min_length+ argument allows you to specify a lower bound for
- *	the minified strings; returned strings won't be shorter than the given value,
- *	even if they would still be uniquely represented.
+ *  The optional +min_length+ argument allows you to specify a lower bound for
+ *  the minified strings; returned strings won't be shorter than the given value,
+ *  even if they would still be uniquely represented.
  *
- *		Rugged.minimize_oids(oids, 18) #=> 18
+ *    Rugged.minimize_oids(oids, 18) #=> 18
  */
 static VALUE rb_git_minimize_oid(int argc, VALUE *argv, VALUE self)
 {
