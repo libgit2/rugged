@@ -171,13 +171,8 @@ static VALUE rb_git_ref_lookup(VALUE klass, VALUE rb_repo, VALUE rb_name)
  */
 static VALUE rb_git_ref_valid_name(VALUE klass, VALUE rb_name)
 {
-	int error;
-	const char* name;
-
 	Check_Type(rb_name, T_STRING);
-	name = RSTRING_PTR(rb_name);
-
-	return git_reference_is_valid_name(name) == 1 ? Qtrue : Qfalse;
+	return git_reference_is_valid_name(StringValueCStr(rb_name)) == 1 ? Qtrue : Qfalse;
 }
 
 /*
