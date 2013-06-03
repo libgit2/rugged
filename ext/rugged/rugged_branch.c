@@ -60,7 +60,7 @@ static int parse_branch_type(VALUE rb_filter)
  *  to the +target+.
  *
  *  +name+ needs to be a branch name, not an absolute reference path
- *  (e.g. 'development' instead of '/refs/heads/development')
+ *  (e.g. +development+ instead of +/refs/heads/development+).
  *
  *  +target+ needs to be an existing commit in the given +repository+.
  *
@@ -108,7 +108,7 @@ static VALUE rb_git_branch_create(int argc, VALUE *argv, VALUE self)
  *  Lookup a branch in +repository+, with the given +name+.
  *
  *  +name+ needs to be a branch name, not an absolute reference path
- *  (e.g. 'development' instead of '/refs/heads/development')
+ *  (e.g. +development+ instead of +/refs/heads/development+).
  *
  *  +branch_type+ specifies whether the looked up branch is a local branch
  *  or a remote one. It defaults to looking up local branches.
@@ -263,7 +263,7 @@ static VALUE rb_git_branch_each(int argc, VALUE *argv, VALUE self)
  *  Rename a branch to +new_name+.
  *
  *  +new_name+ needs to be a branch name, not an absolute reference path
- *  (e.g. 'development' instead of '/refs/heads/development')
+ *  (e.g. +development+ instead of +/refs/heads/development+).
  *
  *  If +force+ is +true+, the branch will be renamed even if a branch
  *  with +new_name+ already exists.
@@ -288,6 +288,12 @@ static VALUE rb_git_branch_move(int argc, VALUE *argv, VALUE self)
 	return rugged_branch_new(rugged_owner(self), new_branch);
 }
 
+/*
+ *  call-seq:
+ *    branch.head? -> true or false
+ *
+ *  Returns +true+ if the branch is pointed at by +HEAD+, +false+ otherwise.
+ */
 static VALUE rb_git_branch_head_p(VALUE self)
 {
 	git_reference *branch;
