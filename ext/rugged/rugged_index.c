@@ -607,7 +607,8 @@ static VALUE rb_git_index_diff(int argc, VALUE *argv, VALUE self)
 	return rugged_diff_new(rb_cRuggedDiff, self, diff);
 }
 
-/*  call-seq:
+/*
+ *  call-seq:
  *    index.conflicts? -> true or false
  *
  *  Determines if the index contains entries representing conflicts.
