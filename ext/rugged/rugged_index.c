@@ -244,13 +244,20 @@ static VALUE rb_git_index_remove(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *    index.add(path) -> nil
+ *    index << entry -> nil
+ *    index << path -> nil
  *    index.add(entry) -> nil
+ *    index.add(path) -> nil
+ *    index.update(entry) -> nil
+ *    index.update(path) -> nil
  *
- *  The first form adds the file at +path+ from the workdir to the index,
- *  while the second form adds a file as given by an entry hash.
+ *  Add a new entry to the index or update an existing entry in the index.
  *
- *  +path+ has to be relative to the workdir and the file must be readable.
+ *  If passed a +path+ to an existing, readable file relative to the workdir,
+ *  creates a new index entry based on this file.
+ *
+ *  Alternatively, a new index entry can be created by passing a Hash containing
+ *  all key/value pairs of an index entry.
  *
  *  Any gitignore rules that might match +path+ (or the +:path+ value of the
  *  entry hash) are ignored.
