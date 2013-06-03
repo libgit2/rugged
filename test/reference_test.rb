@@ -20,12 +20,12 @@ class ReferenceTest < Rugged::TestCase
   end
 
   def test_can_filter_refs_with_regex
-    refs = @repo.refs(/tags/).map { |r| r.name.gsub("refs/", '') }.sort.join(':')
+    refs = @repo.refs('refs/tags/*').map { |r| r.name.gsub("refs/", '') }.sort.join(':')
     assert_equal "tags/v0.9:tags/v1.0", refs
   end
 
   def test_can_filter_refs_with_string
-    refs = @repo.refs('0.9').map { |r| r.name.gsub("refs/", '') }.sort.join(':')
+    refs = @repo.refs('*0.9*').map { |r| r.name.gsub("refs/", '') }.sort.join(':')
     assert_equal "tags/v0.9", refs
   end
 

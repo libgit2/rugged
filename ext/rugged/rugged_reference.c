@@ -46,6 +46,66 @@ static VALUE rugged_protect__ref_yield(VALUE payload)
 	return rb_funcall(args[0], rb_intern("call"), 1, args[1]);
 }
 
+static VALUE rb_git_ref__each(int argc, VALUE *argv, VALUE self, int only_names)
+{
+	git_repository *repo;
+	git_reference_iterator *iter;
+	int error;
+	VALUE rb_repo, rb_glob, rb_block;
+
+	VALUE yield_args[2];
+	int yield_state = 0;
+
+	rb_scan_args(argc, argv, "11&", &rb_repo, &rb_glob, &rb_block);
+
+	if (!rb_block_given_p()) {
+		return rb_funcall(self,
+			rb_intern("to_enum"), 3,
+			only_names ? CSTR2SYM("each_name") : CSTR2SYM("each"),
+			rb_repo, rb_glob);
+	}
+
+	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo))
+		rb_raise(rb_eTypeError, "Expecting a Rugged::Repository instance");
+
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	if (!NIL_P(rb_glob)) {
+		Check_Type(rb_glob, T_STRING);
+		error = git_reference_iterator_glob_new(&iter, repo, StringValueCStr(rb_glob));
+	} else {
+		error = git_reference_iterator_new(&iter, repo);
+	}
+
+	rugged_exception_check(error);
+
+	if (only_names) {
+		const char *ref_name;
+		while (!yield_state && (error = git_reference_next_name(&ref_name, iter)) == 0) {
+			yield_args[0] = rb_block;
+			yield_args[1] = rugged_str_new2(ref_name, rb_utf8_encoding());
+			rb_protect(rugged_protect__ref_yield, (VALUE)yield_args, &yield_state);
+		}
+	} else {
+		git_reference *ref;
+		while (!yield_state && (error = git_reference_next(&ref, iter)) == 0) {
+			yield_args[0] = rb_block;
+			yield_args[1] = rugged_ref_new(rb_cRuggedReference, rb_repo, ref);
+			rb_protect(rugged_protect__ref_yield, (VALUE)yield_args, &yield_state);
+		}
+	}
+
+	git_reference_iterator_free(iter);
+
+	if (yield_state != 0)
+		rb_jump_tag(yield_state);
+
+	if (error != GIT_ITEROVER)
+		rugged_exception_check(error);
+
+	return Qnil;
+}
+
 /*
  *	call-seq:
  *		Reference.each(repository, glob = nil) { |ref_name| block }
@@ -60,51 +120,12 @@ static VALUE rugged_protect__ref_yield(VALUE payload)
  */
 static VALUE rb_git_ref_each(int argc, VALUE *argv, VALUE self)
 {
-	git_repository *repo;
-	git_reference_iterator *iter;
-	int error;
-	VALUE rb_repo, rb_glob, rb_block;
-	const char *ref_name;
+	return rb_git_ref__each(argc, argv, self, 0);
+}
 
-	rb_scan_args(argc, argv, "11&", &rb_repo, &rb_glob, &rb_block);
-
-	if (!rb_block_given_p())
-		return rb_funcall(self, rb_intern("to_enum"), 3, CSTR2SYM("each"), rb_repo, rb_glob);
-
-	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo))
-		rb_raise(rb_eTypeError, "Expecting a Rugged::Repository instance");
-
-	Data_Get_Struct(rb_repo, git_repository, repo);
-
-	if (!NIL_P(rb_glob)) {
-		Check_Type(rb_glob, T_STRING);
-
-		error = git_reference_iterator_glob_new(&iter, repo, StringValueCStr(rb_glob));
-	} else {
-		error = git_reference_iterator_new(&iter, repo);
-	}
-	rugged_exception_check(error);
-
-	while ((error = git_reference_next(&ref_name, iter)) == GIT_OK) {
-		int state;
-		VALUE args[2];
-
-		args[0] = rb_block;
-		args[1] = rugged_str_new2(ref_name, rb_utf8_encoding());
-
-		rb_protect(rugged_protect__ref_yield, (VALUE)args, &state);
-		if (state != 0) {
-			git_reference_iterator_free(iter);
-			rb_jump_tag(state);
-		}
-	}
-
-	git_reference_iterator_free(iter);
-
-	if (error != GIT_ITEROVER)
-		rugged_exception_check(error);
-
-	return Qnil;
+static VALUE rb_git_ref_each_name(int argc, VALUE *argv, VALUE self)
+{
+	return rb_git_ref__each(argc, argv, self, 1);
 }
 
 /*
@@ -591,6 +612,7 @@ void Init_rugged_reference()
 	rb_define_singleton_method(rb_cRuggedReference, "exists?", rb_git_ref_exist, 2);
 	rb_define_singleton_method(rb_cRuggedReference, "create", rb_git_ref_create, -1);
 	rb_define_singleton_method(rb_cRuggedReference, "each", rb_git_ref_each, -1);
+	rb_define_singleton_method(rb_cRuggedReference, "each_name", rb_git_ref_each_name, -1);
 
 	rb_define_method(rb_cRuggedReference, "target", rb_git_ref_target, 0);
 	rb_define_method(rb_cRuggedReference, "peel", rb_git_ref_peel, 0);

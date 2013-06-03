@@ -78,8 +78,8 @@ class RepositoryTest < Rugged::TestCase
   end
 
   def test_match_all_refs
-    refs = @repo.refs 'refs/heads'
-    assert_equal 2, refs.length
+    refs = @repo.refs 'refs/heads/*'
+    assert_equal 2, refs.count
   end
 
   def test_return_all_ref_names
@@ -330,9 +330,7 @@ class RepositoryNamespaceTest < Rugged::SandboxedTestCase
 
   def test_refs_in_namespaces
     @repo.namespace = "foo"
-
-    # lolwut this fails
-    assert_equal [], @repo.refs
+    assert_equal [], @repo.refs.to_a
   end
 end
 

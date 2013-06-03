@@ -103,37 +103,12 @@ module Rugged
       Rugged::Reference.lookup(self, ref_name)
     end
 
-    # Retuns all the References that match a pattern.
-    #
-    # refs - A Regexp (or String) to search for. Optional.
-    #
-    # Examples:
-    #
-    #   # All refs
-    #   repo.refs
-    #
-    #   # All remote refs
-    #   repo.refs 'refs/remotes'
-    #
-    # Returns an Array of References.
-    def refs(pattern = nil)
-      r = []
-      ref_names.each do |ref_name|
-        if pattern
-          p = Regexp.new(pattern)
-          r << Rugged::Reference.lookup(self, ref_name) if p.match(ref_name)
-        else
-          r << Rugged::Reference.lookup(self, ref_name)
-        end
-      end
-      r
+    def refs(glob = nil)
+      Rugged::Reference.each(self, glob)
     end
 
-    # The names of all the refs.
-    #
-    # Returns an Enumerable::Enumerator containing all the String ref names.
-    def ref_names
-      Rugged::Reference.each(self)
+    def ref_names(glob = nil)
+      Rugged::Reference.each_name(self, glob)
     end
 
     # All the tags in the repository.
