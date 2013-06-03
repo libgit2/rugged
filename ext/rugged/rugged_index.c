@@ -396,6 +396,17 @@ static void rb_git_indexentry_toC(git_index_entry *entry, VALUE rb_entry)
 	}
 }
 
+/*
+ *  call-seq:
+ *    index.write_tree([repo]) -> oid
+ *
+ *  Write the index to a tree, either in the index's repository, or in
+ *  the given +repo+.
+ *
+ *  If the index contains any files in conflict, writing the tree will fail.
+ *
+ *  Returns the OID string of the written tree object.
+ */
 static VALUE rb_git_index_writetree(int argc, VALUE *argv, VALUE self)
 {
 	git_index *index;
