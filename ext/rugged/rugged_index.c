@@ -137,10 +137,10 @@ static VALUE rb_git_index_count(VALUE self)
 
 /*
  *  call-seq:
- *    index[path[, stage = 0]]     -> hash or nil
- *    index.get(path[, stage = 0]) -> hash or nil 
- *    index[position]              -> hash or nil
- *    index.get(position)          -> hash or nil
+ *    index[path[, stage = 0]]     -> entry or nil
+ *    index.get(path[, stage = 0]) -> entry or nil 
+ *    index[position]              -> entry or nil
+ *    index.get(position)          -> entry or nil
  *
  *  Return a specific entry in the index.
  *
@@ -184,6 +184,15 @@ static VALUE rb_git_index_get(int argc, VALUE *argv, VALUE self)
 	return entry ? rb_git_indexentry_fromC(entry) : Qnil;
 }
 
+/*
+ *  call-seq:
+ *    index.each { |entry| } -> nil
+ *    index.each -> Enumerator
+ *
+ *  Passes each entry of the index to the given block.
+ *
+ *  If no block is given, an enumerator is returned instead.
+ */
 static VALUE rb_git_index_each(VALUE self)
 {
 	git_index *index;
@@ -204,6 +213,13 @@ static VALUE rb_git_index_each(VALUE self)
 	return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    index.remove(path[, stage = 0]) -> nil
+ *
+ *  Removes the entry at the given +path+ with the given +stage+
+ *  from the index.
+ */
 static VALUE rb_git_index_remove(int argc, VALUE *argv, VALUE self)
 {
 	git_index *index;
@@ -226,6 +242,23 @@ static VALUE rb_git_index_remove(int argc, VALUE *argv, VALUE self)
 	return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    index.add(path) -> nil
+ *    index.add(entry) -> nil
+ *
+ *  The first form adds the file at +path+ from the workdir to the index,
+ *  while the second form adds a file as given by an entry hash.
+ *
+ *  +path+ has to be relative to the workdir and the file must be readable.
+ *
+ *  Any gitignore rules that might match +path+ (or the +:path+ value of the
+ *  entry hash) are ignored.
+ *
+ *  If the index entry at +path+ (or +:path+) currently contains a merge conflict,
+ *  it will no longer be marked as conflicting and the data about the conflict
+ *  will be moved into the "resolve undo" (REUC) section of the index.
+ */
 static VALUE rb_git_index_add(VALUE self, VALUE rb_entry)
 {
 	git_index *index;
