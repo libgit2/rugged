@@ -134,6 +134,33 @@ static VALUE rb_git_ref_lookup(VALUE klass, VALUE rb_repo, VALUE rb_name)
 
 /*
  *	call-seq:
+ *		Reference.valid_name?(ref_name) -> new_ref
+ *
+ * Check if a reference name is well-formed.
+ *
+ * Valid reference names must follow one of two patterns:
+ *
+ * 1. Top-level names must contain only capital letters and underscores,
+ *    and must begin and end with a letter. (e.g. "HEAD", "ORIG_HEAD").
+ * 2. Names prefixed with "refs/" can be almost anything.  You must avoid
+ *    the characters '~', '^', ':', '\\', '?', '[', and '*', and the
+ *    sequences ".." and "@{" which have special meaning to revparse.
+ *
+ *	Returns true if the reference name is valid, false if not.
+ */
+static VALUE rb_git_ref_valid_name(VALUE klass, VALUE rb_name)
+{
+	int error;
+	const char* name;
+
+	Check_Type(rb_name, T_STRING);
+	name = RSTRING_PTR(rb_name);
+
+	return git_reference_is_valid_name(name) == 1 ? Qtrue : Qfalse;
+}
+
+/*
+ *	call-seq:
  *		ref.peel -> oid
  *
  *	Peels tag objects to the sha that they point at. Replicates
@@ -591,6 +618,7 @@ void Init_rugged_reference()
 	rb_define_singleton_method(rb_cRuggedReference, "exists?", rb_git_ref_exist, 2);
 	rb_define_singleton_method(rb_cRuggedReference, "create", rb_git_ref_create, -1);
 	rb_define_singleton_method(rb_cRuggedReference, "each", rb_git_ref_each, -1);
+	rb_define_singleton_method(rb_cRuggedReference, "valid_name?", rb_git_ref_valid_name, 1);
 
 	rb_define_method(rb_cRuggedReference, "target", rb_git_ref_target, 0);
 	rb_define_method(rb_cRuggedReference, "peel", rb_git_ref_peel, 0);
