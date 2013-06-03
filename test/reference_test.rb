@@ -6,6 +6,14 @@ class ReferenceTest < Rugged::TestCase
 
   UNICODE_REF_NAME = "A\314\212ngstro\314\210m"
 
+  def test_reference_validity
+    valid = "refs/foobar"
+    invalid = "refs/~nope^*"
+
+    assert Rugged::Reference.valid_name?(valid)
+    assert !Rugged::Reference.valid_name?(invalid)
+  end
+
   def test_each_can_handle_exceptions
     assert_raises Exception do
       Rugged::Reference.each(@repo) do
