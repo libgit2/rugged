@@ -1028,7 +1028,7 @@ static VALUE rb_git_repo_reset(VALUE self, VALUE rb_target, VALUE rb_reset_type)
  *  Passing a nil +target+ will result in removing
  *  entries in the index matching the provided pathspecs.
  *
- *  - +pahtspecs+: list of pathspecs to operate on (+String+ or +Array+ of +String+ objects)
+ *  - +pathspecs+: list of pathspecs to operate on (+String+ or +Array+ of +String+ objects)
  *  - +target+(optional): Rugged::Commit, Rugged::Tag or rev that resolves to a commit or tag object.
  *
  *  Examples:
