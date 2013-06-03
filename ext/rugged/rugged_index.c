@@ -49,6 +49,15 @@ VALUE rugged_index_new(VALUE klass, VALUE owner, git_index *index)
 	return rb_index;
 }
 
+/*
+ *  call-seq:
+ *    Index.new([path])
+ *
+ *  Create a bare index object based on the index file at +path+.
+ *
+ *  Any index methods that rely on the ODB or a working directory (e.g. #add)
+ *  will raise a Rugged::IndexError.
+ */
 static VALUE rb_git_index_new(int argc, VALUE *argv, VALUE klass)
 {
 	git_index *index;
