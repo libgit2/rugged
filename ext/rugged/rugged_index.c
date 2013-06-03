@@ -138,8 +138,8 @@ static VALUE rb_git_index_count(VALUE self)
 /*
  *  call-seq:
  *    index[path[, stage = 0]]     -> entry or nil
- *    index.get(path[, stage = 0]) -> entry or nil 
  *    index[position]              -> entry or nil
+ *    index.get(path[, stage = 0]) -> entry or nil
  *    index.get(position)          -> entry or nil
  *
  *  Return a specific entry in the index.
