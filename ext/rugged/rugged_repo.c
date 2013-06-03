@@ -987,16 +987,21 @@ static int parse_reset_type(VALUE rb_reset_type)
  *  Sets the current head to the specified commit oid and optionally
  *  resets the index and working tree to match.
  *  - +target+: Rugged::Commit, Rugged::Tag or rev that resolves to a commit or tag object
- *  - +reset_type+: :soft, :mixed: or :hard
- *  [:soft] the head will be moved to the commit.
- *   [:mixed] will trigger a +:soft+ reset, plus the index will be replaced
- *      with the content of the commit tree.
- *   [:hard] will trigger a +:mixed+ reset and the working directory will be
- *     replaced with the content of the index. (Untracked and ignored files
- *     will be left alone)
+ *  - +reset_type+: +:soft+, +:mixed+ or +:hard+
  *
- *   Examples:
- *     repo.reset('origin/master', :hard) #=> nil
+ *  [:soft]
+ *    the head will be moved to the commit.
+ *  [:mixed]
+ *    will trigger a +:soft+ reset, plus the index will be replaced
+ *    with the content of the commit tree.
+ *  [:hard]
+ *    will trigger a +:mixed+ reset and the working directory will be
+ *    replaced with the content of the index. (Untracked and ignored files
+ *    will be left alone)
+ *
+ *  Examples:
+ *
+ *    repo.reset('origin/master', :hard) #=> nil
  */
 static VALUE rb_git_repo_reset(VALUE self, VALUE rb_target, VALUE rb_reset_type)
 {
