@@ -26,7 +26,11 @@ if p = ENV['LIBGIT2_PATH']
   end
 else
   CWD = File.expand_path(File.dirname(__FILE__))
-  LIBGIT2_DIR = File.join(CWD, '..', '..', 'vendor', 'libgit2')
+  TOPLEVEL_DIR = File.join(CWD, '..', '..')
+  Dir.chdir(TOPLEVEL_DIR) do
+    sys "git submodule update --init"
+  end
+  LIBGIT2_DIR = File.join( TOPLEVEL_DIR, 'vendor', 'libgit2')
   LIBGIT2_LIB_PATH = "#{CWD}/libgit2_embed.a"
 
   if !File.exists?(LIBGIT2_LIB_PATH)
