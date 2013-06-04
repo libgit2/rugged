@@ -38,7 +38,7 @@ VALUE rb_cRuggedCommit;
  *  message, with the short description, detailed descritpion, and any
  *  optional footers or signatures after it.
  *
- *  In Ruby 1.9.X, the returned string will be encoded with the encoding
+ *  In Ruby 1.9+, the returned string will be encoded with the encoding
  *  specified in the +Encoding+ header of the commit, if available.
  *
  *    commit.message #=> "add a lot of RDoc docs\n\nthis includes docs for commit and blob"
@@ -74,7 +74,7 @@ static VALUE rb_git_commit_message_GET(VALUE self)
  *  The committer of a commit is the person who actually applied the changes
  *  of the commit; in most cases it's the same as the author.
  *
- *  In Ruby 1.9.X, the returned string will be encoded with the encoding
+ *  In Ruby 1.9+, the returned string will be encoded with the encoding
  *  specified in the +Encoding+ header of the commit, if available.
  *
  *    commit.committer #=> {:email=>"tanoku@gmail.com", :time=>Tue Jan 24 05:42:45 UTC 2012, :name=>"Vicent Mart\303\255"}
@@ -99,7 +99,7 @@ static VALUE rb_git_commit_committer_GET(VALUE self)
  *
  *  The author of the commit is the person who intially created the changes.
  *
- *  In Ruby 1.9.X, the returned string will be encoded with the encoding
+ *  In Ruby 1.9+, the returned string will be encoded with the encoding
  *  specified in the +Encoding+ header of the commit, if available.
  *
  *    commit.author #=> {:email=>"tanoku@gmail.com", :time=>Tue Jan 24 05:42:45 UTC 2012, :name=>"Vicent Mart\303\255"}
@@ -116,7 +116,7 @@ static VALUE rb_git_commit_author_GET(VALUE self)
 
 /*
  *  call-seq:
- *    commit.epoch_time -> t
+ *    commit.epoch_time -> int
  *
  *  Return the time when this commit was made effective. This is the same value
  *  as the +:time+ attribute for +commit.committer+, but represented as an +Integer+
