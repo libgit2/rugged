@@ -154,20 +154,20 @@ static VALUE rb_git_ref_lookup(VALUE klass, VALUE rb_repo, VALUE rb_name)
 }
 
 /*
- *	call-seq:
- *		Reference.valid_name?(ref_name) -> new_ref
+ *  call-seq:
+ *    Reference.valid_name?(ref_name) -> true or false
  *
- * Check if a reference name is well-formed.
+ *  Check if a reference name is well-formed.
  *
- * Valid reference names must follow one of two patterns:
+ *  Valid reference names must follow one of two patterns:
  *
- * 1. Top-level names must contain only capital letters and underscores,
- *    and must begin and end with a letter. (e.g. "HEAD", "ORIG_HEAD").
- * 2. Names prefixed with "refs/" can be almost anything.  You must avoid
- *    the characters '~', '^', ':', '\\', '?', '[', and '*', and the
- *    sequences ".." and "@{" which have special meaning to revparse.
+ *  1. Top-level names must contain only capital letters and underscores,
+ *     and must begin and end with a letter. (e.g. "HEAD", "ORIG_HEAD").
+ *  2. Names prefixed with "refs/" can be almost anything.  You must avoid
+ *     the characters '~', '^', ':', '\\', '?', '[', and '*', and the
+ *     sequences ".." and "@{" which have special meaning to revparse.
  *
- *	Returns true if the reference name is valid, false if not.
+ *  Returns true if the reference name is valid, false if not.
  */
 static VALUE rb_git_ref_valid_name(VALUE klass, VALUE rb_name)
 {
