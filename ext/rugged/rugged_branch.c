@@ -147,7 +147,7 @@ static VALUE rb_git_branch_lookup(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *    branch.delete!
+ *    branch.delete! -> nil
  *
  *  Remove a branch from the repository. The branch object will become invalidated
  *  and won't be able to be used for any other operations.
@@ -224,13 +224,13 @@ static VALUE each_branch(int argc, VALUE *argv, VALUE self, int branch_names_onl
 /*
  *  call-seq:
  *    Branch.each_name(repository, filter = :all) { |branch_name| block }
- *    Branch.each_name(repository, filter = :all) -> Iterator
+ *    Branch.each_name(repository, filter = :all) -> enumerator
  *
  *  Iterate through the names of the branches in +repository+. Iteration can be
  *  optionally filtered to yield only +:local+ or +:remote+ branches.
  *
  *  The given block will be called once with the name of each branch as a +String+.
- *  If no block is given, an iterator will be returned.
+ *  If no block is given, an enumerator will be returned.
  */
 static VALUE rb_git_branch_each_name(int argc, VALUE *argv, VALUE self)
 {
@@ -241,13 +241,13 @@ static VALUE rb_git_branch_each_name(int argc, VALUE *argv, VALUE self)
 /*
  *  call-seq:
  *    Branch.each(repository, filter = :all) { |branch| block }
- *    Branch.each(repository, filter = :all) -> Iterator
+ *    Branch.each(repository, filter = :all) -> enumerator
  *
  *  Iterate through the branches in +repository+. Iteration can be
  *  optionally filtered to yield only +:local+ or +:remote+ branches.
  *
  *  The given block will be called once with a +Rugged::Branch+ object
- *  for each branch in the repository. If no block is given, an iterator
+ *  for each branch in the repository. If no block is given, an enumerator
  *  will be returned.
  */
 static VALUE rb_git_branch_each(int argc, VALUE *argv, VALUE self)
@@ -257,8 +257,8 @@ static VALUE rb_git_branch_each(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *    branch.move(new_name, force = false)
- *    branch.rename(new_name, force = false)
+ *    branch.move(new_name, force = false) -> new_branch
+ *    branch.rename(new_name, force = false) -> new_branch
  *
  *  Rename a branch to +new_name+.
  *
@@ -267,6 +267,8 @@ static VALUE rb_git_branch_each(int argc, VALUE *argv, VALUE self)
  *
  *  If +force+ is +true+, the branch will be renamed even if a branch
  *  with +new_name+ already exists.
+ *
+ *  A new Rugged::Branch object for the renamed branch will be returned.
  */
 static VALUE rb_git_branch_move(int argc, VALUE *argv, VALUE self)
 {
