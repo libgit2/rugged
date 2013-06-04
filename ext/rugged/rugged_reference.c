@@ -108,21 +108,36 @@ static VALUE rb_git_ref__each(int argc, VALUE *argv, VALUE self, int only_names)
 
 /*
  *  call-seq:
- *    Reference.each(repository, glob = nil) { |ref_name| block }
- *    Reference.each(repository, glob = nil) -> Iterator
+ *    Reference.each(repository, glob = nil) { |ref| block } -> nil
+ *    Reference.each(repository, glob = nil) -> enumerator
  *
  *  Iterate through all the references in +repository+. Iteration
  *  can be optionally filtered to the ones matching the given
  *  +glob+, a standard Unix filename glob.
  *
- *  The given block will be called once with the name of each reference.
- *  If no block is given, an iterator will be returned.
+ *  The given block will be called once with a Rugged::Reference
+ *  instance for each reference.
+ *
+ *  If no block is given, an enumerator will be returned.
  */
 static VALUE rb_git_ref_each(int argc, VALUE *argv, VALUE self)
 {
 	return rb_git_ref__each(argc, argv, self, 0);
 }
 
+/*
+ *  call-seq:
+ *    Reference.each_name(repository, glob = nil) { |ref_name| block } -> nil
+ *    Reference.each_name(repository, glob = nil) -> enumerator
+ *
+ *  Iterate through all the reference names in +repository+. Iteration
+ *  can be optionally filtered to the ones matching the given
+ *  +glob+, a standard Unix filename glob.
+ *
+ *  The given block will be called once with the name of each reference.
+ *
+ *  If no block is given, an enumerator will be returned.
+ */
 static VALUE rb_git_ref_each_name(int argc, VALUE *argv, VALUE self)
 {
 	return rb_git_ref__each(argc, argv, self, 1);
@@ -133,7 +148,7 @@ static VALUE rb_git_ref_each_name(int argc, VALUE *argv, VALUE self)
  *    Reference.lookup(repository, ref_name) -> new_ref
  *
  *  Lookup a reference from the +repository+.
- *  Returns a new +Rugged::Reference+ object.
+ *  Returns a new Rugged::Reference object.
  */
 static VALUE rb_git_ref_lookup(VALUE klass, VALUE rb_repo, VALUE rb_name)
 {
@@ -304,7 +319,8 @@ static VALUE rb_git_ref_target(VALUE self)
 
 /*
  *  call-seq:
- *    reference.set_target(t) -> Reference
+ *    reference.set_target(oid) -> new_ref
+ *    reference.set_target(ref_name) -> new_ref
  *
  *  Set the target of a reference. If +reference+ is a direct reference,
  *  the new target must be a +String+ representing a SHA1 OID.
@@ -442,7 +458,7 @@ static VALUE rb_git_ref_rename(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *    reference.delete!
+ *    reference.delete! -> nil
  *
  *  Delete this reference from disk. 
  *
@@ -545,9 +561,9 @@ static VALUE rb_git_reflog(VALUE self)
 
 /*
  *  call-seq:
- *    reference.log? -> Boolean
+ *    reference.log? -> true or false
  *
- *  Return whether a given reference has a reflog.
+ *  Return +true+ if the reference has a reflog, +false+ otherwise.
  */
 static VALUE rb_git_has_reflog(VALUE self)
 {
@@ -558,7 +574,7 @@ static VALUE rb_git_has_reflog(VALUE self)
 
 /*
  *  call-seq:
- *    reference.log!(committer, message = nil)
+ *    reference.log!(committer, message = nil) -> nil
  *
  *  Log a modification for this reference to the reflog.
  */
@@ -603,7 +619,7 @@ static VALUE rb_git_reflog_write(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *    reference.branch? -> Boolean
+ *    reference.branch? -> true or false
  *
  *  Return whether a given reference is a branch
  */
@@ -616,7 +632,7 @@ static VALUE rb_git_ref_is_branch(VALUE self)
 
 /*
  *  call-seq:
- *    reference.remote? -> Boolean
+ *    reference.remote? -> true or false
  *
  *  Return whether a given reference is a remote
  */
