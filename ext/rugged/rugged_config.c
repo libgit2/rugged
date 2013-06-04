@@ -205,10 +205,10 @@ static int cb_config__to_hash(const git_config_entry *entry, void *opaque)
 /*
  *  call-seq:
  *    cfg.each_key { |key| block }
- *    cfg.each_key -> Iterator
+ *    cfg.each_key -> enumarator
  *
  *  Call the given block once for each key in the config file. If no block
- *  is given, an +Iterator+ is returned.
+ *  is given, an enumerator is returned.
  *
  *    cfg.each_key do |key|
  *      puts key
@@ -232,12 +232,12 @@ static VALUE rb_git_config_each_key(VALUE self)
 /*
  *  call-seq:
  *    cfg.each_pair { |key, value| block }
- *    cfg.each_pair -> Iterator
+ *    cfg.each_pair -> enumerator
  *    cfg.each { |key, value| block }
- *    cfg.each -> Iterator
+ *    cfg.each -> enumerator
  *
  *  Call the given block once for each key/value pair in the config file.
- *  If no block is given, an +Iterator+ is returned.
+ *  If no block is given, an enumerator is returned.
  *
  *    cfg.each do |key, value|
  *      puts "#{key} => #{value}"
