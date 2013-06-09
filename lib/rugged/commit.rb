@@ -6,7 +6,7 @@ module Rugged
     end
 
     def inspect
-      "#<Rugged::Commit:#{object_id} {message: #{message.inspect}, tree: #{tree.inspect}, parents: #{parent_oids}>"
+      "#<Rugged::Commit:#{object_id} {message: #{message.inspect}, tree: #{tree.inspect}, parents: #{parent_oids}}>"
     end
 
     # Return a diff between this commit and its first parent or another commit or tree.
