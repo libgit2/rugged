@@ -523,15 +523,15 @@ diff --git a/another.txt b/another.txt
 index 3e5bcba..546c735 100644
 --- a/another.txt
 +++ b/another.txt
-@@ -2 +2 @@
+@@ -2 +2 @@ Git is fast. With Git, nearly all operations are performed locally, giving
 -it a huge speed advantage on centralized systems that constantly have to
 +it an huge speed advantage on centralized systems that constantly have to
-@@ -11,4 +10,0 @@
+@@ -11,4 +10,0 @@ from the start.
 -Let's see how common operations stack up against Subversion, a common
 -centralized version control system that is similar to CVS or
 -Perforce. Smaller is faster.
 -
-@@ -34,0 +31,4 @@
+@@ -34,0 +31,4 @@ SVN.
 +Let's see how common operations stack up against Subversion, a common
 +centralized version control system that is similar to CVS or
 +Perforce. Smaller is faster.
@@ -543,16 +543,16 @@ index 7b808f7..29ab705 100644
 @@ -1 +1 @@
 -The Git feature that really makes it stand apart from nearly every other SCM
 +The Git feature that r3ally mak3s it stand apart from n3arly 3v3ry other SCM
-@@ -10,4 +9,0 @@
+@@ -10,4 +9,0 @@ This means that you can do things like:
 -Frictionless Context Switching. Create a branch to try out an idea, commit a
 -few times, switch back to where you branched from, apply a patch, switch
 -back to where you are experimenting, and merge it in.
 -
-@@ -27,3 +22,0 @@
+@@ -27,3 +22,0 @@ Notably, when you push to a remote repository, you do not have to push all
 -of your branches. You can choose to share just one of your branches, a few
 -of them, or all of them. This tends to free people to try new ideas without
 -worrying about having to plan how and when they are going to merge it in or
-@@ -35 +28 @@
+@@ -35 +28 @@ incredibly easy and it changes the way most developers work when they learn
 -it.
 +it.!
 \\ No newline at end of file
@@ -588,9 +588,9 @@ EOS
     end
     assert_equal 3, hunks.size
 
-    assert_equal "@@ -1,5 +1,5 @@\n", hunks[0].header
-    assert_equal "@@ -8,10 +8,6 @@\n", hunks[1].header
-    assert_equal "@@ -32,6 +28,10 @@\n", hunks[2].header
+    assert hunks[0].header.start_with? "@@ -1,5 +1,5 @@"
+    assert hunks[1].header.start_with? "@@ -8,10 +8,6 @@" 
+    assert hunks[2].header.start_with? "@@ -32,6 +28,10 @@"
 
     assert_equal "readme.txt", patches[1].delta.old_file[:path]
     assert_equal "readme.txt", patches[1].delta.new_file[:path]
@@ -604,9 +604,9 @@ EOS
     end
     assert_equal 3, hunks.size
 
-    assert_equal "@@ -1,4 +1,4 @@\n", hunks[0].header
-    assert_equal "@@ -7,10 +7,6 @@\n", hunks[1].header
-    assert_equal "@@ -24,12 +20,9 @@\n", hunks[2].header
+    assert hunks[0].header.start_with? "@@ -1,4 +1,4 @@"
+    assert hunks[1].header.start_with? "@@ -7,10 +7,6 @@"
+    assert hunks[2].header.start_with? "@@ -24,12 +20,9 @@"
 
     lines = []
     hunks[0].each_line do |line|
@@ -696,7 +696,7 @@ index 3e5bcba..546c735 100644
  communicate with a server somewhere.
  
  Git was built to work on the Linux kernel, meaning that it has had to
-@@ -8,10 +8,6 @@
+@@ -8,10 +8,6 @@ reducing the overhead of runtimes associated with higher-level
  languages. Speed and performance has been a primary design goal of the Git
  from the start.
  
@@ -707,7 +707,7 @@ index 3e5bcba..546c735 100644
  For testing, large AWS instances were set up in the same availability
  zone. Git and SVN were installed on both machines, the Ruby repository was
  copied to both Git and SVN servers, and common operations were performed on
-@@ -32,6 +28,10 @@
+@@ -32,6 +28,10 @@ Clearly, in many of these common version control operations, Git is one or
  two orders of magnitude faster than SVN, even under ideal conditions for
  SVN.
  
@@ -728,7 +728,7 @@ index 7b808f7..29ab705 100644
  out there is its branching model.
  
  Git allows and encourages you to have multiple local branches that can be
-@@ -7,10 +7,6 @@
+@@ -7,10 +7,6 @@ those lines of development takes seconds.
  
  This means that you can do things like:
  
@@ -739,7 +739,7 @@ index 7b808f7..29ab705 100644
  Role-Based Codelines. Have a branch that always contains only what goes to
  production, another that you merge work into for testing, and several
  smaller ones for day to day work.
-@@ -24,12 +20,9 @@
+@@ -24,12 +20,9 @@ not going to work, and just delete it - abandoning the work\xE2\x80\x94with nobody else
  ever seeing it (even if you've pushed other branches in the meantime).
  
  Notably, when you push to a remote repository, you do not have to push all
