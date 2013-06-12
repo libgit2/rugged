@@ -414,10 +414,10 @@ static VALUE rb_git_diff_find_similar(int argc, VALUE *argv, VALUE self)
 /*
  *  call-seq:
  *    diff.each_patch { |patch| } -> self
- *    diff.each_patch -> Enumerator
+ *    diff.each_patch -> enumerator
  *
  *  If given a block, yields each patch that is part of the diff.
- *  If no block is given, an Enumerator will be returned.
+ *  If no block is given, an enumerator will be returned.
  */
 static VALUE rb_git_diff_each_patch(VALUE self)
 {
@@ -447,10 +447,10 @@ static VALUE rb_git_diff_each_patch(VALUE self)
 /*
  *  call-seq:
  *    diff.each_delta { |delta| } -> self
- *    diff.each_delta -> Enumerator
+ *    diff.each_delta -> enumerator
  *
  *  If given a block, yields each delta that is part of the diff.
- *  If no block is given, an Enumerator will be returned.
+ *  If no block is given, an enumerator will be returned.
  *
  *  This method should be preferred over #each_patch if you're not interested
  *  in the actual line-by-line changes of the diff.
@@ -481,7 +481,7 @@ static VALUE rb_git_diff_each_delta(VALUE self)
 }
 
 /*
- *  call-seq: diff.size
+ *  call-seq: diff.size -> int
  *
  *  Returns the number of deltas/patches in this diff.
  */
