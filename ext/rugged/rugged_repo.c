@@ -185,6 +185,21 @@ static void set_repository_options(git_repository *repo, VALUE rb_options)
 	load_alternates(repo, rb_hash_aref(rb_options, CSTR2SYM("alternates")));
 }
 
+/*
+ *  call-seq:
+ *    Repository.bare(path[, alternates]) -> repository
+ *
+ *  Open a bare Git repository at +path+ and return a +Repository+
+ *  object representing it.
+ *
+ *  This is faster than Rugged::Repository.new, as it won't attempt to perform
+ *  any .git directory discovery, won't try to load the config options to
+ *  determine whether the repository is bare and won't try to load the workdir.
+ *
+ *  Optionally, you can pass a list of alternate object folders, e.g.
+ *
+ *    Rugged::Repository.bare(path, ['./other/repo/.git/objects'])
+ */
 static VALUE rb_git_repo_open_bare(int argc, VALUE *argv, VALUE klass)
 {
 	git_repository *repo;
