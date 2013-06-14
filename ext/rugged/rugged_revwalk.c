@@ -167,6 +167,14 @@ static VALUE rb_git_walker_hide(VALUE self, VALUE rb_commit)
 	return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    walker.sorting = sort_mode
+ *
+ *  Change the sorting mode for the revision walk.
+ *
+ *  This will cause +walker+ to be reset.
+ */
 static VALUE rb_git_walker_sorting(VALUE self, VALUE ruby_sort_mode)
 {
 	git_revwalk *walk;
@@ -175,6 +183,13 @@ static VALUE rb_git_walker_sorting(VALUE self, VALUE ruby_sort_mode)
 	return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    walker.reset -> nil
+ *
+ *  Remove all pushed and hidden commits and reset the +walker+
+ *  back into a blank state.
+ */
 static VALUE rb_git_walker_reset(VALUE self)
 {
 	git_revwalk *walk;

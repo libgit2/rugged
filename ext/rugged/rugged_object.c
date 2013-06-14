@@ -204,6 +204,16 @@ static git_otype class2otype(VALUE klass)
 	return GIT_OBJ_BAD;
 }
 
+/*
+ *  call-seq:
+ *    Object.new(repo, oid) -> object
+ *    Object.lookup(repo, oid) -> object
+ *
+ *  Find and return the git object inside +repo+ with the given +oid+.
+ *
+ *  +oid+ can either have be the complete, 40 character string or any
+ *  unique prefix.
+ */
 VALUE rb_git_object_lookup(VALUE klass, VALUE rb_repo, VALUE rb_hex)
 {
 	git_object *object;

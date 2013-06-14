@@ -243,6 +243,12 @@ static VALUE rb_git_tree_walk(VALUE self, VALUE rb_mode)
 	return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    tree.path(path) -> entry
+ *
+ *  Retrieve and return a tree entry by its relative path.
+ */
 static VALUE rb_git_tree_path(VALUE self, VALUE rb_path)
 {
 	int error;
@@ -478,6 +484,16 @@ static VALUE rb_git_treebuilder_allocate(VALUE klass)
 	return Data_Wrap_Struct(klass, NULL, &rb_git_treebuilder_free, NULL);
 }
 
+/*
+ *  call-seq:
+ *    TreeBuilder.new([tree])
+ *
+ *  Create a new Rugged::Trebuilder instance.
+ *
+ *  If an optional +tree+ is given, the returned TreeBuilder will be
+ *  initialized with the entry of +tree+. Otherwise, the TreeBuilder
+ *  will be empty and has to be filled manually.
+ */
 static VALUE rb_git_treebuilder_init(int argc, VALUE *argv, VALUE self)
 {
 	git_treebuilder *builder;
@@ -499,6 +515,12 @@ static VALUE rb_git_treebuilder_init(int argc, VALUE *argv, VALUE self)
 	return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    builder.clear -> nil
+ *
+ *  Clear all entries in +builder+.
+ */
 static VALUE rb_git_treebuilder_clear(VALUE self)
 {
 	git_treebuilder *builder;
@@ -507,6 +529,12 @@ static VALUE rb_git_treebuilder_clear(VALUE self)
 	return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    builder[path] -> entry
+ *
+ *  Return an entry from +builder+ based on its relative path.
+ */
 static VALUE rb_git_treebuilder_get(VALUE self, VALUE path)
 {
 	git_treebuilder *builder;
@@ -517,6 +545,13 @@ static VALUE rb_git_treebuilder_get(VALUE self, VALUE path)
 	return rb_git_treeentry_fromC(git_treebuilder_get(builder, StringValueCStr(path)));
 }
 
+/*
+ *  call-seq:
+ *    builder << entry      -> nil
+ *    builder.insert(entry) -> nil
+ *
+ *  Inser a new entry into +builder+.
+ */
 static VALUE rb_git_treebuilder_insert(VALUE self, VALUE rb_entry)
 {
 	git_treebuilder *builder;
@@ -547,6 +582,15 @@ static VALUE rb_git_treebuilder_insert(VALUE self, VALUE rb_entry)
 	return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    builder.remove(path) -> true or false
+ *
+ *  Remove an entry from +builder+ by its relative +path+.
+ *
+ *  Returns +true+ if the entry was successfully removed,
+ *  or +false+ if the entry was not found.
+ */
 static VALUE rb_git_treebuilder_remove(VALUE self, VALUE path)
 {
 	git_treebuilder *builder;
@@ -563,6 +607,13 @@ static VALUE rb_git_treebuilder_remove(VALUE self, VALUE path)
 	return Qtrue;
 }
 
+/*
+ *  call-seq:
+ *    builder.write(repo) -> oid
+ *
+ *  Write +builder+'s content as a tree to the given +repo+
+ *  and return the +oid+ for the newly created tree.
+ */
 static VALUE rb_git_treebuilder_write(VALUE self, VALUE rb_repo)
 {
 	git_treebuilder *builder;
@@ -589,6 +640,13 @@ static int treebuilder_cb(const git_tree_entry *entry, void *opaque)
 	return rugged_parse_bool(ret);
 }
 
+/*
+ *  call-seq:
+ *    builder.reject! { |entry| block } -> nil
+ *
+ *  Deletes every tree +entry+ from +builder+ for which
+ *  the given +block+ evaluates to true.
+ */
 static VALUE rb_git_treebuilder_filter(VALUE self)
 {
 	git_treebuilder *builder;

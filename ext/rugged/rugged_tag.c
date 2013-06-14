@@ -159,6 +159,35 @@ static VALUE rb_git_tag_message_GET(VALUE self)
 	return rugged_str_new2(message, NULL);
 }
 
+/*
+ *  call-seq:
+ *    Tag.create(repo, data) -> oid
+ *
+ *  Create a new tag in +repo+.
+ *
+ *  If +data+ is a String, it has to contain the raw tag data.
+ *
+ *  If +data+ is a Hash, it has to contain the following key value pairs:
+ *
+ *  :name ::
+ *    A String holding the tag's new name.
+ *
+ *  :force ::
+ *    If +true+, existing tags will be overwritten. Defaults to +false+.
+ *
+ *  :tagger ::
+ *    An optional Hash containing a git signature. Will cause the creation of
+ *    an annotated tag object if present.
+ *
+ *  :message ::
+ *    An optional string containing the message for the new tag. Will cause
+ *    the creation of an annotated tag if present.
+ *
+ *  :target ::
+ *    The OID of the object that the new tag should point to.
+ *
+ *  Returns the OID of the newly created tag.
+ */
 static VALUE rb_git_tag_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 {
 	git_oid tag_oid;
@@ -234,6 +263,21 @@ static VALUE rb_git_tag_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 	return rugged_create_oid(&tag_oid);
 }
 
+/*
+ *  call-seq:
+ *    Tag.each(repo[, pattern]) { |name| block } -> nil
+ *    Tag.each(repo[, pattern])                  -> enumerator
+ *
+ *  Iterate through all the tag names in +repo+. Iteration
+ *  can be optionally filtered to the ones matching the given
+ *  +pattern+, a standard Unix filename glob.
+ *
+ *  If +pattern+ is empty or not given, all tag names will be returned.
+ *
+ *  The given block will be called once with the name for each tag.
+ *
+ *  If no block is given, an enumerator will be returned.
+ */
 static VALUE rb_git_tag_each(int argc, VALUE *argv, VALUE self)
 {
 	git_repository *repo;
@@ -268,6 +312,12 @@ static VALUE rb_git_tag_each(int argc, VALUE *argv, VALUE self)
 	return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    Tag.delete(repo, name) -> nil
+ *
+ *  Delete the tag reference identified by +name+ from +repo+.
+ */
 static VALUE rb_git_tag_delete(VALUE self, VALUE rb_repo, VALUE rb_name)
 {
 	git_repository *repo;

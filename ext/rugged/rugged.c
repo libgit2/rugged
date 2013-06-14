@@ -293,6 +293,13 @@ void rugged_exception_raise(int errorcode)
 	rb_exc_raise(err_obj);
 }
 
+/*
+ *  call-seq:
+ *    Rugged.__cache_usage__ -> [current, max]
+ *
+ *  Returns an array representing the current bytes in the internal
+ *  libgit2 cache and the maximum size of the cache.
+ */
 static VALUE rb_git_cache_usage(VALUE self)
 {
 	int64_t used, max;
