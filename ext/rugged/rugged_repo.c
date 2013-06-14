@@ -193,10 +193,10 @@ static void set_repository_options(git_repository *repo, VALUE rb_options)
  *  object representing it.
  *
  *  This is faster than Rugged::Repository.new, as it won't attempt to perform
- *  any .git directory discovery, won't try to load the config options to
+ *  any +.git+ directory discovery, won't try to load the config options to
  *  determine whether the repository is bare and won't try to load the workdir.
  *
- *  Optionally, you can pass a list of alternate object folders, e.g.
+ *  Optionally, you can pass a list of alternate object folders.
  *
  *    Rugged::Repository.bare(path, ['./other/repo/.git/objects'])
  */
@@ -219,23 +219,26 @@ static VALUE rb_git_repo_open_bare(int argc, VALUE *argv, VALUE klass)
 
 /*
  *  call-seq:
- *    Rugged::Repository.new(path, options = {}) -> repository
+ *    Repository.new(path, options = {}) -> repository
  *
  *  Open a Git repository in the given +path+ and return a +Repository+ object
  *  representing it. An exception will be thrown if +path+ doesn't point to a
  *  valid repository. If you need to create a repository from scratch, use
- *  +Rugged::Repository.init+ instead.
+ *  Rugged::Repository.init instead.
  *
- *  The +path+ must point to the actual folder (+.git+) of a Git repository.
- *  If you're unsure of where is this located, use +Rugged::Repository.discover+
- *  instead.
+ *  The +path+ must point to either the actual folder (+.git+) of a Git repository,
+ *  or to the directorly that contains the +.git+ folder.
+ *
+ *  See also Rugged::Repository.discover and Rugged::Repository.bare.
+ *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :alternates ::
+ *    A list of alternate object folders.
+ *
+ *  Examples:
  *
  *    Rugged::Repository.new('~/test/.git') #=> #<Rugged::Repository:0x108849488>
- *
- *  +options+ is an optional hash with the following keys:
- *
- *  - +:alternates+: +Array+ with a list of alternate object folders, e.g.
- *
  *    Rugged::Repository.new(path, :alternates => ['./other/repo/.git/objects'])
  */
 static VALUE rb_git_repo_new(int argc, VALUE *argv, VALUE klass)
@@ -256,7 +259,7 @@ static VALUE rb_git_repo_new(int argc, VALUE *argv, VALUE klass)
 
 /*
  *  call-seq:
- *    init_at(path, is_bare = false) -> repository
+ *    Repository.init_at(path, is_bare = false) -> repository
  *
  *  Initialize a Git repository in +path+. This implies creating all the
  *  necessary files on the FS, or re-initializing an already existing
@@ -343,17 +346,26 @@ static void parse_clone_options(git_clone_options *ret, VALUE rb_options_hash, s
 
 /*
  *  call-seq:
- *    clone_at(url, local_path) -> repository
- *    clone_at(url, local_path, options) -> repository
+ *    Repository.clone_at(url, local_path[, options]) -> repository
  *
  *  Clone a repository from +url+ to +local_path+.
  *
- *  Options is a hash with the following keys:
+ *  The following options can be passed in the +options+ Hash:
  *
- *  *  `:bare` (default: `false`) - clone to a bare repository.
+ *  :bare ::
+ *    If +true+, the clone will be created as a bare repository.
+ *    Defaults to +false+.
  *
- *  *  `:progress` (default: none) - fetch progress callback.
- *     example: `lambda { |total_objects, indexed_objects, received_objects, received_bytes| }`
+ *  :progress ::
+ *    A callback that will be executed to report clone progress information. It will be passed
+ *    the amount of +total_objects+, +indexed_objects+, +received_objects+ and +received_bytes+.
+ *
+ *  Example:
+ *
+ *    progress = lambda { |total_objects, indexed_objects, received_objects, received_bytes|
+ *      # ...
+ *    }
+ *    Repository.clone_at("https://github.com/libgit2/rugged.git", "./some/dir", :progress => progress)
  */
 static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
 {
@@ -418,7 +430,7 @@ static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
  *    repo.index = idx
  *
  *  Set the index for this +Repository+. +idx+ must be a instance of
- *  +Rugged::Index+. This index will be used internally by all
+ *  Rugged::Index. This index will be used internally by all
  *  operations that use the Git index on +repo+.
  *
  *  Note that it's not necessary to set the +index+ for any repository;
@@ -430,6 +442,12 @@ static VALUE rb_git_repo_set_index(VALUE self, VALUE rb_data)
 	RB_GIT_REPO_OWNED_SET(rb_cRuggedIndex, index);
 }
 
+/*
+ *  call-seq:
+ *    repo.index -> idx
+ *
+ *  Return the default index for this repository.
+ */
 static VALUE rb_git_repo_get_index(VALUE self)
 {
 	RB_GIT_REPO_OWNED_GET(rb_cRuggedIndex, index);
@@ -440,7 +458,7 @@ static VALUE rb_git_repo_get_index(VALUE self)
  *    repo.config = cfg
  *
  *  Set the configuration file for this +Repository+. +cfg+ must be a instance of
- *  +Rugged::Config+. This config file will be used internally by all
+ *  Rugged::Config. This config file will be used internally by all
  *  operations that need to lookup configuration settings on +repo+.
  *
  *  Note that it's not necessary to set the +config+ for any repository;
@@ -453,6 +471,12 @@ static VALUE rb_git_repo_set_config(VALUE self, VALUE rb_data)
 	RB_GIT_REPO_OWNED_SET(rb_cRuggedConfig, config);
 }
 
+/*
+ *  call-seq:
+ *    repo.config -> cfg
+ *
+ *  Return a Rugged::Config object representing this repository's config.
+ */
 static VALUE rb_git_repo_get_config(VALUE self)
 {
 	RB_GIT_REPO_OWNED_GET(rb_cRuggedConfig, config);
@@ -532,6 +556,12 @@ static VALUE rb_git_repo_exists(VALUE self, VALUE hex)
 	return rb_result;
 }
 
+/*
+ *  call-seq:
+ *    repo.read(oid) -> str
+ *
+ *  Read and return the raw data of the object identified by the given +oid+.
+ */
 static VALUE rb_git_repo_read(VALUE self, VALUE hex)
 {
 	git_repository *repo;
@@ -547,6 +577,13 @@ static VALUE rb_git_repo_read(VALUE self, VALUE hex)
 	return rugged_raw_read(repo, &oid);
 }
 
+/*
+ *  call-seq:
+ *    repo.read_header(oid) -> hash
+ *
+ *  Read the header information for the object identified by the given
+ *  +oid+.
+ */
 static VALUE rb_git_repo_read_header(VALUE self, VALUE hex)
 {
 	git_repository *repo;
@@ -634,6 +671,17 @@ static VALUE rb_git_repo_hashfile(VALUE self, VALUE rb_path, VALUE rb_type)
 	return rugged_create_oid(&oid);
 }
 
+/*
+ *  call-seq:
+ *    repo.write(buffer, type) -> oid
+ *
+ *  Write the data contained in the +buffer+ string as a raw object of the
+ *  given +type+ into the repository's object database.
+ *
+ *  +type+ can be either +:tag+, +:commit+, +:tree+ or +:blob+.
+ *
+ *  Returns the newly created object's oid.
+ */
 static VALUE rb_git_repo_write(VALUE self, VALUE rb_buffer, VALUE rub_type)
 {
 	git_repository *repo;
@@ -1108,10 +1156,14 @@ static int rugged__push_status_cb(const char *ref, const char *msg, void *payloa
 
 /*
  *  call-seq:
- *    repo.push("origin", ["refs/heads/master", ":refs/heads/to_be_deleted"])
+ *    repo.push(remote, refspecs) -> hash
  *
- *  Pushes the given refspecs to the given remote. Returns a hash that contains key-value pairs that
- *  reflect pushed refs and error messages, if applicable.
+ *  Pushes the given +refspecs+ to the given +remote+. Returns a hash that contains
+ *  key-value pairs that reflect pushed refs and error messages, if applicable.
+ *
+ *  Example:
+ *
+ *    repo.push("origin", ["refs/heads/master", ":refs/heads/to_be_deleted"])
  */
 static VALUE rb_git_repo_push(VALUE self, VALUE rb_remote, VALUE rb_refspecs)
 {
@@ -1188,7 +1240,7 @@ cleanup:
 
 /*
  *  call-seq:
- *    repo.close
+ *    repo.close -> nil
  *
  *  Frees all the resources used by this repository immediately. The repository can
  *  still be used after this call. Resources will be opened as necessary.
@@ -1233,7 +1285,7 @@ static VALUE rb_git_repo_set_namespace(VALUE self, VALUE rb_namespace)
 
 /*
  *  call-seq:
- *    repo.namespace -> String
+ *    repo.namespace -> str
  *
  *  Returns the active namespace for the repository.
  */
