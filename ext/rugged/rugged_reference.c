@@ -107,33 +107,48 @@ static VALUE rb_git_ref__each(int argc, VALUE *argv, VALUE self, int only_names)
 }
 
 /*
- *	call-seq:
- *		Reference.each(repository, glob = nil) { |ref_name| block }
- *		Reference.each(repository, glob = nil) -> Iterator
+ *  call-seq:
+ *    Reference.each(repository, glob = nil) { |ref| block } -> nil
+ *    Reference.each(repository, glob = nil) -> enumerator
  *
- *	Iterate through all the references in +repository+. Iteration
- *	can be optionally filtered to the ones matching the given
- *	+glob+, a standard Unix filename glob.
+ *  Iterate through all the references in +repository+. Iteration
+ *  can be optionally filtered to the ones matching the given
+ *  +glob+, a standard Unix filename glob.
  *
- *	The given block will be called once with the name of each reference.
- *	If no block is given, an iterator will be returned.
+ *  The given block will be called once with a Rugged::Reference
+ *  instance for each reference.
+ *
+ *  If no block is given, an enumerator will be returned.
  */
 static VALUE rb_git_ref_each(int argc, VALUE *argv, VALUE self)
 {
 	return rb_git_ref__each(argc, argv, self, 0);
 }
 
+/*
+ *  call-seq:
+ *    Reference.each_name(repository, glob = nil) { |ref_name| block } -> nil
+ *    Reference.each_name(repository, glob = nil) -> enumerator
+ *
+ *  Iterate through all the reference names in +repository+. Iteration
+ *  can be optionally filtered to the ones matching the given
+ *  +glob+, a standard Unix filename glob.
+ *
+ *  The given block will be called once with the name of each reference.
+ *
+ *  If no block is given, an enumerator will be returned.
+ */
 static VALUE rb_git_ref_each_name(int argc, VALUE *argv, VALUE self)
 {
 	return rb_git_ref__each(argc, argv, self, 1);
 }
 
 /*
- *	call-seq:
- *		Reference.lookup(repository, ref_name) -> new_ref
+ *  call-seq:
+ *    Reference.lookup(repository, ref_name) -> new_ref
  *
- *	Lookup a reference from the +repository+.
- *	Returns a new +Rugged::Reference+ object.
+ *  Lookup a reference from the +repository+.
+ *  Returns a new Rugged::Reference object.
  */
 static VALUE rb_git_ref_lookup(VALUE klass, VALUE rb_repo, VALUE rb_name)
 {
@@ -154,20 +169,20 @@ static VALUE rb_git_ref_lookup(VALUE klass, VALUE rb_repo, VALUE rb_name)
 }
 
 /*
- *	call-seq:
- *		Reference.valid_name?(ref_name) -> new_ref
+ *  call-seq:
+ *    Reference.valid_name?(ref_name) -> true or false
  *
- * Check if a reference name is well-formed.
+ *  Check if a reference name is well-formed.
  *
- * Valid reference names must follow one of two patterns:
+ *  Valid reference names must follow one of two patterns:
  *
- * 1. Top-level names must contain only capital letters and underscores,
- *    and must begin and end with a letter. (e.g. "HEAD", "ORIG_HEAD").
- * 2. Names prefixed with "refs/" can be almost anything.  You must avoid
- *    the characters '~', '^', ':', '\\', '?', '[', and '*', and the
- *    sequences ".." and "@{" which have special meaning to revparse.
+ *  1. Top-level names must contain only capital letters and underscores,
+ *     and must begin and end with a letter. (e.g. "HEAD", "ORIG_HEAD").
+ *  2. Names prefixed with "refs/" can be almost anything.  You must avoid
+ *     the characters '~', '^', ':', '\\', '?', '[', and '*', and the
+ *     sequences ".." and "@{" which have special meaning to revparse.
  *
- *	Returns true if the reference name is valid, false if not.
+ *  Returns true if the reference name is valid, false if not.
  */
 static VALUE rb_git_ref_valid_name(VALUE klass, VALUE rb_name)
 {
@@ -176,11 +191,11 @@ static VALUE rb_git_ref_valid_name(VALUE klass, VALUE rb_name)
 }
 
 /*
- *	call-seq:
- *		ref.peel -> oid
+ *  call-seq:
+ *    ref.peel -> oid
  *
- *	Peels tag objects to the sha that they point at. Replicates
- *	git show-ref --dereference
+ *  Peels tag objects to the sha that they point at. Replicates
+ *  +git show-ref --dereference+.
  */
 static VALUE rb_git_ref_peel(VALUE self)
 {
@@ -209,11 +224,11 @@ static VALUE rb_git_ref_peel(VALUE self)
 }
 
 /*
- *	call-seq:
- *		Reference.exist?(repository, ref_name) -> true or false
- *		Reference.exists?(repository, ref_name) -> true or false
+ *  call-seq:
+ *    Reference.exist?(repository, ref_name) -> true or false
+ *    Reference.exists?(repository, ref_name) -> true or false
  *
- *	Check if a given reference exists on +repository+.
+ *  Check if a given reference exists on +repository+.
  */
 static VALUE rb_git_ref_exist(VALUE klass, VALUE rb_repo, VALUE rb_name)
 {
@@ -236,16 +251,16 @@ static VALUE rb_git_ref_exist(VALUE klass, VALUE rb_repo, VALUE rb_name)
 }
 
 /*
- *	call-seq:
- *		Reference.create(repository, name, oid, force = false) -> new_ref
- *		Reference.create(repository, name, target, force = false) -> new_ref
+ *  call-seq:
+ *    Reference.create(repository, name, oid, force = false) -> new_ref
+ *    Reference.create(repository, name, target, force = false) -> new_ref
  *
- *	Create a symbolic or direct reference on +repository+ with the given +name+.
- *	If the third argument is a valid OID, the reference will be created as direct.
- *	Otherwise, it will be assumed the target is the name of another reference.
+ *  Create a symbolic or direct reference on +repository+ with the given +name+.
+ *  If the third argument is a valid OID, the reference will be created as direct.
+ *  Otherwise, it will be assumed the target is the name of another reference.
  *
- *	If a reference with the given +name+ already exists and +force+ is +true+,
- *	it will be overwritten. Otherwise, an exception will be raised.
+ *  If a reference with the given +name+ already exists and +force+ is +true+,
+ *  it will be overwritten. Otherwise, an exception will be raised.
  */
 static VALUE rb_git_ref_create(int argc, VALUE *argv, VALUE klass)
 {
@@ -277,18 +292,18 @@ static VALUE rb_git_ref_create(int argc, VALUE *argv, VALUE klass)
 }
 
 /*
- *	call-seq:
- *		reference.target -> oid
- *		reference.target -> ref_name
+ *  call-seq:
+ *    reference.target -> oid
+ *    reference.target -> ref_name
  *
- *	Return the target of the reference, which is an OID for +:direct+
- *	references, and the name of another reference for +:symbolic+ ones.
+ *  Return the target of the reference, which is an OID for +:direct+
+ *  references, and the name of another reference for +:symbolic+ ones.
  *
- *		r1.type #=> :symbolic
- *		r1.target #=> "refs/heads/master"
+ *    r1.type #=> :symbolic
+ *    r1.target #=> "refs/heads/master"
  *
- *		r2.type #=> :direct
- *		r2.target #=> "de5ba987198bcf2518885f0fc1350e5172cded78"
+ *    r2.type #=> :direct
+ *    r2.target #=> "de5ba987198bcf2518885f0fc1350e5172cded78"
  */
 static VALUE rb_git_ref_target(VALUE self)
 {
@@ -303,24 +318,25 @@ static VALUE rb_git_ref_target(VALUE self)
 }
 
 /*
- *	call-seq:
- *		reference.set_target(t) -> Reference
+ *  call-seq:
+ *    reference.set_target(oid) -> new_ref
+ *    reference.set_target(ref_name) -> new_ref
  *
- *	Set the target of a reference. If +reference+ is a direct reference,
- *	the new target must be a +String+ representing a SHA1 OID.
+ *  Set the target of a reference. If +reference+ is a direct reference,
+ *  the new target must be a +String+ representing a SHA1 OID.
  *
- *	If +reference+ is symbolic, the new target must be a +String+ with
- *	the name of another reference.
+ *  If +reference+ is symbolic, the new target must be a +String+ with
+ *  the name of another reference.
  *
- *	The original reference is unaltered; a new reference object is
- *	returned with the new target, and the changes are persisted to
- *	disk.
+ *  The original reference is unaltered; a new reference object is
+ *  returned with the new target, and the changes are persisted to
+ *  disk.
  *
- *		r1.type #=> :symbolic
- *		r1.set_target("refs/heads/master") #=> <Reference>
+ *    r1.type #=> :symbolic
+ *    r1.set_target("refs/heads/master") #=> <Reference>
  *
- *		r2.type #=> :direct
- *		r2.set_target("de5ba987198bcf2518885f0fc1350e5172cded78") #=> <Reference>
+ *    r2.type #=> :direct
+ *    r2.set_target("de5ba987198bcf2518885f0fc1350e5172cded78") #=> <Reference>
  */
 static VALUE rb_git_ref_set_target(VALUE self, VALUE rb_target)
 {
@@ -346,10 +362,10 @@ static VALUE rb_git_ref_set_target(VALUE self, VALUE rb_target)
 }
 
 /*
- *	call-seq:
- *		reference.type -> :symbolic or :direct
+ *  call-seq:
+ *    reference.type -> :symbolic or :direct
  *
- *	Return whether the reference is +:symbolic+ or +:direct+
+ *  Return whether the reference is +:symbolic+ or +:direct+
  */
 static VALUE rb_git_ref_type(VALUE self)
 {
@@ -367,12 +383,12 @@ static VALUE rb_git_ref_type(VALUE self)
 }
 
 /*
- *	call-seq:
- *		reference.name -> name
+ *  call-seq:
+ *    reference.name -> name
  *
- *	Returns the name of the reference
+ *  Returns the name of the reference
  *
- *		reference.name #=> 'HEAD'
+ *    reference.name #=> 'HEAD'
  */
 static VALUE rb_git_ref_name(VALUE self)
 {
@@ -382,17 +398,17 @@ static VALUE rb_git_ref_name(VALUE self)
 }
 
 /*
- *	call-seq:
- *		reference.resolve -> peeled_ref
+ *  call-seq:
+ *    reference.resolve -> peeled_ref
  *
- *	Peel a symbolic reference to its target reference.
+ *  Peel a symbolic reference to its target reference.
  *
- *		r1.type #=> :symbolic
- *		r1.name #=> 'HEAD'
- *		r1.target #=> 'refs/heads/master'
+ *    r1.type #=> :symbolic
+ *    r1.name #=> 'HEAD'
+ *    r1.target #=> 'refs/heads/master'
  *
- *		r2 = r1.resolve #=> #<Rugged::Reference:0x401b3948>
- *		r2.target #=> '9d09060c850defbc7711d08b57def0d14e742f4e'
+ *    r2 = r1.resolve #=> #<Rugged::Reference:0x401b3948>
+ *    r2.target #=> '9d09060c850defbc7711d08b57def0d14e742f4e'
  */
 static VALUE rb_git_ref_resolve(VALUE self)
 {
@@ -409,17 +425,17 @@ static VALUE rb_git_ref_resolve(VALUE self)
 }
 
 /*
- *	call-seq:
- *		reference.rename(new_name, force = false)
+ *  call-seq:
+ *    reference.rename(new_name, force = false)
  *
- *	Change the name of a reference. If +force+ is +true+, any previously
- *	existing references will be overwritten when renaming.
+ *  Change the name of a reference. If +force+ is +true+, any previously
+ *  existing references will be overwritten when renaming.
  *
- *	Return a new reference object with the new object
+ *  Return a new reference object with the new object
  *
- *		reference.name #=> 'refs/heads/master'
- *		new_ref = reference.rename('refs/heads/development') #=> <Reference>
- *		new_ref.name #=> 'refs/heads/development'
+ *    reference.name #=> 'refs/heads/master'
+ *    new_ref = reference.rename('refs/heads/development') #=> <Reference>
+ *    new_ref.name #=> 'refs/heads/development'
  */
 static VALUE rb_git_ref_rename(int argc, VALUE *argv, VALUE self)
 {
@@ -441,14 +457,14 @@ static VALUE rb_git_ref_rename(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- *	call-seq:
- *		reference.delete!
+ *  call-seq:
+ *    reference.delete! -> nil
  *
- *	Delete this reference from disk. 
+ *  Delete this reference from disk. 
  *
- *		reference.name #=> 'HEAD'
- *		reference.delete!
- *		# Reference no longer exists on disk
+ *    reference.name #=> 'HEAD'
+ *    reference.delete!
+ *    # Reference no longer exists on disk
  */
 static VALUE rb_git_ref_delete(VALUE self)
 {
@@ -494,25 +510,27 @@ static VALUE reflog_entry_new(const git_reflog_entry *entry)
 }
 
 /*
- *	call-seq:
- *		reference.log -> [reflog_entry, ...]
+ *  call-seq:
+ *    reference.log -> [reflog_entry, ...]
  *
- *	Return an array with the log of all modifications to this reference
+ *  Return an array with the log of all modifications to this reference
  *
- *	Each +reflog_entry+ is a hash with the following keys:
+ *  Each +reflog_entry+ is a hash with the following keys:
  *
- *	- +:id_old+: previous OID before the change
- *	- +:id_new+: OID after the change
- *	- +:committer+: author of the change
- *	- +:message+: message for the change
+ *  - +:id_old+: previous OID before the change
+ *  - +:id_new+: OID after the change
+ *  - +:committer+: author of the change
+ *  - +:message+: message for the change
  *
- *		reference.log #=> [
- *		# {
- *		#	:id_old => nil,
- *		#	:id_new => '9d09060c850defbc7711d08b57def0d14e742f4e',
- *		#	:committer => {:name => 'Vicent Marti', :email => {'vicent@github.com'}},
- *		#	:message => 'created reference'
- *		# }, ... ]
+ *  Example:
+ *
+ *    reference.log #=> [
+ *    # {
+ *    #  :id_old => nil,
+ *    #  :id_new => '9d09060c850defbc7711d08b57def0d14e742f4e',
+ *    #  :committer => {:name => 'Vicent Marti', :email => {'vicent@github.com'}},
+ *    #  :message => 'created reference'
+ *    # }, ... ]
  */
 static VALUE rb_git_reflog(VALUE self)
 {
@@ -542,10 +560,10 @@ static VALUE rb_git_reflog(VALUE self)
 }
 
 /*
- *	call-seq:
- *		reference.log? -> Boolean
+ *  call-seq:
+ *    reference.log? -> true or false
  *
- *	Return whether a given reference has a reflog.
+ *  Return +true+ if the reference has a reflog, +false+ otherwise.
  */
 static VALUE rb_git_has_reflog(VALUE self)
 {
@@ -555,10 +573,10 @@ static VALUE rb_git_has_reflog(VALUE self)
 }
 
 /*
- *	call-seq:
- *		reference.log!(committer, message = nil)
+ *  call-seq:
+ *    reference.log!(committer, message = nil) -> nil
  *
- *	Log a modification for this reference to the reflog.
+ *  Log a modification for this reference to the reflog.
  */
 static VALUE rb_git_reflog_write(int argc, VALUE *argv, VALUE self)
 {
@@ -600,10 +618,10 @@ static VALUE rb_git_reflog_write(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- *	call-seq:
- *		reference.branch? -> Boolean
+ *  call-seq:
+ *    reference.branch? -> true or false
  *
- *	Return whether a given reference is a branch
+ *  Return whether a given reference is a branch
  */
 static VALUE rb_git_ref_is_branch(VALUE self)
 {
@@ -613,10 +631,10 @@ static VALUE rb_git_ref_is_branch(VALUE self)
 }
 
 /*
- *	call-seq:
- *		reference.remote? -> Boolean
+ *  call-seq:
+ *    reference.remote? -> true or false
  *
- *	Return whether a given reference is a remote
+ *  Return whether a given reference is a remote
  */
 static VALUE rb_git_ref_is_remote(VALUE self)
 {

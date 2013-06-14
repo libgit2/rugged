@@ -40,11 +40,11 @@ VALUE rugged_walker_new(VALUE klass, VALUE owner, git_revwalk *walk)
 }
 
 /*
- *	call-seq:
- *		Walker.new(repository) -> walker
+ *  call-seq:
+ *    Walker.new(repository) -> walker
  *
- *	Create a new +Walker+ instance able to walk commits found
- *	in +repository+, which is a <tt>Rugged::Repository</tt> instance.
+ *  Create a new +Walker+ instance able to walk commits found
+ *  in +repository+, which is a <tt>Rugged::Repository</tt> instance.
  */
 static VALUE rb_git_walker_new(VALUE klass, VALUE rb_repo)
 {
@@ -61,29 +61,29 @@ static VALUE rb_git_walker_new(VALUE klass, VALUE rb_repo)
 }
 
 /*
- *	call-seq:
- *		walker.each { |commit| block }
- *		walker.each -> Iterator
+ *  call-seq:
+ *    walker.each { |commit| block }
+ *    walker.each -> Iterator
  *
- *	Perform the walk through the repository, yielding each
- *	one of the commits found as a <tt>Rugged::Commit</tt> instance
- *	to +block+.
+ *  Perform the walk through the repository, yielding each
+ *  one of the commits found as a <tt>Rugged::Commit</tt> instance
+ *  to +block+.
  *
- *	If no +block+ is given, an +Iterator+ will be returned.
+ *  If no +block+ is given, an +Iterator+ will be returned.
  *
- *	The walker must have been previously set-up before a walk can be performed
- *	(i.e. at least one commit must have been pushed).
+ *  The walker must have been previously set-up before a walk can be performed
+ *  (i.e. at least one commit must have been pushed).
  *
- *		walker.push("92b22bbcb37caf4f6f53d30292169e84f5e4283b")
- *		walker.each { |commit| puts commit.oid }
+ *    walker.push("92b22bbcb37caf4f6f53d30292169e84f5e4283b")
+ *    walker.each { |commit| puts commit.oid }
  *
- *	generates:
+ *  generates:
  *
- *		92b22bbcb37caf4f6f53d30292169e84f5e4283b
- *		6b750d5800439b502de669465b385e5f469c78b6
- *		ef9207141549f4ffcd3c4597e270d32e10d0a6bc
- *		cb75e05f0f8ac3407fb3bd0ebd5ff07573b16c9f
- *		...
+ *    92b22bbcb37caf4f6f53d30292169e84f5e4283b
+ *    6b750d5800439b502de669465b385e5f469c78b6
+ *    ef9207141549f4ffcd3c4597e270d32e10d0a6bc
+ *    cb75e05f0f8ac3407fb3bd0ebd5ff07573b16c9f
+ *    ...
  */
 static VALUE rb_git_walker_each(VALUE self)
 {
@@ -113,20 +113,20 @@ static VALUE rb_git_walker_each(VALUE self)
 }
 
 /*
- *	call-seq:
- *		walker.push(commit)
+ *  call-seq:
+ *    walker.push(commit) -> nil
  *
- *	Push one new +commit+ to start the walk from. +commit+ must be a
- *	+String+ with the OID of a commit in the repository, or a <tt>Rugged::Commit</tt>
- *	instance.
+ *  Push one new +commit+ to start the walk from. +commit+ must be a
+ *  +String+ with the OID of a commit in the repository, or a <tt>Rugged::Commit</tt>
+ *  instance.
  *
- *	More than one commit may be pushed to the walker (to walk several
- *	branches simulataneously).
+ *  More than one commit may be pushed to the walker (to walk several
+ *  branches simulataneously).
  *
- *	Duplicate pushed commits will be ignored; at least one commit must have been
- *	pushed as a starting point before the walk can begin.
+ *  Duplicate pushed commits will be ignored; at least one commit must have been
+ *  pushed as a starting point before the walk can begin.
  *
- *		walker.push("92b22bbcb37caf4f6f53d30292169e84f5e4283b")
+ *    walker.push("92b22bbcb37caf4f6f53d30292169e84f5e4283b")
  */
 static VALUE rb_git_walker_push(VALUE self, VALUE rb_commit)
 {
@@ -145,9 +145,11 @@ static VALUE rb_git_walker_push(VALUE self, VALUE rb_commit)
 }
 
 /*
- *	call-seq:
- *		walker.hide(commit)
+ *  call-seq:
+ *    walker.hide(commit) -> nil
  *
+ *  Hide the given +commit+ (and all its parents) from the
+ *  output in the revision walk.
  */
 static VALUE rb_git_walker_hide(VALUE self, VALUE rb_commit)
 {
@@ -165,6 +167,14 @@ static VALUE rb_git_walker_hide(VALUE self, VALUE rb_commit)
 	return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    walker.sorting = sort_mode
+ *
+ *  Change the sorting mode for the revision walk.
+ *
+ *  This will cause +walker+ to be reset.
+ */
 static VALUE rb_git_walker_sorting(VALUE self, VALUE ruby_sort_mode)
 {
 	git_revwalk *walk;
@@ -173,6 +183,13 @@ static VALUE rb_git_walker_sorting(VALUE self, VALUE ruby_sort_mode)
 	return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    walker.reset -> nil
+ *
+ *  Remove all pushed and hidden commits and reset the +walker+
+ *  back into a blank state.
+ */
 static VALUE rb_git_walker_reset(VALUE self)
 {
 	git_revwalk *walk;

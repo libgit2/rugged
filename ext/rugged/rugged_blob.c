@@ -33,21 +33,21 @@ static ID id_read;
 VALUE rb_cRuggedBlob;
 
 /*
- *	call-seq:
- *		blob.text(max_lines = -1, encoding = Encoding.default_external) -> string
+ *  call-seq:
+ *    blob.text(max_lines = -1, encoding = Encoding.default_external) -> string
  *
- *	Return up to +max_lines+ of text from a blob as a +String+.
- *	If +max_lines+ is less than 0, the full string is returned.
+ *  Return up to +max_lines+ of text from a blob as a +String+.
+ *  If +max_lines+ is less than 0, the full string is returned.
  *
- *	In Ruby 1.9.x, the string is created with the given +encoding+,
- *	defaulting to Encoding.default_external.
+ *  In Ruby 1.9.x, the string is created with the given +encoding+,
+ *  defaulting to Encoding.default_external.
  *
- *	In previous versions, the +encoding+ argument is dummy and has no
- *	effect on the returned string.
+ *  In previous versions, the +encoding+ argument is dummy and has no
+ *  effect on the returned string.
  *
- *	When limiting the size of the text with +max_lines+, the string is
- *	expected to have an ASCII-compatible encoding, and is checked
- *	for the newline +\n+ character.
+ *  When limiting the size of the text with +max_lines+, the string is
+ *  expected to have an ASCII-compatible encoding, and is checked
+ *  for the newline +\n+ character.
  */
 static VALUE rb_git_blob_text_GET(int argc, VALUE *argv, VALUE self)
 {
@@ -96,14 +96,14 @@ static VALUE rb_git_blob_text_GET(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- *	call-seq:
- *		blob.content(max_bytes=-1) -> string
+ *  call-seq:
+ *    blob.content(max_bytes=-1) -> string
  *
- *	Return up to +max_bytes+ from the contents of a blob as bytes +String+.
- *	If +max_bytes+ is less than 0, the full string is returned.
+ *  Return up to +max_bytes+ from the contents of a blob as bytes +String+.
+ *  If +max_bytes+ is less than 0, the full string is returned.
  *
- *	In Ruby 1.9.x, this string is tagged with the ASCII-8BIT encoding: the
- *	bytes are returned as-is, since Git is encoding agnostic.
+ *  In Ruby 1.9.x, this string is tagged with the ASCII-8BIT encoding: the
+ *  bytes are returned as-is, since Git is encoding agnostic.
  */
 static VALUE rb_git_blob_content_GET(int argc, VALUE *argv, VALUE self)
 {
@@ -144,12 +144,12 @@ static VALUE rb_git_blob_content_GET(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- *	call-seq:
- *		blob.rawsize -> int
+ *  call-seq:
+ *    blob.rawsize -> int
  *
- *	Return the size in bytes of the blob. This is the real,
- *	uncompressed size and the length of +blob.content+, not
- *	the compressed size.
+ *  Return the size in bytes of the blob. This is the real,
+ *  uncompressed size and the length of +blob.content+, not
+ *  the compressed size.
  */
 static VALUE rb_git_blob_rawsize(VALUE self)
 {
@@ -160,12 +160,12 @@ static VALUE rb_git_blob_rawsize(VALUE self)
 }
 
 /*
- *	call-seq:
- *		Blob.from_buffer(repository, bytes) -> oid
+ *  call-seq:
+ *    Blob.from_buffer(repository, bytes) -> oid
  *
- *	Write a blob to +repository+ with the contents specified
- *	in +buffer+. In Ruby 1.9.x, the encoding of +buffer+ is
- *	ignored and bytes are copied as-is.
+ *  Write a blob to +repository+ with the contents specified
+ *  in +buffer+. In Ruby 1.9.x, the encoding of +buffer+ is
+ *  ignored and bytes are copied as-is.
  */
 static VALUE rb_git_blob_from_buffer(VALUE self, VALUE rb_repo, VALUE rb_buffer)
 {
@@ -185,14 +185,14 @@ static VALUE rb_git_blob_from_buffer(VALUE self, VALUE rb_repo, VALUE rb_buffer)
 }
 
 /*
- *	call-seq:
- *		Blob.from_workdir(repository, file_path) -> oid
+ *  call-seq:
+ *    Blob.from_workdir(repository, file_path) -> oid
  *
- *	Write the file specified in +file_path+ to a blob in +repository+.
- *	+file_path+ must be relative to the repository's working folder.
- *	The repository cannot be bare.
+ *  Write the file specified in +file_path+ to a blob in +repository+.
+ *  +file_path+ must be relative to the repository's working folder.
+ *  The repository cannot be bare.
  *
- *		Blob.from_workdir(repo, 'src/blob.h') #=> '9d09060c850defbc7711d08b57def0d14e742f4e'
+ *    Blob.from_workdir(repo, 'src/blob.h') #=> '9d09060c850defbc7711d08b57def0d14e742f4e'
  */
 static VALUE rb_git_blob_from_workdir(VALUE self, VALUE rb_repo, VALUE rb_path)
 {
@@ -212,13 +212,15 @@ static VALUE rb_git_blob_from_workdir(VALUE self, VALUE rb_repo, VALUE rb_path)
 }
 
 /*
- *	call-seq:
- *		Blob.from_disk(repository, file_path) -> oid
+ *  call-seq:
+ *    Blob.from_disk(repository, file_path) -> oid
  *
- *	Write the file specified in +file_path+ to a blob in +repository+.
- *	The repository can be bare or not.
+ *  Write the file specified in +file_path+ to a blob in +repository+.
+ *  The repository can be bare or not.
  *
- *		Blob.from_disk(repo, '/var/repos/blob.h') #=> '5b5b025afb0b4c913b4c338a42934a3863bf3643'
+ *  Example:
+ *
+ *    Blob.from_disk(repo, '/var/repos/blob.h') #=> '5b5b025afb0b4c913b4c338a42934a3863bf3643'
  */
 static VALUE rb_git_blob_from_disk(VALUE self, VALUE rb_repo, VALUE rb_path)
 {
@@ -266,32 +268,32 @@ static int cb_blob__get__chunk(char *content, size_t max_length, void *rb_io)
 }
 
 /*
- *	call-seq:
- *		Blob.from_chunks(repository, io [, hint_path]) -> oid
+ *  call-seq:
+ *    Blob.from_chunks(repository, io [, hint_path]) -> oid
  *
- *	Write a loose blob to the +repository+ from a provider
- *	of chunks of data.
-
- *	The repository can be bare or not.
+ *  Write a loose blob to the +repository+ from a provider
+ *  of chunks of data.
  *
- *	The data provider +io+ should respond to a <code>read(size)</code>
- *	method. Generally any instance of a class based on Ruby's +IO+ class
- *	should work(ex. +File+). On each +read+ call it should
- *	return a +String+ with maximum size of +size+.
+ *  The repository can be bare or not.
  *
- *	<b> NOTE: </b>If an exception is raised in the +io+ object's
- *	+read+ method, a blob will be created with the data up to that point
- *	and the exception will be rescued.
- *	It's recommended to compare the +blob.size+ with the expected data size
- *	to check if all the data was written.
+ *  The data provider +io+ should respond to a <code>read(size)</code>
+ *  method. Generally any instance of a class based on Ruby's +IO+ class
+ *  should work(ex. +File+). On each +read+ call it should
+ *  return a +String+ with maximum size of +size+.
  *
- *	Provided the +hint_path+ parameter is given, its value
- *	will help to determine what git filters should be applied
- *	to the object before it can be placed to the object database.
+ *  *NOTE:* If an exception is raised in the +io+ object's
+ *  +read+ method, a blob will be created with the data up to that point
+ *  and the exception will be rescued.
+ *  It's recommended to compare the +blob.size+ with the expected data size
+ *  to check if all the data was written.
  *
- *		File.open('/path/to/file') do |file|
- *		  Blob.from_chunks(repo, file, 'hint/blob.h') #=> '42cab3c0cde61e2b5a2392e1eadbeffa20ffa171'
- *		end
+ *  Provided the +hint_path+ parameter is given, its value
+ *  will help to determine what git filters should be applied
+ *  to the object before it can be placed to the object database.
+ *
+ *    File.open('/path/to/file') do |file|
+ *      Blob.from_chunks(repo, file, 'hint/blob.h') #=> '42cab3c0cde61e2b5a2392e1eadbeffa20ffa171'
+ *    end
  */
 static VALUE rb_git_blob_from_chunks(int argc, VALUE *argv, VALUE klass)
 {
@@ -326,11 +328,11 @@ static VALUE rb_git_blob_from_chunks(int argc, VALUE *argv, VALUE klass)
 
 
 /*
- *	call-seq:
- *		blob.sloc -> int
+ *  call-seq:
+ *    blob.sloc -> int
  *
- *	Return the number of non-empty code lines for the blob,
- *	assuming the blob is plaintext (i.e. not binary)
+ *  Return the number of non-empty code lines for the blob,
+ *  assuming the blob is plaintext (i.e. not binary)
  */
 static VALUE rb_git_blob_sloc(VALUE self)
 {
@@ -365,14 +367,14 @@ static VALUE rb_git_blob_sloc(VALUE self)
 }
 
 /*
- *	call-seq:
- *		blob.binary?-> true or false
+ *  call-seq:
+ *    blob.binary? -> true or false
  *
- *	Determine if the blob content is most certainly binary or not.
+ *  Determine if the blob content is most certainly binary or not.
  *
- *	The heuristic used to guess if a file is binary is taken from core git:
- *	Searching for NUL bytes and looking for a reasonable ratio of printable
- *	to non-printable characters among the first 4000 bytes.
+ *  The heuristic used to guess if a file is binary is taken from core git:
+ *  Searching for NUL bytes and looking for a reasonable ratio of printable
+ *  to non-printable characters among the first 4000 bytes.
  *
  */
 static VALUE rb_git_blob_is_binary(VALUE self)
