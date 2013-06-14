@@ -17,6 +17,12 @@ Rugged is a self-contained gem. You can install it by running:
 
     $ gem install rugged
 
+If you're using bundler and want to bundle libgit2 with rugged, you can use the `:submodules` option:
+
+```ruby
+gem 'rugged', git: 'git://github.com/libgit2/rugged.git', branch: 'development', submodules: true
+```
+
 To load Rugged, you'll usually want to add something like this:
 
 ```ruby
