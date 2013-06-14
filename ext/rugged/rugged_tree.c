@@ -149,10 +149,10 @@ static VALUE rb_git_tree_get_entry_by_oid(VALUE self, VALUE rb_oid)
 /*
  *  call-seq:
  *    tree.each { |entry| block }
- *    tree.each -> Iterator
+ *    tree.each -> enumerator
  *
  *  Call +block+ with each of the entries of the subtree as a +Hash+. If no +block+
- *  is given, an +Iterator+ is returned instead.
+ *  is given, an +enumerator+ is returned instead.
  *
  *  Note that only the entries in the root of the tree are yielded; if you need to
  *  list also entries in subfolders, use +tree.walk+ instead.

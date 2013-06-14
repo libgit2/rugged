@@ -92,7 +92,7 @@ static VALUE rb_git_odbobj_size(VALUE self)
  *    odb_obj.type -> Symbol
  *
  *  Return a Ruby symbol representing the basic Git type of this object.
- *  Possible values are +:tree+, +:blob+, +:commit+ and +:tag+
+ *  Possible values are +:tree+, +:blob+, +:commit+ and +:tag+.
  *
  *    odb_obj.type #=> :tag
  */
@@ -581,8 +581,16 @@ static VALUE rb_git_repo_read(VALUE self, VALUE hex)
  *  call-seq:
  *    repo.read_header(oid) -> hash
  *
- *  Read the header information for the object identified by the given
- *  +oid+.
+ *  Read and return the header information in +repo+'s ODB
+ *  for the object identified by the given +oid+.
+ *
+ *  Returns a Hash object with the following key/value pairs:
+ *
+ *  :type ::
+ *    A Symbol denoting the object's type. Possible values are:
+ *    +:tree+, +:blob+, +:commit+ or +:tag+.
+ *  :len ::
+ *    A Number representing the object's length, in bytes.
  */
 static VALUE rb_git_repo_read_header(VALUE self, VALUE hex)
 {

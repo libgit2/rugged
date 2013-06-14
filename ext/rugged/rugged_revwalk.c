@@ -114,7 +114,7 @@ static VALUE rb_git_walker_each(VALUE self)
 
 /*
  *  call-seq:
- *    walker.push(commit)
+ *    walker.push(commit) -> nil
  *
  *  Push one new +commit+ to start the walk from. +commit+ must be a
  *  +String+ with the OID of a commit in the repository, or a <tt>Rugged::Commit</tt>
@@ -146,8 +146,10 @@ static VALUE rb_git_walker_push(VALUE self, VALUE rb_commit)
 
 /*
  *  call-seq:
- *    walker.hide(commit)
+ *    walker.hide(commit) -> nil
  *
+ *  Hide the given +commit+ (and all its parents) from the
+ *  output in the revision walk.
  */
 static VALUE rb_git_walker_hide(VALUE self, VALUE rb_commit)
 {

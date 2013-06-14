@@ -58,7 +58,7 @@ static VALUE rb_mShutdownHook;
  *  the array makes it easier for the end-user to take conditional actions
  *  based on each respective version attribute: major, minor, rev.
  *
- *  Rugged.libgit2_version #=> [0, 17, 0]
+ *    Rugged.libgit2_version #=> [0, 17, 0]
  */
 static VALUE rb_git_libgit2_version(VALUE self)
 {
@@ -83,7 +83,7 @@ static VALUE rb_git_libgit2_version(VALUE self)
  *
  *  The possible capabilities are "threads" and "https".
  *
- *  Rugged.capabilities #=> [:threads, :https]
+ *    Rugged.capabilities #=> [:threads, :https]
  */
 static VALUE rb_git_capabilities(VALUE self)
 {
