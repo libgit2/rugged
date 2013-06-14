@@ -30,13 +30,13 @@ extern VALUE rb_cRuggedRepo;
 VALUE rb_cRuggedTag;
 
 /*
- *	call-seq:
- *		tag.target -> object
+ *  call-seq:
+ *    tag.target -> object
  *
- *	Return the +object+ pointed at by this tag, as a <tt>Rugged::Object</tt>
- *	instance.
+ *  Return the +object+ pointed at by this tag, as a <tt>Rugged::Object</tt>
+ *  instance.
  *
- *		tag.target #=> #<Rugged::Commit:0x108828918>
+ *    tag.target #=> #<Rugged::Commit:0x108828918>
  */
 static VALUE rb_git_tag_target_GET(VALUE self)
 {
@@ -55,14 +55,14 @@ static VALUE rb_git_tag_target_GET(VALUE self)
 }
 
 /*
- *	call-seq:
- *		tag.target_oid -> oid
- *		tag.target_id -> oid
+ *  call-seq:
+ *    tag.target_oid -> oid
+ *    tag.target_id -> oid
  *
- *	Return the oid pointed at by this tag, as a <tt>String</tt>
- *	instance.
+ *  Return the oid pointed at by this tag, as a <tt>String</tt>
+ *  instance.
  *
- *		tag.target_id #=> "2cb831a8aea28b2c1b9c63385585b864e4d3bad1"
+ *    tag.target_id #=> "2cb831a8aea28b2c1b9c63385585b864e4d3bad1"
  */
 static VALUE rb_git_tag_target_id_GET(VALUE self)
 {
@@ -77,16 +77,16 @@ static VALUE rb_git_tag_target_id_GET(VALUE self)
 }
 
 /*
- *	call-seq:
- *		tag.type -> t
+ *  call-seq:
+ *    tag.type -> t
  *
- *	Return a symbol representing the type of the objeced pointed at by
- *	this +tag+. Possible values are +:blob+, +:commit+, +:tree+ and +:tag+.
+ *  Return a symbol representing the type of the objeced pointed at by
+ *  this +tag+. Possible values are +:blob+, +:commit+, +:tree+ and +:tag+.
  *
- *	This is always the same as the +type+ of the returned <tt>tag.target</tt>
+ *  This is always the same as the +type+ of the returned <tt>tag.target</tt>
  *
- *		tag.type #=> :commit
- *		tag.target.type == tag.type #=> true
+ *    tag.type #=> :commit
+ *    tag.target.type == tag.type #=> true
  */
 static VALUE rb_git_tag_target_type_GET(VALUE self)
 {
@@ -97,12 +97,12 @@ static VALUE rb_git_tag_target_type_GET(VALUE self)
 }
 
 /*
- *	call-seq:
- *		tag.name -> name
+ *  call-seq:
+ *    tag.name -> name
  *
- *	Return a string with the name of this +tag+.
+ *  Return a string with the name of this +tag+.
  *
- *		tag.name #=> "v0.16.0"
+ *    tag.name #=> "v0.16.0"
  */
 static VALUE rb_git_tag_name_GET(VALUE self)
 {
@@ -113,14 +113,14 @@ static VALUE rb_git_tag_name_GET(VALUE self)
 }
 
 /*
- *	call-seq:
- *		tag.tagger -> signature
+ *  call-seq:
+ *    tag.tagger -> signature
  *
- *	Return the signature for the author of this +tag+. The signature
- *	is returned as a +Hash+ containing +:name+, +:email+ of the author
- *	and +:time+ of the tagging.
+ *  Return the signature for the author of this +tag+. The signature
+ *  is returned as a +Hash+ containing +:name+, +:email+ of the author
+ *  and +:time+ of the tagging.
  *
- *		tag.tagger #=> {:email=>"tanoku@gmail.com", :time=>Tue Jan 24 05:42:45 UTC 2012, :name=>"Vicent Mart\303\255"}
+ *    tag.tagger #=> {:email=>"tanoku@gmail.com", :time=>Tue Jan 24 05:42:45 UTC 2012, :name=>"Vicent Mart\303\255"}
  */
 static VALUE rb_git_tag_tagger_GET(VALUE self)
 {
@@ -137,13 +137,13 @@ static VALUE rb_git_tag_tagger_GET(VALUE self)
 }
 
 /*
- *	call-seq:
- *		tag.message -> msg
+ *  call-seq:
+ *    tag.message -> msg
  *
- *	Return the message of this +tag+. This includes the full body of the
- *	message and any optional footers or signatures after it.
+ *  Return the message of this +tag+. This includes the full body of the
+ *  message and any optional footers or signatures after it.
  *
- *		tag.message #=> "Release v0.16.0, codename 'broken stuff'"
+ *    tag.message #=> "Release v0.16.0, codename 'broken stuff'"
  */
 static VALUE rb_git_tag_message_GET(VALUE self)
 {
@@ -159,6 +159,35 @@ static VALUE rb_git_tag_message_GET(VALUE self)
 	return rugged_str_new2(message, NULL);
 }
 
+/*
+ *  call-seq:
+ *    Tag.create(repo, data) -> oid
+ *
+ *  Create a new tag in +repo+.
+ *
+ *  If +data+ is a String, it has to contain the raw tag data.
+ *
+ *  If +data+ is a Hash, it has to contain the following key value pairs:
+ *
+ *  :name ::
+ *    A String holding the tag's new name.
+ *
+ *  :force ::
+ *    If +true+, existing tags will be overwritten. Defaults to +false+.
+ *
+ *  :tagger ::
+ *    An optional Hash containing a git signature. Will cause the creation of
+ *    an annotated tag object if present.
+ *
+ *  :message ::
+ *    An optional string containing the message for the new tag. Will cause
+ *    the creation of an annotated tag if present.
+ *
+ *  :target ::
+ *    The OID of the object that the new tag should point to.
+ *
+ *  Returns the OID of the newly created tag.
+ */
 static VALUE rb_git_tag_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 {
 	git_oid tag_oid;
@@ -234,6 +263,21 @@ static VALUE rb_git_tag_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 	return rugged_create_oid(&tag_oid);
 }
 
+/*
+ *  call-seq:
+ *    Tag.each(repo[, pattern]) { |name| block } -> nil
+ *    Tag.each(repo[, pattern])                  -> enumerator
+ *
+ *  Iterate through all the tag names in +repo+. Iteration
+ *  can be optionally filtered to the ones matching the given
+ *  +pattern+, a standard Unix filename glob.
+ *
+ *  If +pattern+ is empty or not given, all tag names will be returned.
+ *
+ *  The given block will be called once with the name for each tag.
+ *
+ *  If no block is given, an enumerator will be returned.
+ */
 static VALUE rb_git_tag_each(int argc, VALUE *argv, VALUE self)
 {
 	git_repository *repo;
@@ -268,6 +312,12 @@ static VALUE rb_git_tag_each(int argc, VALUE *argv, VALUE self)
 	return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    Tag.delete(repo, name) -> nil
+ *
+ *  Delete the tag reference identified by +name+ from +repo+.
+ */
 static VALUE rb_git_tag_delete(VALUE self, VALUE rb_repo, VALUE rb_name)
 {
 	git_repository *repo;

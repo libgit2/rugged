@@ -303,22 +303,22 @@ static VALUE rb_git_diff_merge(VALUE self, VALUE rb_other)
  *
  *  :rename_limit ::
  *    An integer specifying the maximum amount of similarity sources to examine
- *    (a la diff's `-l` option or the `diff.renameLimit` config) (default 200).
+ *    (a la diff's +-l+ option or the +diff.renameLimit+ config) (default 200).
  *
  *  :renames ::
- *    If true, looking for renames will be enabled (`--find-renames`).
+ *    If true, looking for renames will be enabled (+--find-renames+).
  *
  *  :renames_from_rewrites ::
- *    If true, the "old side" of modified files will be considered for renames (`--break-rewrites=N`).
+ *    If true, the "old side" of modified files will be considered for renames (+--break-rewrites=N+).
  *
  *  :copies ::
- *    If true, looking for copies will be enabled (`--find-copies`).
+ *    If true, looking for copies will be enabled (+--find-copies+).
  *
  *  :copies_from_unmodified ::
- *    If true, unmodified files will be considered as copy sources (`--find-copies-harder`).
+ *    If true, unmodified files will be considered as copy sources (+--find-copies-harder+).
  *
  *  :break_rewrites ::
- *    If true, larger rewrites will be split into delete/add pairs (`--break-rewrites=/M`).
+ *    If true, larger rewrites will be split into delete/add pairs (+--break-rewrites=/M+).
  *
  *  :all ::
  *    If true, enables all finding features.
@@ -414,10 +414,10 @@ static VALUE rb_git_diff_find_similar(int argc, VALUE *argv, VALUE self)
 /*
  *  call-seq:
  *    diff.each_patch { |patch| } -> self
- *    diff.each_patch -> Enumerator
+ *    diff.each_patch -> enumerator
  *
  *  If given a block, yields each patch that is part of the diff.
- *  If no block is given, an Enumerator will be returned.
+ *  If no block is given, an enumerator will be returned.
  */
 static VALUE rb_git_diff_each_patch(VALUE self)
 {
@@ -447,10 +447,10 @@ static VALUE rb_git_diff_each_patch(VALUE self)
 /*
  *  call-seq:
  *    diff.each_delta { |delta| } -> self
- *    diff.each_delta -> Enumerator
+ *    diff.each_delta -> enumerator
  *
  *  If given a block, yields each delta that is part of the diff.
- *  If no block is given, an Enumerator will be returned.
+ *  If no block is given, an enumerator will be returned.
  *
  *  This method should be preferred over #each_patch if you're not interested
  *  in the actual line-by-line changes of the diff.
@@ -481,7 +481,7 @@ static VALUE rb_git_diff_each_delta(VALUE self)
 }
 
 /*
- *  call-seq: diff.size
+ *  call-seq: diff.size -> int
  *
  *  Returns the number of deltas/patches in this diff.
  */

@@ -204,6 +204,16 @@ static git_otype class2otype(VALUE klass)
 	return GIT_OBJ_BAD;
 }
 
+/*
+ *  call-seq:
+ *    Object.new(repo, oid) -> object
+ *    Object.lookup(repo, oid) -> object
+ *
+ *  Find and return the git object inside +repo+ with the given +oid+.
+ *
+ *  +oid+ can either have be the complete, 40 character string or any
+ *  unique prefix.
+ */
 VALUE rb_git_object_lookup(VALUE klass, VALUE rb_repo, VALUE rb_hex)
 {
 	git_object *object;
@@ -269,16 +279,44 @@ VALUE rugged_object_rev_parse(VALUE rb_repo, VALUE rb_spec, int as_obj)
 	return ret;
 }
 
+/*
+ *  call-seq: Object.rev_parse(repo, str) -> object
+ *
+ *  Find and return a single object inside +repo+ as specified by the
+ *  git revision string +str+.
+ *
+ *  See http://git-scm.com/docs/git-rev-parse.html#_specifying_revisions or 
+ *  <code>man gitrevisions</code> for information on the accepted syntax.
+ *
+ *  Raises a Rugged::InvalidError if +str+ does not contain a valid revision string.
+ */
 VALUE rb_git_object_rev_parse(VALUE klass, VALUE rb_repo, VALUE rb_spec)
 {
 	return rugged_object_rev_parse(rb_repo, rb_spec, 1);
 }
 
+/*
+ *  call-seq: Object.rev_parse_oid(repo, str) -> oid
+ *
+ *  Find and return the id of the object inside +repo+ as specified by the
+ *  git revision string +str+.
+ *
+ *  See http://git-scm.com/docs/git-rev-parse.html#_specifying_revisions or 
+ *  <code>man gitrevisions</code> for information on the accepted syntax.
+ *
+ *  Raises a Rugged::InvalidError if +str+ does not contain a valid revision string.
+ */
 VALUE rb_git_object_rev_parse_oid(VALUE klass, VALUE rb_repo, VALUE rb_spec)
 {
 	return rugged_object_rev_parse(rb_repo, rb_spec, 0);
 }
 
+/*
+ *  call-seq: object == other
+ *
+ *  Returns true only if +object+ and other are both instances or subclasses of
+ *  Rugged::Object and have the same object id, false otherwise.
+ */
 static VALUE rb_git_object_equal(VALUE self, VALUE other)
 {
 	git_object *a, *b;
@@ -292,6 +330,11 @@ static VALUE rb_git_object_equal(VALUE self, VALUE other)
 	return git_oid_cmp(git_object_id(a), git_object_id(b)) == 0 ? Qtrue : Qfalse;
 }
 
+/*
+ *  call-seq: object.oid -> oid
+ *
+ *  Return the Object ID (a 40 character SHA1 hash) for +object+.
+ */
 static VALUE rb_git_object_oid_GET(VALUE self)
 {
 	git_object *object;
@@ -299,6 +342,11 @@ static VALUE rb_git_object_oid_GET(VALUE self)
 	return rugged_create_oid(git_object_id(object));
 }
 
+/*
+ *  call-seq: object.type -> type
+ *
+ *  Returns the object's type. Can be one of +:commit+, +:tag+, +:tree+ or +:blob+.
+ */
 static VALUE rb_git_object_type_GET(VALUE self)
 {
 	git_object *object;
@@ -307,6 +355,11 @@ static VALUE rb_git_object_type_GET(VALUE self)
 	return rugged_otype_new(git_object_type(object));
 }
 
+/*
+ *  call-seq: object.read_raw -> raw_object
+ *
+ *  Returns the git object as a Rugged::OdbObject instance.
+ */
 static VALUE rb_git_object_read_raw(VALUE self)
 {
 	git_object *object;

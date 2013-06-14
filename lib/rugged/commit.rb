@@ -11,7 +11,7 @@ module Rugged
 
     # Return a diff between this commit and its first parent or another commit or tree.
     #
-    # See `Rugged::Tree#diff` for more details.
+    # See Rugged::Tree#diff for more details.
     def diff(*args)
       args.unshift(parents.first) if args.size == 1 && args.first.is_a?(Hash)
       self.tree.diff(*args)
@@ -19,7 +19,7 @@ module Rugged
 
     # Return a diff between this commit and the workdir.
     #
-    # See `Rugged::Tree#diff_workdir` for more details.
+    # See Rugged::Tree#diff_workdir for more details.
     def diff_workdir(options = {})
       self.tree.diff_workdir(options)
     end

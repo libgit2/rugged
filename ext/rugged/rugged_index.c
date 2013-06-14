@@ -49,6 +49,15 @@ VALUE rugged_index_new(VALUE klass, VALUE owner, git_index *index)
 	return rb_index;
 }
 
+/*
+ *  call-seq:
+ *    Index.new([path])
+ *
+ *  Create a bare index object based on the index file at +path+.
+ *
+ *  Any index methods that rely on the ODB or a working directory (e.g. #add)
+ *  will raise a Rugged::IndexError.
+ */
 static VALUE rb_git_index_new(int argc, VALUE *argv, VALUE klass)
 {
 	git_index *index;
@@ -68,6 +77,13 @@ static VALUE rb_git_index_new(int argc, VALUE *argv, VALUE klass)
 	return rugged_index_new(klass, Qnil, index);
 }
 
+/*
+ *  call-seq:
+ *    index.clear -> nil
+ *
+ *  Clear the contents (remove all entries) of the index object. Changes are in-memory only
+ *  and can be saved by calling #write.
+ */
 static VALUE rb_git_index_clear(VALUE self)
 {
 	git_index *index;
@@ -76,6 +92,13 @@ static VALUE rb_git_index_clear(VALUE self)
 	return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    index.reload -> nil
+ *
+ *  Reloads the index contents from the disk, discarding any changes that
+ *  have not been saved through #write.
+ */
 static VALUE rb_git_index_read(VALUE self)
 {
 	git_index *index;
@@ -89,6 +112,12 @@ static VALUE rb_git_index_read(VALUE self)
 	return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    index.write -> nil
+ *
+ *  Writes the index object from memory back to the disk, persisting all changes.
+ */
 static VALUE rb_git_index_write(VALUE self)
 {
 	git_index *index;
@@ -102,6 +131,12 @@ static VALUE rb_git_index_write(VALUE self)
 	return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    index.count -> int
+ *
+ *  Returns the number of entries currently in the index.
+ */
 static VALUE rb_git_index_count(VALUE self)
 {
 	git_index *index;
@@ -109,6 +144,18 @@ static VALUE rb_git_index_count(VALUE self)
 	return INT2FIX(git_index_entrycount(index));
 }
 
+/*
+ *  call-seq:
+ *    index[path[, stage = 0]]     -> entry or nil
+ *    index[position]              -> entry or nil
+ *    index.get(path[, stage = 0]) -> entry or nil
+ *    index.get(position)          -> entry or nil
+ *
+ *  Return a specific entry in the index.
+ *
+ *  The first two forms returns entries based on their +path+ in the index and an optional +stage+,
+ *  while the last two forms return entries based on their position in the index.
+ */
 static VALUE rb_git_index_get(int argc, VALUE *argv, VALUE self)
 {
 	git_index *index;
@@ -146,6 +193,15 @@ static VALUE rb_git_index_get(int argc, VALUE *argv, VALUE self)
 	return entry ? rb_git_indexentry_fromC(entry) : Qnil;
 }
 
+/*
+ *  call-seq:
+ *    index.each { |entry| } -> nil
+ *    index.each -> Enumerator
+ *
+ *  Passes each entry of the index to the given block.
+ *
+ *  If no block is given, an enumerator is returned instead.
+ */
 static VALUE rb_git_index_each(VALUE self)
 {
 	git_index *index;
@@ -166,6 +222,13 @@ static VALUE rb_git_index_each(VALUE self)
 	return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    index.remove(path[, stage = 0]) -> nil
+ *
+ *  Removes the entry at the given +path+ with the given +stage+
+ *  from the index.
+ */
 static VALUE rb_git_index_remove(int argc, VALUE *argv, VALUE self)
 {
 	git_index *index;
@@ -188,6 +251,30 @@ static VALUE rb_git_index_remove(int argc, VALUE *argv, VALUE self)
 	return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    index << entry -> nil
+ *    index << path -> nil
+ *    index.add(entry) -> nil
+ *    index.add(path) -> nil
+ *    index.update(entry) -> nil
+ *    index.update(path) -> nil
+ *
+ *  Add a new entry to the index or update an existing entry in the index.
+ *
+ *  If passed a +path+ to an existing, readable file relative to the workdir,
+ *  creates a new index entry based on this file.
+ *
+ *  Alternatively, a new index entry can be created by passing a Hash containing
+ *  all key/value pairs of an index entry.
+ *
+ *  Any gitignore rules that might match +path+ (or the +:path+ value of the
+ *  entry hash) are ignored.
+ *
+ *  If the index entry at +path+ (or +:path+) currently contains a merge conflict,
+ *  it will no longer be marked as conflicting and the data about the conflict
+ *  will be moved into the "resolve undo" (REUC) section of the index.
+ */
 static VALUE rb_git_index_add(VALUE self, VALUE rb_entry)
 {
 	git_index *index;
@@ -325,6 +412,17 @@ static void rb_git_indexentry_toC(git_index_entry *entry, VALUE rb_entry)
 	}
 }
 
+/*
+ *  call-seq:
+ *    index.write_tree([repo]) -> oid
+ *
+ *  Write the index to a tree, either in the index's repository, or in
+ *  the given +repo+.
+ *
+ *  If the index contains any files in conflict, writing the tree will fail.
+ *
+ *  Returns the OID string of the written tree object.
+ */
 static VALUE rb_git_index_writetree(int argc, VALUE *argv, VALUE self)
 {
 	git_index *index;
@@ -349,13 +447,13 @@ static VALUE rb_git_index_writetree(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- *	call-seq:
- *		index.read_tree(tree)
+ *  call-seq:
+ *    index.read_tree(tree)
  *
- *      Clear the current index and start the index again on top of +tree+
+ *  Clear the current index and start the index again on top of +tree+
  *
- *      Further index operations (+add+, +update+, +remove+, etc) will
- *      be considered changes on top of +tree+.
+ *  Further index operations (+add+, +update+, +remove+, etc) will
+ *  be considered changes on top of +tree+.
  */
 static VALUE rb_git_index_readtree(VALUE self, VALUE rb_tree)
 {
@@ -381,7 +479,7 @@ static VALUE rb_git_index_readtree(VALUE self, VALUE rb_tree)
  *  directory.
  *
  *  The second form returns a diff between the index and the given diffable object.
- *  +diffable+ can either be a `Rugged::Commit` or a `Rugged::Tree`.
+ *  +diffable+ can either be a +Rugged::Commit+ or a +Rugged::Tree+.
  *
  *  The index will be used as the "old file" side of the diff, while the working
  *  directory or the +diffable+ will be used for the "new file" side.
@@ -435,9 +533,9 @@ static VALUE rb_git_index_readtree(VALUE self, VALUE rb_tree)
  *    If true, unmodified files will be included in the diff.
  *
  *  :recurse_untracked_dirs ::
- *		Even if `:include_untracked` is true, untracked directories will only be
+ *    Even if +:include_untracked+ is true, untracked directories will only be
  *    marked with a single entry in the diff. If this flag is set to true,
- *    all files under ignored directories will be included in the diff, too.
+ *    all files under ignored directories will be included in the di ff, too.
  *
  *  :disable_pathspec_match ::
  *    If true, the given +:paths+ will be applied as exact matches, instead of
@@ -460,7 +558,7 @@ static VALUE rb_git_index_readtree(VALUE self, VALUE rb_tree)
  *    typechange records.
  *
  *  :include_typechange_trees ::
- *    Even if `:include_typechange` is true, blob -> tree changes will still
+ *    Even if +:include_typechange+ is true, blob -> tree changes will still
  *    usually be handled as a deletion of the blob. If this flag is set to true,
  *    blob -> tree changes will be marked as typechanges.
  *
@@ -468,7 +566,7 @@ static VALUE rb_git_index_readtree(VALUE self, VALUE rb_tree)
  *    If true, file mode changes will be ignored.
  *
  *  :recurse_ignored_dirs ::
- *    Even if `:include_ignored` is true, ignored directories will only be
+ *    Even if +:include_ignored+ is true, ignored directories will only be
  *    marked with a single entry in the diff. If this flag is set to true,
  *    all files under ignored directories will be included in the diff, too.
  */
@@ -525,7 +623,8 @@ static VALUE rb_git_index_diff(int argc, VALUE *argv, VALUE self)
 	return rugged_diff_new(rb_cRuggedDiff, self, diff);
 }
 
-/*  call-seq:
+/*
+ *  call-seq:
  *    index.conflicts? -> true or false
  *
  *  Determines if the index contains entries representing conflicts.
@@ -537,6 +636,51 @@ static VALUE rb_git_index_conflicts_p(VALUE self)
 	return git_index_has_conflicts(index) ? Qtrue : Qfalse;
 }
 
+
+/*
+ *  Document-class: Rugged::Index
+ *
+ *  == Index Entries
+ *
+ *  Index entries are represented as Hash instances with the following key/value pairs:
+ *
+ *  path: ::
+ *    The entry's path in the index.
+ *
+ *  oid: ::
+ *    The oid of the entry's git object (blob / tree).
+ *
+ *  dev: ::
+ *    The device for the index entry.
+ *
+ *  ino: ::
+ *    The inode for the index entry.
+ *
+ *  mode: ::
+ *    The current permissions of the index entry.
+ *
+ *  gid: ::
+ *    Group ID of the index entry's owner.
+ *
+ *  uid: ::
+ *    User ID of the index entry's owner.
+ *
+ *  file_size: ::
+ *    The index entry's size, in bytes.
+ *
+ *  valid: ::
+ *    +true+ if the index entry is valid, +false+ otherwise.
+ *
+ *  stage: ::
+ *    The current stage of the index entry.
+ *
+ *  mtime: ::
+ *    A Time instance representing the index entry's time of last modification.
+ *
+ *  mtime: ::
+ *    A Time instance representing the index entry's time of last status change
+ *    (ie. change of owner, group, mode, etc.).
+ */
 void Init_rugged_index()
 {
 	/*
