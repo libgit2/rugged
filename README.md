@@ -176,7 +176,7 @@ commit.tree
 # => #<Rugged::Tree:2245269740>
 
 commit.parents
-=> [#<Rugged::Commit:2245264600 {message: "Merge pull request #47 from isaac/remotes\n\nAdd Rugged::Repository#remotes", tree: #<Rugged::Tree:2245264240 {oid: 6a2aee58a41fa007d07aa55565e2231f9b39b4a9}>
+# => [#<Rugged::Commit:2245264600 {message: "Merge pull request #47 from isaac/remotes\n\nAdd Rugged::Repository#remotes", tree: #<Rugged::Tree:2245264240 {oid: 6a2aee58a41fa007d07aa55565e2231f9b39b4a9}>]
 ```
 
 You can also write new objects to the database this way:
