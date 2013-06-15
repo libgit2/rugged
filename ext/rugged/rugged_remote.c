@@ -708,7 +708,7 @@ static VALUE rb_git_remote_rename(VALUE self, VALUE rb_new_name)
 	return RARRAY_LEN(rb_refspec_ary) == 0 ? Qnil : rb_refspec_ary;
 }
 
-void Init_rugged_remote()
+void Init_rugged_remote(void)
 {
 	rb_cRuggedRemote = rb_define_class_under(rb_mRugged, "Remote", rb_cObject);
 

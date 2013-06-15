@@ -338,7 +338,7 @@ static VALUE rb_git_tag_delete(VALUE self, VALUE rb_repo, VALUE rb_name)
 	return Qnil;
 }
 
-void Init_rugged_tag()
+void Init_rugged_tag(void)
 {
 	rb_cRuggedTag = rb_define_class_under(rb_mRugged, "Tag", rb_cRuggedObject);
 
