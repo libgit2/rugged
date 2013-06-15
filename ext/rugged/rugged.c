@@ -214,7 +214,7 @@ static VALUE minimize_yield(VALUE rb_oid, VALUE *data)
  *  If a +block+ is given, it will be called with each OID from +iterator+
  *  in its minified form:
  *
- *    Rugged.minimize_oids(oids) { |oid| puts oid }
+ *    Rugged.minimize_oid(oids) { |oid| puts oid }
  *
  *  produces:
  *
@@ -227,7 +227,7 @@ static VALUE minimize_yield(VALUE rb_oid, VALUE *data)
  *  the minified strings; returned strings won't be shorter than the given value,
  *  even if they would still be uniquely represented.
  *
- *    Rugged.minimize_oids(oids, 18) #=> 18
+ *    Rugged.minimize_oid(oids, 18) #=> 18
  */
 static VALUE rb_git_minimize_oid(int argc, VALUE *argv, VALUE self)
 {
