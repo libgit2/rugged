@@ -249,6 +249,8 @@ static VALUE rb_git_minimize_oid(int argc, VALUE *argv, VALUE self)
 
 	rb_iterate(rb_each, rb_enum, &minimize_cb, (VALUE)shrt);
 	length = git_oid_shorten_add(shrt, NULL);
+
+	git_oid_shorten_free(shrt);
 	rugged_exception_check(length);
 
 	if (RTEST(rb_block)) {
@@ -258,11 +260,9 @@ static VALUE rb_git_minimize_oid(int argc, VALUE *argv, VALUE self)
 		yield_data[1] = INT2FIX(length);
 
 		rb_iterate(rb_each, rb_enum, &minimize_yield, (VALUE)yield_data);
-		git_oid_shorten_free(shrt);
 		return Qnil;
 	}
 
-	git_oid_shorten_free(shrt);
 	return INT2FIX(length);
 }
 
