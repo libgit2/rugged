@@ -253,7 +253,7 @@ static VALUE rb_git_minimize_oid(int argc, VALUE *argv, VALUE self)
 	git_oid_shorten_free(shrt);
 	rugged_exception_check(length);
 
-	if (RTEST(rb_block)) {
+	if (!NIL_P(rb_block)) {
 		VALUE yield_data[2];
 
 		yield_data[0] = rb_block;
