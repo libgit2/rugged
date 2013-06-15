@@ -40,23 +40,14 @@ VALUE rugged_ref_new(VALUE klass, VALUE owner, git_reference *ref)
 	return rb_ref;
 }
 
-static VALUE rugged_protect__ref_yield(VALUE payload)
-{
-	VALUE *args = (VALUE *)payload;
-	return rb_funcall(args[0], rb_intern("call"), 1, args[1]);
-}
-
 static VALUE rb_git_ref__each(int argc, VALUE *argv, VALUE self, int only_names)
 {
 	git_repository *repo;
 	git_reference_iterator *iter;
-	int error;
-	VALUE rb_repo, rb_glob, rb_block;
+	int error, exception = 0;
+	VALUE rb_repo, rb_glob;
 
-	VALUE yield_args[2];
-	int yield_state = 0;
-
-	rb_scan_args(argc, argv, "11&", &rb_repo, &rb_glob, &rb_block);
+	rb_scan_args(argc, argv, "11", &rb_repo, &rb_glob);
 
 	if (!rb_block_given_p()) {
 		return rb_funcall(self,
@@ -81,24 +72,20 @@ static VALUE rb_git_ref__each(int argc, VALUE *argv, VALUE self, int only_names)
 
 	if (only_names) {
 		const char *ref_name;
-		while (!yield_state && (error = git_reference_next_name(&ref_name, iter)) == 0) {
-			yield_args[0] = rb_block;
-			yield_args[1] = rugged_str_new2(ref_name, rb_utf8_encoding());
-			rb_protect(rugged_protect__ref_yield, (VALUE)yield_args, &yield_state);
+		while (!exception && (error = git_reference_next_name(&ref_name, iter)) == GIT_OK) {
+			rb_protect(rb_yield, rugged_str_new2(ref_name, rb_utf8_encoding()), &exception);
 		}
 	} else {
 		git_reference *ref;
-		while (!yield_state && (error = git_reference_next(&ref, iter)) == 0) {
-			yield_args[0] = rb_block;
-			yield_args[1] = rugged_ref_new(rb_cRuggedReference, rb_repo, ref);
-			rb_protect(rugged_protect__ref_yield, (VALUE)yield_args, &yield_state);
+		while (!exception && (error = git_reference_next(&ref, iter)) == GIT_OK) {
+			rb_protect(rb_yield, rugged_ref_new(rb_cRuggedReference, rb_repo, ref), &exception);
 		}
 	}
 
 	git_reference_iterator_free(iter);
 
-	if (yield_state != 0)
-		rb_jump_tag(yield_state);
+	if (exception)
+		rb_jump_tag(exception);
 
 	if (error != GIT_ITEROVER)
 		rugged_exception_check(error);
