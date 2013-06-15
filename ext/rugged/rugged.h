@@ -103,12 +103,12 @@ static inline VALUE rugged_owner(VALUE object)
 	return rb_iv_get(object, "@owner");
 }
 
-extern void rugged_exception_raise(int errorcode);
+extern void rugged_exception_raise();
 
 static inline void rugged_exception_check(int errorcode)
 {
 	if (errorcode < 0)
-		rugged_exception_raise(errorcode);
+		rugged_exception_raise();
 }
 
 static inline int rugged_parse_bool(VALUE boolean)

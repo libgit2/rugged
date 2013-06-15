@@ -272,7 +272,7 @@ static void cleanup_cb(void *unused)
 	git_threads_shutdown();
 }
 
-void rugged_exception_raise(int errorcode)
+void rugged_exception_raise()
 {
 	VALUE err_klass, err_obj;
 	const git_error *error;
