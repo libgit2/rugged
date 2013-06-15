@@ -681,7 +681,7 @@ static VALUE rb_git_index_conflicts_p(VALUE self)
  *    A Time instance representing the index entry's time of last status change
  *    (ie. change of owner, group, mode, etc.).
  */
-void Init_rugged_index()
+void Init_rugged_index(void)
 {
 	/*
 	 * Index

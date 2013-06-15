@@ -272,7 +272,7 @@ static void cleanup_cb(void *unused)
 	git_threads_shutdown();
 }
 
-void rugged_exception_raise()
+void rugged_exception_raise(void)
 {
 	VALUE err_klass, err_obj;
 	const git_error *error;
@@ -321,7 +321,7 @@ VALUE rugged_strarray_to_rb_ary(git_strarray *str_array)
 	return rb_array;
 }
 
-void Init_rugged()
+void Init_rugged(void)
 {
 	rb_mRugged = rb_define_module("Rugged");
 

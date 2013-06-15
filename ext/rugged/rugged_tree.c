@@ -658,7 +658,7 @@ static VALUE rb_git_treebuilder_filter(VALUE self)
 	return Qnil;
 }
 
-void Init_rugged_tree()
+void Init_rugged_tree(void)
 {
 	/*
 	 * Tree

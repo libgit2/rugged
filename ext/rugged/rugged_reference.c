@@ -644,7 +644,7 @@ static VALUE rb_git_ref_is_remote(VALUE self)
 	return git_reference_is_remote(ref) ? Qtrue : Qfalse;
 }
 
-void Init_rugged_reference()
+void Init_rugged_reference(void)
 {
 	rb_cRuggedReference = rb_define_class_under(rb_mRugged, "Reference", rb_cObject);
 

@@ -92,7 +92,7 @@ static VALUE rb_git_diff_hunk_each_line(VALUE self)
 	return self;
 }
 
-void Init_rugged_diff_hunk()
+void Init_rugged_diff_hunk(void)
 {
 	rb_cRuggedDiffHunk = rb_define_class_under(rb_cRuggedDiff, "Hunk", rb_cObject);
 

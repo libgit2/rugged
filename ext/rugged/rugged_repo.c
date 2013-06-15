@@ -1342,7 +1342,7 @@ static VALUE rb_git_repo_ahead_behind(VALUE self, VALUE rb_local, VALUE rb_upstr
 	return rb_result;
 }
 
-void Init_rugged_repo()
+void Init_rugged_repo(void)
 {
 	id_call = rb_intern("call");
 

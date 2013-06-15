@@ -198,7 +198,7 @@ static VALUE rb_git_walker_reset(VALUE self)
 	return Qnil;
 }
 
-void Init_rugged_revwalk()
+void Init_rugged_revwalk(void)
 {
 	rb_cRuggedWalker = rb_define_class_under(rb_mRugged, "Walker", rb_cObject);
 	rb_define_singleton_method(rb_cRuggedWalker, "new", rb_git_walker_new, 1);

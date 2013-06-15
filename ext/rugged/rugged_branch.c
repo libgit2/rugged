@@ -303,7 +303,7 @@ static VALUE rb_git_branch_head_p(VALUE self)
 	return git_branch_is_head(branch) ? Qtrue : Qfalse;
 }
 
-void Init_rugged_branch()
+void Init_rugged_branch(void)
 {
 	rb_cRuggedBranch = rb_define_class_under(rb_mRugged, "Branch", rb_cRuggedReference);
 

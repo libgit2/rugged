@@ -494,7 +494,7 @@ static VALUE rb_git_diff_size(VALUE self)
 	return INT2FIX(git_diff_num_deltas(diff));
 }
 
-void Init_rugged_diff()
+void Init_rugged_diff(void)
 {
 	rb_cRuggedDiff = rb_define_class_under(rb_mRugged, "Diff", rb_cObject);
 

@@ -45,25 +45,25 @@
 /*
  * Initialization functions
  */
-void Init_rugged_object();
-void Init_rugged_branch();
-void Init_rugged_commit();
-void Init_rugged_tree();
-void Init_rugged_tag();
-void Init_rugged_blob();
-void Init_rugged_index();
-void Init_rugged_repo();
-void Init_rugged_revwalk();
-void Init_rugged_reference();
-void Init_rugged_config();
-void Init_rugged_remote();
-void Init_rugged_notes();
-void Init_rugged_settings();
-void Init_rugged_diff();
-void Init_rugged_diff_patch();
-void Init_rugged_diff_delta();
-void Init_rugged_diff_hunk();
-void Init_rugged_diff_line();
+void Init_rugged_object(void);
+void Init_rugged_branch(void);
+void Init_rugged_commit(void);
+void Init_rugged_tree(void);
+void Init_rugged_tag(void);
+void Init_rugged_blob(void);
+void Init_rugged_index(void);
+void Init_rugged_repo(void);
+void Init_rugged_revwalk(void);
+void Init_rugged_reference(void);
+void Init_rugged_config(void);
+void Init_rugged_remote(void);
+void Init_rugged_notes(void);
+void Init_rugged_settings(void);
+void Init_rugged_diff(void);
+void Init_rugged_diff_patch(void);
+void Init_rugged_diff_delta(void);
+void Init_rugged_diff_hunk(void);
+void Init_rugged_diff_line(void);
 
 VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE self);
 
@@ -103,7 +103,7 @@ static inline VALUE rugged_owner(VALUE object)
 	return rb_iv_get(object, "@owner");
 }
 
-extern void rugged_exception_raise();
+extern void rugged_exception_raise(void);
 
 static inline void rugged_exception_check(int errorcode)
 {
