@@ -88,7 +88,7 @@ VALUE rugged_diff_delta_new(VALUE owner, const git_diff_delta *delta)
 	return rb_delta;
 }
 
-void Init_rugged_diff_delta()
+void Init_rugged_diff_delta(void)
 {
 	rb_cRuggedDiffDelta = rb_define_class_under(rb_cRuggedDiff, "Delta", rb_cObject);
 }

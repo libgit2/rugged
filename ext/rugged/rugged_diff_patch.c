@@ -154,7 +154,7 @@ static VALUE rb_git_diff_patch_context(VALUE self)
 	return INT2FIX(context);
 }
 
-void Init_rugged_diff_patch()
+void Init_rugged_diff_patch(void)
 {
 	rb_cRuggedDiffPatch = rb_define_class_under(rb_cRuggedDiff, "Patch", rb_cObject);
 

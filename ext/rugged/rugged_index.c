@@ -575,7 +575,7 @@ static VALUE rb_git_index_diff(int argc, VALUE *argv, VALUE self)
 	git_index *index;
 	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
 	git_repository *repo;
-	git_diff_list *diff;
+	git_diff_list *diff = NULL;
 	VALUE owner, rb_other, rb_options;
 	int error;
 
@@ -681,7 +681,7 @@ static VALUE rb_git_index_conflicts_p(VALUE self)
  *    A Time instance representing the index entry's time of last status change
  *    (ie. change of owner, group, mode, etc.).
  */
-void Init_rugged_index()
+void Init_rugged_index(void)
 {
 	/*
 	 * Index

@@ -384,7 +384,7 @@ static VALUE rb_git_blob_is_binary(VALUE self)
 	return git_blob_is_binary(blob) ? Qtrue : Qfalse;
 }
 
-void Init_rugged_blob()
+void Init_rugged_blob(void)
 {
 	id_read = rb_intern("read");
 

@@ -302,7 +302,7 @@ static VALUE rb_git_config_open_default(VALUE klass)
 	return rugged_config_new(klass, Qnil, cfg);
 }
 
-void Init_rugged_config()
+void Init_rugged_config(void)
 {
 	/*
 	 * Config

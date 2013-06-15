@@ -382,7 +382,7 @@ cleanup:
 	return rugged_create_oid(&commit_oid);
 }
 
-void Init_rugged_commit()
+void Init_rugged_commit(void)
 {
 	rb_cRuggedCommit = rb_define_class_under(rb_mRugged, "Commit", rb_cRuggedObject);
 

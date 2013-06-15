@@ -73,7 +73,7 @@ VALUE rugged_diff_line_new(
 	return rb_line;
 }
 
-void Init_rugged_diff_line()
+void Init_rugged_diff_line(void)
 {
 	rb_cRuggedDiffLine = rb_define_class_under(rb_cRuggedDiff, "Line", rb_cObject);
 }

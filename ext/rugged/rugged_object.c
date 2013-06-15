@@ -368,7 +368,7 @@ static VALUE rb_git_object_read_raw(VALUE self)
 	return rugged_raw_read(git_object_owner(object), git_object_id(object));
 }
 
-void Init_rugged_object()
+void Init_rugged_object(void)
 {
 	rb_cRuggedObject = rb_define_class_under(rb_mRugged, "Object", rb_cObject);
 	rb_define_singleton_method(rb_cRuggedObject, "lookup", rb_git_object_lookup, 2);

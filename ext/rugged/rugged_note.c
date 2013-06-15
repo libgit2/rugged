@@ -361,7 +361,7 @@ static VALUE rb_git_note_default_ref_GET(VALUE self)
 	return rugged_str_new2(ref_name, NULL);
 }
 
-void Init_rugged_notes()
+void Init_rugged_notes(void)
 {
 	rb_define_method(rb_cRuggedObject, "notes", rb_git_note_lookup, -1);
 	rb_define_method(rb_cRuggedObject, "create_note", rb_git_note_create, 1);
