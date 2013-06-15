@@ -185,7 +185,7 @@ static int cb_branch__each_obj(const char *branch_name, git_branch_t branch_type
 	);
 
 	rb_yield(rugged_branch_new(rb_repo, branch));
-	return 0;
+	return GIT_OK;
 }
 
 static VALUE each_branch(int argc, VALUE *argv, VALUE self, int branch_names_only)
