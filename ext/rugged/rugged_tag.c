@@ -283,7 +283,7 @@ static VALUE rb_git_tag_each(int argc, VALUE *argv, VALUE self)
 	git_repository *repo;
 	git_strarray tags;
 	size_t i;
-	int error;
+	int error, exception = 0;
 	VALUE rb_repo, rb_pattern;
 	const char *pattern = NULL;
 
@@ -305,10 +305,14 @@ static VALUE rb_git_tag_each(int argc, VALUE *argv, VALUE self)
 	error = git_tag_list_match(&tags, pattern ? pattern : "", repo);
 	rugged_exception_check(error);
 
-	for (i = 0; i < tags.count; ++i)
-		rb_yield(rugged_str_new2(tags.strings[i], NULL));
+	for (i = 0; !exception && i < tags.count; ++i)
+		rb_protect(rb_yield, rugged_str_new2(tags.strings[i], NULL), &exception);
 
 	git_strarray_free(&tags);
+
+	if (exception)
+		rb_jump_tag(exception);
+
 	return Qnil;
 }
 
