@@ -136,7 +136,131 @@ class BlobWriteTest < Rugged::TestCase
     text_blob = @repo.lookup(Rugged::Blob.from_disk(@repo, text_file_path))
     refute text_blob.binary?
   end
+end
 
+class BlobDiffTest < Rugged::SandboxedTestCase
+  def test_diff_blob
+    repo = sandbox_init("diff")
+
+    a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+    b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
+
+    blob  = repo.lookup(a.tree["readme.txt"][:oid])
+    other = repo.lookup(b.tree["readme.txt"][:oid])
+
+    patch = blob.diff(other)
+
+    assert_equal :modified, patch.delta.status
+
+    hunks = []
+    patch.each_hunk do |hunk|
+      assert_instance_of Rugged::Diff::Hunk, hunk
+      hunks << hunk
+    end
+    assert_equal 3, hunks.size
+
+    assert hunks[0].header.start_with? "@@ -1,4 +1,4 @@"
+    assert hunks[1].header.start_with? "@@ -7,10 +7,6 @@"
+    assert hunks[2].header.start_with? "@@ -24,12 +20,9 @@"
+
+    lines = []
+    hunks[0].each_line do |line|
+      lines << line
+    end
+    assert_equal 5, lines.size
+
+    assert_equal :deletion, lines[0].line_origin
+    assert_equal "The Git feature that really makes it stand apart from nearly every other SCM\n", lines[0].content
+
+    assert_equal :addition, lines[1].line_origin
+    assert_equal "The Git feature that r3ally mak3s it stand apart from n3arly 3v3ry other SCM\n", lines[1].content
+
+    assert_equal :context, lines[2].line_origin
+    assert_equal "out there is its branching model.\n", lines[2].content
+
+    assert_equal :context, lines[3].line_origin
+    assert_equal "\n", lines[3].content
+
+    assert_equal :context, lines[4].line_origin
+    assert_equal "Git allows and encourages you to have multiple local branches that can be\n", lines[4].content
+  end
+
+  def test_diff_string
+    repo = sandbox_init("diff")
+
+    a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+    b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
+
+    blob  = repo.lookup(a.tree["readme.txt"][:oid])
+    other = repo.lookup(b.tree["readme.txt"][:oid]).content
+
+    patch = blob.diff(other)
+
+    assert_equal :modified, patch.delta.status
+
+    hunks = []
+    patch.each_hunk do |hunk|
+      assert_instance_of Rugged::Diff::Hunk, hunk
+      hunks << hunk
+    end
+    assert_equal 3, hunks.size
+
+    assert hunks[0].header.start_with? "@@ -1,4 +1,4 @@"
+    assert hunks[1].header.start_with? "@@ -7,10 +7,6 @@"
+    assert hunks[2].header.start_with? "@@ -24,12 +20,9 @@"
+
+    lines = []
+    hunks[0].each_line do |line|
+      lines << line
+    end
+    assert_equal 5, lines.size
+
+    assert_equal :deletion, lines[0].line_origin
+    assert_equal "The Git feature that really makes it stand apart from nearly every other SCM\n", lines[0].content
+
+    assert_equal :addition, lines[1].line_origin
+    assert_equal "The Git feature that r3ally mak3s it stand apart from n3arly 3v3ry other SCM\n", lines[1].content
+
+    assert_equal :context, lines[2].line_origin
+    assert_equal "out there is its branching model.\n", lines[2].content
+
+    assert_equal :context, lines[3].line_origin
+    assert_equal "\n", lines[3].content
+
+    assert_equal :context, lines[4].line_origin
+    assert_equal "Git allows and encourages you to have multiple local branches that can be\n", lines[4].content
+  end
+
+  def test_diff_nil
+    repo = sandbox_init("diff")
+
+    a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+
+    blob  = repo.lookup(a.tree["readme.txt"][:oid])
+
+    patch = blob.diff(nil)
+
+    assert_equal :deleted, patch.delta.status
+
+    hunks = []
+    patch.each_hunk do |hunk|
+      assert_instance_of Rugged::Diff::Hunk, hunk
+      hunks << hunk
+    end
+    assert_equal 1, hunks.size
+
+    assert hunks[0].header.start_with? "@@ -1,35 +0,0 @@"
+
+    lines = []
+    hunks[0].each_line do |line|
+      lines << line
+    end
+    assert_equal 35, lines.size
+
+    lines.each do |line|
+      assert_equal :deletion, line.line_origin
+    end
+  end
 end
 
 class BlobCreateFromChunksTest < Rugged::TestCase

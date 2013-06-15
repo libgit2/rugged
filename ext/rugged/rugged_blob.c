@@ -384,6 +384,90 @@ static VALUE rb_git_blob_is_binary(VALUE self)
 	return git_blob_is_binary(blob) ? Qtrue : Qfalse;
 }
 
+/*
+ *  call-seq:
+ *    blob.diff(other, options = {}) -> patch
+ *
+ *  Directly generate a Rugged::Patch from the difference between +blob+ and +other+.
+ *
+ *  +other+ can either be another Rugged::Blob instance, a string,
+ *  or nil (treated as an empty blob).
+ *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :max_size ::
+ *    An integer specifying the maximum byte size of a blob before a it will
+ *    be treated as binary. The default value is 512MB.
+ *
+ *  :context_lines ::
+ *    The number of unchanged lines that define the boundary of a hunk (and
+ *    to display before and after the actual changes). The default is 3.
+ *
+ *  :interhunk_lines ::
+ *    The maximum number of unchanged lines between hunk boundaries before the hunks
+ *    will be merged into a one. The default is 0.
+ *
+ *  :reverse ::
+ *    If true, the sides of the diff will be reversed.
+ *
+ *  :force_text ::
+ *    If true, all files will be treated as text, disabling binary attributes & detection.
+ *
+ *  :ignore_whitespace ::
+ *    If true, all whitespace will be ignored.
+ *
+ *  :ignore_whitespace_change ::
+ *    If true, changes in amount of whitespace will be ignored.
+ *
+ *  :ignore_whitespace_eol ::
+ *    If true, whitespace at end of line will be ignored.
+ *
+ *  :patience ::
+ *    If true, the "patience diff" algorithm will be used (currently unimplemented).
+ *
+ *  :skip_binary_check ::
+ *    If true, diff deltas will be generated without spending time on binary
+ *    detection. This is useful to improve performance in cases where the actual
+ *    file content difference is not needed.
+ */
+static VALUE rb_git_blob_diff(int argc, VALUE *argv, VALUE self)
+{
+	git_blob *blob;
+	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
+	git_diff_patch *patch;
+	VALUE rb_other, rb_options;
+	int error;
+
+	if (rb_scan_args(argc, argv, "11", &rb_other, &rb_options) == 2) {
+		Check_Type(rb_options, T_HASH);
+	}
+
+	rugged_parse_diff_options(&opts, rb_options);
+
+	Data_Get_Struct(self, git_blob, blob);
+
+	if (NIL_P(rb_other)) {
+		error = git_diff_patch_from_blobs(&patch, blob, NULL, &opts);
+	} else if (rb_obj_is_kind_of(rb_other, rb_cRuggedBlob)) {
+		git_blob *other_blob;
+
+		Data_Get_Struct(rb_other, git_blob, other_blob);
+
+		error = git_diff_patch_from_blobs(&patch, blob, other_blob, &opts);
+	} else if (TYPE(rb_other) == T_STRING) {
+		const char * buffer = StringValueCStr(rb_other);
+
+		error = git_diff_patch_from_blob_and_buffer(&patch, blob, buffer, RSTRING_LEN(rb_other), &opts);
+	} else {
+		rb_raise(rb_eTypeError, "wrong argument type %s (expected Rugged::Blob, String, or nil)",
+			rb_obj_classname(rb_other));
+	}
+
+	rugged_exception_check(error);
+
+	return rugged_diff_patch_new(self, patch);
+}
+
 void Init_rugged_blob(void)
 {
 	id_read = rb_intern("read");
@@ -395,6 +479,7 @@ void Init_rugged_blob(void)
 	rb_define_method(rb_cRuggedBlob, "text", rb_git_blob_text_GET, -1);
 	rb_define_method(rb_cRuggedBlob, "sloc", rb_git_blob_sloc, 0);
 	rb_define_method(rb_cRuggedBlob, "binary?", rb_git_blob_is_binary, 0);
+	rb_define_method(rb_cRuggedBlob, "diff", rb_git_blob_diff, -1);
 
 	rb_define_singleton_method(rb_cRuggedBlob, "from_buffer", rb_git_blob_from_buffer, 2);
 	rb_define_singleton_method(rb_cRuggedBlob, "from_workdir", rb_git_blob_from_workdir, 2);
