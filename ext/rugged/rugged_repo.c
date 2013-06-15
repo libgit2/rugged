@@ -544,10 +544,10 @@ static VALUE rb_git_repo_exists(VALUE self, VALUE hex)
 	Data_Get_Struct(self, git_repository, repo);
 	Check_Type(hex, T_STRING);
 
-	error = git_repository_odb(&odb, repo);
+	error = git_oid_fromstr(&oid, StringValueCStr(hex));
 	rugged_exception_check(error);
 
-	error = git_oid_fromstr(&oid, StringValueCStr(hex));
+	error = git_repository_odb(&odb, repo);
 	rugged_exception_check(error);
 
 	rb_result = git_odb_exists(odb, &oid) ? Qtrue : Qfalse;
