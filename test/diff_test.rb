@@ -684,7 +684,7 @@ EOS
 
     diff = a.tree.diff(b.tree)
 
-    assert_equal <<-EOS, diff.patch
+    expected = <<-EOS
 diff --git a/another.txt b/another.txt
 index 3e5bcba..546c735 100644
 --- a/another.txt
@@ -755,6 +755,10 @@ index 7b808f7..29ab705 100644
 +it.!
 \\ No newline at end of file
 EOS
+
+    expected.force_encoding('binary') if expected.respond_to?(:force_encoding)
+
+    assert_equal expected, diff.patch
   end
 
   def test_patch_compact
