@@ -429,35 +429,55 @@ static VALUE rb_git_blob_is_binary(VALUE self)
  *    If true, diff deltas will be generated without spending time on binary
  *    detection. This is useful to improve performance in cases where the actual
  *    file content difference is not needed.
+ *
+ *  :old_path ::
+ *    An optional string to treat +blob+ as if it had this filename.
+ *
+ *  :new_path ::
+ *    An optional string to treat +other+ as if it had this filename.
  */
 static VALUE rb_git_blob_diff(int argc, VALUE *argv, VALUE self)
 {
 	git_blob *blob;
 	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
 	git_diff_patch *patch;
+	const char *old_path = NULL, *new_path = NULL;
 	VALUE rb_other, rb_options;
 	int error;
 
 	if (rb_scan_args(argc, argv, "11", &rb_other, &rb_options) == 2) {
+		VALUE rb_value;
 		Check_Type(rb_options, T_HASH);
-	}
 
-	rugged_parse_diff_options(&opts, rb_options);
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("old_path"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_STRING);
+			old_path = StringValueCStr(rb_value);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("new_path"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_STRING);
+			new_path = StringValueCStr(rb_value);
+		}
+
+		rugged_parse_diff_options(&opts, rb_options);
+	}
 
 	Data_Get_Struct(self, git_blob, blob);
 
 	if (NIL_P(rb_other)) {
-		error = git_diff_patch_from_blobs(&patch, blob, NULL, &opts);
+		error = git_diff_patch_from_blobs(&patch, blob, old_path, NULL, new_path, &opts);
 	} else if (rb_obj_is_kind_of(rb_other, rb_cRuggedBlob)) {
 		git_blob *other_blob;
 
 		Data_Get_Struct(rb_other, git_blob, other_blob);
 
-		error = git_diff_patch_from_blobs(&patch, blob, other_blob, &opts);
+		error = git_diff_patch_from_blobs(&patch, blob, old_path, other_blob, new_path, &opts);
 	} else if (TYPE(rb_other) == T_STRING) {
 		const char * buffer = StringValueCStr(rb_other);
 
-		error = git_diff_patch_from_blob_and_buffer(&patch, blob, buffer, RSTRING_LEN(rb_other), &opts);
+		error = git_diff_patch_from_blob_and_buffer(&patch, blob, old_path, buffer, RSTRING_LEN(rb_other), new_path, &opts);
 	} else {
 		rb_raise(rb_eTypeError, "wrong argument type %s (expected Rugged::Blob, String, or nil)",
 			rb_obj_classname(rb_other));

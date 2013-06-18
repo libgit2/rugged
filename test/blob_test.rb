@@ -261,6 +261,20 @@ class BlobDiffTest < Rugged::SandboxedTestCase
       assert_equal :deletion, line.line_origin
     end
   end
+
+  def test_diff_with_paths
+    repo = sandbox_init("diff")
+
+    a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+    b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
+
+    blob  = repo.lookup(a.tree["readme.txt"][:oid])
+    other = repo.lookup(b.tree["readme.txt"][:oid])
+
+    patch = blob.diff(other, :old_path => "old_readme.txt", :new_path => "new_readme.txt")
+    assert_equal "old_readme.txt", patch.delta.old_file[:path]
+    assert_equal "new_readme.txt", patch.delta.new_file[:path]
+  end
 end
 
 class BlobCreateFromChunksTest < Rugged::TestCase
