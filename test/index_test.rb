@@ -215,6 +215,33 @@ class IndexConflictsTest < Rugged::SandboxedTestCase
   def test_conflicts
     assert @repo.index.conflicts?
   end
+
+  def test_each_conflict
+    conflicts = []
+    @repo.index.each_conflict { |*args| conflicts << args }
+
+    assert_equal 2, conflicts.size
+
+    assert_equal "conflicts-one.txt", conflicts[0][0][:path]
+    assert_equal "conflicts-one.txt", conflicts[0][1][:path]
+    assert_equal "conflicts-one.txt", conflicts[0][2][:path]
+    assert_equal 1, conflicts[0][0][:stage]
+    assert_equal 2, conflicts[0][1][:stage]
+    assert_equal 3, conflicts[0][2][:stage]
+
+    assert_equal "conflicts-two.txt", conflicts[1][0][:path]
+    assert_equal "conflicts-two.txt", conflicts[1][1][:path]
+    assert_equal "conflicts-two.txt", conflicts[1][2][:path]
+    assert_equal 1, conflicts[1][0][:stage]
+    assert_equal 2, conflicts[1][1][:stage]
+    assert_equal 3, conflicts[1][2][:stage]
+  end
+
+  def test_each_conflict_enumerator
+    enum = @repo.index.each_conflict
+    assert_instance_of Enumerator, enum
+    assert_equal 2, enum.count
+  end
 end
 
 class IndexRepositoryTest < Rugged::TestCase

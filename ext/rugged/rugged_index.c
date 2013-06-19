@@ -848,6 +848,65 @@ static VALUE rb_git_index_conflicts_p(VALUE self)
 }
 
 
+static VALUE rugged_yield_conflict(VALUE _args)
+{
+	VALUE *args = (VALUE *)_args;
+	rb_funcall(args[0], rb_intern("call"), 3, args[1], args[2], args[3]);
+	return GIT_OK;
+}
+
+/*
+ *  call-seq:
+ *    index.each_conflict { |ancestor, ours, theirs| block } -> index
+ *    index.each_conflict                                    -> enumerator
+ *
+ *  Iterate through all the conflicts in +index+.
+ *
+ *  The given block will be called once with an index entry from the ancestor,
+ *  our side and their side for each conflict.
+ *
+ *  If +ancestor+, +ours+ or +theirs+ is +nil+, that indicates that file in
+ *  conflict did not exists in the respective tree.
+ *
+ *  If no block is given, an enumerator will be returned.
+ */
+static VALUE rb_git_index_each_conflict(VALUE self)
+{
+	git_index *index;
+	git_index_conflict_iterator *iter;
+	const git_index_entry *ancestor, *ours, *theirs;
+	int error, exception = 0;
+
+	Data_Get_Struct(self, git_index, index);
+
+	if (!rb_block_given_p()) {
+		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_conflict"));
+	}
+
+	error = git_index_conflict_iterator_new(&iter, index);
+	rugged_exception_check(error);
+
+	while (!exception && (error = git_index_conflict_next(&ancestor, &ours, &theirs, iter)) == GIT_OK) {
+		VALUE args[] = {
+			rb_block_proc(),
+			rb_git_indexentry_fromC(ancestor),
+			rb_git_indexentry_fromC(ours),
+			rb_git_indexentry_fromC(theirs)
+		};
+		rb_protect(rugged_yield_conflict, (VALUE)args, &exception);
+	}
+
+	git_index_conflict_iterator_free(iter);
+
+	if (exception)
+		rb_jump_tag(exception);
+
+	if (error != GIT_ITEROVER)
+		rugged_exception_check(error);
+
+	return self;
+}
+
 /*
  *  Document-class: Rugged::Index
  *
@@ -910,6 +969,7 @@ void Init_rugged_index(void)
 	rb_define_method(rb_cRuggedIndex, "diff", rb_git_index_diff, -1);
 
 	rb_define_method(rb_cRuggedIndex, "conflicts?", rb_git_index_conflicts_p, 0);
+	rb_define_method(rb_cRuggedIndex, "each_conflict", rb_git_index_each_conflict, 0);
 
 	rb_define_method(rb_cRuggedIndex, "add", rb_git_index_add, 1);
 	rb_define_method(rb_cRuggedIndex, "update", rb_git_index_add, 1);
