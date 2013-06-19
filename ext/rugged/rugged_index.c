@@ -253,6 +253,35 @@ static VALUE rb_git_index_remove(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
+ *    index.remove_dir(dir[, stage = 0]) -> nil
+ *
+ *  Removes all entries under the given +dir+ with the given +stage+
+ *  from the index.
+ */
+static VALUE rb_git_index_remove_directory(int argc, VALUE *argv, VALUE self)
+{
+	git_index *index;
+	int error, stage = 0;
+
+	VALUE rb_dir, rb_stage;
+
+	Data_Get_Struct(self, git_index, index);
+
+	if (rb_scan_args(argc, argv, "11", &rb_dir, &rb_stage) > 1) {
+		Check_Type(rb_stage, T_FIXNUM);
+		stage = FIX2INT(rb_stage);
+	}
+
+	Check_Type(rb_dir, T_STRING);
+
+	error = git_index_remove_directory(index, StringValueCStr(rb_dir), stage);
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
+/*
+ *  call-seq:
  *    index << entry -> nil
  *    index << path -> nil
  *    index.add(entry) -> nil
@@ -705,6 +734,7 @@ void Init_rugged_index(void)
 	rb_define_method(rb_cRuggedIndex, "<<", rb_git_index_add, 1);
 
 	rb_define_method(rb_cRuggedIndex, "remove", rb_git_index_remove, -1);
+	rb_define_method(rb_cRuggedIndex, "remove_dir", rb_git_index_remove_directory, -1);
 
 	rb_define_method(rb_cRuggedIndex, "write_tree", rb_git_index_writetree, -1);
 	rb_define_method(rb_cRuggedIndex, "read_tree", rb_git_index_readtree, 1);
