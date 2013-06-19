@@ -242,6 +242,50 @@ class IndexConflictsTest < Rugged::SandboxedTestCase
     assert_instance_of Enumerator, enum
     assert_equal 2, enum.count
   end
+
+  def test_conflict_get
+    ancestor, ours, theirs = @repo.index.conflict_get("conflicts-one.txt")
+
+    assert_equal "conflicts-one.txt", ancestor[:path]
+    assert_equal "conflicts-one.txt", ours[:path]
+    assert_equal "conflicts-one.txt", theirs[:path]
+    assert_equal 1, ancestor[:stage]
+    assert_equal 2, ours[:stage]
+    assert_equal 3, theirs[:stage]
+
+    refute @repo.index.conflict_get("conflict-does-not-exists.txt")
+  end
+
+  def test_conflict_remove
+    @repo.index.conflict_remove("conflicts-one.txt")
+    assert_equal @repo.index.each_conflict.count, 1
+
+    @repo.index.conflict_remove("conflicts-two.txt")
+    assert_equal @repo.index.each_conflict.count, 0
+
+    refute @repo.index.conflicts?
+  end
+
+  def test_conflict_add
+    ancestor, ours, theirs = @repo.index.conflict_get("conflicts-one.txt")
+
+    ancestor[:path] = ours[:path] = theirs[:path] = "new-conflict.txt"
+    @repo.index.conflict_add(ancestor, ours, theirs)
+
+    assert_equal @repo.index.each_conflict.count, 3
+
+    ours[:path] = theirs[:path] = "another-new-conflict.txt"
+    @repo.index.conflict_add(nil, ours, theirs)
+
+    assert_equal @repo.index.each_conflict.count, 4
+  end
+
+  def test_conflict_cleanup
+    @repo.index.conflict_cleanup
+
+    assert_equal @repo.index.each_conflict.count, 0
+    refute @repo.index.conflicts?
+  end
 end
 
 class IndexRepositoryTest < Rugged::TestCase

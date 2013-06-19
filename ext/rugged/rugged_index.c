@@ -847,6 +847,116 @@ static VALUE rb_git_index_conflicts_p(VALUE self)
 	return git_index_has_conflicts(index) ? Qtrue : Qfalse;
 }
 
+/*
+ *  call-seq:
+ *    index.conflict_add(ancestor, ours, theirs) -> nil
+ *
+ *  Add or update index entries that represent a conflict.
+ *
+ *  Any entry can be +nil+ to indicate to indicate that it was
+ *  not present in the respective tree during the merge.
+ */
+static VALUE rb_git_conflict_add(VALUE self, VALUE rb_ancestor, VALUE rb_ours, VALUE rb_theirs)
+{
+	git_index *index;
+	git_index_entry ancestor, ours, theirs;
+	int error;
+
+	if (!NIL_P(rb_ancestor))
+		rb_git_indexentry_toC(&ancestor, rb_ancestor);
+
+	if (!NIL_P(rb_ours))
+		rb_git_indexentry_toC(&ours, rb_ours);
+
+	if (!NIL_P(rb_theirs))
+		rb_git_indexentry_toC(&theirs, rb_theirs);
+
+	Data_Get_Struct(self, git_index, index);
+
+	error = git_index_conflict_add(index,
+		NIL_P(rb_ancestor) ? NULL : &ancestor,
+		NIL_P(rb_theirs) ? NULL : &ours,
+		NIL_P(rb_ours) ? NULL : &theirs);
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
+/*
+ *  call-seq:
+ *    index.conflict_remove(path) -> nil
+ *
+ *  Removes the index entries that represent the conflict at +path+.
+ */
+static VALUE rb_git_conflict_remove(VALUE self, VALUE rb_path)
+{
+	git_index *index;
+	const git_index_entry *ancestor, *ours, *theirs;
+	int error;
+
+	Check_Type(rb_path, T_STRING);
+
+	Data_Get_Struct(self, git_index, index);
+
+	error = git_index_conflict_remove(index, StringValueCStr(rb_path));
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
+/*
+ *  call-seq:
+ *    index.conflict_get(path) -> [ancestor, ours, theirs] or nil
+ *
+ *  Return index entries from the ancestor, our side and their side of
+ *  the conflict at +path+.
+ *
+ *  If +ancestor+, +ours+ or +theirs+ is +nil+, that indicates that +path+
+ *  did not exists in the respective tree.
+ *
+ *  Returns nil of no conflict is present at +path+.
+ */
+static VALUE rb_git_conflict_get(VALUE self, VALUE rb_path)
+{
+	git_index *index;
+	const git_index_entry *ancestor, *ours, *theirs;
+	VALUE rb_result = rb_ary_new();
+	int error;
+
+	Check_Type(rb_path, T_STRING);
+
+	Data_Get_Struct(self, git_index, index);
+
+	error = git_index_conflict_get(&ancestor, &ours, &theirs, index, StringValueCStr(rb_path));
+	if (error == GIT_ENOTFOUND)
+		return Qnil;
+	else
+		rugged_exception_check(error);
+
+	rb_ary_push(rb_result, rb_git_indexentry_fromC(ancestor));
+	rb_ary_push(rb_result, rb_git_indexentry_fromC(ours));
+	rb_ary_push(rb_result, rb_git_indexentry_fromC(theirs));
+
+	return rb_result;
+}
+
+/*
+ *  call-seq:
+ *    index.conflict_cleanup -> nil
+ *
+ *  Remove all conflicting entries (entries with a stage greater than 0)
+ *  from the index.
+ */
+static VALUE rb_git_conflict_cleanup(VALUE self)
+{
+	git_index *index;
+	const git_index_entry *ancestor, *ours, *theirs;
+
+	Data_Get_Struct(self, git_index, index);
+	git_index_conflict_cleanup(index);
+
+	return Qnil;
+}
 
 static VALUE rugged_yield_conflict(VALUE _args)
 {
@@ -970,6 +1080,10 @@ void Init_rugged_index(void)
 
 	rb_define_method(rb_cRuggedIndex, "conflicts?", rb_git_index_conflicts_p, 0);
 	rb_define_method(rb_cRuggedIndex, "each_conflict", rb_git_index_each_conflict, 0);
+	rb_define_method(rb_cRuggedIndex, "conflict_get", rb_git_conflict_get, 1);
+	rb_define_method(rb_cRuggedIndex, "conflict_add", rb_git_conflict_add, 3);
+	rb_define_method(rb_cRuggedIndex, "conflict_remove", rb_git_conflict_remove, 1);
+	rb_define_method(rb_cRuggedIndex, "conflict_cleanup", rb_git_conflict_cleanup, 0);
 
 	rb_define_method(rb_cRuggedIndex, "add", rb_git_index_add, 1);
 	rb_define_method(rb_cRuggedIndex, "update", rb_git_index_add, 1);
