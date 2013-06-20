@@ -302,6 +302,184 @@ static VALUE rb_git_index_add(VALUE self, VALUE rb_entry)
 	return Qnil;
 }
 
+int rugged__index_matched_path_cb(const char *path, const char *matched_pathspec, void *payload)
+{
+	VALUE rb_result = rb_yield_values(2,
+		rugged_str_new2(path, NULL),
+		matched_pathspec == NULL ? Qnil : rugged_str_new2(matched_pathspec, NULL));
+
+	return RTEST(rb_result) ? 0 : 1;
+}
+
+/*
+ *  call-seq:
+ *    index.add_all(pathspec = [][, options])                            -> nil
+ *    index.add_all(pathspec = [][, options]) { |path, pathspec| block } -> nil
+ *
+ *  Add or update index entries matching files in the working directory.
+ *
+ *  Searches the working directory for files that +pathspec+ and adds them
+ *  to +index+ (by updating an existing entry or adding a new entry).
+ *
+ *  +pathspec+ can either be a String, or an Array of Strings.
+ *  If +pathspec+ is empty, all entries in the index will be matched.
+ *
+ *  Files that are ignored due to +.gitignore+ rules will be skipped,
+ *  unless they're already have an entry in +index+.
+ *
+ *  Files that are marked as the result of a merge request, will have this
+ *  marking removed and the merge conflict information will be moved into the
+ *  "resolve undo" (REUC) section of +index+.
+ *
+ *  If a block is given, each matched +path+ and the +pathspec+ that matched
+ *  it will be passed to the block. If the return value of +block+ is
+ *  falsy, the matching item will not be added to the index.
+ *
+ *  This method will fail in bare index instances.
+ *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :force ::
+ *    If +true+, any +.gitignore+ rules will be ignored.
+ *
+ *  :disable_pathspec_match ::
+ *    If +true+, glob expansion will be disabled and exact matching will be forced.
+ *
+ *  :check_pathspec ::
+ *    If +true+, and the +:force+ options is +false+ or not given, exact matches
+ *    of ignored files or files that are not already in +index+ will raise a
+ *    Rugged::InvalidError. This emulates <code>git add -A</code>.
+ */
+static VALUE rb_git_index_add_all(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_pathspecs, rb_options;
+
+	git_index *index;
+	git_strarray pathspecs;
+	int error;
+	unsigned int flags = GIT_INDEX_ADD_DEFAULT;
+
+	Data_Get_Struct(self, git_index, index);
+
+	if (rb_scan_args(argc, argv, "02", &rb_pathspecs, &rb_options) > 1) {
+		Check_Type(rb_options, T_HASH);
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("force"))))
+			flags |= GIT_INDEX_ADD_FORCE;
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("disable_pathspec_match"))))
+			flags |= GIT_INDEX_ADD_DISABLE_PATHSPEC_MATCH;
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("check_pathspec"))))
+			flags |= GIT_INDEX_ADD_CHECK_PATHSPEC;
+	}
+
+	if (NIL_P(rb_pathspecs))
+		rb_pathspecs = rb_ary_new();
+
+	rugged_rb_ary_to_strarray(rb_ary_to_ary(rb_pathspecs), &pathspecs);
+
+	error = git_index_add_all(index, &pathspecs, flags,
+		rb_block_given_p() ? rugged__index_matched_path_cb : NULL, NULL);
+
+	xfree(pathspecs.strings);
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
+/*
+ *  call-seq:
+ *    index.update_all(pathspec = [])                            -> nil
+ *    index.update_all(pathspec = []) { |path, pathspec| block } -> nil
+ *
+ *  Update all index entries to match the working directory.
+ *
+ *  Searches +index+ for entries that match +pathspec+ and synchronizes
+ *  them with the content of the working directory.
+ *
+ *  +pathspec+ can either be a String, or an Array of Strings.
+ *  If +pathspec+ is empty, all entries in the index will be matched.
+ *
+ *  Entries where the corresponding working directory file no longer exists
+ *  get deleted, all other matched entries will get updated to reflect their
+ *  working directory state (the latest version of the a file's content will
+ *  automatically be added to the ODB).
+ *
+ *  If a block is given, each matched +path+ and the +pathspec+ that matched
+ *  it will be passed to the block. If the return value of +block+ is
+ *  falsy, the matching item will not be updated in the index.
+ *
+ *  This method will fail in bare index instances.
+ */
+static VALUE rb_git_index_update_all(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_pathspecs = rb_ary_new();;
+
+	git_index *index;
+	git_strarray pathspecs;
+	int error;
+
+	Data_Get_Struct(self, git_index, index);
+
+	rb_scan_args(argc, argv, "01", &rb_pathspecs);
+
+	if (NIL_P(rb_pathspecs))
+		rb_pathspecs = rb_ary_new();
+
+	rugged_rb_ary_to_strarray(rb_ary_to_ary(rb_pathspecs), &pathspecs);
+
+	error = git_index_update_all(index, &pathspecs,
+		rb_block_given_p() ? rugged__index_matched_path_cb : NULL, NULL);
+
+	xfree(pathspecs.strings);
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
+/*
+ *  call-seq:
+ *    index.remove_all(pathspec = []) -> nil
+ *    index.remove_all(pathspec = []) { |path, pathspec| block } -> nil
+ *
+ *  Remove all matching index entries.
+ *
+ *  Searches +index+ for entries that match +pathspec+ and removes them
+ *  from the index.
+ *
+ *  +pathspec+ can either be a String, or an Array of Strings.
+ *  If +pathspec+ is empty, all entries in the index will be matched.
+ *
+ *  If a block is given, each matched +path+ and the +pathspec+ that matched
+ *  it will be passed to the block. If the return value of +block+ is
+ *  falsy, the matching item will not be removed from the index.
+ */
+static VALUE rb_git_index_remove_all(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_pathspecs = rb_ary_new();
+
+	git_index *index;
+	git_strarray pathspecs;
+	int error;
+
+	Data_Get_Struct(self, git_index, index);
+
+	rb_scan_args(argc, argv, "01", &rb_pathspecs);
+
+	if (NIL_P(rb_pathspecs))
+		rb_pathspecs = rb_ary_new();
+
+	rugged_rb_ary_to_strarray(rb_ary_to_ary(rb_pathspecs), &pathspecs);
+
+	error = git_index_remove_all(index, &pathspecs,
+		rb_block_given_p() ? rugged__index_matched_path_cb : NULL, NULL);
+
+	xfree(pathspecs.strings);
+	rugged_exception_check(error);
+
+	return Qnil;
+}
 
 static VALUE rb_git_indexentry_fromC(const git_index_entry *entry)
 {
@@ -705,6 +883,10 @@ void Init_rugged_index(void)
 	rb_define_method(rb_cRuggedIndex, "<<", rb_git_index_add, 1);
 
 	rb_define_method(rb_cRuggedIndex, "remove", rb_git_index_remove, -1);
+
+	rb_define_method(rb_cRuggedIndex, "add_all", rb_git_index_add_all, -1);
+	rb_define_method(rb_cRuggedIndex, "update_all", rb_git_index_update_all, -1);
+	rb_define_method(rb_cRuggedIndex, "remove_all", rb_git_index_remove_all, -1);
 
 	rb_define_method(rb_cRuggedIndex, "write_tree", rb_git_index_writetree, -1);
 	rb_define_method(rb_cRuggedIndex, "read_tree", rb_git_index_readtree, 1);
