@@ -302,11 +302,19 @@ static VALUE rb_git_index_add(VALUE self, VALUE rb_entry)
 	return Qnil;
 }
 
+
+
 int rugged__index_matched_path_cb(const char *path, const char *matched_pathspec, void *payload)
 {
-	VALUE rb_result = rb_yield_values(2,
-		rugged_str_new2(path, NULL),
-		matched_pathspec == NULL ? Qnil : rugged_str_new2(matched_pathspec, NULL));
+	int exception = 0;
+
+	VALUE rb_result, rb_args = rb_ary_new2(2);
+	rb_ary_push(rb_args, rugged_str_new2(path, NULL));
+	rb_ary_push(rb_args, matched_pathspec == NULL ? Qnil : rugged_str_new2(matched_pathspec, NULL));
+
+	rb_result = rb_protect(rb_yield_splat, rb_args, &exception);
+	if (exception)
+		return GIT_ERROR;
 
 	return RTEST(rb_result) ? 0 : 1;
 }
@@ -383,6 +391,10 @@ static VALUE rb_git_index_add_all(int argc, VALUE *argv, VALUE self)
 		rb_block_given_p() ? rugged__index_matched_path_cb : NULL, NULL);
 
 	xfree(pathspecs.strings);
+
+	if (error == GIT_EUSER)
+		rb_exc_raise(rb_errinfo());
+
 	rugged_exception_check(error);
 
 	return Qnil;
