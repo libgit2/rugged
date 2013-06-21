@@ -302,18 +302,17 @@ static VALUE rb_git_index_add(VALUE self, VALUE rb_entry)
 	return Qnil;
 }
 
-
-
 int rugged__index_matched_path_cb(const char *path, const char *matched_pathspec, void *payload)
 {
-	int exception = 0;
+	int *exception = (int *)payload;
 
 	VALUE rb_result, rb_args = rb_ary_new2(2);
 	rb_ary_push(rb_args, rugged_str_new2(path, NULL));
 	rb_ary_push(rb_args, matched_pathspec == NULL ? Qnil : rugged_str_new2(matched_pathspec, NULL));
 
-	rb_result = rb_protect(rb_yield_splat, rb_args, &exception);
-	if (exception)
+	rb_result = rb_protect(rb_yield_splat, rb_args, exception);
+
+	if (*exception)
 		return GIT_ERROR;
 
 	return RTEST(rb_result) ? 0 : 1;
@@ -364,7 +363,7 @@ static VALUE rb_git_index_add_all(int argc, VALUE *argv, VALUE self)
 
 	git_index *index;
 	git_strarray pathspecs;
-	int error;
+	int error, exception = 0;
 	unsigned int flags = GIT_INDEX_ADD_DEFAULT;
 
 	Data_Get_Struct(self, git_index, index);
@@ -388,13 +387,12 @@ static VALUE rb_git_index_add_all(int argc, VALUE *argv, VALUE self)
 	rugged_rb_ary_to_strarray(rb_ary_to_ary(rb_pathspecs), &pathspecs);
 
 	error = git_index_add_all(index, &pathspecs, flags,
-		rb_block_given_p() ? rugged__index_matched_path_cb : NULL, NULL);
+		rb_block_given_p() ? rugged__index_matched_path_cb : NULL, &exception);
 
 	xfree(pathspecs.strings);
 
-	if (error == GIT_EUSER)
-		rb_exc_raise(rb_errinfo());
-
+	if (exception)
+		rb_jump_tag(exception);
 	rugged_exception_check(error);
 
 	return Qnil;
@@ -430,7 +428,7 @@ static VALUE rb_git_index_update_all(int argc, VALUE *argv, VALUE self)
 
 	git_index *index;
 	git_strarray pathspecs;
-	int error;
+	int error, exception = 0;
 
 	Data_Get_Struct(self, git_index, index);
 
@@ -442,9 +440,12 @@ static VALUE rb_git_index_update_all(int argc, VALUE *argv, VALUE self)
 	rugged_rb_ary_to_strarray(rb_ary_to_ary(rb_pathspecs), &pathspecs);
 
 	error = git_index_update_all(index, &pathspecs,
-		rb_block_given_p() ? rugged__index_matched_path_cb : NULL, NULL);
+		rb_block_given_p() ? rugged__index_matched_path_cb : NULL, &exception);
 
 	xfree(pathspecs.strings);
+
+	if (exception)
+		rb_jump_tag(exception);
 	rugged_exception_check(error);
 
 	return Qnil;
@@ -473,7 +474,7 @@ static VALUE rb_git_index_remove_all(int argc, VALUE *argv, VALUE self)
 
 	git_index *index;
 	git_strarray pathspecs;
-	int error;
+	int error, exception = 0;
 
 	Data_Get_Struct(self, git_index, index);
 
@@ -485,9 +486,12 @@ static VALUE rb_git_index_remove_all(int argc, VALUE *argv, VALUE self)
 	rugged_rb_ary_to_strarray(rb_ary_to_ary(rb_pathspecs), &pathspecs);
 
 	error = git_index_remove_all(index, &pathspecs,
-		rb_block_given_p() ? rugged__index_matched_path_cb : NULL, NULL);
+		rb_block_given_p() ? rugged__index_matched_path_cb : NULL, &exception);
 
 	xfree(pathspecs.strings);
+
+	if (exception)
+		rb_jump_tag(exception);
 	rugged_exception_check(error);
 
 	return Qnil;
