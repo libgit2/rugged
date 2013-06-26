@@ -186,7 +186,7 @@ static VALUE rb_git_remote_disconnect(VALUE self)
  */
 static VALUE rb_git_remote_connect(VALUE self, VALUE rb_direction)
 {
-	int error, direction = 0;
+	int error, direction = 0, exception = 0;
 	git_remote *remote;
 	ID id_direction;
 
@@ -206,8 +206,13 @@ static VALUE rb_git_remote_connect(VALUE self, VALUE rb_direction)
 	error = git_remote_connect(remote, direction);
 	rugged_exception_check(error);
 
-	if (rb_block_given_p())
-		rb_ensure(rb_yield, self, rb_git_remote_disconnect, self);
+	if (rb_block_given_p()) {
+		rb_protect(rb_yield, self, &exception);
+		git_remote_disconnect(remote);
+
+		if (exception)
+			rb_jump_tag(exception);
+	}
 
 	return Qnil;
 }
