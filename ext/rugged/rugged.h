@@ -31,10 +31,10 @@
 #define RSTRING_NOT_MODIFIED
 
 #include <ruby.h>
-#include <ruby/encoding.h>
-
 #ifndef HAVE_RUBY_ENCODING_H
 #error "Rugged requires Ruby 1.9+ to build"
+#else
+#include <ruby/encoding.h>
 #endif
 
 #include <assert.h>
