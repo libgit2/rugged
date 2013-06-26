@@ -232,8 +232,9 @@ static VALUE rugged_rhead_new(git_remote_head *head)
 
 static int cb_remote__ls(git_remote_head *head, void *payload)
 {
-	rb_funcall((VALUE)payload, rb_intern("call"), 1, rugged_rhead_new(head));
-	return GIT_OK;
+	int *exception = (int *)payload;
+	rb_protect(rb_yield, rugged_rhead_new(head), exception);
+	return *exception ? GIT_ERROR : GIT_OK;
 }
 
 /*
@@ -260,14 +261,17 @@ static int cb_remote__ls(git_remote_head *head, void *payload)
  */
 static VALUE rb_git_remote_ls(VALUE self)
 {
-	int error;
+	int error, exception = 0;
 	git_remote *remote;
 	Data_Get_Struct(self, git_remote, remote);
 
 	if (!rb_block_given_p())
 		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("ls"));
 
-	error = git_remote_ls(remote, &cb_remote__ls, (void *)rb_block_proc());
+	error = git_remote_ls(remote, &cb_remote__ls, &exception);
+
+	if (exception)
+		rb_jump_tag(exception);
 	rugged_exception_check(error);
 
 	return Qnil;
