@@ -175,17 +175,6 @@ static void load_alternates(git_repository *repo, VALUE rb_alternates)
 	rugged_exception_check(error);
 }
 
-static void set_repository_options(git_repository *repo, VALUE rb_options)
-{
-	if (NIL_P(rb_options))
-		return;
-
-	Check_Type(rb_options, T_HASH);
-
-	/* Check for `:alternates` */
-	load_alternates(repo, rb_hash_aref(rb_options, CSTR2SYM("alternates")));
-}
-
 /*
  *  call-seq:
  *    Repository.bare(path[, alternates]) -> repository
@@ -248,12 +237,16 @@ static VALUE rb_git_repo_new(int argc, VALUE *argv, VALUE klass)
 	int error = 0;
 	VALUE rb_path, rb_options;
 
-	rb_scan_args(argc, argv, "11", &rb_path, &rb_options);
+	rb_scan_args(argc, argv, "10:", &rb_path, &rb_options);
 	Check_Type(rb_path, T_STRING);
 
 	error = git_repository_open(&repo, StringValueCStr(rb_path));
 	rugged_exception_check(error);
-	set_repository_options(repo, rb_options);
+
+	if (!NIL_P(rb_options)) {
+		/* Check for `:alternates` */
+		load_alternates(repo, rb_hash_aref(rb_options, CSTR2SYM("alternates")));
+	}
 
 	return rugged_repo_new(klass, repo);
 }

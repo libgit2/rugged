@@ -185,12 +185,11 @@ static VALUE rb_git_diff_patch(int argc, VALUE *argv, VALUE self)
 	VALUE rb_str = rb_str_new(NULL, 0);
 	VALUE rb_opts;
 
-	rb_scan_args(argc, argv, "01", &rb_opts);
+	rb_scan_args(argc, argv, "00:", &rb_opts);
 
 	Data_Get_Struct(self, git_diff_list, diff);
 
 	if (!NIL_P(rb_opts)) {
-		Check_Type(rb_opts, T_HASH);
 		if (rb_hash_aref(rb_opts, CSTR2SYM("compact")) == Qtrue)
 			git_diff_print_compact(diff, diff_print_cb, (void*)rb_str);
 		else
@@ -229,7 +228,7 @@ static VALUE rb_git_diff_write_patch(int argc, VALUE *argv, VALUE self)
 	git_diff_list *diff;
 	VALUE rb_io, rb_opts;
 
-	rb_scan_args(argc, argv, "11", &rb_io, &rb_opts);
+	rb_scan_args(argc, argv, "10:", &rb_io, &rb_opts);
 
 	if (!rb_respond_to(rb_io, rb_intern("write")))
 		rb_raise(rb_eArgError, "Expected io to respond to \"write\"");
@@ -237,7 +236,6 @@ static VALUE rb_git_diff_write_patch(int argc, VALUE *argv, VALUE self)
 	Data_Get_Struct(self, git_diff_list, diff);
 
 	if (!NIL_P(rb_opts)) {
-		Check_Type(rb_opts, T_HASH);
 		if (rb_hash_aref(rb_opts, CSTR2SYM("compact")) == Qtrue)
 			git_diff_print_compact(diff, diff_write_cb, (void*)rb_io);
 		else

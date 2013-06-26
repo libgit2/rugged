@@ -796,13 +796,7 @@ static VALUE rb_git_index_diff(int argc, VALUE *argv, VALUE self)
 	VALUE owner, rb_other, rb_options;
 	int error;
 
-	if (rb_scan_args(argc, argv, "02", &rb_other, &rb_options) == 1) {
-		if (TYPE(rb_other) == T_HASH) {
-			rb_options = rb_other;
-			rb_other = Qnil;
-		}
-	}
-
+	rb_scan_args(argc, argv, "01:", &rb_other, &rb_options);
 	rugged_parse_diff_options(&opts, rb_options);
 
 	Data_Get_Struct(self, git_index, index);

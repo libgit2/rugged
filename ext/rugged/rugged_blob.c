@@ -425,9 +425,9 @@ static VALUE rb_git_blob_diff(int argc, VALUE *argv, VALUE self)
 	VALUE rb_other, rb_options;
 	int error;
 
-	if (rb_scan_args(argc, argv, "11", &rb_other, &rb_options) == 2) {
+	rb_scan_args(argc, argv, "10:", &rb_other, &rb_options);
+	if (!NIL_P(rb_options)) {
 		VALUE rb_value;
-		Check_Type(rb_options, T_HASH);
 
 		rb_value = rb_hash_aref(rb_options, CSTR2SYM("old_path"));
 		if (!NIL_P(rb_value)) {

@@ -388,10 +388,7 @@ static VALUE rb_git_tree_diff(int argc, VALUE *argv, VALUE self)
 	VALUE owner, rb_other, rb_options;
 	int error;
 
-	if (rb_scan_args(argc, argv, "11", &rb_other, &rb_options) == 2) {
-		Check_Type(rb_options, T_HASH);
-	}
-
+	rb_scan_args(argc, argv, "10:", &rb_other, &rb_options);
 	rugged_parse_diff_options(&opts, rb_options);
 
 	Data_Get_Struct(self, git_tree, tree);
@@ -457,10 +454,7 @@ static VALUE rb_git_tree_diff_workdir(int argc, VALUE *argv, VALUE self)
 	VALUE owner, rb_options;
 	int error;
 
-	if (rb_scan_args(argc, argv, "01", &rb_options) == 1) {
-		Check_Type(rb_options, T_HASH);
-	}
-
+	rb_scan_args(argc, argv, "00:", &rb_options);
 	rugged_parse_diff_options(&opts, rb_options);
 
 	Data_Get_Struct(self, git_tree, tree);
