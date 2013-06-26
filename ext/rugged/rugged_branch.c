@@ -165,33 +165,29 @@ static VALUE rb_git_branch_delete(VALUE self)
 	return Qnil;
 }
 
-typedef struct {
-	VALUE rb_repo;
-	int exception;
-} each_branch_args;
-
-static int cb_branch__each_name(const char *branch_name, git_branch_t branch_type, void *payload)
+static int cb_branch__each_name(const char *branch_name, git_branch_t branch_type, void *data)
 {
-	int *exception = &((each_branch_args*)payload)->exception;
-	rb_protect(rb_yield, rugged_str_new2(branch_name, rb_utf8_encoding()), exception);
-	return *exception ? GIT_ERROR : GIT_OK;
+	struct rugged_cb_payload *payload = data;
+
+	rb_protect(rb_yield, rugged_str_new2(branch_name, rb_utf8_encoding()), &payload->exception);
+
+	return payload->exception ? GIT_ERROR : GIT_OK;
 }
 
-static int cb_branch__each_obj(const char *branch_name, git_branch_t branch_type, void *payload)
+static int cb_branch__each_obj(const char *branch_name, git_branch_t branch_type, void *data)
 {
 	git_reference *branch;
 	git_repository *repo;
-	VALUE rb_repo = ((each_branch_args*)payload)->rb_repo;
-	int *exception = &((each_branch_args*)payload)->exception;
+	struct rugged_cb_payload *payload = data;
 
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	Data_Get_Struct(payload->rb_data, git_repository, repo);
 
 	rugged_exception_check(
 		git_branch_lookup(&branch, repo, branch_name, branch_type)
 	);
 
-	rb_protect(rb_yield, rugged_branch_new(rb_repo, branch), exception);
-	return *exception ? GIT_ERROR : GIT_OK;
+	rb_protect(rb_yield, rugged_branch_new(payload->rb_data, branch), &payload->exception);
+	return payload->exception ? GIT_ERROR : GIT_OK;
 }
 
 static VALUE each_branch(int argc, VALUE *argv, VALUE self, int branch_names_only)
@@ -199,13 +195,13 @@ static VALUE each_branch(int argc, VALUE *argv, VALUE self, int branch_names_onl
 	VALUE rb_repo, rb_filter;
 	git_repository *repo;
 	int error;
-	each_branch_args payload;
+	struct rugged_cb_payload payload;
 	int filter = (GIT_BRANCH_LOCAL | GIT_BRANCH_REMOTE);
 
 	rb_scan_args(argc, argv, "11", &rb_repo, &rb_filter);
 
 	payload.exception = 0;
-	payload.rb_repo = rb_repo;
+	payload.rb_data = rb_repo;
 
 	if (!rb_block_given_p()) {
 		VALUE symbol = branch_names_only ? CSTR2SYM("each_name") : CSTR2SYM("each");

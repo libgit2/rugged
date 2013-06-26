@@ -121,6 +121,11 @@ static inline int rugged_parse_bool(VALUE boolean)
 
 extern VALUE rb_cRuggedRepo;
 
+struct rugged_cb_payload {
+    VALUE rb_data;
+    int exception;
+};
+
 static inline void rugged_check_repo(VALUE rb_repo)
 {
 	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo))
