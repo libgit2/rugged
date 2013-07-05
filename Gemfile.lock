@@ -1,14 +1,28 @@
+PATH
+  remote: .
+  specs:
+    rugged (0.18.0.b1)
+
 GEM
   remote: http://rubygems.org/
   specs:
+    coderay (1.0.9)
+    method_source (0.8.1)
     minitest (3.0.1)
+    pry (0.9.12.2)
+      coderay (~> 1.0.5)
+      method_source (~> 0.8)
+      slop (~> 3.4)
     rake (0.9.2.2)
     rake-compiler (0.7.9)
       rake
+    slop (3.4.5)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
   minitest (~> 3.0.0)
+  pry
   rake-compiler
+  rugged!
