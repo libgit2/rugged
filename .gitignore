@@ -6,3 +6,5 @@ ext/rugged/vendor/libgit2-dist/
 ext/rugged/vendor/mkmf.log
 ext/rugged/libgit2_embed.a
 .yardoc
+vendor/gems
+bin/
