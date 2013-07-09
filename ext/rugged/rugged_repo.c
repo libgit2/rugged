@@ -31,6 +31,7 @@ extern VALUE rb_cRuggedIndex;
 extern VALUE rb_cRuggedConfig;
 extern VALUE rb_cRuggedBackend;
 extern VALUE rb_cRuggedRemote;
+extern VALUE rb_cRuggedReference;
 
 VALUE rb_cRuggedRepo;
 VALUE rb_cRuggedOdbObject;
@@ -780,6 +781,51 @@ static VALUE rb_git_repo_head_orphan(VALUE self)
 
 /*
  *  call-seq:
+ *    repo.head = str
+ *
+ *  Make the repository's +HEAD+ point to the specified reference.
+ */
+static VALUE rb_git_repo_set_head(VALUE self, VALUE rb_head)
+{
+	git_repository *repo;
+	int error;
+
+	Data_Get_Struct(self, git_repository, repo);
+
+	Check_Type(rb_head, T_STRING);
+	error = git_repository_set_head(repo, StringValueCStr(rb_head));
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
+/*
+ *  call-seq:
+ *    repo.head -> ref
+ *
+ *  Retrieve and resolve the reference pointed at by the repository's +HEAD+.
+ *
+ *  Returns +nil+ if +HEAD+ is missing.
+ */
+static VALUE rb_git_repo_get_head(VALUE self)
+{
+	git_repository *repo;
+	git_reference *head;
+	int error;
+
+	Data_Get_Struct(self, git_repository, repo);
+
+	error = git_repository_head(&head, repo);
+	if (error == GIT_ENOTFOUND)
+		return Qnil;
+	else
+		rugged_exception_check(error);
+
+	return rugged_ref_new(rb_cRuggedReference, self, head);
+}
+
+/*
+ *  call-seq:
  *    repo.path -> path
  *
  *  Return the full, normalized path to this repository. For non-bare repositories,
@@ -1383,6 +1429,8 @@ void Init_rugged_repo(void)
 
 	rb_define_method(rb_cRuggedRepo, "head_detached?",  rb_git_repo_head_detached,  0);
 	rb_define_method(rb_cRuggedRepo, "head_orphan?",  rb_git_repo_head_orphan,  0);
+	rb_define_method(rb_cRuggedRepo, "head=", rb_git_repo_set_head, 1);
+	rb_define_method(rb_cRuggedRepo, "head", rb_git_repo_get_head, 0);
 
 	rb_define_method(rb_cRuggedRepo, "merge_base", rb_git_repo_merge_base, -2);
 	rb_define_method(rb_cRuggedRepo, "reset", rb_git_repo_reset, 2);

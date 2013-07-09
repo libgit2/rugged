@@ -1,8 +1,12 @@
 require 'test_helper'
 require 'base64'
 
-class RepositoryTest < Rugged::TestCase
-  include Rugged::RepositoryAccess
+class RepositoryTest < Rugged::SandboxedTestCase
+  def setup
+    super
+
+    @repo = sandbox_init "testrepo.git"
+  end
 
   def test_last_commit
     assert @repo.respond_to? :last_commit
@@ -105,8 +109,20 @@ class RepositoryTest < Rugged::TestCase
 
   def test_lookup_head
     head = @repo.head
+    assert_equal "refs/heads/master", head.name
     assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", head.target
     assert_equal :direct, head.type
+  end
+
+  def test_set_head_ref
+    @repo.head = "refs/heads/packed"
+    assert_equal "refs/heads/packed", @repo.head.name
+  end
+
+  def test_set_head_invalid
+    assert_raises Rugged::ReferenceError do
+      @repo.head = "36060c58702ed4c2a40832c51758d5344201d89a"
+    end
   end
 
   def test_access_a_file
@@ -122,7 +138,7 @@ class RepositoryTest < Rugged::TestCase
   end
 
   def test_garbage_collection
-    Rugged::Repository.new(@path)
+    Rugged::Repository.new(@repo.path)
     ObjectSpace.garbage_collect
   end
 
@@ -132,14 +148,14 @@ class RepositoryTest < Rugged::TestCase
 
   def test_loading_alternates
     alt_path = File.dirname(__FILE__) + '/fixtures/alternate/objects'
-    repo = Rugged::Repository.new(@path, :alternates => [alt_path])
+    repo = Rugged::Repository.new(@repo.path, :alternates => [alt_path])
     assert_equal 40, repo.each_id.to_a.length
     assert repo.read('146ae76773c91e3b1d00cf7a338ec55ae58297e2')
   end
 
   def test_alternates_with_invalid_path_type
     assert_raises TypeError do
-      Rugged::Repository.new(@path, :alternates => [:invalid_input])
+      Rugged::Repository.new(@repo.path, :alternates => [:invalid_input])
     end
   end
 

@@ -61,14 +61,6 @@ module Rugged
       walker.each(&block)
     end
 
-    # Find the HEAD of this repository.
-    #
-    # Returns a Reference.
-    def head
-      ref = Reference.lookup(self, "HEAD")
-      ref.resolve
-    end
-
     # Look up a SHA1.
     #
     # Returns one of the four classes that inherit from Rugged::Object.
