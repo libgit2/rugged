@@ -66,7 +66,7 @@ VALUE rugged_diff_line_new(
 	}
 
 	rb_iv_set(rb_line, "@line_origin", rb_line_origin);
-	rb_iv_set(rb_line, "@content", rugged_str_new(content, content_len, NULL));
+	rb_iv_set(rb_line, "@content", rb_str_new(content, content_len));
 	rb_iv_set(rb_line, "@old_lineno", INT2FIX(old_lineno));
 	rb_iv_set(rb_line, "@new_lineno", INT2FIX(new_lineno));
 

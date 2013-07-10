@@ -46,21 +46,18 @@ VALUE rb_cRuggedCommit;
 static VALUE rb_git_commit_message_GET(VALUE self)
 {
 	git_commit *commit;
-
-#ifdef HAVE_RUBY_ENCODING_H
 	rb_encoding *encoding = rb_utf8_encoding();
 	const char *encoding_name;
-#endif
+	const char *message;
 
 	Data_Get_Struct(self, git_commit, commit);
 
-#ifdef HAVE_RUBY_ENCODING_H
+	message = git_commit_message(commit);
 	encoding_name = git_commit_message_encoding(commit);
 	if (encoding_name != NULL)
 		encoding = rb_enc_find(encoding_name);
-#endif
 
-	return rugged_str_new2(git_commit_message(commit), encoding);
+	return rb_enc_str_new(message, strlen(message), encoding);
 }
 
 /*

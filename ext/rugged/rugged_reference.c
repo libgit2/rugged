@@ -73,7 +73,7 @@ static VALUE rb_git_ref__each(int argc, VALUE *argv, VALUE self, int only_names)
 	if (only_names) {
 		const char *ref_name;
 		while (!exception && (error = git_reference_next_name(&ref_name, iter)) == GIT_OK) {
-			rb_protect(rb_yield, rugged_str_new2(ref_name, rb_utf8_encoding()), &exception);
+			rb_protect(rb_yield, rb_str_new_utf8(ref_name), &exception);
 		}
 	} else {
 		git_reference *ref;
@@ -207,7 +207,7 @@ static VALUE rb_git_ref_peel(VALUE self)
 	} else {
 		git_oid_tostr(oid, sizeof(oid), git_object_id(object));
 		git_object_free(object);
-		return rugged_str_new2(oid, rb_utf8_encoding());
+		return rb_str_new_utf8(oid);
 	}
 }
 
@@ -301,7 +301,7 @@ static VALUE rb_git_ref_target(VALUE self)
 	if (git_reference_type(ref) == GIT_REF_OID) {
 		return rugged_create_oid(git_reference_target(ref));
 	} else {
-		return rugged_str_new2(git_reference_symbolic_target(ref), rb_utf8_encoding());
+		return rb_str_new_utf8(git_reference_symbolic_target(ref));
 	}
 }
 
@@ -382,7 +382,7 @@ static VALUE rb_git_ref_name(VALUE self)
 {
 	git_reference *ref;
 	Data_Get_Struct(self, git_reference, ref);
-	return rugged_str_new2(git_reference_name(ref), rb_utf8_encoding());
+	return rb_str_new_utf8(git_reference_name(ref));
 }
 
 /*
@@ -488,10 +488,7 @@ static VALUE reflog_entry_new(const git_reflog_entry *entry)
 	);
 
 	if ((message = git_reflog_entry_message(entry)) != NULL) {
-		rb_hash_aset(rb_entry,
-			CSTR2SYM("message"),
-			rugged_str_new2(message, NULL)
-		);
+		rb_hash_aset(rb_entry, CSTR2SYM("message"), rb_str_new_utf8(message));
 	}
 
 	return rb_entry;

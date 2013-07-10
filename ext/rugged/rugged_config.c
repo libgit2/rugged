@@ -98,9 +98,7 @@ static VALUE rb_git_config_get(VALUE self, VALUE rb_key)
 		return Qnil;
 
 	rugged_exception_check(error);
-
-	/* Return all config values as ASCII strings */
-	return rugged_str_new2(value, NULL);
+	return rb_str_new_utf8(value);
 }
 
 /*
@@ -180,15 +178,16 @@ static VALUE rb_git_config_delete(VALUE self, VALUE rb_key)
 
 static int cb_config__each_key(const git_config_entry *entry, void *opaque)
 {
-	rb_funcall((VALUE)opaque, rb_intern("call"), 1, rugged_str_new2(entry->name, NULL));
+	rb_funcall((VALUE)opaque, rb_intern("call"), 1, rb_str_new_utf8(entry->name));
 	return GIT_OK;
 }
 
 static int cb_config__each_pair(const git_config_entry *entry, void *opaque)
 {
 	rb_funcall((VALUE)opaque, rb_intern("call"), 2,
-		rugged_str_new2(entry->name, NULL),
-		rugged_str_new2(entry->value, NULL));
+		rb_str_new_utf8(entry->name),
+		rb_str_new_utf8(entry->value)
+	);
 
 	return GIT_OK;
 }
@@ -196,8 +195,9 @@ static int cb_config__each_pair(const git_config_entry *entry, void *opaque)
 static int cb_config__to_hash(const git_config_entry *entry, void *opaque)
 {
 	rb_hash_aset((VALUE)opaque,
-		rugged_str_new2(entry->name, NULL),
-		rugged_str_new2(entry->value, NULL));
+		rb_str_new_utf8(entry->name),
+		rb_str_new_utf8(entry->value)
+	);
 
 	return GIT_OK;
 }
