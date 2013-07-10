@@ -109,7 +109,7 @@ static VALUE rb_git_tag_name_GET(VALUE self)
 	git_tag *tag;
 	Data_Get_Struct(self, git_tag, tag);
 
-	return rugged_str_new2(git_tag_name(tag), NULL);
+	return rb_str_new_utf8(git_tag_name(tag));
 }
 
 /*
@@ -156,7 +156,7 @@ static VALUE rb_git_tag_message_GET(VALUE self)
 	if (!message)
 		return Qnil;
 
-	return rugged_str_new2(message, NULL);
+	return rb_str_new_utf8(message);
 }
 
 /*
@@ -306,7 +306,7 @@ static VALUE rb_git_tag_each(int argc, VALUE *argv, VALUE self)
 	rugged_exception_check(error);
 
 	for (i = 0; !exception && i < tags.count; ++i)
-		rb_protect(rb_yield, rugged_str_new2(tags.strings[i], NULL), &exception);
+		rb_protect(rb_yield, rb_str_new_utf8(tags.strings[i]), &exception);
 
 	git_strarray_free(&tags);
 

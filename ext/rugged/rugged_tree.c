@@ -44,7 +44,7 @@ static VALUE rb_git_treeentry_fromC(const git_tree_entry *entry)
 
 	rb_entry = rb_hash_new();
 
-	rb_hash_aset(rb_entry, CSTR2SYM("name"), rugged_str_new2(git_tree_entry_name(entry), NULL));
+	rb_hash_aset(rb_entry, CSTR2SYM("name"), rb_str_new_utf8(git_tree_entry_name(entry)));
 	rb_hash_aset(rb_entry, CSTR2SYM("oid"), rugged_create_oid(git_tree_entry_id(entry)));
 
 	rb_hash_aset(rb_entry, CSTR2SYM("filemode"), INT2FIX(git_tree_entry_filemode(entry)));
@@ -187,8 +187,9 @@ static VALUE rb_git_tree_each(VALUE self)
 static int rugged__treewalk_cb(const char *root, const git_tree_entry *entry, void *proc)
 {
 	rb_funcall((VALUE)proc, rb_intern("call"), 2,
-		rugged_str_new2(root, NULL),
-		rb_git_treeentry_fromC(entry));
+		rb_str_new_utf8(root),
+		rb_git_treeentry_fromC(entry)
+	);
 
 	return GIT_OK;
 }
@@ -387,10 +388,7 @@ static VALUE rb_git_tree_diff(int argc, VALUE *argv, VALUE self)
 	VALUE owner, rb_other, rb_options;
 	int error;
 
-	if (rb_scan_args(argc, argv, "11", &rb_other, &rb_options) == 2) {
-		Check_Type(rb_options, T_HASH);
-	}
-
+	rb_scan_args(argc, argv, "10:", &rb_other, &rb_options);
 	rugged_parse_diff_options(&opts, rb_options);
 
 	Data_Get_Struct(self, git_tree, tree);
@@ -456,10 +454,7 @@ static VALUE rb_git_tree_diff_workdir(int argc, VALUE *argv, VALUE self)
 	VALUE owner, rb_options;
 	int error;
 
-	if (rb_scan_args(argc, argv, "01", &rb_options) == 1) {
-		Check_Type(rb_options, T_HASH);
-	}
-
+	rb_scan_args(argc, argv, "00:", &rb_options);
 	rugged_parse_diff_options(&opts, rb_options);
 
 	Data_Get_Struct(self, git_tree, tree);

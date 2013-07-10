@@ -69,7 +69,7 @@ static VALUE rb_git_odbobj_data(VALUE self)
 {
 	git_odb_object *obj;
 	Data_Get_Struct(self, git_odb_object, obj);
-	return rugged_str_ascii(git_odb_object_data(obj), git_odb_object_size(obj));
+	return rb_str_new(git_odb_object_data(obj), git_odb_object_size(obj));
 }
 
 /*
@@ -175,17 +175,6 @@ static void load_alternates(git_repository *repo, VALUE rb_alternates)
 	rugged_exception_check(error);
 }
 
-static void set_repository_options(git_repository *repo, VALUE rb_options)
-{
-	if (NIL_P(rb_options))
-		return;
-
-	Check_Type(rb_options, T_HASH);
-
-	/* Check for `:alternates` */
-	load_alternates(repo, rb_hash_aref(rb_options, CSTR2SYM("alternates")));
-}
-
 /*
  *  call-seq:
  *    Repository.bare(path[, alternates]) -> repository
@@ -248,12 +237,16 @@ static VALUE rb_git_repo_new(int argc, VALUE *argv, VALUE klass)
 	int error = 0;
 	VALUE rb_path, rb_options;
 
-	rb_scan_args(argc, argv, "11", &rb_path, &rb_options);
+	rb_scan_args(argc, argv, "10:", &rb_path, &rb_options);
 	Check_Type(rb_path, T_STRING);
 
 	error = git_repository_open(&repo, StringValueCStr(rb_path));
 	rugged_exception_check(error);
-	set_repository_options(repo, rb_options);
+
+	if (!NIL_P(rb_options)) {
+		/* Check for `:alternates` */
+		load_alternates(repo, rb_hash_aref(rb_options, CSTR2SYM("alternates")));
+	}
 
 	return rugged_repo_new(klass, repo);
 }
@@ -837,7 +830,7 @@ static VALUE rb_git_repo_path(VALUE self)
 {
 	git_repository *repo;
 	Data_Get_Struct(self, git_repository, repo);
-	return rugged_str_new2(git_repository_path(repo), NULL);
+	return rb_str_new_utf8(git_repository_path(repo));
 }
 
 /*
@@ -861,7 +854,7 @@ static VALUE rb_git_repo_workdir(VALUE self)
 	Data_Get_Struct(self, git_repository, repo);
 	workdir = git_repository_workdir(repo);
 
-	return workdir ? rugged_str_new2(workdir, NULL) : Qnil;
+	return workdir ? rb_str_new_utf8(workdir) : Qnil;
 }
 
 /*
@@ -936,7 +929,7 @@ static VALUE rb_git_repo_discover(int argc, VALUE *argv, VALUE self)
 	);
 
 	rugged_exception_check(error);
-	return rugged_str_new2(repository_path, NULL);
+	return rb_str_new_utf8(repository_path);
 }
 
 static VALUE flags_to_rb(unsigned int flags)
@@ -967,8 +960,7 @@ static VALUE flags_to_rb(unsigned int flags)
 static int rugged__status_cb(const char *path, unsigned int flags, void *payload)
 {
 	rb_funcall((VALUE)payload, rb_intern("call"), 2,
-		rugged_str_new2(path, NULL),
-		flags_to_rb(flags)
+		rb_str_new_utf8(path), flags_to_rb(flags)
 	);
 
 	return GIT_OK;
@@ -1207,8 +1199,8 @@ static int rugged__push_status_cb(const char *ref, const char *msg, void *payloa
 {
 	VALUE rb_result_hash = (VALUE)payload;
 	if (msg != NULL)
-		rb_hash_aset(rb_result_hash, rugged_str_new2(ref, rb_utf8_encoding()),
-			rugged_str_new2(msg, NULL));
+		rb_hash_aset(rb_result_hash, rb_str_new_utf8(ref), rb_str_new_utf8(msg));
+
 	return GIT_OK;
 }
 
@@ -1355,7 +1347,7 @@ static VALUE rb_git_repo_get_namespace(VALUE self)
 	Data_Get_Struct(self, git_repository, repo);
 
 	namespace = git_repository_get_namespace(repo);
-	return namespace ? rugged_str_new2(namespace, NULL) : Qnil;
+	return namespace ? rb_str_new_utf8(namespace) : Qnil;
 }
 
 /*

@@ -169,7 +169,7 @@ static int cb_branch__each_name(const char *branch_name, git_branch_t branch_typ
 {
 	struct rugged_cb_payload *payload = data;
 
-	rb_protect(rb_yield, rugged_str_new2(branch_name, rb_utf8_encoding()), &payload->exception);
+	rb_protect(rb_yield, rb_str_new_utf8(branch_name), &payload->exception);
 
 	return payload->exception ? GIT_ERROR : GIT_OK;
 }

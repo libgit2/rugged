@@ -76,7 +76,7 @@ class CommitWriteTest < Rugged::TestCase
       :tree => "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
 
     commit = @repo.lookup(oid)
-    assert_equal 3600, commit.committer[:time_offset]
+    assert_equal 3600, commit.committer[:time].utc_offset
   end
 
   def test_write_invalid_parents

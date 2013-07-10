@@ -225,7 +225,7 @@ static VALUE rugged_rhead_new(git_remote_head *head)
 	rb_hash_aset(rb_head, CSTR2SYM("oid"), rugged_create_oid(&head->oid));
 	rb_hash_aset(rb_head, CSTR2SYM("loid"),
 			git_oid_iszero(&head->loid) ? Qnil : rugged_create_oid(&head->loid));
-	rb_hash_aset(rb_head, CSTR2SYM("name"), rugged_str_new2(head->name, rb_utf8_encoding()));
+	rb_hash_aset(rb_head, CSTR2SYM("name"), rb_str_new_utf8(head->name));
 
 	return rb_head;
 }
@@ -292,7 +292,7 @@ static VALUE rb_git_remote_name(VALUE self)
 
 	name = git_remote_name(remote);
 
-	return name ? rugged_str_new2(name, rb_utf8_encoding()) : Qnil;
+	return name ? rb_str_new_utf8(name) : Qnil;
 }
 
 /*
@@ -307,7 +307,7 @@ static VALUE rb_git_remote_url(VALUE self)
 	git_remote *remote;
 	Data_Get_Struct(self, git_remote, remote);
 
-	return rugged_str_new2(git_remote_url(remote), NULL);
+	return rb_str_new_utf8(git_remote_url(remote));
 }
 
 /*
@@ -347,7 +347,7 @@ static VALUE rb_git_remote_push_url(VALUE self)
 	Data_Get_Struct(self, git_remote, remote);
 
 	push_url = git_remote_pushurl(remote);
-	return push_url ? rugged_str_new2(push_url, NULL) : Qnil;
+	return push_url ? rb_str_new_utf8(push_url) : Qnil;
 }
 
 /*
@@ -521,7 +521,7 @@ static int cb_remote__update_tips(const char *refname, const git_oid *src, const
 {
 	VALUE rb_args = rb_ary_new2(3);
 	int *exception = (int *)payload;
-	rb_ary_push(rb_args, rugged_str_new2(refname, rb_utf8_encoding()));
+	rb_ary_push(rb_args, rb_str_new_utf8(refname));
 	rb_ary_push(rb_args, git_oid_iszero(src) ? Qnil : rugged_create_oid(src));
 	rb_ary_push(rb_args, git_oid_iszero(dest) ? Qnil : rugged_create_oid(dest));
 
@@ -667,9 +667,7 @@ static VALUE rb_git_remote_save(VALUE self)
 
 static int cb_remote__rename_problem(const char* refspec_name, void *payload)
 {
-
-	rb_ary_push((VALUE) payload,
-			rugged_str_new2(refspec_name, rb_utf8_encoding()));
+	rb_ary_push((VALUE) payload, rb_str_new_utf8(refspec_name));
 	return 0;
 }
 

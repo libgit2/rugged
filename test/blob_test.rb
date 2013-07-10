@@ -76,14 +76,12 @@ class BlobTest < Rugged::TestCase
   end
 
   def test_blob_text_default_encoding
-    skip unless String.method_defined?(:encoding)
     oid = "7771329dfa3002caf8c61a0ceb62a31d09023f37"
     blob = @repo.lookup(oid)
     assert_equal Encoding::UTF_8, blob.text.encoding
   end
 
   def test_blob_text_set_encoding
-    skip unless String.method_defined?(:encoding)
     oid = "7771329dfa3002caf8c61a0ceb62a31d09023f37"
     blob = @repo.lookup(oid)
     assert_equal Encoding::ASCII_8BIT, blob.text(0, Encoding::ASCII_8BIT).encoding

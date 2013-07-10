@@ -124,7 +124,7 @@ static VALUE rb_git_hex_to_raw(VALUE self, VALUE hex)
 	Check_Type(hex, T_STRING);
 	rugged_exception_check(git_oid_fromstr(&oid, StringValueCStr(hex)));
 
-	return rugged_str_ascii((const char *)oid.id, 20);
+	return rb_str_new((const char *)oid.id, 20);
 }
 
 /*
@@ -150,7 +150,7 @@ static VALUE rb_git_raw_to_hex(VALUE self, VALUE raw)
 	git_oid_fromraw(&oid, (const unsigned char *)RSTRING_PTR(raw));
 	git_oid_fmt(out, &oid);
 
-	return rugged_str_new(out, 40, NULL);
+	return rb_str_new(out, 40);
 }
 
 /*
@@ -175,7 +175,7 @@ static VALUE rb_git_prettify_message(VALUE self, VALUE rb_message, VALUE rb_stri
 	message_len = git_message_prettify(message, message_len, StringValueCStr(rb_message), strip_comments);
 	rugged_exception_check(message_len);
 
-	result = rugged_str_new(message, message_len - 1, rb_utf8_encoding());
+	result = rb_enc_str_new(message, message_len - 1, rb_utf8_encoding());
 	xfree(message);
 
 	return result;
@@ -320,9 +320,7 @@ VALUE rugged_strarray_to_rb_ary(git_strarray *str_array)
 	size_t i;
 
 	for (i = 0; i < str_array->count; ++i) {
-		rb_ary_push(
-			rb_array,
-			rugged_str_new2(str_array->strings[i], rb_utf8_encoding()));
+		rb_ary_push(rb_array, rb_str_new_utf8(str_array->strings[i]));
 	}
 
 	return rb_array;
