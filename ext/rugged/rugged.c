@@ -335,6 +335,18 @@ void rugged_rb_ary_to_strarray(VALUE rb_array, git_strarray *str_array)
 	str_array->strings = NULL;
 	str_array->count = 0;
 
+	if (NIL_P(rb_array))
+		return;
+
+	if (TYPE(rb_array) == T_STRING) {
+		str_array->count = 1;
+		str_array->strings = xmalloc(sizeof(char *));
+		str_array->strings[0] = StringValueCStr(rb_array);
+		return;
+	}
+
+	Check_Type(rb_array, T_ARRAY);
+
 	for (i = 0; i < RARRAY_LEN(rb_array); ++i)
 		Check_Type(rb_ary_entry(rb_array, i), T_STRING);
 

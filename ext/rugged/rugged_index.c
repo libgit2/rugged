@@ -381,10 +381,7 @@ static VALUE rb_git_index_add_all(int argc, VALUE *argv, VALUE self)
 			flags |= GIT_INDEX_ADD_CHECK_PATHSPEC;
 	}
 
-	if (NIL_P(rb_pathspecs))
-		rb_pathspecs = rb_ary_new();
-
-	rugged_rb_ary_to_strarray(rb_ary_to_ary(rb_pathspecs), &pathspecs);
+	rugged_rb_ary_to_strarray(rb_pathspecs, &pathspecs);
 
 	error = git_index_add_all(index, &pathspecs, flags,
 		rb_block_given_p() ? rugged__index_matched_path_cb : NULL, &exception);
@@ -393,8 +390,8 @@ static VALUE rb_git_index_add_all(int argc, VALUE *argv, VALUE self)
 
 	if (exception)
 		rb_jump_tag(exception);
-	rugged_exception_check(error);
 
+	rugged_exception_check(error);
 	return Qnil;
 }
 
@@ -434,10 +431,7 @@ static VALUE rb_git_index_update_all(int argc, VALUE *argv, VALUE self)
 
 	rb_scan_args(argc, argv, "01", &rb_pathspecs);
 
-	if (NIL_P(rb_pathspecs))
-		rb_pathspecs = rb_ary_new();
-
-	rugged_rb_ary_to_strarray(rb_ary_to_ary(rb_pathspecs), &pathspecs);
+	rugged_rb_ary_to_strarray(rb_pathspecs, &pathspecs);
 
 	error = git_index_update_all(index, &pathspecs,
 		rb_block_given_p() ? rugged__index_matched_path_cb : NULL, &exception);
