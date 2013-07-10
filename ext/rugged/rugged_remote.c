@@ -186,7 +186,7 @@ static VALUE rb_git_remote_disconnect(VALUE self)
  */
 static VALUE rb_git_remote_connect(VALUE self, VALUE rb_direction)
 {
-	int error, direction = 0;
+	int error, direction = 0, exception = 0;
 	git_remote *remote;
 	ID id_direction;
 
@@ -206,8 +206,13 @@ static VALUE rb_git_remote_connect(VALUE self, VALUE rb_direction)
 	error = git_remote_connect(remote, direction);
 	rugged_exception_check(error);
 
-	if (rb_block_given_p())
-		rb_ensure(rb_yield, self, rb_git_remote_disconnect, self);
+	if (rb_block_given_p()) {
+		rb_protect(rb_yield, self, &exception);
+		git_remote_disconnect(remote);
+
+		if (exception)
+			rb_jump_tag(exception);
+	}
 
 	return Qnil;
 }
@@ -227,8 +232,9 @@ static VALUE rugged_rhead_new(git_remote_head *head)
 
 static int cb_remote__ls(git_remote_head *head, void *payload)
 {
-	rb_funcall((VALUE)payload, rb_intern("call"), 1, rugged_rhead_new(head));
-	return GIT_OK;
+	int *exception = (int *)payload;
+	rb_protect(rb_yield, rugged_rhead_new(head), exception);
+	return *exception ? GIT_ERROR : GIT_OK;
 }
 
 /*
@@ -255,14 +261,17 @@ static int cb_remote__ls(git_remote_head *head, void *payload)
  */
 static VALUE rb_git_remote_ls(VALUE self)
 {
-	int error;
+	int error, exception = 0;
 	git_remote *remote;
 	Data_Get_Struct(self, git_remote, remote);
 
 	if (!rb_block_given_p())
 		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("ls"));
 
-	error = git_remote_ls(remote, &cb_remote__ls, (void *)rb_block_proc());
+	error = git_remote_ls(remote, &cb_remote__ls, &exception);
+
+	if (exception)
+		rb_jump_tag(exception);
 	rugged_exception_check(error);
 
 	return Qnil;
@@ -508,27 +517,17 @@ static VALUE rb_git_remote_download(VALUE self)
 	return Qnil;
 }
 
-static int cb_remote__update_tips(const char *refname, const git_oid *src, const git_oid *dest, void *data)
+static int cb_remote__update_tips(const char *refname, const git_oid *src, const git_oid *dest, void *payload)
 {
-	rb_yield_values(
-			3,
-			rugged_str_new2(refname, rb_utf8_encoding()),
-			git_oid_iszero(src) ? Qnil : rugged_create_oid(src),
-			git_oid_iszero(dest) ? Qnil : rugged_create_oid(dest));
+	VALUE rb_args = rb_ary_new2(3);
+	int *exception = (int *)payload;
+	rb_ary_push(rb_args, rugged_str_new2(refname, rb_utf8_encoding()));
+	rb_ary_push(rb_args, git_oid_iszero(src) ? Qnil : rugged_create_oid(src));
+	rb_ary_push(rb_args, git_oid_iszero(dest) ? Qnil : rugged_create_oid(dest));
 
-	return GIT_OK;
-}
+	rb_protect(rb_yield_splat, rb_args, exception);
 
-static VALUE rb_git_remote__update_tips(VALUE self)
-{
-	git_remote *remote;
-	Data_Get_Struct(self, git_remote, remote);
-
-	rugged_exception_check(
-		git_remote_update_tips(remote)
-	);
-
-	return Qnil;
+	return *exception ? GIT_ERROR : GIT_OK;
 }
 
 /*
@@ -550,23 +549,26 @@ static VALUE rb_git_remote_update_tips(VALUE self)
 	Data_Get_Struct(self, git_remote, remote);
 
 	if (rb_block_given_p()) {
-		int exception = 0;
+		int exception = 0, error;
 		git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
 
+		callbacks.payload = &exception;
 		callbacks.update_tips = &cb_remote__update_tips;
 		rugged_exception_check(
 			git_remote_set_callbacks(remote, &callbacks)
 		);
 
-		rb_protect(rb_git_remote__update_tips, self, &exception);
+		error = git_remote_update_tips(remote);
 
 		callbacks.update_tips = NULL;
-		rugged_exception_check(
-			git_remote_set_callbacks(remote, &callbacks)
-		);
+		// Don't overwrite the first error we've seen
+		if (!error) error = git_remote_set_callbacks(remote, &callbacks);
+		else git_remote_set_callbacks(remote, &callbacks);
 
 		if (exception)
 			rb_jump_tag(exception);
+
+		rugged_exception_check(error);
 	} else {
 		rugged_exception_check(
 			git_remote_update_tips(remote)
