@@ -27,7 +27,7 @@
 extern VALUE rb_cRuggedDiff;
 VALUE rb_cRuggedDiffDelta;
 
-static VALUE rb_git_delta_file_fromC(const git_diff_file *file)
+VALUE rb_git_delta_file_fromC(const git_diff_file *file)
 {
 	VALUE rb_file;
 

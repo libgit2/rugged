@@ -31,6 +31,9 @@ extern VALUE rb_cRuggedIndex;
 extern VALUE rb_cRuggedConfig;
 extern VALUE rb_cRuggedBackend;
 extern VALUE rb_cRuggedRemote;
+extern VALUE rb_cRuggedCommit;
+extern VALUE rb_cRuggedTag;
+extern VALUE rb_cRuggedTree;
 extern VALUE rb_cRuggedReference;
 
 VALUE rb_cRuggedRepo;
@@ -1417,6 +1420,256 @@ static VALUE rb_git_repo_default_signature(VALUE self) {
 	return rb_signature;
 }
 
+static VALUE rugged__block_yield_splat(VALUE args) {
+	VALUE block = rb_ary_shift(args);
+	int n = RARRAY_LEN(args);
+	if (n == 0) {
+		return rb_funcall(block, rb_intern("call"), 0);
+	} else {
+		int i;
+		VALUE *argv;
+		argv = ALLOCA_N(VALUE, n);
+
+		for (i=0; i<n; i++) {
+			argv[i] = rb_ary_entry(args, i);
+		}
+
+		return rb_funcall2(block, rb_intern("call"), n, argv);
+	}
+}
+
+void rugged__checkout_progress_cb(
+	const char *path,
+	size_t completed_steps,
+	size_t total_steps,
+	void *payload
+) {
+	VALUE args = rb_ary_new2(4);
+	rb_ary_push(args, (VALUE)payload);
+	rb_ary_push(args, path == NULL ? Qnil : rb_str_new2(path));
+	rb_ary_push(args, INT2FIX(completed_steps));
+	rb_ary_push(args, INT2FIX(total_steps));
+	rugged__block_yield_splat(args);
+}
+
+static int rugged__checkout_notify_cb(
+	git_checkout_notify_t why,
+	const char *path,
+	const git_diff_file *baseline,
+	const git_diff_file *target,
+	const git_diff_file *workdir,
+	void *payload
+) {
+	VALUE args = rb_ary_new2(5);
+	rb_ary_push(args, (VALUE)payload);
+
+	switch (why) {
+		case GIT_CHECKOUT_NOTIFY_CONFLICT:
+			rb_ary_push(args, CSTR2SYM("conflict"));
+		break;
+
+		case GIT_CHECKOUT_NOTIFY_DIRTY:
+			rb_ary_push(args, CSTR2SYM("dirty"));
+		break;
+
+		case GIT_CHECKOUT_NOTIFY_UPDATED:
+			rb_ary_push(args, CSTR2SYM("updated"));
+		break;
+
+		case GIT_CHECKOUT_NOTIFY_UNTRACKED:
+			rb_ary_push(args, CSTR2SYM("untracked"));
+		break;
+
+		case GIT_CHECKOUT_NOTIFY_IGNORED:
+			rb_ary_push(args, CSTR2SYM("ignored"));
+		break;
+
+		default:
+			rb_ary_push(args, CSTR2SYM("unknown"));
+	}
+
+	rb_ary_push(args, rb_git_delta_file_fromC(baseline));
+	rb_ary_push(args, rb_git_delta_file_fromC(target));
+	rb_ary_push(args, rb_git_delta_file_fromC(workdir));
+	rugged__block_yield_splat(args);
+
+	return GIT_OK;
+}
+
+/**
+ * The caller has to free the returned git_checkout_opts paths strings array.
+ */
+static void rugged_parse_checkout_options(git_checkout_opts *opts, VALUE rb_options)
+{
+	if (!NIL_P(rb_options)) {
+		VALUE rb_value;
+		Check_Type(rb_options, T_HASH);
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("progress"));
+		if (!NIL_P(rb_value)) {
+			opts->progress_cb = &rugged__checkout_progress_cb;
+			opts->progress_payload = (void *)rb_value;
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("notify"));
+		if (!NIL_P(rb_value)) {
+			opts->notify_cb = &rugged__checkout_notify_cb;
+			opts->notify_payload = (void *)rb_value;
+		}
+
+		if (!NIL_P(rb_value = rb_hash_aref(rb_options, CSTR2SYM("strategy")))) {
+			int i;
+
+			rb_value = rb_ary_to_ary(rb_value);
+			for (i = 0; i < RARRAY_LEN(rb_value); ++i) {
+				VALUE rb_strategy = rb_ary_entry(rb_value, i);
+
+				if (rb_strategy == CSTR2SYM("safe")) {
+					opts->checkout_strategy |= GIT_CHECKOUT_SAFE;
+				} else if (rb_strategy == CSTR2SYM("safe_create")) {
+					opts->checkout_strategy |= GIT_CHECKOUT_SAFE_CREATE;
+				} else if (rb_strategy == CSTR2SYM("force")) {
+					opts->checkout_strategy |= GIT_CHECKOUT_FORCE;
+				} else if (rb_strategy == CSTR2SYM("allow_conflicts")) {
+					opts->checkout_strategy |= GIT_CHECKOUT_ALLOW_CONFLICTS;
+				} else if (rb_strategy == CSTR2SYM("remove_untracked")) {
+					opts->checkout_strategy |= GIT_CHECKOUT_REMOVE_UNTRACKED;
+				} else if (rb_strategy == CSTR2SYM("remove_ignored")) {
+					opts->checkout_strategy |= GIT_CHECKOUT_REMOVE_IGNORED;
+				} else if (rb_strategy == CSTR2SYM("update_only")) {
+					opts->checkout_strategy |= GIT_CHECKOUT_UPDATE_ONLY;
+				} else if (rb_strategy == CSTR2SYM("dont_update_index")) {
+					opts->checkout_strategy |= GIT_CHECKOUT_DONT_UPDATE_INDEX;
+				} else if (rb_strategy == CSTR2SYM("no_refresh")) {
+					opts->checkout_strategy |= GIT_CHECKOUT_NO_REFRESH;
+				} else if (rb_strategy == CSTR2SYM("disable_pathspec_match")) {
+					opts->checkout_strategy |= GIT_CHECKOUT_DISABLE_PATHSPEC_MATCH;
+				} else if (rb_strategy == CSTR2SYM("skip_locked_directories")) {
+					opts->checkout_strategy |= GIT_CHECKOUT_SKIP_LOCKED_DIRECTORIES;
+				} else if (rb_strategy == CSTR2SYM("skip_unmerged")) {
+					opts->checkout_strategy |= GIT_CHECKOUT_SKIP_UNMERGED;
+				} else if (rb_strategy == CSTR2SYM("use_ours")) {
+					opts->checkout_strategy |= GIT_CHECKOUT_USE_OURS;
+				} else if (rb_strategy == CSTR2SYM("use_theirs")) {
+					opts->checkout_strategy |= GIT_CHECKOUT_USE_THEIRS;
+				} else if (rb_strategy == CSTR2SYM("update_submodules")) {
+					opts->checkout_strategy |= GIT_CHECKOUT_UPDATE_SUBMODULES;
+				} else if (rb_strategy == CSTR2SYM("update_submodules_if_changed")) {
+					opts->checkout_strategy |= GIT_CHECKOUT_UPDATE_SUBMODULES_IF_CHANGED;
+				} else if (rb_strategy != CSTR2SYM("none")) {
+					rb_raise(rb_eArgError, "Unknown checkout strategy");
+				}
+			}
+		}
+
+		if (!NIL_P(rb_value = rb_hash_aref(rb_options, CSTR2SYM("notify_flags")))) {
+			int i;
+
+			rb_value = rb_ary_to_ary(rb_value);
+			for (i = 0; i < RARRAY_LEN(rb_value); ++i) {
+				VALUE rb_notify_flag = rb_ary_entry(rb_value, i);
+
+				if (rb_notify_flag == CSTR2SYM("conflict")) {
+					opts->notify_flags |= GIT_CHECKOUT_NOTIFY_CONFLICT;
+				} else if (rb_notify_flag == CSTR2SYM("dirty")) {
+					opts->notify_flags |= GIT_CHECKOUT_NOTIFY_DIRTY;
+				} else if (rb_notify_flag == CSTR2SYM("updated")) {
+					opts->notify_flags |= GIT_CHECKOUT_NOTIFY_UPDATED;
+				} else if (rb_notify_flag == CSTR2SYM("untracked")) {
+					opts->notify_flags |= GIT_CHECKOUT_NOTIFY_UNTRACKED;
+				} else if (rb_notify_flag == CSTR2SYM("ignored")) {
+					opts->notify_flags |= GIT_CHECKOUT_NOTIFY_IGNORED;
+				} else if (rb_notify_flag == CSTR2SYM("all")) {
+					opts->notify_flags |= GIT_CHECKOUT_NOTIFY_ALL;
+				} else if (rb_notify_flag != CSTR2SYM("none")) {
+					rb_raise(rb_eArgError, "Unknown checkout notify flag");
+				}
+			}
+		}
+
+		opts->disable_filters = RTEST(rb_hash_aref(rb_options, CSTR2SYM("disable_filters")));
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("dir_mode"));
+		if (!NIL_P(rb_value)) {
+			opts->notify_cb = rugged__checkout_notify_cb;
+			opts->notify_payload = (void *)rb_value;
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("paths"));
+		if (!NIL_P(rb_value)) {
+			int i;
+			Check_Type(rb_value, T_ARRAY);
+
+			for (i = 0; i < RARRAY_LEN(rb_value); ++i)
+				Check_Type(rb_ary_entry(rb_value, i), T_STRING);
+
+			opts->paths.count = RARRAY_LEN(rb_value);
+			opts->paths.strings = xmalloc(opts->paths.count * sizeof(char *));
+
+			for (i = 0; i < RARRAY_LEN(rb_value); ++i) {
+				VALUE rb_path = rb_ary_entry(rb_value, i);
+				opts->paths.strings[i] = StringValueCStr(rb_path);
+			}
+		}
+	}
+}
+
+/**
+ *  call-seq:
+ *    repo.checkout_tree(treeish[, options])
+ *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :progress ::
+ *
+ *  :notify ::
+ *
+ *  :strategy ::
+ *
+ *  :disable_filters ::
+ *
+ *  :dir_mode ::
+ *
+ *  :file_mode ::
+ *
+ *  :file_open_flags ::
+ *
+ *  :notify_flags ::
+ *
+ *  :paths ::
+ *
+ *  :baseline ::
+ *
+ *  :target_directory ::
+ *
+ */
+static VALUE rb_git_checkout_tree(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_treeish, rb_options;
+	git_repository *repo;
+	git_object *treeish;
+	git_checkout_opts opts = GIT_CHECKOUT_OPTS_INIT;
+	int error;
+
+	rb_scan_args(argc, argv, "11", &rb_treeish, &rb_options);
+
+	if (!rb_obj_is_kind_of(rb_treeish, rb_cRuggedCommit) &&
+			!rb_obj_is_kind_of(rb_treeish, rb_cRuggedTag) &&
+			!rb_obj_is_kind_of(rb_treeish, rb_cRuggedTree))
+		rb_raise(rb_eTypeError, "Expected Rugged::Commit, Rugged::Tag or Rugged::Tree");
+
+	Data_Get_Struct(self, git_repository, repo);
+	Data_Get_Struct(rb_treeish, git_object, treeish);
+
+	rugged_parse_checkout_options(&opts, rb_options);
+
+	error = git_checkout_tree(repo, treeish, &opts);
+	xfree(opts.paths.strings);
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
 void Init_rugged_repo(void)
 {
 	id_call = rb_intern("call");
@@ -1472,6 +1725,8 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "ahead_behind", rb_git_repo_ahead_behind, 2);
 
 	rb_define_method(rb_cRuggedRepo, "default_signature", rb_git_repo_default_signature, 0);
+
+	rb_define_method(rb_cRuggedRepo, "checkout_tree", rb_git_checkout_tree, -1);
 
 	rb_cRuggedOdbObject = rb_define_class_under(rb_mRugged, "OdbObject", rb_cObject);
 	rb_define_method(rb_cRuggedOdbObject, "data",  rb_git_odbobj_data,  0);

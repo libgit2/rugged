@@ -478,3 +478,35 @@ class RepositoryPushTest < Rugged::SandboxedTestCase
     assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @remote_repo.ref("refs/heads/master").target
   end
 end
+
+class RepositoryCheckoutTest < Rugged::SandboxedTestCase
+  def setup
+    super
+    @repo = sandbox_init("testrepo")
+  end
+
+  def test_checkout_tree_with_commit
+    @repo.checkout_tree(@repo.rev_parse("refs/heads/dir"), :strategy => :force)
+    @repo.head = "refs/heads/dir"
+
+    assert File.exists?(File.join(@repo.workdir, "README"))
+    assert File.exists?(File.join(@repo.workdir, "branch_file.txt"))
+    assert File.exists?(File.join(@repo.workdir, "new.txt"))
+    assert File.exists?(File.join(@repo.workdir, "a/b.txt"))
+
+    refute File.exists?(File.join(@repo.workdir, "ab"))
+
+    @repo.checkout_tree(@repo.rev_parse("refs/heads/subtrees"), :strategy => :safe)
+    @repo.head = "refs/heads/subtrees"
+
+    assert File.exists?(File.join(@repo.workdir, "README"))
+    assert File.exists?(File.join(@repo.workdir, "branch_file.txt"))
+    assert File.exists?(File.join(@repo.workdir, "new.txt"))
+    assert File.exists?(File.join(@repo.workdir, "ab/4.txt"))
+    assert File.exists?(File.join(@repo.workdir, "ab/c/3.txt"))
+    assert File.exists?(File.join(@repo.workdir, "ab/de/2.txt"))
+    assert File.exists?(File.join(@repo.workdir, "ab/de/fgh/1.txt"))
+
+    refute File.exists?(File.join(@repo.workdir, "a"))
+  end
+end
