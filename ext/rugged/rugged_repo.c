@@ -1044,8 +1044,9 @@ static VALUE rb_git_repo_status(int argc, VALUE *argv, VALUE self)
 
 static int rugged__each_id_cb(const git_oid *id, void *payload)
 {
-	rb_yield(rugged_create_oid(id));
-	return 0;
+	int *exception = (int *)payload;
+	rb_protect(rb_yield, rugged_create_oid(id), exception);
+	return *exception ? GIT_ERROR : GIT_OK;
 }
 
 /*
@@ -1061,7 +1062,7 @@ static VALUE rb_git_repo_each_id(VALUE self)
 {
 	git_repository *repo;
 	git_odb *odb;
-	int error;
+	int error, exception = 0;
 
 	if (!rb_block_given_p())
 		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_id"));
@@ -1071,10 +1072,13 @@ static VALUE rb_git_repo_each_id(VALUE self)
 	error = git_repository_odb(&odb, repo);
 	rugged_exception_check(error);
 
-	error = git_odb_foreach(odb, &rugged__each_id_cb, NULL);
+	error = git_odb_foreach(odb, &rugged__each_id_cb, &exception);
 	git_odb_free(odb);
 
+	if (exception)
+		rb_jump_tag(exception);
 	rugged_exception_check(error);
+
 	return Qnil;
 }
 

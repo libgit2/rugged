@@ -271,16 +271,16 @@ static VALUE rb_git_note_remove(VALUE self, VALUE rb_data)
 	return Qtrue;
 }
 
-static int cb_note__each(const git_oid *blob_id, const git_oid *annotated_object_id, void *payload)
+static int cb_note__each(const git_oid *blob_id, const git_oid *annotated_object_id, void *data)
 {
-	VALUE rb_repo = (VALUE)payload;
-
+	VALUE rb_args = rb_ary_new2(2);
+	struct rugged_cb_payload *payload = data;
 	git_object *annotated_object;
 	git_object *note_blob;
 
 	git_repository *repo;
 
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	Data_Get_Struct(payload->rb_data, git_repository, repo);
 
 	rugged_exception_check(
 		git_object_lookup(&annotated_object, repo, annotated_object_id, GIT_OBJ_ANY)
@@ -290,11 +290,12 @@ static int cb_note__each(const git_oid *blob_id, const git_oid *annotated_object
 		git_object_lookup(&note_blob, repo, blob_id, GIT_OBJ_BLOB)
 	);
 
-	rb_yield_values(2,
-			rugged_object_new(rb_repo, note_blob),
-			rugged_object_new(rb_repo, annotated_object)
-	);
-	return GIT_OK;
+	rb_ary_push(rb_args, rugged_object_new(payload->rb_data, note_blob));
+	rb_ary_push(rb_args, rugged_object_new(payload->rb_data, annotated_object));
+
+	rb_protect(rb_yield_splat, rb_args, &payload->exception);
+
+	return payload->exception ? GIT_ERROR : GIT_OK;
 }
 
 /*
@@ -316,7 +317,7 @@ static VALUE rb_git_note_each(int argc, VALUE *argv, VALUE self)
 	git_repository *repo;
 	const char *notes_ref = NULL;
 	int error;
-
+	struct rugged_cb_payload payload = { self, 0 };
 	VALUE rb_notes_ref;
 
 	rb_scan_args(argc, argv, "01", &rb_notes_ref);
@@ -332,8 +333,12 @@ static VALUE rb_git_note_each(int argc, VALUE *argv, VALUE self)
 
 	Data_Get_Struct(self, git_repository, repo);
 
-	error = git_note_foreach(repo, notes_ref, &cb_note__each, (void *)self);
+	error = git_note_foreach(repo, notes_ref, &cb_note__each, &payload);
+
+	if (payload.exception)
+		rb_jump_tag(payload.exception);
 	rugged_exception_check(error);
+
 	return Qnil;
 }
 
