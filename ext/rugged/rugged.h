@@ -91,6 +91,7 @@ git_signature *rugged_signature_get(VALUE rb_person);
 git_object *rugged_object_get(git_repository *repo, VALUE object_value, git_otype type);
 int rugged_oid_get(git_oid *oid, git_repository *repo, VALUE p);
 
+void rugged_rb_ary_to_strarray(VALUE rb_array, git_strarray *str_array);
 VALUE rugged_strarray_to_rb_ary(git_strarray *str_array);
 
 static inline void rugged_set_owner(VALUE object, VALUE owner)

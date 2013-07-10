@@ -223,3 +223,100 @@ class IndexRepositoryTest < Rugged::TestCase
     assert_nil @repo.lookup(new_tree_sha)['second.txt']
   end
 end
+
+class IndexAddAllTest < Rugged::SandboxedTestCase
+  def setup
+    super
+
+    @repo = Rugged::Repository.init_at(File.join(@_sandbox_path, "add-all"))
+
+    Dir.chdir(@repo.workdir) do
+      File.open("file.foo", "w") { |f| f.write "a file" }
+      File.open("file.bar", "w") { |f| f.write "another file" }
+      File.open("file.zzz", "w") { |f| f.write "yet another one" }
+      File.open("other.zzz", "w") { |f| f.write "yet another one" }
+      File.open("more.zzz", "w") { |f| f.write "yet another one" }
+      File.open(".gitignore", "w") { |f| f.write "*.foo\n" }
+    end
+  end
+
+  def test_add_all_lifecycle
+    Dir.chdir(@repo.workdir) do
+      @repo.index.add_all("file.*")
+
+      assert @repo.index["file.bar"]
+      assert @repo.index["file.zzz"]
+      refute @repo.index["file.foo"]
+      refute @repo.index["other.zzz"]
+      refute @repo.index["more.zzz"]
+
+      @repo.index.add_all("*.zzz")
+
+      assert @repo.index["file.bar"]
+      assert @repo.index["file.zzz"]
+      assert @repo.index["other.zzz"]
+      assert @repo.index["more.zzz"]
+      refute @repo.index["file.foo"]
+    end
+  end
+
+  def test_add_all_dry_run
+    Dir.chdir(@repo.workdir) do
+      yielded = []
+      @repo.index.add_all do |path, pathspec|
+        yielded << path
+        false
+      end
+
+      assert_equal [".gitignore", "file.bar", "file.zzz", "more.zzz", "other.zzz"], yielded
+
+      yielded.each do |path|
+        refute @repo.index[path]
+      end
+
+      yielded = []
+      @repo.index.add_all(["file.*", "*.zzz"]) do |path, pathspec|
+        yielded << [path, pathspec]
+        false
+      end
+
+      assert_equal [
+        ["file.bar", "file.*"],
+        ["file.zzz", "file.*"],
+        ["more.zzz", "*.zzz"],
+        ["other.zzz", "*.zzz"]
+      ], yielded
+    end
+  end
+
+  def test_update_all
+    Dir.chdir(@repo.workdir) do
+      @repo.index.add_all("file.*")
+
+      File.open("file.bar", "w") { |f| f.write "new content for file" }
+      @repo.index.update_all("file.*")
+
+      assert @repo.index["file.bar"]
+      assert_equal "new content for file", @repo.lookup(@repo.index["file.bar"][:oid]).content
+
+      refute @repo.index["other.zzz"], "#update_all should only update files in the index"
+      refute @repo.index["more.zzz"], "#update_all should only update files in the index"
+
+      File.unlink("file.bar")
+      @repo.index.update_all
+
+      refute @repo.index["file.bar"], "#update_all should remove index entries that are removed from the workdir"
+    end
+  end
+
+  def test_remove_all
+    Dir.chdir(@repo.workdir) do
+      @repo.index.add_all("file.*")
+      @repo.index.remove_all("*.zzz")
+
+      assert @repo.index["file.bar"]
+      refute @repo.index["file.zzz"]
+    end
+  end
+
+end

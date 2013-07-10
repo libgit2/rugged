@@ -328,6 +328,25 @@ VALUE rugged_strarray_to_rb_ary(git_strarray *str_array)
 	return rb_array;
 }
 
+void rugged_rb_ary_to_strarray(VALUE rb_array, git_strarray *str_array)
+{
+	int i;
+
+	str_array->strings = NULL;
+	str_array->count = 0;
+
+	for (i = 0; i < RARRAY_LEN(rb_array); ++i)
+		Check_Type(rb_ary_entry(rb_array, i), T_STRING);
+
+	str_array->count = RARRAY_LEN(rb_array);
+	str_array->strings = xmalloc(str_array->count * sizeof(char *));
+
+	for (i = 0; i < RARRAY_LEN(rb_array); ++i) {
+		VALUE rb_string = rb_ary_entry(rb_array, i);
+		str_array->strings[i] = StringValueCStr(rb_string);
+	}
+}
+
 void Init_rugged(void)
 {
 	rb_mRugged = rb_define_module("Rugged");
