@@ -483,6 +483,7 @@ class RepositoryCheckoutTest < Rugged::SandboxedTestCase
   def setup
     super
     @repo = sandbox_init("testrepo")
+    @clone = sandbox_clone("testrepo", "cloned_testrepo")
   end
 
   def test_checkout_tree_with_commit
@@ -508,5 +509,73 @@ class RepositoryCheckoutTest < Rugged::SandboxedTestCase
     assert File.exists?(File.join(@repo.workdir, "ab/de/fgh/1.txt"))
 
     refute File.exists?(File.join(@repo.workdir, "a"))
+  end
+
+  def test_checkout_raises_errors_in_notify_cb
+    exception = assert_raises RuntimeError do
+      @repo.checkout_tree(@repo.rev_parse("refs/heads/dir"), :strategy => :force,
+        :notify_flags => :all,
+        :notify => lambda { |*args| raise "fail" })
+    end
+
+    assert_equal exception.message, "fail"
+  end
+
+  def test_checkout_raises_errors_in_progress_cb
+    exception = assert_raises RuntimeError do
+      @repo.checkout_tree(@repo.rev_parse("refs/heads/dir"), :strategy => :force,
+        :progress => lambda { |*args| raise "fail" })
+    end
+
+    assert_equal exception.message, "fail"
+  end
+
+  def test_checkout_subdirectory
+    refute File.exists?(File.join(@repo.workdir, "ab"))
+
+    @repo.checkout_tree(@repo.rev_parse("refs/heads/subtrees"), :strategy => :safe, :paths => "ab/de/")
+
+    assert File.exists?(File.join(@repo.workdir, "ab"))
+    assert File.exists?(File.join(@repo.workdir, "ab/de/2.txt"))
+    assert File.exists?(File.join(@repo.workdir, "ab/de/fgh/1.txt"))
+  end
+
+  def test_checkout_subtree_directory
+    refute File.exists?(File.join(@repo.workdir, "de"))
+
+    @repo.checkout_tree(@repo.rev_parse("refs/heads/subtrees:ab"), :strategy => :safe, :paths => "de/")
+
+    assert File.exists?(File.join(@repo.workdir, "de"))
+    assert File.exists?(File.join(@repo.workdir, "de/2.txt"))
+    assert File.exists?(File.join(@repo.workdir, "de/fgh/1.txt"))
+  end
+
+  def test_checkout_with_branch_updates_HEAD
+    @repo.checkout("dir", :strategy => :force)
+    assert_equal "refs/heads/dir", @repo.head.name
+  end
+
+  def test_checkout_with_HEAD
+    @repo.checkout("dir", :strategy => :force)
+    File.unlink(File.join(@repo.workdir, "README"))
+
+    @repo.checkout("HEAD", :strategy => :force)
+
+    assert File.exists?(File.join(@repo.workdir, "README"))
+    assert_equal "refs/heads/dir", @repo.head.name
+  end
+
+  def test_checkout_with_commit_detaches_HEAD
+    @repo.checkout(@repo.rev_parse_oid("refs/heads/dir"), :strategy => :force)
+
+    assert @repo.head_detached?
+    assert_equal @repo.rev_parse_oid("refs/heads/dir"), @repo.head.target
+  end
+
+  def test_checkout_with_remote_branch_detaches_HEAD
+    @clone.checkout("origin/dir", :strategy => :force)
+
+    assert @clone.head_detached?
+    assert_equal @clone.rev_parse_oid("refs/remotes/origin/dir"), @clone.head.target
   end
 end

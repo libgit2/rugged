@@ -17,6 +17,34 @@ module Rugged
       self.lookup self.head.target
     end
 
+    # Checkout the specified branch, reference or commit.
+    #
+    # target - A revparse spec for the branch, reference or commit to check out.
+    # options - Options passed to #checkout_tree.
+    def checkout(target, options = {})
+      options[:strategy] ||= :safe
+
+      branch = if target == "HEAD"
+        Branch.lookup(self, self.head.name.sub(%r{^refs/heads/}, "")) unless self.head_detached?
+      else
+        Branch.lookup(self, target) rescue nil
+      end
+
+      if branch
+        self.checkout_tree(branch.tip, options)
+
+        if branch.remote?
+          Reference.create(self, "HEAD", branch.tip, true)
+        else
+          Reference.create(self, "HEAD", branch.canonical_name, true)
+        end
+      else
+        commit = Commit.lookup(self, self.rev_parse_oid(target))
+        Reference.create(self, "HEAD", commit.oid, true)
+        self.checkout_tree(commit, options)
+      end
+    end
+
     def diff(left, right, opts = {})
       left = rev_parse(left) if left.kind_of?(String)
       right = rev_parse(right) if right.kind_of?(String)

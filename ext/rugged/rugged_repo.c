@@ -1442,14 +1442,16 @@ void rugged__checkout_progress_cb(
 	const char *path,
 	size_t completed_steps,
 	size_t total_steps,
-	void *payload
+	void *data
 ) {
+	struct rugged_cb_payload *payload = data;
 	VALUE args = rb_ary_new2(4);
-	rb_ary_push(args, (VALUE)payload);
+	rb_ary_push(args, payload->rb_data);
 	rb_ary_push(args, path == NULL ? Qnil : rb_str_new2(path));
 	rb_ary_push(args, INT2FIX(completed_steps));
 	rb_ary_push(args, INT2FIX(total_steps));
-	rugged__block_yield_splat(args);
+
+	rb_protect(rugged__block_yield_splat, args, &payload->exception);
 }
 
 static int rugged__checkout_notify_cb(
@@ -1458,10 +1460,11 @@ static int rugged__checkout_notify_cb(
 	const git_diff_file *baseline,
 	const git_diff_file *target,
 	const git_diff_file *workdir,
-	void *payload
+	void *data
 ) {
+	struct rugged_cb_payload *payload = data;
 	VALUE args = rb_ary_new2(5);
-	rb_ary_push(args, (VALUE)payload);
+	rb_ary_push(args, payload->rb_data);
 
 	switch (why) {
 		case GIT_CHECKOUT_NOTIFY_CONFLICT:
@@ -1491,9 +1494,10 @@ static int rugged__checkout_notify_cb(
 	rb_ary_push(args, rb_git_delta_file_fromC(baseline));
 	rb_ary_push(args, rb_git_delta_file_fromC(target));
 	rb_ary_push(args, rb_git_delta_file_fromC(workdir));
-	rugged__block_yield_splat(args);
 
-	return GIT_OK;
+	rb_protect(rugged__block_yield_splat, args, &payload->exception);
+
+	return payload->exception ? GIT_ERROR : GIT_OK;
 }
 
 /**
@@ -1507,14 +1511,18 @@ static void rugged_parse_checkout_options(git_checkout_opts *opts, VALUE rb_opti
 
 		rb_value = rb_hash_aref(rb_options, CSTR2SYM("progress"));
 		if (!NIL_P(rb_value)) {
+			struct rugged_cb_payload payload = { rb_value, 0 };
+
 			opts->progress_cb = &rugged__checkout_progress_cb;
-			opts->progress_payload = (void *)rb_value;
+			opts->progress_payload = (void *)&payload;
 		}
 
 		rb_value = rb_hash_aref(rb_options, CSTR2SYM("notify"));
 		if (!NIL_P(rb_value)) {
+			struct rugged_cb_payload payload = { rb_value, 0 };
+
 			opts->notify_cb = &rugged__checkout_notify_cb;
-			opts->notify_payload = (void *)rb_value;
+			opts->notify_payload = (void *)&payload;
 		}
 
 		if (!NIL_P(rb_value = rb_hash_aref(rb_options, CSTR2SYM("strategy")))) {
@@ -1591,26 +1599,27 @@ static void rugged_parse_checkout_options(git_checkout_opts *opts, VALUE rb_opti
 
 		rb_value = rb_hash_aref(rb_options, CSTR2SYM("dir_mode"));
 		if (!NIL_P(rb_value)) {
-			opts->notify_cb = rugged__checkout_notify_cb;
-			opts->notify_payload = (void *)rb_value;
+			opts->dir_mode = FIX2UINT(rb_value);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("file_mode"));
+		if (!NIL_P(rb_value)) {
+			opts->file_mode = FIX2UINT(rb_value);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("file_open_flags"));
+		if (!NIL_P(rb_value)) {
+			opts->file_mode = FIX2INT(rb_value);
 		}
 
 		rb_value = rb_hash_aref(rb_options, CSTR2SYM("paths"));
-		if (!NIL_P(rb_value)) {
-			int i;
-			Check_Type(rb_value, T_ARRAY);
+		rugged_rb_ary_to_strarray(rb_value, &opts->paths);
 
-			for (i = 0; i < RARRAY_LEN(rb_value); ++i)
-				Check_Type(rb_ary_entry(rb_value, i), T_STRING);
-
-			opts->paths.count = RARRAY_LEN(rb_value);
-			opts->paths.strings = xmalloc(opts->paths.count * sizeof(char *));
-
-			for (i = 0; i < RARRAY_LEN(rb_value); ++i) {
-				VALUE rb_path = rb_ary_entry(rb_value, i);
-				opts->paths.strings[i] = StringValueCStr(rb_path);
-			}
-		}
+		// TODO
+		// rb_value = rb_hash_aref(rb_options, CSTR2SYM("baseline"));
+		// if (!NIL_P(rb_value)) {
+		//
+		// }
 	}
 }
 
@@ -1625,6 +1634,60 @@ static void rugged_parse_checkout_options(git_checkout_opts *opts, VALUE rb_opti
  *  :notify ::
  *
  *  :strategy ::
+ *    A single symbol or an array of symbols representing the strategies to use when
+ *    performing the checkout. Possible values are:
+ *    
+ *    :none ::
+ *      Perform a dry run (default).
+ *
+ *    :safe ::
+ *      Allow safe updates that cannot overwrite uncommitted data.
+ *
+ *    :safe_create ::
+ *      Allow safe updates plus creation of missing files.
+ *
+ *    :force ::
+ *      Allow all updates to force working directory to look like index.
+ *
+ *    :allow_conflicts ::
+ *      Allow checkout to make safe updates even if conflicts are found.
+ *
+ *    :remove_untracked ::
+ *      Remove untracked files not in index (that are not ignored).
+ *
+ *    :remove_ignored ::
+ *      Remove ignored files not in index.
+ *
+ *    :update_only ::
+ *      Only update existing files, don't create new ones.
+ *
+ *    :dont_update_index ::
+ *      Normally checkout updates index entries as it goes; this stops that.
+ *
+ *    :no_refresh ::
+ *      Don't refresh index/config/etc before doing checkout.
+ *
+ *    :disable_pathspec_match ::
+ *      Treat pathspec as simple list of exact match file paths.
+ *
+ *    :skip_locked_directories ::
+ *      Ignore directories in use, they will be left empty.
+ *
+ *    :skip_unmerged ::
+ *      Allow checkout to skip unmerged files (NOT IMPLEMENTED).
+ *
+ *    :use_ours ::
+ *      For unmerged files, checkout stage 2 from index (NOT IMPLEMENTED).
+ *
+ *    :use_theirs ::
+ *      For unmerged files, checkout stage 3 from index (NOT IMPLEMENTED).
+ *
+ *    :update_submodules ::
+ *      Recursively checkout submodules with same options (NOT IMPLEMENTED).
+ *
+ *    :update_submodules_if_changed ::
+ *      Recursively checkout submodules if HEAD moved in super repo (NOT IMPLEMENTED).
+ *
  *
  *  :disable_filters ::
  *
@@ -1649,6 +1712,7 @@ static VALUE rb_git_checkout_tree(int argc, VALUE *argv, VALUE self)
 	git_repository *repo;
 	git_object *treeish;
 	git_checkout_opts opts = GIT_CHECKOUT_OPTS_INIT;
+	struct rugged_cb_payload *payload;
 	int error;
 
 	rb_scan_args(argc, argv, "11", &rb_treeish, &rb_options);
@@ -1665,6 +1729,15 @@ static VALUE rb_git_checkout_tree(int argc, VALUE *argv, VALUE self)
 
 	error = git_checkout_tree(repo, treeish, &opts);
 	xfree(opts.paths.strings);
+
+	payload = opts.progress_payload;
+	if (payload != NULL && payload->exception)
+		rb_jump_tag(payload->exception);
+
+	payload = opts.notify_payload;
+	if (payload != NULL && payload->exception)
+		rb_jump_tag(payload->exception);
+
 	rugged_exception_check(error);
 
 	return Qnil;
