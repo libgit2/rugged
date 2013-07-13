@@ -215,7 +215,7 @@ class RepositoryWriteTest < Rugged::TestCase
   TEST_CONTENT_TYPE = 'blob'
 
   def test_can_hash_data
-    oid = Rugged::Repository::hash(TEST_CONTENT, TEST_CONTENT_TYPE)
+    oid = Rugged::Repository.hash_data(TEST_CONTENT, TEST_CONTENT_TYPE)
     assert_equal "76b1b55ab653581d6f2c7230d34098e837197674", oid
   end
 

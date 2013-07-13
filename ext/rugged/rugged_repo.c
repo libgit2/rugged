@@ -618,15 +618,15 @@ static VALUE rb_git_repo_read_header(VALUE self, VALUE hex)
 
 /*
  *  call-seq:
- *    Repository.hash(buffer, type) -> oid
+ *    Repository.hash_data(str, type) -> oid
  *
- *  Hash the contents of +buffer+ as raw bytes (ignoring any encoding
+ *  Hash the contents of +str+ as raw bytes (ignoring any encoding
  *  information) and adding the relevant header corresponding to +type+,
  *  and return a hex string representing the result from the hash.
  *
- *    Repository.hash('hello world', :commit) #=> "de5ba987198bcf2518885f0fc1350e5172cded78"
+ *    Repository.hash_data('hello world', :commit) #=> "de5ba987198bcf2518885f0fc1350e5172cded78"
  *
- *    Repository.hash('hello_world', :tag) #=> "9d09060c850defbc7711d08b57def0d14e742f4e"
+ *    Repository.hash_data('hello_world', :tag) #=> "9d09060c850defbc7711d08b57def0d14e742f4e"
  */
 static VALUE rb_git_repo_hash(VALUE self, VALUE rb_buffer, VALUE rb_type)
 {
@@ -1392,8 +1392,8 @@ void Init_rugged_repo(void)
 
 	rb_define_singleton_method(rb_cRuggedRepo, "new", rb_git_repo_new, -1);
 	rb_define_singleton_method(rb_cRuggedRepo, "bare", rb_git_repo_open_bare, -1);
-	rb_define_singleton_method(rb_cRuggedRepo, "hash",   rb_git_repo_hash,  2);
-	rb_define_singleton_method(rb_cRuggedRepo, "hash_file",   rb_git_repo_hashfile,  2);
+	rb_define_singleton_method(rb_cRuggedRepo, "hash_data", rb_git_repo_hash,  2);
+	rb_define_singleton_method(rb_cRuggedRepo, "hash_file", rb_git_repo_hashfile,  2);
 	rb_define_singleton_method(rb_cRuggedRepo, "init_at", rb_git_repo_init_at, -1);
 	rb_define_singleton_method(rb_cRuggedRepo, "discover", rb_git_repo_discover, -1);
 	rb_define_singleton_method(rb_cRuggedRepo, "clone_at", rb_git_repo_clone_at, -1);
