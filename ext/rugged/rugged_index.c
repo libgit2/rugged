@@ -450,7 +450,7 @@ static VALUE rb_git_index_add_all(int argc, VALUE *argv, VALUE self)
  */
 static VALUE rb_git_index_update_all(int argc, VALUE *argv, VALUE self)
 {
-	VALUE rb_pathspecs = rb_ary_new();;
+	VALUE rb_pathspecs = rb_ary_new();
 
 	git_index *index;
 	git_strarray pathspecs;
