@@ -160,7 +160,8 @@ class IndexWorkdirTest < Rugged::TestCase
     @index = @repo.index
   end
 
-  def teardown 
+  def teardown
+    @repo.close
     FileUtils.remove_entry_secure(@tmppath)
   end
 
@@ -203,6 +204,12 @@ class IndexConflictsTest < Rugged::SandboxedTestCase
     super
 
     @repo = sandbox_init("mergedrepo")
+  end
+
+  def teardown
+    @repo.close
+
+    super
   end
 
   def test_conflicts
@@ -252,6 +259,12 @@ class IndexAddAllTest < Rugged::SandboxedTestCase
       File.open("more.zzz", "w") { |f| f.write "yet another one" }
       File.open(".gitignore", "w") { |f| f.write "*.foo\n" }
     end
+  end
+
+  def teardown
+    @repo.close
+
+    super
   end
 
   def test_add_all_lifecycle
