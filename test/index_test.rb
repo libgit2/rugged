@@ -118,13 +118,16 @@ end
 class IndexWriteTest < Rugged::TestCase
   def setup 
     path = File.dirname(__FILE__) + '/fixtures/testrepo.git/index'
-    @tmppath = Tempfile.new('index').path
-    FileUtils.copy(path, @tmppath)
-    @index = Rugged::Index.new(@tmppath)
+
+    @tmpfile = Tempfile.new('index', Dir.tmpdir, encoding: "binary")
+    @tmpfile.write(File.binread(path))
+    @tmpfile.close
+
+    @index = Rugged::Index.new(@tmpfile.path)
   end
 
   def teardown
-    File.delete(@tmppath)
+    @tmpfile.unlink
   end
 
   def test_raises_when_writing_invalid_entries
@@ -142,7 +145,7 @@ class IndexWriteTest < Rugged::TestCase
 
     @index.write
 
-    index2 = Rugged::Index.new(@tmppath)
+    index2 = Rugged::Index.new(@tmpfile.path)
 
     itr_test = index2.sort { |a, b| a[:oid] <=> b[:oid] }.map { |x| x[:path] }.join(':')
     assert_equal "README:else.txt:new_path:new.txt", itr_test
