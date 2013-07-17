@@ -137,14 +137,22 @@ class BlobWriteTest < Rugged::TestCase
 end
 
 class BlobDiffTest < Rugged::SandboxedTestCase
+  def setup
+    super
+    @repo = sandbox_init("diff")
+  end
+
+  def teardown
+    @repo.close
+    super
+  end
+
   def test_diff_blob
-    repo = sandbox_init("diff")
+    a = @repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+    b = @repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
 
-    a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
-    b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
-
-    blob  = repo.lookup(a.tree["readme.txt"][:oid])
-    other = repo.lookup(b.tree["readme.txt"][:oid])
+    blob  = @repo.lookup(a.tree["readme.txt"][:oid])
+    other = @repo.lookup(b.tree["readme.txt"][:oid])
 
     patch = blob.diff(other)
 
@@ -184,13 +192,11 @@ class BlobDiffTest < Rugged::SandboxedTestCase
   end
 
   def test_diff_string
-    repo = sandbox_init("diff")
+    a = @repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+    b = @repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
 
-    a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
-    b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
-
-    blob  = repo.lookup(a.tree["readme.txt"][:oid])
-    other = repo.lookup(b.tree["readme.txt"][:oid]).content
+    blob  = @repo.lookup(a.tree["readme.txt"][:oid])
+    other = @repo.lookup(b.tree["readme.txt"][:oid]).content
 
     patch = blob.diff(other)
 
@@ -230,11 +236,9 @@ class BlobDiffTest < Rugged::SandboxedTestCase
   end
 
   def test_diff_nil
-    repo = sandbox_init("diff")
+    a = @repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
 
-    a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
-
-    blob  = repo.lookup(a.tree["readme.txt"][:oid])
+    blob  = @repo.lookup(a.tree["readme.txt"][:oid])
 
     patch = blob.diff(nil)
 
@@ -261,13 +265,11 @@ class BlobDiffTest < Rugged::SandboxedTestCase
   end
 
   def test_diff_with_paths
-    repo = sandbox_init("diff")
+    a = @repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+    b = @repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
 
-    a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
-    b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
-
-    blob  = repo.lookup(a.tree["readme.txt"][:oid])
-    other = repo.lookup(b.tree["readme.txt"][:oid])
+    blob  = @repo.lookup(a.tree["readme.txt"][:oid])
+    other = @repo.lookup(b.tree["readme.txt"][:oid])
 
     patch = blob.diff(other, :old_path => "old_readme.txt", :new_path => "new_readme.txt")
     assert_equal "old_readme.txt", patch.delta.old_file[:path]
