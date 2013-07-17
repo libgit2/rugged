@@ -9,6 +9,7 @@ Gem::Specification.new do |s|
   s.homepage              = "http://github.com/libgit2/rugged"
   s.email                 = "schacon@gmail.com"
   s.authors               = [ "Scott Chacon", "Vicent Marti" ]
+  s.license               = "MIT"
   s.files                 = %w( README.md Rakefile LICENSE )
   s.files                 += Dir.glob("lib/**/*.rb")
   s.files                 += Dir.glob("man/**/*")
