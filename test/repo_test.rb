@@ -8,6 +8,12 @@ class RepositoryTest < Rugged::SandboxedTestCase
     @repo = sandbox_init "testrepo.git"
   end
 
+  def teardown
+    @repo.close
+
+    super
+  end
+
   def test_last_commit
     assert @repo.respond_to? :last_commit
     assert "36060c58702ed4c2a40832c51758d5344201d89a", @repo.last_commit.oid
@@ -149,8 +155,12 @@ class RepositoryTest < Rugged::SandboxedTestCase
   def test_loading_alternates
     alt_path = File.dirname(__FILE__) + '/fixtures/alternate/objects'
     repo = Rugged::Repository.new(@repo.path, :alternates => [alt_path])
-    assert_equal 40, repo.each_id.to_a.length
-    assert repo.read('146ae76773c91e3b1d00cf7a338ec55ae58297e2')
+    begin
+      assert_equal 40, repo.each_id.to_a.length
+      assert repo.read('146ae76773c91e3b1d00cf7a338ec55ae58297e2')
+    ensure
+      repo.close
+    end
   end
 
   def test_alternates_with_invalid_path_type
@@ -243,22 +253,38 @@ class RepositoryInitTest < Rugged::TestCase
 
   def test_init_bare_false
     repo = Rugged::Repository.init_at(@tmppath, false)
-    refute repo.bare?
+    begin
+      refute repo.bare?
+    ensure
+      repo.close
+    end
   end
 
   def test_init_bare_true
     repo = Rugged::Repository.init_at(@tmppath, true)
-    assert repo.bare?
+    begin
+      assert repo.bare?
+    ensure
+      repo.close
+    end
   end
 
   def test_init_bare_truthy
     repo = Rugged::Repository.init_at(@tmppath, :bare)
-    assert repo.bare?
+    begin
+      assert repo.bare?
+    ensure
+      repo.close
+    end
   end
 
   def test_init_non_bare_default
     repo = Rugged::Repository.init_at(@tmppath)
-    refute repo.bare?
+    begin
+      refute repo.bare?
+    ensure
+      repo.close
+    end
   end
 end
 
@@ -274,23 +300,32 @@ class RepositoryCloneTest < Rugged::TestCase
 
   def test_clone
     repo = Rugged::Repository.clone_at(@source_path, @tmppath)
-    assert_equal "hey", File.read(File.join(@tmppath, "README")).chomp
-    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", repo.head.target
-    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", repo.ref("refs/heads/master").target
-    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", repo.ref("refs/remotes/origin/master").target
-    assert_equal "41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9", repo.ref("refs/remotes/origin/packed").target
+    begin
+      assert_equal "hey", File.read(File.join(@tmppath, "README")).chomp
+      assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", repo.head.target
+      assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", repo.ref("refs/heads/master").target
+      assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", repo.ref("refs/remotes/origin/master").target
+      assert_equal "41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9", repo.ref("refs/remotes/origin/packed").target
+    ensure
+      repo.close
+    end
   end
 
   def test_clone_bare
     repo = Rugged::Repository.clone_at(@source_path, @tmppath, :bare => true)
-    assert repo.bare?
+    begin
+      assert repo.bare?
+    ensure
+      repo.close
+    end
   end
 
   def test_clone_with_progress
     total_objects = indexed_objects = received_objects = received_bytes = nil
     callsback = 0
-    Rugged::Repository.clone_at(@source_path, @tmppath,
+    repo = Rugged::Repository.clone_at(@source_path, @tmppath,
       :progress => lambda { |*args| callsback += 1 ; total_objects, indexed_objects, received_objects, received_bytes = args })
+    repo.close
     assert_equal 22,   callsback
     assert_equal 19,   total_objects
     assert_equal 19,   indexed_objects
@@ -324,6 +359,12 @@ class RepositoryNamespaceTest < Rugged::SandboxedTestCase
     super
 
     @repo = sandbox_init("testrepo.git")
+  end
+
+  def teardown
+    @repo.close
+
+    super
   end
 
   def test_no_namespace
@@ -361,6 +402,13 @@ class RepositoryPushTest < Rugged::SandboxedTestCase
     Rugged::Reference.create(@repo,
       "refs/heads/unit_test",
       "8496071c1b46c854b31185ea97743be6a8774479")
+  end
+
+  def teardown
+    @repo.close
+    @remote_repo.close
+
+    super
   end
 
   def test_push_single_ref
