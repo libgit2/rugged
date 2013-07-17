@@ -75,6 +75,7 @@ module Rugged
 
     def teardown
       @repo.close
+      GC.start
       destroy_temp_repo(@path)
     end
 
