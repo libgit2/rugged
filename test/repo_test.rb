@@ -25,7 +25,7 @@ class RepositoryTest < Rugged::SandboxedTestCase
     end
 
     assert_raises Rugged::RepositoryError do
-      Rugged::Repository.new("/home/")
+      Rugged::Repository.new("test")
     end
   end
 
