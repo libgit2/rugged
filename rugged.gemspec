@@ -15,9 +15,10 @@ Gem::Specification.new do |s|
   s.files                 += Dir.glob("man/**/*")
   s.files                 += Dir.glob("test/**/*")
   s.files                 += Dir.glob("ext/**/*.[ch]")
-  s.files                 += Dir.glob("vendor/libgit2/{include,src,deps}/**/*.[ch]")
+  s.files                 += Dir.glob("vendor/libgit2/{include,src,deps}/**/*.{c,h,rb}")
   s.files                 += Dir.glob("vendor/libgit2/Makefile.embed")
   s.extensions            = ['ext/rugged/extconf.rb']
+  s.require_paths         = [ 'lib', 'ext' ]
   s.required_ruby_version = '>= 1.9.3'
   s.description           = <<desc
 Rugged is a Ruby bindings to the libgit2 linkable C Git library. This is
