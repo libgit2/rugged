@@ -23,6 +23,7 @@ module Rugged
     # options - Options passed to #checkout_tree.
     def checkout(target, options = {})
       options[:strategy] ||= :safe
+      options.delete(:paths)
 
       branch = if target == "HEAD"
         Branch.lookup(self, self.head.name.sub(%r{^refs/heads/}, "")) unless self.head_detached?
