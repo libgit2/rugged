@@ -1717,10 +1717,15 @@ static VALUE rb_git_checkout_tree(int argc, VALUE *argv, VALUE self)
 
 	rb_scan_args(argc, argv, "11", &rb_treeish, &rb_options);
 
+	if (TYPE(rb_treeish) == T_STRING) {
+		rb_treeish = rugged_object_rev_parse(self, rb_treeish, 1);
+	}
+
 	if (!rb_obj_is_kind_of(rb_treeish, rb_cRuggedCommit) &&
 			!rb_obj_is_kind_of(rb_treeish, rb_cRuggedTag) &&
-			!rb_obj_is_kind_of(rb_treeish, rb_cRuggedTree))
+			!rb_obj_is_kind_of(rb_treeish, rb_cRuggedTree)) {
 		rb_raise(rb_eTypeError, "Expected Rugged::Commit, Rugged::Tag or Rugged::Tree");
+	}
 
 	Data_Get_Struct(self, git_repository, repo);
 	Data_Get_Struct(rb_treeish, git_object, treeish);

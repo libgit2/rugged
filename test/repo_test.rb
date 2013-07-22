@@ -511,7 +511,19 @@ class RepositoryCheckoutTest < Rugged::SandboxedTestCase
     refute File.exists?(File.join(@repo.workdir, "a"))
   end
 
-  def test_checkout_raises_errors_in_notify_cb
+  def test_checkout_with_revspec_string
+    @repo.checkout_tree("refs/heads/dir", :strategy => :force)
+    @repo.head = "refs/heads/dir"
+
+    assert File.exists?(File.join(@repo.workdir, "README"))
+    assert File.exists?(File.join(@repo.workdir, "branch_file.txt"))
+    assert File.exists?(File.join(@repo.workdir, "new.txt"))
+    assert File.exists?(File.join(@repo.workdir, "a/b.txt"))
+
+    refute File.exists?(File.join(@repo.workdir, "ab"))
+  end
+
+  def test_checkout_tree_raises_errors_in_notify_cb
     exception = assert_raises RuntimeError do
       @repo.checkout_tree(@repo.rev_parse("refs/heads/dir"), :strategy => :force,
         :notify_flags => :all,
