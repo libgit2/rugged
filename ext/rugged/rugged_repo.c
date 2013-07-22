@@ -1612,14 +1612,22 @@ static void rugged_parse_checkout_options(git_checkout_opts *opts, VALUE rb_opti
 			opts->file_mode = FIX2INT(rb_value);
 		}
 
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("target_directory"));
+		if (!NIL_P(rb_value)) {
+			opts->target_directory = StringValueCStr(rb_value);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("baseline"));
+		if (!NIL_P(rb_value)) {
+			if (rb_obj_is_kind_of(rb_value, rb_cRuggedTree)) {
+				Data_Get_Struct(rb_value, git_tree, opts->baseline);
+			} else {
+				rb_raise(rb_eTypeError, "Expected a Rugged::Tree.");
+			}
+		}
+
 		rb_value = rb_hash_aref(rb_options, CSTR2SYM("paths"));
 		rugged_rb_ary_to_strarray(rb_value, &opts->paths);
-
-		// TODO
-		// rb_value = rb_hash_aref(rb_options, CSTR2SYM("baseline"));
-		// if (!NIL_P(rb_value)) {
-		//
-		// }
 	}
 }
 
