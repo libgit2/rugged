@@ -533,7 +533,7 @@ class RepositoryCheckoutTest < Rugged::SandboxedTestCase
     assert_equal exception.message, "fail"
   end
 
-  def test_checkout_raises_errors_in_progress_cb
+  def test_checkout_tree_raises_errors_in_progress_cb
     exception = assert_raises RuntimeError do
       @repo.checkout_tree(@repo.rev_parse("refs/heads/dir"), :strategy => :force,
         :progress => lambda { |*args| raise "fail" })
@@ -542,7 +542,7 @@ class RepositoryCheckoutTest < Rugged::SandboxedTestCase
     assert_equal exception.message, "fail"
   end
 
-  def test_checkout_subdirectory
+  def test_checkout_tree_subdirectory
     refute File.exists?(File.join(@repo.workdir, "ab"))
 
     @repo.checkout_tree(@repo.rev_parse("refs/heads/subtrees"), :strategy => :safe, :paths => "ab/de/")
@@ -552,7 +552,7 @@ class RepositoryCheckoutTest < Rugged::SandboxedTestCase
     assert File.exists?(File.join(@repo.workdir, "ab/de/fgh/1.txt"))
   end
 
-  def test_checkout_subtree_directory
+  def test_checkout_tree_subtree_directory
     refute File.exists?(File.join(@repo.workdir, "de"))
 
     @repo.checkout_tree(@repo.rev_parse("refs/heads/subtrees:ab"), :strategy => :safe, :paths => "de/")
