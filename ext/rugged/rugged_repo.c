@@ -1638,8 +1638,22 @@ static void rugged_parse_checkout_options(git_checkout_opts *opts, VALUE rb_opti
  *  The following options can be passed in the +options+ Hash:
  *
  *  :progress ::
+ *    A callback that will be executed for checkout progress notifications.
+ *    Up to 3 parameters are passed on each execution:
+ *
+ *    - The path to the last updated file (or +nil+ on the very first invocation).
+ *    - The number of completed checkout steps.
+ *    - The number of total checkout steps to be performed.
  *
  *  :notify ::
+ *    A callback that will be executed for each checkout notification types specified
+ *    with +:notify_flags+. Up to 5 parameters are passed on each execution:
+ *
+ *    - An array containing the +:notify_flags+ that caused the callback execution.
+ *    - The path of the current file.
+ *    - A hash describing the baseline blob (or +nil+ if it does not exist).
+ *    - A hash describing the target blob (or +nil+ if it does not exist).
+ *    - A hash describing the workdir blob (or +nil+ if it does not exist).
  *
  *  :strategy ::
  *    A single symbol or an array of symbols representing the strategies to use when
@@ -1696,23 +1710,55 @@ static void rugged_parse_checkout_options(git_checkout_opts *opts, VALUE rb_opti
  *    :update_submodules_if_changed ::
  *      Recursively checkout submodules if HEAD moved in super repo (NOT IMPLEMENTED).
  *
- *
  *  :disable_filters ::
+ *    If +true+, filters like CRLF line conversion will be disabled.
  *
  *  :dir_mode ::
+ *    Mode for newly created directories. Default: +0755+.
  *
  *  :file_mode ::
+ *    Mode for newly created files. Default: +0755+ or +0644+.
  *
  *  :file_open_flags ::
+ *    Mode for opening files. Default: <code>O_CREAT | O_TRUNC | O_WRONLY</code>.
  *
  *  :notify_flags ::
+ *    A single symbol or an array of symbols representing the cases in which the +:notify+
+ *    callback should be invoked. Possible values are:
+ *
+ *    :none ::
+ *      Do not invoke the +:notify+ callback (default).
+ *
+ *    :conflict ::
+ *      Invoke the callback for conflicting paths.
+ *
+ *    :dirty ::
+ *      Invoke the callback for "dirty" files, i.e. those that do not need an update but
+ *      no longer match the baseline.
+ *
+ *    :updated ::
+ *      Invoke the callback for any file that was changed.
+ *
+ *    :untracked ::
+ *      Invoke the callback for untracked files.
+ *
+ *    :ignored ::
+ *      Invoke the callback for ignored files.
+ *
+ *    :all ::
+ *      Invoke the callback for all these cases.
  *
  *  :paths ::
+ *    A glob string or an array of glob strings specifying which paths should be taken
+ *    into account for the checkout operation. +nil+ will match all files.
+ *    Default: +nil+.
  *
  *  :baseline ::
+ *    A Rugged::Tree that represents the current, expected contents of the workdir.
+ *    Default: +HEAD+.
  *
  *  :target_directory ::
- *
+ *    A path to an alternative workdir directory in which the checkout should be performed.
  */
 static VALUE rb_git_checkout_tree(int argc, VALUE *argv, VALUE self)
 {
