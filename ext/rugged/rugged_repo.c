@@ -1511,18 +1511,22 @@ static void rugged_parse_checkout_options(git_checkout_opts *opts, VALUE rb_opti
 
 		rb_value = rb_hash_aref(rb_options, CSTR2SYM("progress"));
 		if (!NIL_P(rb_value)) {
-			struct rugged_cb_payload payload = { rb_value, 0 };
+			struct rugged_cb_payload *payload = malloc(sizeof(struct rugged_cb_payload));
+			payload->rb_data = rb_value;
+			payload->exception = 0;
 
+			opts->progress_payload = payload;
 			opts->progress_cb = &rugged__checkout_progress_cb;
-			opts->progress_payload = (void *)&payload;
 		}
 
 		rb_value = rb_hash_aref(rb_options, CSTR2SYM("notify"));
 		if (!NIL_P(rb_value)) {
-			struct rugged_cb_payload payload = { rb_value, 0 };
+			struct rugged_cb_payload *payload = malloc(sizeof(struct rugged_cb_payload));
+			payload->rb_data = rb_value;
+			payload->exception = 0;
 
+			opts->notify_payload = payload;
 			opts->notify_cb = &rugged__checkout_notify_cb;
-			opts->notify_payload = (void *)&payload;
 		}
 
 		if (!NIL_P(rb_value = rb_hash_aref(rb_options, CSTR2SYM("strategy")))) {
@@ -1767,7 +1771,7 @@ static VALUE rb_git_checkout_tree(int argc, VALUE *argv, VALUE self)
 	git_object *treeish;
 	git_checkout_opts opts = GIT_CHECKOUT_OPTS_INIT;
 	struct rugged_cb_payload *payload;
-	int error;
+	int error, exception = 0;
 
 	rb_scan_args(argc, argv, "11", &rb_treeish, &rb_options);
 
@@ -1789,13 +1793,18 @@ static VALUE rb_git_checkout_tree(int argc, VALUE *argv, VALUE self)
 	error = git_checkout_tree(repo, treeish, &opts);
 	xfree(opts.paths.strings);
 
-	payload = opts.progress_payload;
-	if (payload != NULL && payload->exception)
-		rb_jump_tag(payload->exception);
+	if ((payload = opts.notify_payload) != NULL) {
+		exception = payload->exception;
+		xfree(opts.notify_payload);
+	}
 
-	payload = opts.notify_payload;
-	if (payload != NULL && payload->exception)
-		rb_jump_tag(payload->exception);
+	if ((payload = opts.progress_payload) != NULL) {
+		exception = payload->exception;
+		xfree(opts.progress_payload);
+	}
+
+	if (exception)
+		rb_jump_tag(exception);
 
 	rugged_exception_check(error);
 
