@@ -1639,6 +1639,9 @@ static void rugged_parse_checkout_options(git_checkout_opts *opts, VALUE rb_opti
  *  call-seq:
  *    repo.checkout_tree(treeish[, options])
  *
+ *  Updates files in the index and working tree to match the content of the
+ *  tree pointed at by the +treeish+.
+ *
  *  The following options can be passed in the +options+ Hash:
  *
  *  :progress ::
