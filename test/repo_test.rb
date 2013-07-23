@@ -482,8 +482,21 @@ end
 class RepositoryCheckoutTest < Rugged::SandboxedTestCase
   def setup
     super
+
     @repo = sandbox_init("testrepo")
     @clone = sandbox_clone("testrepo", "cloned_testrepo")
+
+    _bare = sandbox_init("testrepo.git")
+    @bare = Rugged::Repository.bare(_bare.path)
+    _bare.close
+  end
+
+  def teardown
+    @bare.close
+    @clone.close
+    @repo.close
+
+    super
   end
 
   def test_checkout_tree_with_commit
@@ -560,6 +573,22 @@ class RepositoryCheckoutTest < Rugged::SandboxedTestCase
     assert File.exists?(File.join(@repo.workdir, "de"))
     assert File.exists?(File.join(@repo.workdir, "de/2.txt"))
     assert File.exists?(File.join(@repo.workdir, "de/fgh/1.txt"))
+  end
+
+  def test_checkout_tree_raises_with_bare_repo
+    assert_raises Rugged::RepositoryError do
+      @bare.checkout_tree("HEAD", :strategy => :safe_create)
+    end
+  end
+
+  def test_checkout_tree_works_with_bare_repo_and_target_directory
+    Dir.mktmpdir("alternative") do |dir|
+      @bare.checkout_tree("HEAD", :strategy => :safe_create, :target_directory => dir)
+
+      assert File.exists?(File.join(dir, "README"))
+      assert File.exists?(File.join(dir, "new.txt"))
+      assert File.exists?(File.join(dir, "subdir"))
+    end
   end
 
   def test_checkout_with_branch_updates_HEAD
