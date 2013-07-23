@@ -1773,7 +1773,7 @@ static VALUE rb_git_checkout_tree(int argc, VALUE *argv, VALUE self)
 	struct rugged_cb_payload *payload;
 	int error, exception = 0;
 
-	rb_scan_args(argc, argv, "11", &rb_treeish, &rb_options);
+	rb_scan_args(argc, argv, "10:", &rb_treeish, &rb_options);
 
 	if (TYPE(rb_treeish) == T_STRING) {
 		rb_treeish = rugged_object_rev_parse(self, rb_treeish, 1);
