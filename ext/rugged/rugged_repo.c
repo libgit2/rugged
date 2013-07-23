@@ -1720,7 +1720,7 @@ static void rugged_parse_checkout_options(git_checkout_opts *opts, VALUE rb_opti
  *    Mode for newly created files. Default: +0755+ or +0644+.
  *
  *  :file_open_flags ::
- *    Mode for opening files. Default: <code>O_CREAT | O_TRUNC | O_WRONLY</code>.
+ *    Mode for opening files. Default: <code>IO::CREAT | IO::TRUNC | IO::WRONLY</code>.
  *
  *  :notify_flags ::
  *    A single symbol or an array of symbols representing the cases in which the +:notify+
