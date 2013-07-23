@@ -25,13 +25,9 @@ module Rugged
       options[:strategy] ||= :safe
       options.delete(:paths)
 
-      branch = if target == "HEAD"
-        Branch.lookup(self, self.head.name.sub(%r{^refs/heads/}, "")) unless self.head_detached?
-      else
-        Branch.lookup(self, target) rescue nil
-      end
+      return checkout_head(options) if target == "HEAD"
 
-      if branch
+      if branch = Branch.lookup(self, target) rescue nil
         self.checkout_tree(branch.tip, options)
 
         if branch.remote?

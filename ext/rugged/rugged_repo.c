@@ -1814,6 +1814,49 @@ static VALUE rb_git_checkout_tree(int argc, VALUE *argv, VALUE self)
 	return Qnil;
 }
 
+/**
+ *  call-seq: repo.checkout_head([options]) -> nil
+ *
+ *  Updates files in the index and the working tree to match the content of the
+ *  commit pointed at by +HEAD+.
+ *
+ *  See Repository#checkout_tree for a list of supported +options+.
+ */
+static VALUE rb_git_checkout_head(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_options;
+	git_repository *repo;
+	git_checkout_opts opts = GIT_CHECKOUT_OPTS_INIT;
+	struct rugged_cb_payload *payload;
+	int error, exception = 0;
+
+	rb_scan_args(argc, argv, "00:", &rb_options);
+
+	Data_Get_Struct(self, git_repository, repo);
+
+	rugged_parse_checkout_options(&opts, rb_options);
+
+	error = git_checkout_head(repo, &opts);
+	xfree(opts.paths.strings);
+
+	if ((payload = opts.notify_payload) != NULL) {
+		exception = payload->exception;
+		xfree(opts.notify_payload);
+	}
+
+	if ((payload = opts.progress_payload) != NULL) {
+		exception = payload->exception;
+		xfree(opts.progress_payload);
+	}
+
+	if (exception)
+		rb_jump_tag(exception);
+
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
 void Init_rugged_repo(void)
 {
 	id_call = rb_intern("call");
@@ -1871,6 +1914,7 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "default_signature", rb_git_repo_default_signature, 0);
 
 	rb_define_method(rb_cRuggedRepo, "checkout_tree", rb_git_checkout_tree, -1);
+	rb_define_method(rb_cRuggedRepo, "checkout_head", rb_git_checkout_head, -1);
 
 	rb_cRuggedOdbObject = rb_define_class_under(rb_mRugged, "OdbObject", rb_cObject);
 	rb_define_method(rb_cRuggedOdbObject, "data",  rb_git_odbobj_data,  0);
