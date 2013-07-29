@@ -42,7 +42,12 @@ if mingw_available
   namespace :cross do
     task :libgit2 => :embedded_clean do
       Dir.chdir("vendor/libgit2") do
-        sh "CROSS_COMPILE=#{Rake::ExtensionCompiler.mingw_host} make -f Makefile.embed"
+        old_value, ENV["CROSS_COMPILE"] = ENV["CROSS_COMPILE"], Rake::ExtensionCompiler.mingw_host
+        begin
+          sh "make -f Makefile.embed"
+        ensure
+          ENV["CROSS_COMPILE"] = old_value
+        end
       end
 
       FileUtils.mkdir_p "tmp/#{Rake::ExtensionCompiler.mingw_host}"
