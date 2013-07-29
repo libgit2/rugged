@@ -37,10 +37,9 @@ task :checkout do
 end
 Rake::Task[:compile].prerequisites.insert(0, :checkout)
 
-
 if mingw_available
   namespace :cross do
-    task :libgit2 => :embedded_clean do
+    task :libgit2 => "clean:libgit2" do
       Dir.chdir("vendor/libgit2") do
         old_value, ENV["CROSS_COMPILE"] = ENV["CROSS_COMPILE"], Rake::ExtensionCompiler.mingw_host
         begin
@@ -62,12 +61,14 @@ else
   end
 end
 
-task :embedded_clean do
-  Dir.chdir("vendor/libgit2") do
-    sh "make -f Makefile.embed clean"
+namespace :clean do
+  task :libgit2 do
+    Dir.chdir("vendor/libgit2") do
+      sh "make -f Makefile.embed clean"
+    end
   end
 end
-Rake::Task[:clean].prerequisites << :embedded_clean
+Rake::Task[:clean].prerequisites << "clean:libgit2"
 
 desc "Open an irb session preloaded with Rugged"
 task :console do
