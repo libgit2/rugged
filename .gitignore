@@ -8,3 +8,4 @@ ext/rugged/libgit2_embed.a
 .yardoc
 vendor/gems
 bin/
+pkg/
