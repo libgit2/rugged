@@ -286,8 +286,7 @@ static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 
 	Check_Type(rb_data, T_HASH);
 
-	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo))
-		rb_raise(rb_eTypeError, "Expecting a Rugged::Repository instance");
+	rugged_check_repo(rb_repo);
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
 	rb_ref = rb_hash_aref(rb_data, CSTR2SYM("update_ref"));
