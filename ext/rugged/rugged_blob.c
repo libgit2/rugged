@@ -249,10 +249,10 @@ static int cb_blob__get__chunk(char *content, size_t max_length, void *rb_io)
 
 /*
  *  call-seq:
- *    Blob.from_chunks(repository, io [, hint_path]) -> oid
+ *    Blob.from_io(repository, io [, hint_path]) -> oid
  *
- *  Write a loose blob to the +repository+ from a provider
- *  of chunks of data.
+ *  Write a loose blob to the +repository+ from an +IO+ provider
+ *  of data.
  *
  *  The repository can be bare or not.
  *
@@ -272,10 +272,10 @@ static int cb_blob__get__chunk(char *content, size_t max_length, void *rb_io)
  *  to the object before it can be placed to the object database.
  *
  *    File.open('/path/to/file') do |file|
- *      Blob.from_chunks(repo, file, 'hint/blob.h') #=> '42cab3c0cde61e2b5a2392e1eadbeffa20ffa171'
+ *      Blob.from_io(repo, file, 'hint/blob.h') #=> '42cab3c0cde61e2b5a2392e1eadbeffa20ffa171'
  *    end
  */
-static VALUE rb_git_blob_from_chunks(int argc, VALUE *argv, VALUE klass)
+static VALUE rb_git_blob_from_io(int argc, VALUE *argv, VALUE klass)
 {
 	VALUE rb_repo, rb_io, rb_hint_path;
 	const char * hint_path = NULL;
@@ -484,6 +484,6 @@ void Init_rugged_blob(void)
 	rb_define_singleton_method(rb_cRuggedBlob, "from_buffer", rb_git_blob_from_buffer, 2);
 	rb_define_singleton_method(rb_cRuggedBlob, "from_workdir", rb_git_blob_from_workdir, 2);
 	rb_define_singleton_method(rb_cRuggedBlob, "from_disk", rb_git_blob_from_disk, 2);
-	rb_define_singleton_method(rb_cRuggedBlob, "from_chunks", rb_git_blob_from_chunks, -1);
+	rb_define_singleton_method(rb_cRuggedBlob, "from_io", rb_git_blob_from_io, -1);
 
 }
