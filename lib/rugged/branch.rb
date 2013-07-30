@@ -16,7 +16,7 @@ module Rugged
     #
     # This is the same as calling Reference#name for the reference behind
     # the path
-    def cannonical_name
+    def canonical_name
       super
     end
 
