@@ -219,25 +219,31 @@ static VALUE rb_git_blob_from_disk(VALUE self, VALUE rb_repo, VALUE rb_path)
 	return rugged_create_oid(&oid);
 }
 
-static VALUE rb_read_check(VALUE *args) {
-	return rb_funcall(args[0], id_read, 1, args[1]);
+static VALUE rb_read_check(VALUE pointer) {
+	VALUE *args = (VALUE *)pointer;
+	VALUE rb_buffer = rb_funcall(args[0], id_read, 1, args[1]);
+
+	if (!NIL_P(rb_buffer))
+		Check_Type(rb_buffer, T_STRING);
+
+	return rb_buffer;
 }
 
-static VALUE rb_read_failed(void) {
-	return Qnil;
-}
-
-static int cb_blob__get__chunk(char *content, size_t max_length, void *rb_io)
+static int cb_blob__get__chunk(char *content, size_t max_length, void *data)
 {
-	VALUE rb_buffer, args[2];
+	VALUE rb_buffer, rb_args[2];
 	size_t str_len, safe_len;
+	struct rugged_cb_payload *payload = data;
 
-	args[0] = (VALUE)rb_io;
-	args[1] = INT2FIX(max_length);
+	rb_args[0] = payload->rb_data;
+	rb_args[1] = INT2FIX(max_length);
 
-	rb_buffer = rb_rescue(rb_read_check, (VALUE)args, rb_read_failed, 0);
+	rb_buffer = rb_protect(rb_read_check, (VALUE)rb_args, &payload->exception);
 
-	if (NIL_P(rb_buffer) || TYPE(rb_buffer) != T_STRING )
+	if (payload->exception)
+		return GIT_ERROR;
+
+	if (NIL_P(rb_buffer))
 		return 0;
 
 	str_len = (size_t)RSTRING_LEN(rb_buffer);
@@ -262,10 +268,7 @@ static int cb_blob__get__chunk(char *content, size_t max_length, void *rb_io)
  *  return a +String+ with maximum size of +size+.
  *
  *  *NOTE:* If an exception is raised in the +io+ object's
- *  +read+ method, a blob will be created with the data up to that point
- *  and the exception will be rescued.
- *  It's recommended to compare the +blob.size+ with the expected data size
- *  to check if all the data was written.
+ *  +read+ method, no blob will be created.
  *
  *  Provided the +hint_path+ parameter is given, its value
  *  will help to determine what git filters should be applied
@@ -278,6 +281,7 @@ static int cb_blob__get__chunk(char *content, size_t max_length, void *rb_io)
 static VALUE rb_git_blob_from_io(int argc, VALUE *argv, VALUE klass)
 {
 	VALUE rb_repo, rb_io, rb_hint_path;
+	struct rugged_cb_payload payload;
 	const char * hint_path = NULL;
 
 	int error;
@@ -294,13 +298,18 @@ static VALUE rb_git_blob_from_io(int argc, VALUE *argv, VALUE klass)
 		hint_path = StringValueCStr(rb_hint_path);
 	}
 
+	payload.exception = 0;
+	payload.rb_data = rb_io;
+
 	error = git_blob_create_fromchunks(
 			&oid,
 			repo,
 			hint_path,
 			cb_blob__get__chunk,
-			(void *)rb_io);
+			(void *)&payload);
 
+	if (payload.exception)
+		rb_jump_tag(payload.exception);
 	rugged_exception_check(error);
 
 	return rugged_create_oid(&oid);

@@ -304,12 +304,10 @@ class BlobCreateFromIOTest < Rugged::TestCase
     end
   end
 
-  def test_write_blob_from_io_broken_io
-    oid = Rugged::Blob.from_io(@repo, BrokenIO.new)
-    blob = @repo.lookup(oid)
-    assert_equal 'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391',
-      blob.oid
-    assert_equal 0, blob.size
+  def test_write_blob_from_io_broken_io_raises_error
+    assert_raises IOError do
+      Rugged::Blob.from_io(@repo, BrokenIO.new)
+    end
   end
 
   class OverflowIO
@@ -335,7 +333,8 @@ class BlobCreateFromIOTest < Rugged::TestCase
   end
 
   def test_write_blob_from_io_bad_io
-    assert Rugged::Blob.from_io(@repo, BadIO.new)
+    assert_raises TypeError do
+      Rugged::Blob.from_io(@repo, BadIO.new)
+    end
   end
-
 end
