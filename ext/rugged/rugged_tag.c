@@ -196,9 +196,7 @@ static VALUE rb_git_tag_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 
 	VALUE rb_name, rb_target, rb_tagger, rb_message, rb_force;
 
-	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo))
-		rb_raise(rb_eTypeError, "Expecting a Rugged::Repository instance");
-
+	rugged_check_repo(rb_repo);
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
 	if (TYPE(rb_data) == T_STRING) {
@@ -297,9 +295,8 @@ static VALUE rb_git_tag_each(int argc, VALUE *argv, VALUE self)
 		pattern = StringValueCStr(rb_pattern);
 	}
 
-	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo))
-		rb_raise(rb_eTypeError, "Expecting a Rugged::Repository instance");
 
+	rugged_check_repo(rb_repo);
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
 	error = git_tag_list_match(&tags, pattern ? pattern : "", repo);
@@ -327,8 +324,7 @@ static VALUE rb_git_tag_delete(VALUE self, VALUE rb_repo, VALUE rb_name)
 	git_repository *repo;
 	int error;
 
-	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo))
-		rb_raise(rb_eTypeError, "Expecting a Rugged::Repository instance");
+	rugged_check_repo(rb_repo);
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
 	Check_Type(rb_name, T_STRING);
