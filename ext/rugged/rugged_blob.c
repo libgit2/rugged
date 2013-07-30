@@ -141,11 +141,11 @@ static VALUE rb_git_blob_rawsize(VALUE self)
 
 /*
  *  call-seq:
- *    Blob.from_buffer(repository, bytes) -> oid
+ *    Blob.from_buffer(repository, buffer) -> oid
  *
  *  Write a blob to +repository+ with the contents specified
- *  in +buffer+. In Ruby 1.9.x, the encoding of +buffer+ is
- *  ignored and bytes are copied as-is.
+ *  in +buffer+, where +buffer+ is a +String+.
+ *  The encoding of +buffer+ is ignored and bytes are copied as-is.
  */
 static VALUE rb_git_blob_from_buffer(VALUE self, VALUE rb_repo, VALUE rb_buffer)
 {
