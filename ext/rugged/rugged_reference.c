@@ -56,8 +56,7 @@ static VALUE rb_git_ref__each(int argc, VALUE *argv, VALUE self, int only_names)
 			rb_repo, rb_glob);
 	}
 
-	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo))
-		rb_raise(rb_eTypeError, "Expecting a Rugged::Repository instance");
+	rugged_check_repo(rb_repo);
 
 	Data_Get_Struct(rb_repo, git_repository, repo);
 

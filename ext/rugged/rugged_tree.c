@@ -616,11 +616,10 @@ static VALUE rb_git_treebuilder_write(VALUE self, VALUE rb_repo)
 	git_oid written_id;
 	int error;
 
-	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo))
-		rb_raise(rb_eTypeError, "Expecting a Rugged::Repository instance");
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
 
 	Data_Get_Struct(self, git_treebuilder, builder);
-	Data_Get_Struct(rb_repo, git_repository, repo);
 
 	error = git_treebuilder_write(&written_id, repo, builder);
 	rugged_exception_check(error);
