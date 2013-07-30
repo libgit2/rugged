@@ -275,23 +275,23 @@ class BlobDiffTest < Rugged::SandboxedTestCase
   end
 end
 
-class BlobCreateFromChunksTest < Rugged::TestCase
+class BlobCreateFromIOTest < Rugged::TestCase
   include Rugged::TempRepositoryAccess
 
-  def test_write_blob_from_chunks_with_hintpath
+  def test_write_blob_from_io_with_hintpath
     file_path= File.join(TEST_DIR, (File.join('fixtures', 'archive.tar.gz')))
     File.open(file_path, 'rb') do |io|
-      oid = Rugged::Blob.from_chunks(@repo, io, 'archive.tar.gz2')
+      oid = Rugged::Blob.from_io(@repo, io, 'archive.tar.gz2')
       io.rewind
       blob = @repo.lookup(oid)
       assert_equal io.read, blob.content
     end
   end
 
-  def test_write_blob_from_chunks_without_hintpath
+  def test_write_blob_from_io_without_hintpath
     file_path= File.join(TEST_DIR, (File.join('fixtures', 'archive.tar.gz')))
     File.open(file_path, 'rb') do |io|
-      oid = Rugged::Blob.from_chunks(@repo, io)
+      oid = Rugged::Blob.from_io(@repo, io)
       io.rewind
       blob = @repo.lookup(oid)
       assert_equal io.read, blob.content
@@ -304,8 +304,8 @@ class BlobCreateFromChunksTest < Rugged::TestCase
     end
   end
 
-  def test_write_blob_from_chunks_broken_io
-    oid = Rugged::Blob.from_chunks(@repo, BrokenIO.new)
+  def test_write_blob_from_io_broken_io
+    oid = Rugged::Blob.from_io(@repo, BrokenIO.new)
     blob = @repo.lookup(oid)
     assert_equal 'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391',
       blob.oid
@@ -324,8 +324,8 @@ class BlobCreateFromChunksTest < Rugged::TestCase
     end
   end
 
-  def test_write_blob_from_chunks_overflow_io
-    assert Rugged::Blob.from_chunks(@repo, OverflowIO.new)
+  def test_write_blob_from_io_overflow_io
+    assert Rugged::Blob.from_io(@repo, OverflowIO.new)
   end
 
   class BadIO
@@ -334,8 +334,8 @@ class BlobCreateFromChunksTest < Rugged::TestCase
     end
   end
 
-  def test_write_blob_from_chunks_bad_io
-    assert Rugged::Blob.from_chunks(@repo, BadIO.new)
+  def test_write_blob_from_io_bad_io
+    assert Rugged::Blob.from_io(@repo, BadIO.new)
   end
 
 end
