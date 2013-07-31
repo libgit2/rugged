@@ -61,6 +61,7 @@ void Init_rugged_config(void);
 void Init_rugged_remote(void);
 void Init_rugged_notes(void);
 void Init_rugged_settings(void);
+void Init_rugged_submodule(void);
 void Init_rugged_diff(void);
 void Init_rugged_diff_patch(void);
 void Init_rugged_diff_delta(void);
