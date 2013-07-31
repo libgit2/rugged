@@ -37,10 +37,14 @@ module Rugged
       super
     end
 
+    def sandbox_fixture(repository)
+      FileUtils.cp_r(File.join(TestCase::TEST_DIR, 'fixtures', repository), @_sandbox_path)
+    end
+
     # Fills the current sandbox folder with the files
     # found in the given repository
     def sandbox_init(repository)
-      FileUtils.cp_r(File.join(TestCase::TEST_DIR, 'fixtures', repository), @_sandbox_path)
+      sandbox_fixture(repository)
 
       Dir.chdir(File.join(@_sandbox_path, repository)) do
         File.rename(".gitted", ".git") if File.exists?(".gitted")
@@ -57,6 +61,69 @@ module Rugged
       end
 
       Rugged::Repository.new(File.join(@_sandbox_path, name))
+    end
+  end
+
+  class SubmoduleTestCase < Rugged::SandboxedTestCase
+    def setup
+      super
+    end
+
+    def setup_submodule
+      repository = sandbox_init('submod2')
+      sandbox_fixture('submod2_target')
+
+      Dir.chdir(@_sandbox_path) do
+        File.rename(
+          File.join('submod2_target', '.gitted'),
+          File.join('submod2_target', '.git')
+        )
+
+        rewrite_gitmodules(repository.workdir)
+
+        File.rename(
+          File.join('submod2', 'not-submodule', '.gitted'),
+          File.join('submod2', 'not-submodule', '.git')
+        )
+
+        File.rename(
+          File.join('submod2', 'not', '.gitted'),
+          File.join('submod2', 'not', '.git')
+        )
+      end
+
+      repository
+    end
+
+    def rewrite_gitmodules(workdir)
+      input_path = File.join(workdir, 'gitmodules')
+      output_path = File.join(workdir, '.gitmodules')
+      submodules = []
+
+      File.open(input_path, 'r') do |input|
+        File.open(output_path, 'w') do |output|
+          input.each_line do |line|
+            if %r{path = (?<submodule>.+$)} =~ line
+              submodules << submodule.strip
+            # convert relative URLs in "url =" lines
+            elsif %r{url = (?<url>.+$)} =~ line
+              line = "url = #{File.expand_path(File.join(workdir, url))}\n"
+            end
+            output.write(line)
+          end
+        end
+        FileUtils.remove_entry_secure(input_path)
+
+        # rename .gitted -> .git in submodule dirs
+        submodules.each do |submodule|
+          submodule_path = File.join(workdir, submodule)
+          if File.exists?(File.join(submodule_path, '.gitted'))
+            Dir.chdir(submodule_path) do
+              File.rename('.gitted', '.git')
+            end
+          end
+        end
+      end
     end
   end
 
