@@ -21,11 +21,30 @@ end
 gemspec = Gem::Specification::load(File.expand_path('../rugged.gemspec', __FILE__))
 Rake::ExtensionTask.new('rugged', gemspec) do |r|
   r.lib_dir = 'lib/rugged'
+
   if mingw_available
     lg2_dir = File.expand_path("../tmp/#{Rake::ExtensionCompiler.mingw_host}", __FILE__)
 
     r.cross_compile = true
     r.cross_config_options << "--with-git2-lib=#{lg2_dir}"
+
+    if ruby_vers = ENV['RUBY_CC_VERSION']
+      ruby_vers = ENV['RUBY_CC_VERSION'].split(':')
+    else
+      ruby_vers = [RUBY_VERSION]
+    end
+
+    ruby_vers.each do |ruby_ver|
+      Array(r.cross_platform).each do |platf|
+        task "copy:rugged:#{platf}:#{ruby_ver}" do |t|
+          ["#{r.tmp_dir}/#{platf}/rugged/#{ruby_ver}", "#{r.tmp_dir}/#{platf}/stage"].each do |dir|
+            if File.exists?("#{dir}/rugged.so")
+              sh "#{Rake::ExtensionCompiler.mingw_host}-strip -S #{dir}/rugged.so"
+            end
+          end
+        end
+      end
+    end
   end
 end
 
