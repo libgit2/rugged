@@ -71,9 +71,132 @@ static VALUE rb_git_submodule_lookup(VALUE klass, VALUE rb_repo, VALUE rb_name)
 	return rugged_submodule_new(klass, rb_repo, submodule);
 }
 
+static VALUE submodule_status_flags_to_rb(unsigned int flags)
+{
+	VALUE rb_flags = rb_ary_new();
+
+	if (flags & GIT_SUBMODULE_STATUS_IN_HEAD)
+		rb_ary_push(rb_flags, CSTR2SYM("in_head"));
+
+	if (flags & GIT_SUBMODULE_STATUS_IN_INDEX)
+		rb_ary_push(rb_flags, CSTR2SYM("in_index"));
+
+	if (flags & GIT_SUBMODULE_STATUS_IN_CONFIG)
+		rb_ary_push(rb_flags, CSTR2SYM("in_config"));
+
+	if (flags & GIT_SUBMODULE_STATUS_IN_WD)
+		rb_ary_push(rb_flags, CSTR2SYM("in_workdir"));
+
+	if (flags & GIT_SUBMODULE_STATUS_INDEX_ADDED)
+		rb_ary_push(rb_flags, CSTR2SYM("index_added"));
+
+	if (flags & GIT_SUBMODULE_STATUS_INDEX_DELETED)
+		rb_ary_push(rb_flags, CSTR2SYM("index_deleted"));
+
+	if (flags & GIT_SUBMODULE_STATUS_INDEX_MODIFIED)
+		rb_ary_push(rb_flags, CSTR2SYM("index_modified"));
+
+	if (flags & GIT_SUBMODULE_STATUS_WD_UNINITIALIZED)
+		rb_ary_push(rb_flags, CSTR2SYM("workdir_uninitialized"));
+
+	if (flags & GIT_SUBMODULE_STATUS_WD_ADDED)
+		rb_ary_push(rb_flags, CSTR2SYM("workdir_added"));
+
+	if (flags & GIT_SUBMODULE_STATUS_WD_DELETED)
+		rb_ary_push(rb_flags, CSTR2SYM("workdir_deleted"));
+
+	if (flags & GIT_SUBMODULE_STATUS_WD_MODIFIED)
+		rb_ary_push(rb_flags, CSTR2SYM("workdir_modified"));
+
+	if (flags & GIT_SUBMODULE_STATUS_WD_INDEX_MODIFIED)
+		rb_ary_push(rb_flags, CSTR2SYM("workdir_index_modified"));
+
+	if (flags & GIT_SUBMODULE_STATUS_WD_WD_MODIFIED)
+		rb_ary_push(rb_flags, CSTR2SYM("workdir_workdir_modified"));
+
+	if (flags & GIT_SUBMODULE_STATUS_WD_UNTRACKED)
+		rb_ary_push(rb_flags, CSTR2SYM("workdir_untracked"));
+
+	return rb_flags;
+}
+
+static VALUE rb_git_submodule_status(VALUE self)
+{
+	git_submodule *submodule;
+	unsigned int flags;
+
+	Data_Get_Struct(self, git_submodule, submodule);
+
+	rugged_exception_check(
+		git_submodule_status(&flags, submodule)
+	);
+
+	return submodule_status_flags_to_rb(flags);
+
+}
+
+/*
+ *  call-seq:
+ *    submodule.add_to_index(write_index = true) -> nil
+ *
+ *  Add current submodule +HEAD+ commit to the index of superproject.
+ *
+ *  +write_index+ (optional, default +true+) - if this should immediately write
+ *  the index file. If you pass this as +false+, you will have to get the
+ *  Rugged::Repository#index and explicitly call Rugged::Index#write on it to
+ *  save the change.
+ */
+static VALUE rb_git_submodule_add_to_index(int argc, VALUE *argv, VALUE self)
+{
+	git_submodule *submodule;
+	VALUE rb_write_index;
+	int write_index;
+
+	Data_Get_Struct(self, git_submodule, submodule);
+
+	rb_scan_args(argc, argv, "01", &rb_write_index);
+
+	if(NIL_P(rb_write_index))
+		write_index = 1;
+	else
+		write_index = rugged_parse_bool(rb_write_index);
+
+	rugged_exception_check(
+		git_submodule_add_to_index(submodule, write_index)
+	);
+
+	return Qnil;
+}
+
+/*
+ *  call-seq:
+ *    submodule.reload -> nil
+ *
+ *  Reread submodule info from config, index, and +HEAD+.
+ *
+ *  Call this to reread cached submodule information for this submodule if
+ *  you have reason to believe that it has changed.
+ */
+static VALUE rb_git_submodule_reload(VALUE self)
+{
+	git_submodule *submodule;
+	Data_Get_Struct(self, git_submodule, submodule);
+
+	rugged_exception_check(
+		git_submodule_reload(submodule)
+	);
+
+	return Qnil;
+}
+
+
 void Init_rugged_submodule(void)
 {
 	rb_cRuggedSubmodule = rb_define_class_under(rb_mRugged, "Submodule", rb_cObject);
 
 	rb_define_singleton_method(rb_cRuggedSubmodule, "lookup", rb_git_submodule_lookup, 2);
+
+	rb_define_method(rb_cRuggedSubmodule, "status", rb_git_submodule_status, 0);
+	rb_define_method(rb_cRuggedSubmodule, "add_to_index", rb_git_submodule_add_to_index, -1);
+	rb_define_method(rb_cRuggedSubmodule, "reload", rb_git_submodule_reload, 0);
 }
