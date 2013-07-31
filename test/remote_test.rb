@@ -164,6 +164,13 @@ class RemotePushTest < Rugged::SandboxedTestCase
     @remote = Rugged::Remote.lookup(@repo, 'origin')
   end
 
+  def teardown
+    @repo.close
+    @remote_repo.close
+
+    super
+  end
+
   def test_push_single_ref
     result = @remote.push(["refs/heads/master", "refs/heads/master:refs/heads/foobar", "refs/heads/unit_test"])
     assert_equal({}, result)
@@ -255,10 +262,11 @@ class RemoteTransportTest < Rugged::TestCase
     @path = Dir.mktmpdir 'dir'
     @repo = Rugged::Repository.init_at(@path, false)
     repo_dir = File.join(TEST_DIR, (File.join('fixtures', 'testrepo.git', '.')))
-    @remote = Rugged::Remote.add(@repo, 'origin', "file://#{repo_dir}")
+    @remote = Rugged::Remote.add(@repo, 'origin', repo_dir)
   end
 
   def teardown
+    @repo.close
     FileUtils.remove_entry_secure(@path)
   end
 
