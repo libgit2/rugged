@@ -222,7 +222,7 @@ class BranchTest < Rugged::TestCase
     assert_nil Rugged::Branch.lookup(@repo, "origin/master", :remote).upstream
   end
 
-  def test_branch_upstrem_no_tracking_branch
+  def test_branch_upstream_no_tracking_branch
     branch = @repo.create_branch('test_branch',
                                  '5b5b025afb0b4c913b4c338a42934a3863bf3644')
     assert_nil branch.upstream
