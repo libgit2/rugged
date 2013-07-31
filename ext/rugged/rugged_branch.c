@@ -351,7 +351,16 @@ static VALUE rb_git_branch__remote_name(VALUE rb_repo, const char *canonical_nam
 	return result;
 }
 
-/* :nodoc: */
+/*  call-seq:
+ *    remote_name -> string
+ *
+ *  Get the name of the remote the branch belongs to.
+ *
+ *  If the branch is remote returns the name of the remote it belongs to.
+ *  In case of a local branch, it returns the name of remote of the branch
+ *  it tracks or nil of there is no tracking branch.
+ *
+ */
 static VALUE rb_git_branch_remote_name(VALUE self)
 {
 	git_reference *branch, *remote_ref;
