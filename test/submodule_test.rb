@@ -37,21 +37,27 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
   def test_submodule_status_ignore_none
     submodule = Rugged::Submodule.lookup(@repo, 'sm_changed_index')
     assert_includes submodule.status, :workdir_index_modified
+    assert submodule.workdir_index_modified?
 
     submodule = Rugged::Submodule.lookup(@repo, 'sm_changed_head')
     assert_includes submodule.status, :workdir_modified
+    assert submodule.workdir_modified?
 
     submodule = Rugged::Submodule.lookup(@repo, 'sm_changed_file')
     assert_includes submodule.status, :workdir_workdir_modified
+    assert submodule.workdir_workdir_modified?
 
     submodule = Rugged::Submodule.lookup(@repo, 'sm_changed_untracked_file')
     assert_includes submodule.status, :workdir_untracked
+    assert submodule.workdir_untracked?
 
     submodule = Rugged::Submodule.lookup(@repo, 'sm_missing_commits')
     assert_includes submodule.status, :workdir_modified
+    assert submodule.workdir_modified?
 
     submodule = Rugged::Submodule.lookup(@repo, 'sm_added_and_uncommited')
     assert_includes submodule.status, :index_added
+    assert submodule.index_added?
 
     sm_unchanged_path = File.join(@repo.workdir, 'sm_unchanged')
 
@@ -59,17 +65,20 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
     FileUtils.remove_entry_secure(sm_unchanged_path)
     submodule = Rugged::Submodule.lookup(@repo, 'sm_unchanged')
     assert_includes submodule.status, :workdir_deleted
+    assert submodule.workdir_deleted?
 
     # now mkdir sm_unchanged to test uninitialized
     FileUtils.mkdir(sm_unchanged_path, :mode => 0755)
     submodule = Rugged::Submodule.lookup(@repo, 'sm_unchanged')
     submodule.reload
     assert_includes submodule.status, :workdir_uninitialized
+    assert submodule.workdir_uninitialized?
 
     # update sm_changed_head in index
     submodule = Rugged::Submodule.lookup(@repo, 'sm_changed_head')
     submodule.add_to_index
     assert_includes submodule.status, :index_modified
+    assert submodule.index_modified?
 
     # remove sm_changed_head from index */
     index = @repo.index
@@ -79,6 +88,7 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
     submodule = Rugged::Submodule.lookup(@repo, 'sm_changed_head')
     submodule.reload
     assert_includes submodule.status, :index_deleted
+    assert submodule.index_deleted?
   end
 
 end
