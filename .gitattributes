@@ -1,1 +1,2 @@
 test/fixtures/*.git/packed-refs text eol=lf
+test/fixtures/*.git/logs/**/* text eol=lf
