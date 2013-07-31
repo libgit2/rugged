@@ -18,13 +18,29 @@ def sys(cmd)
   ret
 end
 
+def preserving_globals
+  values =
+    $arg_config,
+    $CFLAGS, $CPPFLAGS,
+    $LDFLAGS, $LIBPATH, $libs
+  yield
+ensure
+  $arg_config,
+  $CFLAGS, $CPPFLAGS,
+  $LDFLAGS, $LIBPATH, $libs =
+    values
+end
+
 MAKE_PROGRAM = find_executable('gmake') || find_executable('make')
 
 if MAKE_PROGRAM.nil?
   abort "ERROR: GNU make is required to build Rugged"
 end
 
-dir_config('git2')
+if preserving_globals { dir_config('git2') }.all?
+  dir_config('git2')
+end
+
 unless have_library 'git2' and have_header 'git2.h'
   CWD = File.expand_path(File.dirname(__FILE__))
   LIBGIT2_DIR = File.join(CWD, '..', '..', 'vendor', 'libgit2')
