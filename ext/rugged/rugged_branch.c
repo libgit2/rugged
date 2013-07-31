@@ -416,7 +416,8 @@ static VALUE rb_git_branch_upstream(VALUE self)
  *
  *  Set the upstream configuration for a given local branch.
  *
- *  Takes a local or remote Rugged::Branch instance
+ *  Takes a local or remote Rugged::Branch instance or a Rugged::Reference
+ *  pointing to a branch.
  */
 static VALUE rb_git_branch_set_upstream(VALUE self, VALUE rb_branch)
 {
@@ -425,8 +426,8 @@ static VALUE rb_git_branch_set_upstream(VALUE self, VALUE rb_branch)
 
 	Data_Get_Struct(self, git_reference, branch);
 	if (!NIL_P(rb_branch)) {
-		if (!rb_obj_is_kind_of(rb_branch, rb_cRuggedBranch))
-			rb_raise(rb_eTypeError, "Expecting a Rugged::Branch instance");
+		if (!rb_obj_is_kind_of(rb_branch, rb_cRuggedReference))
+			rb_raise(rb_eTypeError, "Expecting a Rugged::Reference instance");
 
 		Data_Get_Struct(rb_branch, git_reference, target_branch);
 

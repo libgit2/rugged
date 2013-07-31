@@ -236,6 +236,21 @@ class BranchTest < Rugged::TestCase
     end
   end
 
+  def test_branch_set_upstream_with_reference
+    branch = @repo.create_branch('test_branch',
+                                 '5b5b025afb0b4c913b4c338a42934a3863bf3644')
+    branch.upstream =  Rugged::Reference.lookup(@repo, "refs/heads/master")
+    assert_equal 'master',  branch.upstream.name
+  end
+
+  def test_branch_set_upstream_with_tag_reference
+    branch = @repo.create_branch('test_branch',
+                                 '5b5b025afb0b4c913b4c338a42934a3863bf3644')
+    assert_raises Rugged::InvalidError do
+      branch.upstream =  Rugged::Reference.lookup(@repo, "refs/tags/v1.0")
+    end
+  end
+
   def test_branch_set_upstream_local
     branch = @repo.create_branch('test_branch',
                                  '5b5b025afb0b4c913b4c338a42934a3863bf3644')
