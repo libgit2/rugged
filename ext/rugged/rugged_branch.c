@@ -389,7 +389,7 @@ static VALUE rb_git_branch_remote_name(VALUE self)
  *
  *  Return the remote tracking branch.
  *
- *  Returns +nil+ if the branch is local or has no tracking branch.
+ *  Returns +nil+ if the branch is remote or has no tracking branch.
  */
 static VALUE rb_git_branch_upstream(VALUE self)
 {
