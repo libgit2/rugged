@@ -47,34 +47,34 @@ VALUE init_status_list(void)
 		id_in_workdir         = CSTR2SYM("in_workdir")
 	);
 	rb_ary_push(status_list,
-		id_index_added        = CSTR2SYM("index_added")
+		id_index_added        = CSTR2SYM("added_to_index")
 	);
 	rb_ary_push(status_list,
-		id_index_deleted      = CSTR2SYM("index_deleted")
+		id_index_deleted      = CSTR2SYM("deleted_from_index")
 	);
 	rb_ary_push(status_list,
-		id_index_modified     = CSTR2SYM("index_modified")
+		id_index_modified     = CSTR2SYM("modified_in_index")
 	);
 	rb_ary_push(status_list,
-		id_wd_uninitialized   = CSTR2SYM("workdir_uninitialized")
+		id_wd_uninitialized   = CSTR2SYM("uninitialized")
 	);
 	rb_ary_push(status_list,
-		id_wd_added           = CSTR2SYM("workdir_added")
+		id_wd_added           = CSTR2SYM("added_to_workdir")
 	);
 	rb_ary_push(status_list,
-		id_wd_deleted         = CSTR2SYM("workdir_deleted")
+		id_wd_deleted         = CSTR2SYM("deleted_from_workdir")
 	);
 	rb_ary_push(status_list,
-		id_wd_modified        = CSTR2SYM("workdir_modified")
+		id_wd_modified        = CSTR2SYM("modified_in_workdir")
 	);
 	rb_ary_push(status_list,
-		id_wd_index_modified  = CSTR2SYM("workdir_index_modified")
+		id_wd_index_modified  = CSTR2SYM("dirty_workdir_index")
 	);
 	rb_ary_push(status_list,
-		id_wd_wd_modified     = CSTR2SYM("workdir_workdir_modified")
+		id_wd_wd_modified     = CSTR2SYM("modified_files_in_workdir")
 	);
 	rb_ary_push(status_list,
-		id_wd_untracked       = CSTR2SYM("workdir_untracked")
+		id_wd_untracked       = CSTR2SYM("untracked_files_in_workdir")
 	);
 
 	return status_list;
@@ -175,6 +175,64 @@ static VALUE submodule_status_flags_to_rb(unsigned int flags)
 	return rb_flags;
 }
 
+/*
+ *  call-seq:
+ *    submodule.status -> array
+ *
+ *  Returns an +array+ with the status flags for a submodule.
+ *
+ *  Depending on the Submodule#ignore property of the submodule, some of
+ *  the flags may never be returned because they indicate changes that are
+ *  supposed to be ignored.
+ *
+ *  \Submodule info is contained in 4 places: the +HEAD+ tree, the index,
+ *  config files (both +.git/config+ and +.gitmodules+), and the working
+ *  directory. Any or all of those places might be missing information about
+ *  the submodule depending on what state the repository is in. We consider
+ *  all four places to build the combination of status flags.
+ *
+ *  There are four values that are not really status, but give basic info
+ *  about what sources of submodule data are available. These will be
+ *  returned even if ignore is set to +:all+.
+ *
+ *  [:in_head]
+ *    superproject +HEAD+ contains submodule
+ *  [:in_index]
+ *    superproject index contains submodule
+ *  [:in_config]
+ *    superproject +.gitmodules+ has submodule
+ *  [:in_workdir]
+ *    superproject workdir has submodule
+ *
+ *  The following values will be returned so long as ignore is not +:all+.
+ *
+ *  [:added_to_index]
+ *    submodule is in index, not in +HEAD+
+ *  [:deleted_from_index]
+ *    submodule is in +HEAD+, not in index
+ *  [:modified_in_index]
+ *    submodule in index and +HEAD+ don't match
+ *  [:uninitialized]
+ *    submodule in workdir is not initialized
+ *  [:added_to_workdir]
+ *    submodule is in workdir, not index
+ *  [:deleted_from_workdir]
+ *    submodule is in index, not workdir
+ *  [:modified_in_workdir]
+ *    submodule in index and workdir +HEAD+ don't match
+ *
+ *  The following can only be returned if ignore is +:none+ or +:untracked+.
+ *
+ *  [:dirty_workdir_index]
+ *    submodule workdir index is dirty
+ *  [:modified_files_in_workdir]
+ *    submodule workdir has modified files
+ *
+ *  Lastly, the following will only be returned for ignore +:none+.
+ *
+ *  [:untracked_files_in_workdir]
+ *    submodule workdir contains untracked files
+ */
 static VALUE rb_git_submodule_status(VALUE self)
 {
 	git_submodule *submodule;
