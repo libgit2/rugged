@@ -26,6 +26,60 @@
 extern VALUE rb_mRugged;
 VALUE rb_cRuggedSubmodule;
 
+static VALUE id_in_head, id_in_index, id_in_config, id_in_workdir;
+static VALUE id_index_added, id_index_deleted, id_index_modified;
+static VALUE id_wd_uninitialized, id_wd_added, id_wd_deleted, id_wd_modified;
+static VALUE id_wd_index_modified, id_wd_wd_modified, id_wd_untracked;
+
+VALUE init_status_list(void)
+{
+	VALUE status_list = rb_ary_new2(14);
+	rb_ary_push(status_list,
+		id_in_head            = CSTR2SYM("in_head")
+	);
+	rb_ary_push(status_list,
+		id_in_index           = CSTR2SYM("in_index")
+	);
+	rb_ary_push(status_list,
+		id_in_config          = CSTR2SYM("in_config")
+	);
+	rb_ary_push(status_list,
+		id_in_workdir         = CSTR2SYM("in_workdir")
+	);
+	rb_ary_push(status_list,
+		id_index_added        = CSTR2SYM("index_added")
+	);
+	rb_ary_push(status_list,
+		id_index_deleted      = CSTR2SYM("index_deleted")
+	);
+	rb_ary_push(status_list,
+		id_index_modified     = CSTR2SYM("index_modified")
+	);
+	rb_ary_push(status_list,
+		id_wd_uninitialized   = CSTR2SYM("workdir_uninitialized")
+	);
+	rb_ary_push(status_list,
+		id_wd_added           = CSTR2SYM("workdir_added")
+	);
+	rb_ary_push(status_list,
+		id_wd_deleted         = CSTR2SYM("workdir_deleted")
+	);
+	rb_ary_push(status_list,
+		id_wd_modified        = CSTR2SYM("workdir_modified")
+	);
+	rb_ary_push(status_list,
+		id_wd_index_modified  = CSTR2SYM("workdir_index_modified")
+	);
+	rb_ary_push(status_list,
+		id_wd_wd_modified     = CSTR2SYM("workdir_workdir_modified")
+	);
+	rb_ary_push(status_list,
+		id_wd_untracked       = CSTR2SYM("workdir_untracked")
+	);
+
+	return status_list;
+}
+
 VALUE rugged_submodule_new(VALUE klass, VALUE owner, git_submodule *submodule)
 {
 	VALUE rb_submodule = Data_Wrap_Struct(klass, NULL, NULL, submodule);
@@ -71,51 +125,52 @@ static VALUE rb_git_submodule_lookup(VALUE klass, VALUE rb_repo, VALUE rb_name)
 	return rugged_submodule_new(klass, rb_repo, submodule);
 }
 
+
 static VALUE submodule_status_flags_to_rb(unsigned int flags)
 {
 	VALUE rb_flags = rb_ary_new();
 
 	if (flags & GIT_SUBMODULE_STATUS_IN_HEAD)
-		rb_ary_push(rb_flags, CSTR2SYM("in_head"));
+		rb_ary_push(rb_flags, id_in_head);
 
 	if (flags & GIT_SUBMODULE_STATUS_IN_INDEX)
-		rb_ary_push(rb_flags, CSTR2SYM("in_index"));
+		rb_ary_push(rb_flags, id_in_index);
 
 	if (flags & GIT_SUBMODULE_STATUS_IN_CONFIG)
-		rb_ary_push(rb_flags, CSTR2SYM("in_config"));
+		rb_ary_push(rb_flags, id_in_config);
 
 	if (flags & GIT_SUBMODULE_STATUS_IN_WD)
-		rb_ary_push(rb_flags, CSTR2SYM("in_workdir"));
+		rb_ary_push(rb_flags, id_in_workdir);
 
 	if (flags & GIT_SUBMODULE_STATUS_INDEX_ADDED)
-		rb_ary_push(rb_flags, CSTR2SYM("index_added"));
+		rb_ary_push(rb_flags, id_index_added);
 
 	if (flags & GIT_SUBMODULE_STATUS_INDEX_DELETED)
-		rb_ary_push(rb_flags, CSTR2SYM("index_deleted"));
+		rb_ary_push(rb_flags, id_index_deleted);
 
 	if (flags & GIT_SUBMODULE_STATUS_INDEX_MODIFIED)
-		rb_ary_push(rb_flags, CSTR2SYM("index_modified"));
+		rb_ary_push(rb_flags, id_index_modified);
 
 	if (flags & GIT_SUBMODULE_STATUS_WD_UNINITIALIZED)
-		rb_ary_push(rb_flags, CSTR2SYM("workdir_uninitialized"));
+		rb_ary_push(rb_flags, id_wd_uninitialized);
 
 	if (flags & GIT_SUBMODULE_STATUS_WD_ADDED)
-		rb_ary_push(rb_flags, CSTR2SYM("workdir_added"));
+		rb_ary_push(rb_flags, id_wd_added);
 
 	if (flags & GIT_SUBMODULE_STATUS_WD_DELETED)
-		rb_ary_push(rb_flags, CSTR2SYM("workdir_deleted"));
+		rb_ary_push(rb_flags, id_wd_deleted);
 
 	if (flags & GIT_SUBMODULE_STATUS_WD_MODIFIED)
-		rb_ary_push(rb_flags, CSTR2SYM("workdir_modified"));
+		rb_ary_push(rb_flags, id_wd_modified);
 
 	if (flags & GIT_SUBMODULE_STATUS_WD_INDEX_MODIFIED)
-		rb_ary_push(rb_flags, CSTR2SYM("workdir_index_modified"));
+		rb_ary_push(rb_flags, id_wd_index_modified);
 
 	if (flags & GIT_SUBMODULE_STATUS_WD_WD_MODIFIED)
-		rb_ary_push(rb_flags, CSTR2SYM("workdir_workdir_modified"));
+		rb_ary_push(rb_flags, id_wd_wd_modified);
 
 	if (flags & GIT_SUBMODULE_STATUS_WD_UNTRACKED)
-		rb_ary_push(rb_flags, CSTR2SYM("workdir_untracked"));
+		rb_ary_push(rb_flags, id_wd_untracked);
 
 	return rb_flags;
 }
@@ -192,7 +247,9 @@ static VALUE rb_git_submodule_reload(VALUE self)
 
 void Init_rugged_submodule(void)
 {
+	VALUE status_list = init_status_list();
 	rb_cRuggedSubmodule = rb_define_class_under(rb_mRugged, "Submodule", rb_cObject);
+	rb_define_const(rb_cRuggedSubmodule, "STATUS_LIST", status_list);
 
 	rb_define_singleton_method(rb_cRuggedSubmodule, "lookup", rb_git_submodule_lookup, 2);
 
