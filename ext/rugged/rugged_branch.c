@@ -60,7 +60,7 @@ static int parse_branch_type(VALUE rb_filter)
  *  to the +target+.
  *
  *  +name+ needs to be a branch name, not an absolute reference path
- *  (e.g. +development+ instead of +/refs/heads/development+).
+ *  (e.g. +development+ instead of +refs/heads/development+).
  *
  *  +target+ needs to be an existing commit in the given +repository+.
  *
@@ -264,7 +264,7 @@ static VALUE rb_git_branch_each(int argc, VALUE *argv, VALUE self)
  *  Rename a branch to +new_name+.
  *
  *  +new_name+ needs to be a branch name, not an absolute reference path
- *  (e.g. +development+ instead of +/refs/heads/development+).
+ *  (e.g. +development+ instead of +refs/heads/development+).
  *
  *  If +force+ is +true+, the branch will be renamed even if a branch
  *  with +new_name+ already exists.
@@ -304,12 +304,14 @@ static VALUE rb_git_branch_head_p(VALUE self)
 	return git_branch_is_head(branch) ? Qtrue : Qfalse;
 }
 
-/*  call-seq:
- *    name -> string
+/*
+ *  call-seq:
+ *    branch.name -> string
  *
- *  The name of the branch, without a fully-qualified reference path
+ *  Returns the name of +branch+.
  *
- *  E.g. 'master' instead of 'refs/heads/master'
+ *  See Rugged::Branch#canonical_name if you need the fully qualified
+ *  name of the underlying reference.
  */
 static VALUE rb_git_branch_name(VALUE self)
 {
@@ -351,15 +353,17 @@ static VALUE rb_git_branch__remote_name(VALUE rb_repo, const char *canonical_nam
 	return result;
 }
 
-/*  call-seq:
- *    remote_name -> string
+/*
+ *  call-seq:
+ *    branch.remote_name -> string
  *
  *  Get the name of the remote the branch belongs to.
  *
- *  If the branch is remote returns the name of the remote it belongs to.
- *  In case of a local branch, it returns the name of remote of the branch
- *  it tracks or nil of there is no tracking branch.
+ *  If +branch+ is a remote branch, the name of the remote it belongs to is
+ *  returned. If +branch+ is a tracking branch, the name of the remote
+ *  of the tracked branch is returned.
  *
+ *  Otherwise, +nil+ is returned.
  */
 static VALUE rb_git_branch_remote_name(VALUE self)
 {
@@ -384,12 +388,12 @@ static VALUE rb_git_branch_remote_name(VALUE self)
 			git_reference_name(remote_ref));
 }
 
-/*  call-seq:
- *    upstream -> branch
+/*
+ *  call-seq:
+ *    branch.upstream -> branch
  *
- *  Return the remote tracking branch.
- *
- *  Returns +nil+ if the branch is remote or has no tracking branch.
+ *  Returns the remote tracking branch, or +nil+ if the branch is
+ *  remote or has no tracking branch.
  */
 static VALUE rb_git_branch_upstream(VALUE self)
 {
@@ -411,8 +415,9 @@ static VALUE rb_git_branch_upstream(VALUE self)
 	return rugged_branch_new(rugged_owner(self), upstream_branch);
 }
 
-/*  call-seq:
- *    upstream = branch -> branch
+/*
+ *  call-seq:
+ *    branch.upstream = branch
  *
  *  Set the upstream configuration for a given local branch.
  *
