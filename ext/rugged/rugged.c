@@ -405,11 +405,34 @@ void Init_rugged(void)
 	Init_rugged_diff_hunk();
 	Init_rugged_diff_line();
 
-	/* Constants */
-	rb_define_const(rb_mRugged, "SORT_NONE", INT2FIX(0));
-	rb_define_const(rb_mRugged, "SORT_TOPO", INT2FIX(1));
-	rb_define_const(rb_mRugged, "SORT_DATE", INT2FIX(2));
-	rb_define_const(rb_mRugged, "SORT_REVERSE", INT2FIX(4));
+	/*
+	 * Sort the repository contents in no particular ordering;
+	 * this sorting is arbitrary, implementation-specific
+	 * and subject to change at any time.
+	 * This is the default sorting for new walkers.
+	 */
+	rb_define_const(rb_mRugged, "SORT_NONE", INT2FIX(GIT_SORT_NONE));
+
+	/*
+	 * Sort the repository contents in topological order
+	 * (parents before children); this sorting mode
+	 * can be combined with time sorting.
+	 */
+	rb_define_const(rb_mRugged, "SORT_TOPO", INT2FIX(GIT_SORT_TOPOLOGICAL));
+
+	/*
+	 * Sort the repository contents by commit time;
+	 * this sorting mode can be combined with
+	 * topological sorting.
+	 */
+	rb_define_const(rb_mRugged, "SORT_DATE", INT2FIX(GIT_SORT_TIME));
+
+	/*
+	 * Iterate through the repository contents in reverse
+	 * order; this sorting mode can be combined with
+	 * any of the above.
+	 */
+	rb_define_const(rb_mRugged, "SORT_REVERSE", INT2FIX(GIT_SORT_REVERSE));
 
 	/* Initialize libgit2 */
 	git_threads_init();
