@@ -23,10 +23,8 @@ Rake::ExtensionTask.new('rugged', gemspec) do |r|
   r.lib_dir = 'lib/rugged'
 
   if mingw_available
-    lg2_dir = File.expand_path("../tmp/#{Rake::ExtensionCompiler.mingw_host}", __FILE__)
-
+    r.cross_platform = ["i386-mingw32", "x64-mingw32"]
     r.cross_compile = true
-    r.cross_config_options << "--with-git2-lib=#{lg2_dir}"
 
     if ruby_vers = ENV['RUBY_CC_VERSION']
       ruby_vers = ENV['RUBY_CC_VERSION'].split(':')
@@ -34,8 +32,8 @@ Rake::ExtensionTask.new('rugged', gemspec) do |r|
       ruby_vers = [RUBY_VERSION]
     end
 
-    ruby_vers.each do |ruby_ver|
-      Array(r.cross_platform).each do |platf|
+    Array(r.cross_platform).each do |platf|
+      ruby_vers.each do |ruby_ver|
         task "copy:rugged:#{platf}:#{ruby_ver}" do |t|
           ["#{r.tmp_dir}/#{platf}/rugged/#{ruby_ver}", "#{r.tmp_dir}/#{platf}/stage"].each do |dir|
             if File.exists?("#{dir}/rugged.so")
@@ -44,6 +42,39 @@ Rake::ExtensionTask.new('rugged', gemspec) do |r|
           end
         end
       end
+
+      r.cross_config_options << {
+        platf => [
+          "--with-git2-lib=#{File.expand_path(r.tmp_dir)}/#{platf}/libgit2",
+          "--with-git2-include=#{File.expand_path(".")}/vendor/libgit2/include"
+        ]
+      }
+
+      task "compile:libgit2:#{platf}" => "clean:libgit2" do
+        # Use rake-compilers config.yml to determine the toolchain that was used
+        # to build Ruby for this platform.
+        host_platform = begin
+          config_file = YAML.load_file(File.expand_path("~/.rake-compiler/config.yml"))
+          _, rbfile = config_file.find{ |key, fname| key.start_with?("rbconfig-#{platf}-") }
+          IO.read(rbfile).match(/CONFIG\["host"\] = "(.*)"/)[1]
+        rescue
+          nil
+        end
+
+        Dir.chdir("vendor/libgit2") do
+          old_value, ENV["CROSS_COMPILE"] = ENV["CROSS_COMPILE"], host_platform
+          begin
+            sh "make -f Makefile.embed"
+          ensure
+            ENV["CROSS_COMPILE"] = old_value
+          end
+        end
+
+        FileUtils.mkdir_p "#{r.tmp_dir}/#{platf}/libgit2"
+        FileUtils.cp 'vendor/libgit2/libgit2.a', "#{r.tmp_dir}/#{platf}/libgit2.a"
+      end
+
+      task "compile:rugged:#{platf}" => "compile:libgit2:#{platf}"
     end
   end
 end
@@ -55,30 +86,6 @@ task :checkout do
   end
 end
 Rake::Task[:compile].prerequisites.insert(0, :checkout)
-
-if mingw_available
-  namespace :cross do
-    task :libgit2 => "clean:libgit2" do
-      Dir.chdir("vendor/libgit2") do
-        old_value, ENV["CROSS_COMPILE"] = ENV["CROSS_COMPILE"], Rake::ExtensionCompiler.mingw_host
-        begin
-          sh "make -f Makefile.embed"
-        ensure
-          ENV["CROSS_COMPILE"] = old_value
-        end
-      end
-
-      FileUtils.mkdir_p "tmp/#{Rake::ExtensionCompiler.mingw_host}"
-      FileUtils.cp 'vendor/libgit2/libgit2.a', File.expand_path("../tmp/#{Rake::ExtensionCompiler.mingw_host}", __FILE__)
-    end
-  end
-
-  Rake::Task[:cross].prerequisites.insert(0, "cross:libgit2")
-else
-  task :cross do
-    abort "No MinGW tools or unknown setup platform?"
-  end
-end
 
 namespace :clean do
   task :libgit2 do
