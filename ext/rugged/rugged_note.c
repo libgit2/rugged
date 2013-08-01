@@ -52,7 +52,7 @@ static VALUE rugged_git_note_oid(const git_note* note)
  *    obj.notes(notes_ref = 'refs/notes/commits') -> hash
  *
  *  Lookup a note for +obj+ from +notes_ref+:
- *  - +notes_ref+: (optional): cannonical name of the reference to use, defaults to "refs/notes/commits"
+ *  - +notes_ref+: (optional): canonical name of the reference to use, defaults to "refs/notes/commits"
  *
  *  Returns a new Hash object.
  *
@@ -107,7 +107,7 @@ static VALUE rb_git_note_lookup(int argc, VALUE *argv, VALUE self)
  *  - +:message+: the content of the note to add to the object
  *  - +:committer+: a hash with the signature for the committer
  *  - +:author+: a hash with the signature for the author
- *  - +:ref+: (optional): cannonical name of the reference to use, defaults to "refs/notes/commits"
+ *  - +:ref+: (optional): canonical name of the reference to use, defaults to "refs/notes/commits"
  *  - +:force+: (optional): overwrite existing note (disabled by default)
  *
  *  When the note is successfully written to disk, its +oid+ will be
@@ -194,7 +194,7 @@ static VALUE rb_git_note_create(VALUE self, VALUE rb_data)
  *
  *  - +:committer+: a hash with the signature for the committer
  *  - +:author+: a hash with the signature for the author
- *  - +:ref+: (optional): cannonical name of the reference to use, defaults to "refs/notes/commits"
+ *  - +:ref+: (optional): canonical name of the reference to use, defaults to "refs/notes/commits"
  *
  *  When the note is successfully removed +true+ will be
  *  returned as a +Boolean+.
@@ -293,7 +293,7 @@ static int cb_note__each(const git_oid *blob_id, const git_oid *annotated_object
  *    repo.each_note(notes_ref = "refs/notes/commits") -> an_enumerator
  *
  *  Call the given block once for each note_blob/annotated_object pair in +repository+
- *  - +notes_ref+: (optional): cannonical name of the reference to use defaults to "refs/notes/commits"
+ *  - +notes_ref+: (optional): canonical name of the reference to use defaults to "refs/notes/commits"
  *
  *  If no block is given, an +Enumerator+ is returned.
  *

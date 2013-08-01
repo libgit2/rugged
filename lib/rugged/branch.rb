@@ -16,13 +16,19 @@ module Rugged
     #
     # This is the same as calling Reference#name for the reference behind
     # the path
-    alias_method 'canonical_name', 'name'
+    def canonical_name
+      super
+    end
 
-    # The name of the branch, without a fully-qualified reference path
+    # Get the remote the branch belongs to.
     #
-    # E.g. 'master' instead of 'refs/heads/master'
-    def name
-      super.gsub(%r{^(refs/heads/|refs/remotes/)}, '')
+    # If the branch is remote returns the remote it belongs to.
+    # In case of local branch, it returns the remote of the branch
+    # it tracks or nil if there is no tracking branch.
+    #
+    def remote
+      remote_name = self.remote_name
+      Rugged::Remote.lookup(@owner, remote_name) if remote_name
     end
   end
 end

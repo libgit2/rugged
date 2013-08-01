@@ -79,10 +79,7 @@ static VALUE rb_git_branch_create(int argc, VALUE *argv, VALUE self)
 
 	rb_scan_args(argc, argv, "31", &rb_repo, &rb_name, &rb_target, &rb_force);
 
-	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo)) {
-		rb_raise(rb_eTypeError, "Expecting a Rugged::Repository instance");
-	}
-
+	rugged_check_repo(rb_repo);
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
 	Check_Type(rb_name, T_STRING);
@@ -126,10 +123,7 @@ static VALUE rb_git_branch_lookup(int argc, VALUE *argv, VALUE self)
 
 	rb_scan_args(argc, argv, "21", &rb_repo, &rb_name, &rb_type);
 
-	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo)) {
-		rb_raise(rb_eTypeError, "Expecting a Rugged::Repository instance");
-	}
-
+	rugged_check_repo(rb_repo);
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
 	Check_Type(rb_name, T_STRING);
@@ -208,9 +202,7 @@ static VALUE each_branch(int argc, VALUE *argv, VALUE self, int branch_names_onl
 		return rb_funcall(self, rb_intern("to_enum"), 3, symbol, rb_repo, rb_filter);
 	}
 
-	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo)) {
-		rb_raise(rb_eTypeError, "Expecting a Rugged::Repository instance");
-	}
+	rugged_check_repo(rb_repo);
 
 	if (!NIL_P(rb_filter))
 		filter = parse_branch_type(rb_filter);
@@ -312,6 +304,147 @@ static VALUE rb_git_branch_head_p(VALUE self)
 	return git_branch_is_head(branch) ? Qtrue : Qfalse;
 }
 
+/*  call-seq:
+ *    name -> string
+ *
+ *  The name of the branch, without a fully-qualified reference path
+ *
+ *  E.g. 'master' instead of 'refs/heads/master'
+ */
+static VALUE rb_git_branch_name(VALUE self)
+{
+	git_reference *branch;
+	const char *branch_name;
+	Data_Get_Struct(self, git_reference, branch);
+
+	git_branch_name(&branch_name, branch);
+	return rb_str_new_utf8(branch_name);
+}
+
+static VALUE rb_git_branch__remote_name(VALUE rb_repo, const char *canonical_name)
+{
+	git_repository *repo;
+
+	char *remote_name;
+	size_t remote_name_size;
+	int error;
+	VALUE result = Qnil;
+
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	remote_name_size = git_branch_remote_name(NULL, 0, repo, canonical_name);
+	rugged_exception_check(remote_name_size);
+
+	remote_name = xmalloc(remote_name_size * sizeof(char));
+
+	error = git_branch_remote_name(
+			remote_name, remote_name_size,
+			repo, canonical_name);
+
+	if (error > 0)
+		result = rb_enc_str_new(
+				remote_name, remote_name_size - 1,
+				rb_utf8_encoding());
+
+	xfree(remote_name);
+	rugged_exception_check(error);
+	return result;
+}
+
+/*  call-seq:
+ *    remote_name -> string
+ *
+ *  Get the name of the remote the branch belongs to.
+ *
+ *  If the branch is remote returns the name of the remote it belongs to.
+ *  In case of a local branch, it returns the name of remote of the branch
+ *  it tracks or nil of there is no tracking branch.
+ *
+ */
+static VALUE rb_git_branch_remote_name(VALUE self)
+{
+	git_reference *branch, *remote_ref;
+	int error = 0;
+
+	Data_Get_Struct(self, git_reference, branch);
+
+	if (git_reference_is_remote(branch)) {
+		remote_ref = branch;
+	} else {
+		error = git_branch_upstream(&remote_ref, branch);
+
+		if (error == GIT_ENOTFOUND)
+			return Qnil;
+
+		rugged_exception_check(error);
+	}
+
+	return rb_git_branch__remote_name(
+			rugged_owner(self),
+			git_reference_name(remote_ref));
+}
+
+/*  call-seq:
+ *    upstream -> branch
+ *
+ *  Return the remote tracking branch.
+ *
+ *  Returns +nil+ if the branch is remote or has no tracking branch.
+ */
+static VALUE rb_git_branch_upstream(VALUE self)
+{
+	git_reference *branch, *upstream_branch;
+	int error;
+
+	Data_Get_Struct(self, git_reference, branch);
+
+	if (git_reference_is_remote(branch))
+		return Qnil;
+
+	error = git_branch_upstream(&upstream_branch, branch);
+
+	if (error == GIT_ENOTFOUND)
+		return Qnil;
+
+	rugged_exception_check(error);
+
+	return rugged_branch_new(rugged_owner(self), upstream_branch);
+}
+
+/*  call-seq:
+ *    upstream = branch -> branch
+ *
+ *  Set the upstream configuration for a given local branch.
+ *
+ *  Takes a local or remote Rugged::Branch instance or a Rugged::Reference
+ *  pointing to a branch.
+ */
+static VALUE rb_git_branch_set_upstream(VALUE self, VALUE rb_branch)
+{
+	git_reference *branch, *target_branch;
+	const char *target_branch_name;
+
+	Data_Get_Struct(self, git_reference, branch);
+	if (!NIL_P(rb_branch)) {
+		if (!rb_obj_is_kind_of(rb_branch, rb_cRuggedReference))
+			rb_raise(rb_eTypeError, "Expecting a Rugged::Reference instance");
+
+		Data_Get_Struct(rb_branch, git_reference, target_branch);
+
+		rugged_exception_check(
+			git_branch_name(&target_branch_name, target_branch)
+		);
+	} else {
+		target_branch_name = NULL;
+	}
+
+	rugged_exception_check(
+		git_branch_set_upstream(branch, target_branch_name)
+	);
+
+	return rb_branch;
+}
+
 void Init_rugged_branch(void)
 {
 	rb_cRuggedBranch = rb_define_class_under(rb_mRugged, "Branch", rb_cRuggedReference);
@@ -325,4 +458,8 @@ void Init_rugged_branch(void)
 	rb_define_method(rb_cRuggedBranch, "rename", rb_git_branch_move, -1);
 	rb_define_method(rb_cRuggedBranch, "move", rb_git_branch_move, -1);
 	rb_define_method(rb_cRuggedBranch, "head?", rb_git_branch_head_p, 0);
+	rb_define_method(rb_cRuggedBranch, "name", rb_git_branch_name, 0);
+	rb_define_method(rb_cRuggedBranch, "remote_name", rb_git_branch_remote_name, 0);
+	rb_define_method(rb_cRuggedBranch, "upstream", rb_git_branch_upstream, 0);
+	rb_define_method(rb_cRuggedBranch, "upstream=", rb_git_branch_set_upstream, 1);
 }
