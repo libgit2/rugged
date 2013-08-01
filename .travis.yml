@@ -12,8 +12,6 @@ matrix:
   allow_failures:
     - rvm: rbx-19mode
   include:
-    before_script:
-      - bin/rake_compiler cross-ruby VERSION=2.0.0-p247
     script: rake cross compile
 
 # We need the config so the tests don't fail
