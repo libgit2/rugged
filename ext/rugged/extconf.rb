@@ -37,11 +37,13 @@ if MAKE_PROGRAM.nil?
   abort "ERROR: GNU make is required to build Rugged"
 end
 
-if preserving_globals { dir_config('git2') }.all?
+if preserving_globals { dir_config('git2') }.any?
   dir_config('git2')
-end
 
-unless have_library 'git2' and have_header 'git2.h'
+  unless have_library 'git2' and have_header 'git2.h'
+    abort "ERROR: Can not find libgit2 in the specified path"
+  end
+else
   CWD = File.expand_path(File.dirname(__FILE__))
   LIBGIT2_DIR = File.join(CWD, '..', '..', 'vendor', 'libgit2')
 
