@@ -393,6 +393,57 @@ static VALUE rb_git_submodule_wd_id(VALUE self)
 	RB_GIT_OID_GETTER(submodule, wd_id);
 }
 
+static VALUE rb_git_subm_ignore_rule_fromC(git_submodule_ignore_t rule)
+{
+	switch(rule) {
+	case GIT_SUBMODULE_IGNORE_NONE:
+		return CSTR2SYM("none");
+	case GIT_SUBMODULE_IGNORE_UNTRACKED:
+		return CSTR2SYM("untracked");
+	case GIT_SUBMODULE_IGNORE_DIRTY:
+		return CSTR2SYM("dirty");
+	case GIT_SUBMODULE_IGNORE_ALL:
+		return CSTR2SYM("all");
+	default:
+		return CSTR2SYM("unknown");
+	}
+}
+
+/*
+ *  call-seq:
+ *    submodule.ignore -> symbol
+ *
+ *  Returns the ignore rule for a submodule.
+ *
+ *  There are four ignore values:
+ *
+ *  [:none (default)]
+ *    will consider any change to the contents of the submodule from
+ *    a clean checkout to be dirty, including the addition of untracked files.
+ *  [:untracked]
+ *    examines the contents of the working tree but untracked files will not
+ *    count as making the submodule dirty.
+ *  [:dirty]
+ *    means to only check if the +HEAD+ of the submodule has moved for status.
+ *    This is fast since it does not need to scan the working tree
+ *    of the submodule at all.
+ *  [:all]
+ *    means not to open the submodule repository. The working directory will be
+ *    considered clean so long as there is a checked out version present.
+ *
+ *  See Submodule#status on how ignore rules reflect the returned status info
+ *  for a submodule.
+ */
+static VALUE rb_git_submodule_ignore(VALUE self)
+{
+	git_submodule *submodule;
+	git_submodule_ignore_t ignore;
+
+	Data_Get_Struct(self, git_submodule, submodule);
+	ignore = git_submodule_ignore(submodule);
+
+	return rb_git_subm_ignore_rule_fromC(ignore);
+}
 
 void Init_rugged_submodule(void)
 {
@@ -405,6 +456,8 @@ void Init_rugged_submodule(void)
 	rb_define_method(rb_cRuggedSubmodule, "name", rb_git_submodule_name, 0);
 	rb_define_method(rb_cRuggedSubmodule, "url", rb_git_submodule_url, 0);
 	rb_define_method(rb_cRuggedSubmodule, "path", rb_git_submodule_path, 0);
+
+	rb_define_method(rb_cRuggedSubmodule, "ignore", rb_git_submodule_ignore, 0);
 
 	rb_define_method(rb_cRuggedSubmodule, "head_oid", rb_git_submodule_head_id, 0);
 	rb_define_method(rb_cRuggedSubmodule, "index_oid", rb_git_submodule_index_id, 0);
