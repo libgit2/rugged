@@ -28,6 +28,14 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
     assert_nil Rugged::Submodule.lookup(@repo, 'no_such_file')
   end
 
+  def test_submodule_attribute_getters
+    submodule = Rugged::Submodule.lookup(@repo, 'sm_unchanged')
+
+    assert submodule.path.end_with?('sm_unchanged')
+    assert submodule.url.end_with?('submod2_target')
+    assert_equal 'sm_unchanged', submodule.name
+  end
+
   def test_submodule_status_unchanged
     submodule = Rugged::Submodule.lookup(@repo, 'sm_unchanged')
     expected = [:in_head, :in_index, :in_config, :in_workdir]

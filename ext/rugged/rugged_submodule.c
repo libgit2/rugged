@@ -302,6 +302,48 @@ static VALUE rb_git_submodule_reload(VALUE self)
 	return Qnil;
 }
 
+#define RB_GIT_STRING_GETTER(_klass, _attribute) \
+	git_##_klass *object; \
+	const char * value; \
+	Data_Get_Struct(self, git_##_klass, object); \
+	value = git_##_klass##_##_attribute(object); \
+	return value ? rb_str_new_utf8(value) : Qnil; \
+
+/*
+ *  call-seq:
+ *    submodule.name -> string
+ *
+ *  Returns the name of the submodule.
+ */
+static VALUE rb_git_submodule_name(VALUE self)
+{
+	RB_GIT_STRING_GETTER(submodule, name);
+}
+
+/*
+ *  call-seq:
+ *    submodule.url -> string
+ *
+ *  Returns the URL of the submodule.
+ */
+static VALUE rb_git_submodule_url(VALUE self)
+{
+	RB_GIT_STRING_GETTER(submodule, url);
+}
+
+/*
+ *  call-seq:
+ *    submodule.path -> string
+ *
+ *  Returns the path of the submodule.
+ *
+ *  The +path+ is almost always the same as the Submodule#name,
+ *  but the two are actually not required to match.
+ */
+static VALUE rb_git_submodule_path(VALUE self)
+{
+	RB_GIT_STRING_GETTER(submodule, path);
+}
 
 void Init_rugged_submodule(void)
 {
@@ -310,6 +352,10 @@ void Init_rugged_submodule(void)
 	rb_define_const(rb_cRuggedSubmodule, "STATUS_LIST", status_list);
 
 	rb_define_singleton_method(rb_cRuggedSubmodule, "lookup", rb_git_submodule_lookup, 2);
+
+	rb_define_method(rb_cRuggedSubmodule, "name", rb_git_submodule_name, 0);
+	rb_define_method(rb_cRuggedSubmodule, "url", rb_git_submodule_url, 0);
+	rb_define_method(rb_cRuggedSubmodule, "path", rb_git_submodule_path, 0);
 
 	rb_define_method(rb_cRuggedSubmodule, "status", rb_git_submodule_status, 0);
 	rb_define_method(rb_cRuggedSubmodule, "add_to_index", rb_git_submodule_add_to_index, -1);
