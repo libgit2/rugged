@@ -51,6 +51,8 @@ Rake::ExtensionTask.new('rugged', gemspec) do |r|
             end
           end
         end
+
+        file "#{r.tmp_dir}/#{platf}/rugged/#{ruby_ver}/#{r.binary(platf)}" => "compile:libgit2:#{platf}"
       end
 
       r.cross_config_options << {
@@ -73,8 +75,6 @@ Rake::ExtensionTask.new('rugged', gemspec) do |r|
         FileUtils.mkdir_p "#{r.tmp_dir}/#{platf}/libgit2"
         FileUtils.cp 'vendor/libgit2/libgit2.a', "#{r.tmp_dir}/#{platf}/libgit2.a"
       end
-
-      task "compile:rugged:#{platf}" => "compile:libgit2:#{platf}"
     end
   end
 end
