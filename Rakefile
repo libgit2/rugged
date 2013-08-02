@@ -62,10 +62,11 @@ Rake::ExtensionTask.new('rugged', gemspec) do |r|
         ]
       }
 
-      task "compile:libgit2:#{platf}" => "clean:libgit2" do
+      task "compile:libgit2:#{platf}" do
         Dir.chdir("vendor/libgit2") do
           old_value, ENV["CROSS_COMPILE"] = ENV["CROSS_COMPILE"], host_platform
           begin
+            sh "make -f Makefile.embed clean"
             sh "make -f Makefile.embed"
           ensure
             ENV["CROSS_COMPILE"] = old_value
