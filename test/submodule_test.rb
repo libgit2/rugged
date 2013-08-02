@@ -193,4 +193,13 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
     assert submodule.added_to_index?
     refute submodule.unmodified?
   end
+
+  def test_submodule_modify
+    submodule = Rugged::Submodule.lookup(@repo, 'sm_changed_head')
+    submodule.ignore = :untracked
+    submodule.save
+    submodule.reload
+    assert_equal :untracked, submodule.ignore
+
+  end
 end

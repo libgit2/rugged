@@ -338,6 +338,27 @@ static VALUE rb_git_submodule_reload(VALUE self)
 	return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    submodule.save -> nil
+ *
+ *  Write submodule settings to +.gitmodules+ file.
+ *
+ *  This commits any in-memory changes to the submodule to the +.gitmodules+
+ *  file on disk.
+ */
+static VALUE rb_git_submodule_save(VALUE self)
+{
+	git_submodule *submodule;
+	Data_Get_Struct(self, git_submodule, submodule);
+
+	rugged_exception_check(
+		git_submodule_save(submodule)
+	);
+
+	return Qnil;
+}
+
 #define RB_GIT_STRING_GETTER(_klass, _attribute) \
 	git_##_klass *object; \
 	const char * value; \
@@ -630,4 +651,5 @@ void Init_rugged_submodule(void)
 
 	rb_define_method(rb_cRuggedSubmodule, "add_to_index", rb_git_submodule_add_to_index, -1);
 	rb_define_method(rb_cRuggedSubmodule, "reload", rb_git_submodule_reload, 0);
+	rb_define_method(rb_cRuggedSubmodule, "save", rb_git_submodule_save, 0);
 }
