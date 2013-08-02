@@ -384,6 +384,35 @@ static VALUE rb_git_submodule_sync(VALUE self)
 	return Qnil;
 }
 
+/**
+ *  call-seq:
+ *    submodule.init(overwrite = false) -> nil
+ *
+ *  Copy submodule info into +.git/config+ file.
+ *
+ *  Just like <tt>"git submodule init"</tt>, this copies information about the
+ *  submodule into +.git/config+.
+ *
+ *  +overwrite+ (optional, defaults to +false+) - By default, existing entries
+ *  will not be overwritten, but setting this to +true+ forces them to be
+ *  updated.
+ */
+static VALUE rb_git_submodule_init(int argc, VALUE *argv, VALUE self)
+{
+	git_submodule *submodule;
+	VALUE rb_overwrite;
+
+	Data_Get_Struct(self, git_submodule, submodule);
+
+	rb_scan_args(argc, argv, "01", &rb_overwrite);
+
+	rugged_exception_check(
+		git_submodule_init(submodule, RTEST(rb_overwrite))
+	);
+
+	return Qnil;
+}
+
 #define RB_GIT_STRING_GETTER(_klass, _attribute) \
 	git_##_klass *object; \
 	const char * value; \
@@ -823,4 +852,5 @@ void Init_rugged_submodule(void)
 	rb_define_method(rb_cRuggedSubmodule, "reload", rb_git_submodule_reload, 0);
 	rb_define_method(rb_cRuggedSubmodule, "save", rb_git_submodule_save, 0);
 	rb_define_method(rb_cRuggedSubmodule, "sync", rb_git_submodule_sync, 0);
+	rb_define_method(rb_cRuggedSubmodule, "init", rb_git_submodule_init, -1);
 }

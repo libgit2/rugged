@@ -239,4 +239,24 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
 
    assert_equal submodule.url, @repo.config['submodule.sm_unchanged.url']
   end
+
+  def test_submodule_init
+    submodule = Rugged::Submodule.lookup(@repo, 'sm_unchanged')
+
+    #erase submodule data from .git/config
+    @repo.config.delete('submodule.sm_unchanged.url')
+
+    # confirm no submodule data in config
+    assert_nil @repo.config['submodule.sm_unchanged.url']
+
+    # call init and see that settings are copied. Call it twice, just to check
+    # if it accepts the overwrite flag and that it's optional
+    submodule.init(:overwrite)
+    submodule.init
+
+    submodule.reload
+
+	  # confirm submodule data in config
+    assert_equal submodule.url, @repo.config['submodule.sm_unchanged.url']
+  end
 end
