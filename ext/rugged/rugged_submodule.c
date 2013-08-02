@@ -345,6 +345,55 @@ static VALUE rb_git_submodule_path(VALUE self)
 	RB_GIT_STRING_GETTER(submodule, path);
 }
 
+#define RB_GIT_OID_GETTER(_klass, _attribute) \
+	git_##_klass *object; \
+	const git_oid * oid; \
+	Data_Get_Struct(self, git_##_klass, object); \
+	oid = git_##_klass##_##_attribute(object); \
+	return oid ? rugged_create_oid(oid) : Qnil; \
+
+/*
+ *  call-seq:
+ *    submodule.head_oid -> string or nil
+ *
+ *  Returns the OID for the submodule in the current +HEAD+ tree or +nil+
+ *  if the submodule is not in the +HEAD+.
+ */
+static VALUE rb_git_submodule_head_id(VALUE self)
+{
+	RB_GIT_OID_GETTER(submodule, head_id);
+}
+
+/*
+ *  call-seq:
+ *    submodule.index_oid -> string or nil
+ *
+ *  Returns the OID for the submodule in the index or +nil+ if the submodule
+ *  is not in the index.
+ */
+static VALUE rb_git_submodule_index_id(VALUE self)
+{
+	RB_GIT_OID_GETTER(submodule, index_id);
+}
+
+/*
+ *  call-seq:
+ *    submodule.workdir_oid -> string or nil
+ *
+ *  Returns the OID for the submodule in the current working directory or
+ *  +nil+ of the submodule is not checked out.
+ *
+ *  This returns the OID that corresponds to looking up +HEAD+ in the checked
+ *  out submodule.  If there are pending changes in the index or anything
+ *  else, this won't notice that.  You should call Submodule#status
+ *  for a more complete picture about the state of the working directory.
+ */
+static VALUE rb_git_submodule_wd_id(VALUE self)
+{
+	RB_GIT_OID_GETTER(submodule, wd_id);
+}
+
+
 void Init_rugged_submodule(void)
 {
 	VALUE status_list = init_status_list();
@@ -356,6 +405,10 @@ void Init_rugged_submodule(void)
 	rb_define_method(rb_cRuggedSubmodule, "name", rb_git_submodule_name, 0);
 	rb_define_method(rb_cRuggedSubmodule, "url", rb_git_submodule_url, 0);
 	rb_define_method(rb_cRuggedSubmodule, "path", rb_git_submodule_path, 0);
+
+	rb_define_method(rb_cRuggedSubmodule, "head_oid", rb_git_submodule_head_id, 0);
+	rb_define_method(rb_cRuggedSubmodule, "index_oid", rb_git_submodule_index_id, 0);
+	rb_define_method(rb_cRuggedSubmodule, "workdir_oid", rb_git_submodule_wd_id, 0);
 
 	rb_define_method(rb_cRuggedSubmodule, "status", rb_git_submodule_status, 0);
 	rb_define_method(rb_cRuggedSubmodule, "add_to_index", rb_git_submodule_add_to_index, -1);

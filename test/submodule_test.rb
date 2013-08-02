@@ -30,10 +30,33 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
 
   def test_submodule_attribute_getters
     submodule = Rugged::Submodule.lookup(@repo, 'sm_unchanged')
+    oid = "480095882d281ed676fe5b863569520e54a7d5c0"
 
     assert submodule.path.end_with?('sm_unchanged')
     assert submodule.url.end_with?('submod2_target')
     assert_equal 'sm_unchanged', submodule.name
+
+    assert_equal oid, submodule.head_oid
+    assert_equal oid, submodule.index_oid
+    assert_equal oid, submodule.workdir_oid
+
+    submodule = Rugged::Submodule.lookup(@repo, 'sm_changed_head')
+    assert_equal 'sm_changed_head', submodule.name
+    assert_equal oid, submodule.head_oid
+    assert_equal oid, submodule.index_oid
+		assert_equal '3d9386c507f6b093471a3e324085657a3c2b4247', submodule.workdir_oid
+
+    submodule = Rugged::Submodule.lookup(@repo, 'sm_added_and_uncommited')
+    assert_equal 'sm_added_and_uncommited', submodule.name
+    assert_nil submodule.head_oid
+    assert_equal oid, submodule.index_oid
+    assert_equal oid, submodule.workdir_oid
+
+    submodule = Rugged::Submodule.lookup(@repo, 'sm_missing_commits')
+    assert_equal 'sm_missing_commits', submodule.name
+    assert_equal oid, submodule.head_oid
+    assert_equal oid, submodule.index_oid
+		assert_equal '5e4963595a9774b90524d35a807169049de8ccad', submodule.workdir_oid
   end
 
   def test_submodule_status_unchanged
