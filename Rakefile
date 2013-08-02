@@ -33,11 +33,21 @@ Rake::ExtensionTask.new('rugged', gemspec) do |r|
     end
 
     Array(r.cross_platform).each do |platf|
+      # Use rake-compilers config.yml to determine the toolchain that was used
+      # to build Ruby for this platform.
+      host_platform = begin
+        config_file = YAML.load_file(File.expand_path("~/.rake-compiler/config.yml"))
+        _, rbfile = config_file.find{ |key, fname| key.start_with?("rbconfig-#{platf}-") }
+        IO.read(rbfile).match(/CONFIG\["host"\] = "(.*)"/)[1]
+      rescue
+        nil
+      end
+
       ruby_vers.each do |ruby_ver|
         task "copy:rugged:#{platf}:#{ruby_ver}" do |t|
           ["#{r.tmp_dir}/#{platf}/rugged/#{ruby_ver}", "#{r.tmp_dir}/#{platf}/stage"].each do |dir|
             if File.exists?("#{dir}/rugged.so")
-              sh "#{Rake::ExtensionCompiler.mingw_host}-strip -S #{dir}/rugged.so"
+              sh "#{host_platform}-strip -S #{dir}/rugged.so"
             end
           end
         end
@@ -51,16 +61,6 @@ Rake::ExtensionTask.new('rugged', gemspec) do |r|
       }
 
       task "compile:libgit2:#{platf}" => "clean:libgit2" do
-        # Use rake-compilers config.yml to determine the toolchain that was used
-        # to build Ruby for this platform.
-        host_platform = begin
-          config_file = YAML.load_file(File.expand_path("~/.rake-compiler/config.yml"))
-          _, rbfile = config_file.find{ |key, fname| key.start_with?("rbconfig-#{platf}-") }
-          IO.read(rbfile).match(/CONFIG\["host"\] = "(.*)"/)[1]
-        rescue
-          nil
-        end
-
         Dir.chdir("vendor/libgit2") do
           old_value, ENV["CROSS_COMPILE"] = ENV["CROSS_COMPILE"], host_platform
           begin
