@@ -271,16 +271,13 @@ static VALUE rb_git_repo_init_at(int argc, VALUE *argv, VALUE klass)
 {
 	git_repository *repo;
 	VALUE rb_path, rb_is_bare;
-	int error, is_bare = 0;
 
 	rb_scan_args(argc, argv, "11", &rb_path, &rb_is_bare);
 	Check_Type(rb_path, T_STRING);
 
-	if (!NIL_P(rb_is_bare))
-		is_bare = rb_is_bare ? 1 : 0;
-
-	error = git_repository_init(&repo, StringValueCStr(rb_path), is_bare);
-	rugged_exception_check(error);
+	rugged_exception_check(
+		git_repository_init(&repo, StringValueCStr(rb_path), RTEST(rb_is_bare))
+	);
 
 	return rugged_repo_new(klass, repo);
 }
