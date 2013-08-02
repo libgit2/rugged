@@ -445,6 +445,57 @@ static VALUE rb_git_submodule_ignore(VALUE self)
 	return rb_git_subm_ignore_rule_fromC(ignore);
 }
 
+static int cb_submodule__each(git_submodule *submodule, const char *name, void *data)
+{
+	git_repository *repo;
+	struct rugged_cb_payload *payload = data;
+
+	Data_Get_Struct(payload->rb_data, git_repository, repo);
+
+	rb_protect(
+		rb_yield,
+		rugged_submodule_new(rb_cRuggedSubmodule, payload->rb_data, submodule),
+		&payload->exception
+	);
+
+	return payload->exception ? GIT_ERROR : GIT_OK;
+}
+
+/*
+ *  call-seq:
+ *    Submodule.each(repository) { |submodule| block }
+ *    Submodule.each(repository) -> enumerator
+ *
+ *  Iterate over all tracked submodules of a +repository+.
+ *
+ *  The given +block+ will be called once with each +submodule+
+ *  as a Rugged::Submodule instance.
+ *  If no block is given, an enumerator will be returned.
+ */
+static VALUE rb_git_submodule_each(VALUE klass, VALUE rb_repo)
+{
+	git_repository *repo;
+	int error;
+	struct rugged_cb_payload payload;
+
+	if (!rb_block_given_p())
+		return rb_funcall(klass, rb_intern("to_enum"), 2, CSTR2SYM("each"), rb_repo);
+
+	payload.exception = 0;
+	payload.rb_data = rb_repo;
+
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	error = git_submodule_foreach(repo, &cb_submodule__each, &payload);
+
+	if (payload.exception)
+		rb_jump_tag(payload.exception);
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
 void Init_rugged_submodule(void)
 {
 	VALUE status_list = init_status_list();
@@ -452,6 +503,7 @@ void Init_rugged_submodule(void)
 	rb_define_const(rb_cRuggedSubmodule, "STATUS_LIST", status_list);
 
 	rb_define_singleton_method(rb_cRuggedSubmodule, "lookup", rb_git_submodule_lookup, 2);
+	rb_define_singleton_method(rb_cRuggedSubmodule, "each", rb_git_submodule_each, 1);
 
 	rb_define_method(rb_cRuggedSubmodule, "name", rb_git_submodule_name, 0);
 	rb_define_method(rb_cRuggedSubmodule, "url", rb_git_submodule_url, 0);

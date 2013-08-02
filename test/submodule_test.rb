@@ -6,6 +6,9 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
     @repo = setup_submodule
   end
 
+  class TestException < StandardError
+  end
+
   def test_submodule_simple_lookup
     # lookup pending change in .gitmodules that is not in HEAD
     assert Rugged::Submodule.lookup(@repo, 'sm_added_and_uncommited')
@@ -68,6 +71,25 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
     assert submodule.in_index?
     assert submodule.in_config?
     assert submodule.in_workdir?
+  end
+
+  def test_submodule_each
+    assert_instance_of Enumerator, Rugged::Submodule.each(@repo)
+    assert_instance_of Enumerator, @repo.submodules
+
+    Rugged::Submodule.each(@repo) do |submodule|
+      assert_equal :none, submodule.ignore
+      assert submodule.name
+      assert submodule.url
+      assert submodule.path
+    end
+
+    # test error handling in callback
+    assert_raises TestException do
+      Rugged::Submodule.each(@repo) do |submodule|
+        raise TestException
+      end
+    end
   end
 
   def test_submodule_status_ignore_none
