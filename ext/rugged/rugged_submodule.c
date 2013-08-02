@@ -31,6 +31,8 @@ static VALUE id_index_added, id_index_deleted, id_index_modified;
 static VALUE id_wd_uninitialized, id_wd_added, id_wd_deleted, id_wd_modified;
 static VALUE id_wd_index_modified, id_wd_wd_modified, id_wd_untracked;
 
+static ID id_ignore_none, id_ignore_untracked, id_ignore_dirty, id_ignore_all;
+
 VALUE init_status_list(void)
 {
 	VALUE status_list = rb_ary_new2(14);
@@ -431,13 +433,13 @@ static VALUE rb_git_subm_ignore_rule_fromC(git_submodule_ignore_t rule)
 {
 	switch(rule) {
 	case GIT_SUBMODULE_IGNORE_NONE:
-		return CSTR2SYM("none");
+		return ID2SYM(id_ignore_none);
 	case GIT_SUBMODULE_IGNORE_UNTRACKED:
-		return CSTR2SYM("untracked");
+		return ID2SYM(id_ignore_untracked);
 	case GIT_SUBMODULE_IGNORE_DIRTY:
-		return CSTR2SYM("dirty");
+		return ID2SYM(id_ignore_dirty);
 	case GIT_SUBMODULE_IGNORE_ALL:
-		return CSTR2SYM("all");
+		return ID2SYM(id_ignore_all);
 	default:
 		return CSTR2SYM("unknown");
 	}
@@ -477,6 +479,72 @@ static VALUE rb_git_submodule_ignore(VALUE self)
 	ignore = git_submodule_ignore(submodule);
 
 	return rb_git_subm_ignore_rule_fromC(ignore);
+}
+
+static git_submodule_ignore_t rb_git_subm_ignore_rule_toC(VALUE rb_ignore_rule)
+{
+	ID id_ignore_rule;
+
+	Check_Type(rb_ignore_rule, T_SYMBOL);
+	id_ignore_rule = SYM2ID(rb_ignore_rule);
+
+	if (id_ignore_rule == id_ignore_none) {
+		return GIT_SUBMODULE_IGNORE_NONE;
+	} else if (id_ignore_rule == id_ignore_untracked) {
+		return GIT_SUBMODULE_IGNORE_UNTRACKED;
+	} else if (id_ignore_rule == id_ignore_dirty) {
+		return GIT_SUBMODULE_IGNORE_DIRTY;
+	} else if (id_ignore_rule == id_ignore_all) {
+		return GIT_SUBMODULE_IGNORE_ALL;
+	} else {
+		rb_raise(rb_eArgError, "Invalid submodule ignore rule type.");
+	}
+}
+
+/*
+ *  call-seq:
+ *    submodule.ignore = rule -> rule
+ *
+ *  Set the ignore +rule+ in memory for a submodule.
+ *  See Submodule#ignore for a list of accepted rules.
+ *
+ *  This will be used for any following actions (such as
+ *  Submodule#status) while the submodule is in memory. The ignore
+ *  rule can be persisted to the config with Submodule#save.
+ *
+ *  Calling Submodule#reset_ignore or Submodule#reload will
+ *  revert the rule to the value that was in the config.
+ */
+static VALUE rb_git_submodule_set_ignore(VALUE self, VALUE rb_ignore_rule)
+{
+	git_submodule *submodule;
+
+	Data_Get_Struct(self, git_submodule, submodule);
+
+	git_submodule_set_ignore(
+		submodule,
+		rb_git_subm_ignore_rule_toC(rb_ignore_rule)
+	);
+
+	return rb_ignore_rule;
+}
+
+/*
+ *  call-seq:
+ *    submodule.reset_ignore -> nil
+ *
+ *  Revert the ignore rule set by Submodule#ignore= to the value that
+ *  was in the config.
+ */
+static VALUE rb_git_submodule_reset_ignore(VALUE self)
+{
+	git_submodule *submodule;
+
+	Data_Get_Struct(self, git_submodule, submodule);
+
+	git_submodule_set_ignore(submodule, GIT_SUBMODULE_IGNORE_RESET);
+
+	return Qnil;
 }
 
 static int cb_submodule__each(git_submodule *submodule, const char *name, void *data)
@@ -533,6 +601,11 @@ static VALUE rb_git_submodule_each(VALUE klass, VALUE rb_repo)
 void Init_rugged_submodule(void)
 {
 	VALUE status_list = init_status_list();
+	id_ignore_none = rb_intern("none");
+	id_ignore_dirty = rb_intern("dirty");
+	id_ignore_untracked = rb_intern("untracked");
+	id_ignore_all = rb_intern("all");
+
 	rb_cRuggedSubmodule = rb_define_class_under(rb_mRugged, "Submodule", rb_cObject);
 	rb_define_const(rb_cRuggedSubmodule, "STATUS_LIST", status_list);
 
@@ -544,6 +617,8 @@ void Init_rugged_submodule(void)
 	rb_define_method(rb_cRuggedSubmodule, "path", rb_git_submodule_path, 0);
 
 	rb_define_method(rb_cRuggedSubmodule, "ignore", rb_git_submodule_ignore, 0);
+	rb_define_method(rb_cRuggedSubmodule, "ignore=", rb_git_submodule_set_ignore, 1);
+	rb_define_method(rb_cRuggedSubmodule, "reset_ignore", rb_git_submodule_reset_ignore, 0);
 
 	rb_define_method(rb_cRuggedSubmodule, "head_oid", rb_git_submodule_head_id, 0);
 	rb_define_method(rb_cRuggedSubmodule, "index_oid", rb_git_submodule_index_id, 0);

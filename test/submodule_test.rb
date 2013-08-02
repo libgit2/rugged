@@ -153,4 +153,44 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
     assert submodule.deleted_from_index?
   end
 
+  def test_submodule_ignore
+    sm_unchanged_path = File.join(@repo.workdir, 'sm_unchanged')
+    # removed sm_unchanged for deleted workdir
+    FileUtils.remove_entry_secure(sm_unchanged_path)
+
+    # untracked
+    submodule = Rugged::Submodule.lookup(@repo, 'sm_changed_untracked_file')
+
+    submodule.ignore = :untracked
+
+    assert submodule.unmodified?
+    refute submodule.untracked_files_in_workdir?
+
+    submodule.reset_ignore
+
+    refute submodule.unmodified?
+    assert submodule.untracked_files_in_workdir?
+
+    #dirty
+    submodule = Rugged::Submodule.lookup(@repo, 'sm_changed_file')
+    submodule.ignore = :dirty
+
+    refute submodule.modified_files_in_workdir?
+
+    submodule.reset_ignore
+
+    assert submodule.modified_files_in_workdir?
+
+    #all
+    submodule = Rugged::Submodule.lookup(@repo, 'sm_added_and_uncommited')
+    submodule.ignore = :all
+
+    assert submodule.unmodified?
+    refute submodule.added_to_index?
+
+    submodule.reset_ignore
+
+    assert submodule.added_to_index?
+    refute submodule.unmodified?
+  end
 end
