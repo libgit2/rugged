@@ -207,4 +207,22 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
     assert_equal :untracked, submodule.ignore
     assert_equal url, submodule.url
   end
+
+  def test_submodule_update
+    submodule = Rugged::Submodule.lookup(@repo, 'sm_unchanged')
+    assert_equal :checkout, submodule.update
+
+    submodule.update = :rebase
+    assert_equal :rebase, submodule.update
+
+    submodule.update = :merge
+    assert_equal :merge, submodule.update
+
+    submodule.update = :none
+    assert_equal :none, submodule.update
+
+    # reset
+    submodule.reset_update
+    assert_equal :checkout, submodule.update
+  end
 end

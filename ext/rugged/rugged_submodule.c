@@ -33,6 +33,8 @@ static VALUE id_wd_index_modified, id_wd_wd_modified, id_wd_untracked;
 
 static ID id_ignore_none, id_ignore_untracked, id_ignore_dirty, id_ignore_all;
 
+static ID id_update_checkout, id_update_rebase, id_update_merge, id_update_none;
+
 VALUE init_status_list(void)
 {
 	VALUE status_list = rb_ary_new2(14);
@@ -595,6 +597,115 @@ static VALUE rb_git_submodule_reset_ignore(VALUE self)
 	return Qnil;
 }
 
+static VALUE rb_git_subm_update_rule_fromC(git_submodule_update_t rule)
+{
+	switch(rule) {
+	case GIT_SUBMODULE_UPDATE_CHECKOUT:
+		return ID2SYM(id_update_checkout);
+	case GIT_SUBMODULE_UPDATE_REBASE:
+		return ID2SYM(id_update_rebase);
+	case GIT_SUBMODULE_UPDATE_MERGE:
+		return ID2SYM(id_update_merge);
+	case GIT_SUBMODULE_UPDATE_NONE:
+		return ID2SYM(id_update_none);
+	default:
+		return CSTR2SYM("unknown");
+	}
+}
+
+/*
+ *  call-seq:
+ *    submodule.update -> symbol
+ *
+ *  Returns the update rule for a submodule.
+ *
+ *  There are four update values:
+ *
+ *  [:checkout (default)]
+ *    the new commit specified in the superproject will be checked out in the
+ *    submodule on a detached +HEAD+.
+ *  [:rebase]
+ *    the current branch of the submodule will be rebased onto the commit
+ *    specified in the superproject.
+ *  [:merge]
+ *    the commit specified in the superproject will be merged into the current
+ *    branch of the submodule.
+ *  [:none]
+ *    the submodule will not be updated
+ */
+static VALUE rb_git_submodule_update(VALUE self)
+{
+	git_submodule *submodule;
+	git_submodule_update_t update;
+
+	Data_Get_Struct(self, git_submodule, submodule);
+	update = git_submodule_update(submodule);
+
+	return rb_git_subm_update_rule_fromC(update);
+}
+
+static git_submodule_update_t rb_git_subm_update_rule_toC(VALUE rb_update_rule)
+{
+	ID id_update_rule;
+
+	Check_Type(rb_update_rule, T_SYMBOL);
+	id_update_rule = SYM2ID(rb_update_rule);
+
+	if (id_update_rule == id_update_checkout) {
+		return GIT_SUBMODULE_UPDATE_CHECKOUT;
+	} else if (id_update_rule == id_update_rebase) {
+		return GIT_SUBMODULE_UPDATE_REBASE;
+	} else if (id_update_rule == id_update_merge) {
+		return GIT_SUBMODULE_UPDATE_MERGE;
+	} else if (id_update_rule == id_update_none) {
+		return GIT_SUBMODULE_UPDATE_NONE;
+	} else {
+		rb_raise(rb_eArgError, "Invalid submodule update rule type.");
+	}
+}
+
+/*
+ *  call-seq:
+ *    submodule.update = rule -> rule
+ *
+ *  Set the update +rule+ in memory for a submodule.
+ *  See Submodule#update for a list of accepted rules.
+ *
+ *  Calling Submodule#reset_update or Submodule#reload will
+ *  revert the +rule+ to the value that was in the config.
+ */
+static VALUE rb_git_submodule_set_update(VALUE self, VALUE rb_update_rule)
+{
+	git_submodule *submodule;
+
+	Data_Get_Struct(self, git_submodule, submodule);
+
+	git_submodule_set_update(
+		submodule,
+		rb_git_subm_update_rule_toC(rb_update_rule)
+	);
+
+	return rb_update_rule;
+}
+
+/*
+ *  call-seq:
+ *    submodule.reset_update -> nil
+ *
+ *  Revert the update rule set by Submodule#update= to the value that
+ *  was in the config.
+ */
+static VALUE rb_git_submodule_reset_update(VALUE self)
+{
+	git_submodule *submodule;
+
+	Data_Get_Struct(self, git_submodule, submodule);
+
+	git_submodule_set_update(submodule, GIT_SUBMODULE_UPDATE_RESET);
+
+	return Qnil;
+}
+
 static int cb_submodule__each(git_submodule *submodule, const char *name, void *data)
 {
 	git_repository *repo;
@@ -654,6 +765,11 @@ void Init_rugged_submodule(void)
 	id_ignore_untracked = rb_intern("untracked");
 	id_ignore_all = rb_intern("all");
 
+	id_update_checkout = rb_intern("checkout");
+	id_update_rebase = rb_intern("rebase");
+	id_update_merge = rb_intern("merge");
+	id_update_none  = rb_intern("none");
+
 	rb_cRuggedSubmodule = rb_define_class_under(rb_mRugged, "Submodule", rb_cObject);
 	rb_define_const(rb_cRuggedSubmodule, "STATUS_LIST", status_list);
 
@@ -668,6 +784,9 @@ void Init_rugged_submodule(void)
 	rb_define_method(rb_cRuggedSubmodule, "ignore", rb_git_submodule_ignore, 0);
 	rb_define_method(rb_cRuggedSubmodule, "ignore=", rb_git_submodule_set_ignore, 1);
 	rb_define_method(rb_cRuggedSubmodule, "reset_ignore", rb_git_submodule_reset_ignore, 0);
+	rb_define_method(rb_cRuggedSubmodule, "update", rb_git_submodule_update, 0);
+	rb_define_method(rb_cRuggedSubmodule, "update=", rb_git_submodule_set_update, 1);
+	rb_define_method(rb_cRuggedSubmodule, "reset_update", rb_git_submodule_reset_update, 0);
 
 	rb_define_method(rb_cRuggedSubmodule, "head_oid", rb_git_submodule_head_id, 0);
 	rb_define_method(rb_cRuggedSubmodule, "index_oid", rb_git_submodule_index_id, 0);
