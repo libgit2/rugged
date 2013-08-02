@@ -225,4 +225,18 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
     submodule.reset_update
     assert_equal :checkout, submodule.update
   end
+
+  def test_submodule_sync
+    submodule = Rugged::Submodule.lookup(@repo, 'sm_unchanged')
+
+	 # At this point, the .git/config URLs for the submodules have
+	 # not be rewritten with the absolute paths (although the
+	 # .gitmodules have.  Let's confirm that they DO NOT match
+	 # yet, then we can do a sync to make them match...
+   refute_equal submodule.url, @repo.config['submodule.sm_unchanged.url']
+
+   submodule.sync
+
+   assert_equal submodule.url, @repo.config['submodule.sm_unchanged.url']
+  end
 end

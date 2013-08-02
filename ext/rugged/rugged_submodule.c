@@ -361,6 +361,29 @@ static VALUE rb_git_submodule_save(VALUE self)
 	return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    submodule.sync -> nil
+ *
+ *  Copy submodule remote info into submodule repository.
+ *
+ *  This copies the information about the submodules URL into the checked out
+ *  submodule config, acting like <tt>"git submodule sync"</tt>. This is useful
+ *  if you have altered the URL for the submodule (or it has been altered by a
+ *  fetch of upstream changes) and you need to update your local repository.
+ */
+static VALUE rb_git_submodule_sync(VALUE self)
+{
+	git_submodule *submodule;
+	Data_Get_Struct(self, git_submodule, submodule);
+
+	rugged_exception_check(
+		git_submodule_sync(submodule)
+	);
+
+	return Qnil;
+}
+
 #define RB_GIT_STRING_GETTER(_klass, _attribute) \
 	git_##_klass *object; \
 	const char * value; \
@@ -799,4 +822,5 @@ void Init_rugged_submodule(void)
 	rb_define_method(rb_cRuggedSubmodule, "add_to_index", rb_git_submodule_add_to_index, -1);
 	rb_define_method(rb_cRuggedSubmodule, "reload", rb_git_submodule_reload, 0);
 	rb_define_method(rb_cRuggedSubmodule, "save", rb_git_submodule_save, 0);
+	rb_define_method(rb_cRuggedSubmodule, "sync", rb_git_submodule_sync, 0);
 }
