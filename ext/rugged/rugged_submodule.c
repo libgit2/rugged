@@ -390,6 +390,33 @@ static VALUE rb_git_submodule_url(VALUE self)
 
 /*
  *  call-seq:
+ *    submodule.url = url -> url
+ *
+ *  Set the URL in memory for the submodule.
+ *
+ *  This will be used for any following submodule actions while this submodule
+ *  data is in memory.
+ *
+ *  After calling this, you may wish to call Submodule#save to write
+ *  the changes back to the +.gitmodules+ file and Submodule#sync to
+ *  write the changes to the checked out submodule repository.
+ */
+static VALUE rb_git_submodule_set_url(VALUE self, VALUE rb_url)
+{
+	git_submodule *submodule;
+
+	Check_Type(rb_url, T_STRING);
+
+	Data_Get_Struct(self, git_submodule, submodule);
+
+	rugged_exception_check(
+		git_submodule_set_url(submodule, StringValueCStr(rb_url))
+	);
+	return rb_url;
+}
+
+/*
+ *  call-seq:
  *    submodule.path -> string
  *
  *  Returns the path of the submodule.
@@ -635,6 +662,7 @@ void Init_rugged_submodule(void)
 
 	rb_define_method(rb_cRuggedSubmodule, "name", rb_git_submodule_name, 0);
 	rb_define_method(rb_cRuggedSubmodule, "url", rb_git_submodule_url, 0);
+	rb_define_method(rb_cRuggedSubmodule, "url=", rb_git_submodule_set_url, 1);
 	rb_define_method(rb_cRuggedSubmodule, "path", rb_git_submodule_path, 0);
 
 	rb_define_method(rb_cRuggedSubmodule, "ignore", rb_git_submodule_ignore, 0);

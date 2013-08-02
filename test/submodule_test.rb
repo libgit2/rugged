@@ -195,11 +195,16 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
   end
 
   def test_submodule_modify
+    url = 'https://github.com/libgit2/libgit2.git'
     submodule = Rugged::Submodule.lookup(@repo, 'sm_changed_head')
+
     submodule.ignore = :untracked
+    submodule.url = url
+
     submodule.save
     submodule.reload
-    assert_equal :untracked, submodule.ignore
 
+    assert_equal :untracked, submodule.ignore
+    assert_equal url, submodule.url
   end
 end
