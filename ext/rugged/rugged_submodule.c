@@ -248,6 +248,40 @@ static VALUE rb_git_submodule_status(VALUE self)
 
 }
 
+#define RB_GIT_SUBMODULE_STATUS_CHECK(check) \
+	git_submodule *submodule; \
+	unsigned int flags; \
+	Data_Get_Struct(self, git_submodule, submodule); \
+	rugged_exception_check( \
+		git_submodule_status(&flags, submodule) \
+	); \
+	return check(flags) ? Qtrue : Qfalse; \
+/*
+ *  call-seq:
+ *    submodule.unmodified? -> true or false
+ *
+ *  Returns +true+ if the submodule is unmodified.
+ */
+static VALUE rb_git_submodule_status_unmodified(VALUE self)
+{
+	RB_GIT_SUBMODULE_STATUS_CHECK(GIT_SUBMODULE_STATUS_IS_UNMODIFIED)
+}
+
+/*
+ *  call-seq:
+ *    submodule.dirty_workdir? -> true or false
+ *
+ *  Returns +true+ if the submodule workdir is dirty.
+ *
+ *  The workdir is considered dirty if the workdir index is modified, there
+ *  are modified files in the workdir or if there are untracked files in the
+ *  workdir.
+ */
+static VALUE rb_git_submodule_status_dirty_workdir(VALUE self)
+{
+	RB_GIT_SUBMODULE_STATUS_CHECK(GIT_SUBMODULE_STATUS_IS_WD_DIRTY)
+}
+
 /*
  *  call-seq:
  *    submodule.add_to_index(write_index = true) -> nil
@@ -516,6 +550,9 @@ void Init_rugged_submodule(void)
 	rb_define_method(rb_cRuggedSubmodule, "workdir_oid", rb_git_submodule_wd_id, 0);
 
 	rb_define_method(rb_cRuggedSubmodule, "status", rb_git_submodule_status, 0);
+	rb_define_method(rb_cRuggedSubmodule, "unmodified?", rb_git_submodule_status_unmodified, 0);
+	rb_define_method(rb_cRuggedSubmodule, "dirty_workdir?", rb_git_submodule_status_dirty_workdir, 0);
+
 	rb_define_method(rb_cRuggedSubmodule, "add_to_index", rb_git_submodule_add_to_index, -1);
 	rb_define_method(rb_cRuggedSubmodule, "reload", rb_git_submodule_reload, 0);
 }

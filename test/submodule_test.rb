@@ -71,6 +71,8 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
     assert submodule.in_index?
     assert submodule.in_config?
     assert submodule.in_workdir?
+    assert submodule.unmodified?
+    refute submodule.dirty_workdir?
   end
 
   def test_submodule_each
@@ -104,6 +106,8 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
     submodule = Rugged::Submodule.lookup(@repo, 'sm_changed_file')
     assert_includes submodule.status, :modified_files_in_workdir
     assert submodule.modified_files_in_workdir?
+    assert submodule.dirty_workdir?
+    refute submodule.unmodified?
 
     submodule = Rugged::Submodule.lookup(@repo, 'sm_changed_untracked_file')
     assert_includes submodule.status, :untracked_files_in_workdir
