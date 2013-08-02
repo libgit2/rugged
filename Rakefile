@@ -74,7 +74,7 @@ Rake::ExtensionTask.new('rugged', gemspec) do |r|
         end
 
         FileUtils.mkdir_p "#{r.tmp_dir}/#{platf}/libgit2"
-        FileUtils.cp 'vendor/libgit2/libgit2.a', "#{r.tmp_dir}/#{platf}/libgit2.a"
+        FileUtils.cp 'vendor/libgit2/libgit2.a', "#{r.tmp_dir}/#{platf}/libgit2/libgit2.a"
       end
     end
   end
