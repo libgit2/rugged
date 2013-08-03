@@ -833,6 +833,105 @@ static VALUE rb_git_submodule_each(VALUE klass, VALUE rb_repo)
 	return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    Submodule.setup_add(repository, url, path, use_gitlink = false) -> submodule
+ *
+ *  Setup a new +submodule+ for checkout in +repository+.
+ *
+ *  This does <tt>"git submodule add"</tt> up to the fetch and checkout of the
+ *  submodule contents.  It prepares a new submodule, creates an entry in
+ *  +.gitmodules+ and creates an empty initialized repository either at the
+ *  given +path+ in the working directory or in +.git/modules+ with a gitlink
+ *  from the working directory to the new repository.
+ *
+ *  To fully emulate <tt>"git submodule add"</tt> call this function, then open
+ *  the submodule repository and perform the clone step as needed.
+ *  Lastly, call Submodule#finalize_add to wrap up adding the new submodule and
+ *  +.gitmodules+ to the index to be ready to commit.
+ *
+ *  NOTE: Currently +libgit2+ and +Rugged+ don't support +clone+ with separate
+ *  git dir needed for the submodule clone. What you can do is to manually
+ *  go into the submodule's repository fetch from the remote and then use
+ *  Repository#reset(with +:hard+) or Repository#checkout to update the
+ *  workdir.
+ *
+ *  - +repository+: superproject repository to contain the new submodule
+ *  - +url+: URL for the submodule's remote
+ *  - +path+: path at which the submodule should be created
+ *  - +use_gitlink+ - (optional, defaults to +false+) should workdir contain a
+ *    gitlink to the repository in +.git/modules+ vs. repository
+ *    directly in workdir.
+ *
+ *  Returns the newly created +submodule+
+ *
+ *       url = 'https://github.com/libgit2/libgit2.git'
+ *
+ *       submodule = Rugged::Submodule.setup_add(@repo, url, 'vendor', :gitlink)
+ *       submodule_repo = submodule.repository
+ *
+ *       submodule_repo.remotes.first.connect(:fetch) do |remote|
+ *         remote.download
+ *         remote.update_tips!
+ *       end
+ *
+ *       submodule_repo.reset('origin/master', :hard)
+ *
+ *       submodule.finalize_add
+ */
+static VALUE rb_git_submodule_setup_add(int argc, VALUE *argv, VALUE klass)
+{
+	git_submodule *submodule;
+	git_repository *repo;
+	int error;
+	VALUE rb_repo, rb_url, rb_path, rb_use_getlink;
+
+	rb_scan_args(argc, argv, "31", &rb_repo, &rb_url, &rb_path, &rb_use_getlink);
+
+	Check_Type(rb_url, T_STRING);
+	Check_Type(rb_path, T_STRING);
+
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	error = git_submodule_add_setup(
+		&submodule,
+		repo,
+		StringValueCStr(rb_url),
+		StringValueCStr(rb_path),
+		RTEST(rb_use_getlink)
+		);
+
+	rugged_exception_check(error);
+
+	return rugged_submodule_new(klass, rb_repo, submodule);
+}
+
+/*
+ *  call-seq:
+ *    submodule.finalize_add -> nil
+ *
+ *  Resolve the setup of a new submodule.
+ *
+ *  This should be called on a submodule once you have called
+ *  Submodule::setup_add and done the clone of the submodule.
+ *  This adds the +.gitmodules+ file and the newly cloned submodule to the index
+ *  to be ready to be committed (but doesn't actually do the commit).
+ *
+ *  See Submodule::setup_add for usage.
+ */
+static VALUE rb_git_submodule_finalize_add(VALUE self)
+{
+	git_submodule *submodule;
+	Data_Get_Struct(self, git_submodule, submodule);
+
+	rugged_exception_check(
+		git_submodule_add_finalize(submodule)
+	);
+
+	return Qnil;
+}
+
 void Init_rugged_submodule(void)
 {
 	VALUE status_list = init_status_list();
@@ -851,6 +950,9 @@ void Init_rugged_submodule(void)
 
 	rb_define_singleton_method(rb_cRuggedSubmodule, "lookup", rb_git_submodule_lookup, 2);
 	rb_define_singleton_method(rb_cRuggedSubmodule, "each", rb_git_submodule_each, 1);
+	rb_define_singleton_method(rb_cRuggedSubmodule, "setup_add", rb_git_submodule_setup_add, -1);
+
+	rb_define_method(rb_cRuggedSubmodule, "finalize_add", rb_git_submodule_finalize_add, 0);
 
 	rb_define_method(rb_cRuggedSubmodule, "name", rb_git_submodule_name, 0);
 	rb_define_method(rb_cRuggedSubmodule, "url", rb_git_submodule_url, 0);

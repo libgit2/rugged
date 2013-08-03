@@ -262,4 +262,48 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
 	  # confirm submodule data in config
     assert_equal submodule.url, @repo.config['submodule.sm_unchanged.url']
   end
+
+  def test_submodule_setup_add
+    url = 'https://github.com/libgit2/libgit2.git'
+    submod_path = 'sm_libgit2'
+    second_submod_path = 'sm2_libgit2'
+
+    # re-add existing submodule
+    assert_raises Rugged::SubmoduleError do
+      Rugged::Submodule.setup_add(@repo, 'whatever', 'sm_unchanged', :gitlink)
+    end
+
+    # add a submodule using gitlink
+    submodule = Rugged::Submodule.setup_add(@repo, url, submod_path, :gitlink)
+
+    assert File.file?(File.join(@repo.workdir, submod_path, '.git'))
+    assert File.directory?(File.join(@repo.path, 'modules'))
+    assert File.directory?(File.join(@repo.path, 'modules', submod_path))
+    assert File.file?(File.join(@repo.path, 'modules', submod_path, 'HEAD'))
+
+    assert_equal url, @repo.config["submodule.#{submod_path}.url"]
+
+    submodule = Rugged::Submodule.setup_add(@repo, url, second_submod_path)
+
+    assert File.directory?(File.join(@repo.workdir, second_submod_path, '.git'))
+    refute File.exists?(File.join(@repo.path, 'modules', second_submod_path))
+    assert_equal url, @repo.config["submodule.#{submod_path}.url"]
+  end
+
+  def test_submodule_add
+    url = File.join(Rugged::TestCase::TEST_DIR, 'fixtures', 'testrepo.git')
+
+    submodule = Rugged::Submodule.setup_add(@repo, url, 'sm_testrepo', :gitlink)
+    submodule_repo = submodule.repository
+    submodule_repo.remotes.first.connect(:fetch) do |remote|
+      remote.download
+      remote.update_tips!
+    end
+
+    submodule_repo.reset('origin/master', :hard)
+
+    submodule.finalize_add
+
+    submodule_repo.close
+  end
 end
