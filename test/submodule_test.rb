@@ -35,6 +35,9 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
     submodule = Rugged::Submodule.lookup(@repo, 'sm_unchanged')
     oid = "480095882d281ed676fe5b863569520e54a7d5c0"
 
+    submodule_repo = submodule.repository
+    assert_instance_of Rugged::Repository, submodule_repo
+
     assert :none, submodule.ignore
     assert submodule.path.end_with?('sm_unchanged')
     assert submodule.url.end_with?('submod2_target')

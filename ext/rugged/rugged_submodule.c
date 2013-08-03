@@ -758,6 +758,30 @@ static VALUE rb_git_submodule_reset_update(VALUE self)
 	return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    submodule.repository -> repository
+ *
+ *  Returns the +repository+ for the submodule.
+ *
+ *  The returned +repository+ is a newly opened Rugged::Repository object.
+ *  This will only work if the submodule is checked out into the working
+ *  directory.
+ */
+static VALUE rb_git_submodule_repository(VALUE self)
+{
+	git_submodule *submodule;
+	git_repository *repo;
+
+	Data_Get_Struct(self, git_submodule, submodule);
+
+	rugged_exception_check(
+		git_submodule_open(&repo, submodule)
+	);
+
+	return rugged_repo_new(rb_cRuggedRepo, repo);
+}
+
 static int cb_submodule__each(git_submodule *submodule, const char *name, void *data)
 {
 	git_repository *repo;
@@ -847,6 +871,8 @@ void Init_rugged_submodule(void)
 	rb_define_method(rb_cRuggedSubmodule, "status", rb_git_submodule_status, 0);
 	rb_define_method(rb_cRuggedSubmodule, "unmodified?", rb_git_submodule_status_unmodified, 0);
 	rb_define_method(rb_cRuggedSubmodule, "dirty_workdir?", rb_git_submodule_status_dirty_workdir, 0);
+
+	rb_define_method(rb_cRuggedSubmodule, "repository", rb_git_submodule_repository, 0);
 
 	rb_define_method(rb_cRuggedSubmodule, "add_to_index", rb_git_submodule_add_to_index, -1);
 	rb_define_method(rb_cRuggedSubmodule, "reload", rb_git_submodule_reload, 0);
