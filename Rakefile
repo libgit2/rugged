@@ -38,7 +38,7 @@ Rake::ExtensionTask.new('rugged', gemspec) do |r|
       host_platform = begin
         config_file = YAML.load_file(File.expand_path("~/.rake-compiler/config.yml"))
         _, rbfile = config_file.find{ |key, fname| key.start_with?("rbconfig-#{platf}-") }
-        IO.read(rbfile).match(/CONFIG\["host"\] = "(.*)"/)[1]
+        IO.read(rbfile).match(/CONFIG\["CC"\] = "(.*)"/)[1].sub(/\-gcc/, '')
       rescue
         nil
       end
