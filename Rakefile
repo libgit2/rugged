@@ -26,12 +26,6 @@ Rake::ExtensionTask.new('rugged', gemspec) do |r|
     r.cross_platform = ["i386-mingw32", "x64-mingw32"]
     r.cross_compile = true
 
-    if ruby_vers = ENV['RUBY_CC_VERSION']
-      ruby_vers = ENV['RUBY_CC_VERSION'].split(':')
-    else
-      ruby_vers = [RUBY_VERSION]
-    end
-
     Array(r.cross_platform).each do |platf|
       # Use rake-compilers config.yml to determine the toolchain that was used
       # to build Ruby for this platform.
@@ -41,18 +35,6 @@ Rake::ExtensionTask.new('rugged', gemspec) do |r|
         IO.read(rbfile).match(/CONFIG\["CC"\] = "(.*)"/)[1].sub(/\-gcc/, '')
       rescue
         nil
-      end
-
-      ruby_vers.each do |ruby_ver|
-        task "copy:rugged:#{platf}:#{ruby_ver}" do |t|
-          ["#{r.tmp_dir}/#{platf}/rugged/#{ruby_ver}", "#{r.tmp_dir}/#{platf}/stage"].each do |dir|
-            if File.exists?("#{dir}/rugged.so")
-              sh "#{host_platform}-strip -S #{dir}/rugged.so"
-            end
-          end
-        end
-
-        file "#{r.tmp_dir}/#{platf}/rugged/#{ruby_ver}/#{r.binary(platf)}" => "compile:libgit2:#{platf}"
       end
 
       r.cross_config_options << {
