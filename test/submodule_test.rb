@@ -203,12 +203,15 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
 
     submodule.ignore = :untracked
     submodule.url = url
+    refute submodule.fetch_recurse_submodules?
+    submodule.fetch_recurse_submodules = true
 
     submodule.save
     submodule.reload
 
     assert_equal :untracked, submodule.ignore
     assert_equal url, submodule.url
+    assert submodule.fetch_recurse_submodules?
   end
 
   def test_submodule_update

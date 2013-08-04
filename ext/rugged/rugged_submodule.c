@@ -531,6 +531,50 @@ static VALUE rb_git_submodule_wd_id(VALUE self)
 	RB_GIT_OID_GETTER(submodule, wd_id);
 }
 
+/*
+ *  call-seq:
+ *    submodule.fetch_recurse_submodules? -> true or false
+ *
+ *  Returns the +fetchRecurseSubmodules+ rule for a submodule.
+ *
+ *  This accesses the <tt>submodule.<name>.fetchRecurseSubmodules</tt> value
+ *  for the submodule that controls fetching behavior for the submodule.
+ *
+ *  Note that at this time, +Rugged+ does not honor this setting and the fetch
+ *  functionality currently ignores submodules.
+ *
+ */
+static VALUE rb_git_submodule_fetch_recurse_submodules(VALUE self)
+{
+	git_submodule *submodule;
+	Data_Get_Struct(self, git_submodule, submodule);
+
+	return git_submodule_fetch_recurse_submodules(submodule) ? Qtrue : Qfalse;
+}
+
+/*
+ *  call-seq:
+ *    submodule.fetch_recurse_submodules= bool -> bool
+ *
+ *  Set the +fetchRecurseSubmodules+ rule in memory for a submodule.
+ *
+ *  This sets the <tt>submodule.<name>.fetchRecurseSubmodules</tt> value for
+ *  the submodule.  You should call Submodule#save if you want to persist the
+ *  new value.
+ */
+static VALUE rb_git_submodule_set_fetch_recurse_submodules(VALUE self, VALUE rb_fetch_recursive)
+{
+	git_submodule *submodule;
+	Data_Get_Struct(self, git_submodule, submodule);
+
+	git_submodule_set_fetch_recurse_submodules(
+			submodule,
+			rugged_parse_bool(rb_fetch_recursive)
+	);
+
+	return rb_fetch_recursive;
+}
+
 static VALUE rb_git_subm_ignore_rule_fromC(git_submodule_ignore_t rule)
 {
 	switch(rule) {
@@ -958,6 +1002,8 @@ void Init_rugged_submodule(void)
 	rb_define_method(rb_cRuggedSubmodule, "url", rb_git_submodule_url, 0);
 	rb_define_method(rb_cRuggedSubmodule, "url=", rb_git_submodule_set_url, 1);
 	rb_define_method(rb_cRuggedSubmodule, "path", rb_git_submodule_path, 0);
+	rb_define_method(rb_cRuggedSubmodule, "fetch_recurse_submodules?", rb_git_submodule_fetch_recurse_submodules, 0);
+	rb_define_method(rb_cRuggedSubmodule, "fetch_recurse_submodules=", rb_git_submodule_set_fetch_recurse_submodules, 1);
 
 	rb_define_method(rb_cRuggedSubmodule, "ignore", rb_git_submodule_ignore, 0);
 	rb_define_method(rb_cRuggedSubmodule, "ignore=", rb_git_submodule_set_ignore, 1);
