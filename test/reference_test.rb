@@ -108,6 +108,20 @@ end
 class ReferenceWriteTest < Rugged::TestCase
   include Rugged::TempRepositoryAccess
 
+  def test_create_force
+    Rugged::Reference.create(@repo, "refs/heads/unit_test", "refs/heads/master")
+
+    Rugged::Reference.create(@repo,
+                             "refs/heads/unit_test",
+                             "refs/heads/master",
+                             true)
+
+    Rugged::Reference.create(@repo,
+                             "refs/heads/unit_test",
+                             "refs/heads/master",
+                             :force)
+  end
+
   def test_list_unicode_refs
     Rugged::Reference.create(@repo,
       "refs/heads/#{ReferenceTest::UNICODE_REF_NAME}",

@@ -263,8 +263,7 @@ static VALUE rb_git_ref_create(int argc, VALUE *argv, VALUE klass)
 	Check_Type(rb_name, T_STRING);
 	Check_Type(rb_target, T_STRING);
 
-	if (!NIL_P(rb_force))
-		force = rugged_parse_bool(rb_force);
+	force = RTEST(rb_force);
 
 	if (git_oid_fromstr(&oid, StringValueCStr(rb_target)) == GIT_OK) {
 		error = git_reference_create(
