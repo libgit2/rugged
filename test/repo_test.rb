@@ -218,6 +218,27 @@ class RepositoryTest < Rugged::SandboxedTestCase
   end
 end
 
+class ShallowRepositoryTest < Rugged::SandboxedTestCase
+  def setup
+    super
+
+    @repo = sandbox_init("testrepo.git")
+    @shallow_repo = sandbox_init("shallow.git")
+  end
+
+  def teardown
+    @repo.close
+    @shallow_repo.close
+
+    super
+  end
+
+  def test_is_shallow
+    refute @repo.shallow?
+    assert @shallow_repo.shallow?
+  end
+end
+
 class RepositoryWriteTest < Rugged::TestCase
   include Rugged::TempRepositoryAccess
 
