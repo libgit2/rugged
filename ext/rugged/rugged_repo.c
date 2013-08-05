@@ -1155,8 +1155,7 @@ static VALUE rb_git_repo_reset_path(int argc, VALUE *argv, VALUE self)
 	git_object *target = NULL;
 	git_strarray pathspecs;
 	VALUE rb_target, rb_paths;
-	VALUE rb_path_array;
-	int i, error = 0;
+	int error = 0;
 
 	pathspecs.strings = NULL;
 	pathspecs.count = 0;
@@ -1165,18 +1164,7 @@ static VALUE rb_git_repo_reset_path(int argc, VALUE *argv, VALUE self)
 
 	rb_scan_args(argc, argv, "11", &rb_paths, &rb_target);
 
-	rb_path_array = rb_ary_to_ary(rb_paths);
-
-	for (i = 0; i < RARRAY_LEN(rb_path_array); ++i)
-		Check_Type(rb_ary_entry(rb_path_array, i), T_STRING);
-
-	pathspecs.count = RARRAY_LEN(rb_path_array);
-	pathspecs.strings = xmalloc(pathspecs.count * sizeof(char *));
-
-	for (i = 0; i < RARRAY_LEN(rb_path_array); ++i) {
-		VALUE fpath = rb_ary_entry(rb_path_array, i);
-		pathspecs.strings[i] = StringValueCStr(fpath);
-	}
+	rugged_rb_ary_to_strarray(rb_paths, &pathspecs);
 
 	if (!NIL_P(rb_target))
 		target = rugged_object_get(repo, rb_target, GIT_OBJ_ANY);
