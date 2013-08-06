@@ -185,7 +185,7 @@ static VALUE submodule_status_flags_to_rb(unsigned int flags)
  *
  *  Returns an +array+ with the status flags for a submodule.
  *
- *  Depending on the Submodule#ignore property of the submodule, some of
+ *  Depending on the #ignore property of the submodule, some of
  *  the flags may never be returned because they indicate changes that are
  *  supposed to be ignored.
  *
@@ -459,8 +459,8 @@ static VALUE rb_git_submodule_url(VALUE self)
  *  This will be used for any following submodule actions while this submodule
  *  data is in memory.
  *
- *  After calling this, you may wish to call Submodule#save to write
- *  the changes back to the +.gitmodules+ file and Submodule#sync to
+ *  After calling this, you may wish to call #save to write
+ *  the changes back to the +.gitmodules+ file and #sync to
  *  write the changes to the checked out submodule repository.
  */
 static VALUE rb_git_submodule_set_url(VALUE self, VALUE rb_url)
@@ -483,7 +483,7 @@ static VALUE rb_git_submodule_set_url(VALUE self, VALUE rb_url)
  *
  *  Returns the path of the submodule.
  *
- *  The +path+ is almost always the same as the Submodule#name,
+ *  The +path+ is almost always the same as the #name,
  *  but the two are actually not required to match.
  */
 static VALUE rb_git_submodule_path(VALUE self)
@@ -538,7 +538,7 @@ static VALUE rb_git_submodule_index_id(VALUE self)
  *
  *  This returns the OID that corresponds to looking up +HEAD+ in the checked
  *  out submodule.  If there are pending changes in the index or anything
- *  else, this won't notice that.  You should call Submodule#status
+ *  else, this won't notice that.  You should call #status
  *  for a more complete picture about the state of the working directory.
  */
 static VALUE rb_git_submodule_wd_id(VALUE self)
@@ -574,7 +574,7 @@ static VALUE rb_git_submodule_fetch_recurse_submodules(VALUE self)
  *  Set the +fetchRecurseSubmodules+ rule in memory for a submodule.
  *
  *  This sets the <tt>submodule.<name>.fetchRecurseSubmodules</tt> value for
- *  the submodule.  You should call Submodule#save if you want to persist the
+ *  the submodule.  You should call #save if you want to persist the
  *  new value.
  */
 static VALUE rb_git_submodule_set_fetch_recurse_submodules(VALUE self, VALUE rb_fetch_recursive)
@@ -628,7 +628,7 @@ static VALUE rb_git_subm_ignore_rule_fromC(git_submodule_ignore_t rule)
  *    means not to open the submodule repository. The working directory will be
  *    considered clean so long as there is a checked out version present.
  *
- *  See Submodule#status on how ignore rules reflect the returned status info
+ *  See #status on how ignore rules reflect the returned status info
  *  for a submodule.
  */
 static VALUE rb_git_submodule_ignore(VALUE self)
@@ -667,13 +667,13 @@ static git_submodule_ignore_t rb_git_subm_ignore_rule_toC(VALUE rb_ignore_rule)
  *    submodule.ignore = rule -> rule
  *
  *  Set the ignore +rule+ in memory for a submodule.
- *  See Submodule#ignore for a list of accepted rules.
+ *  See #ignore for a list of accepted rules.
  *
  *  This will be used for any following actions (such as
- *  Submodule#status) while the submodule is in memory. The ignore
- *  rule can be persisted to the config with Submodule#save.
+ *  #status) while the submodule is in memory. The ignore
+ *  rule can be persisted to the config with #save.
  *
- *  Calling Submodule#reset_ignore or Submodule#reload will
+ *  Calling #reset_ignore or #reload will
  *  revert the rule to the value that was in the config.
  */
 static VALUE rb_git_submodule_set_ignore(VALUE self, VALUE rb_ignore_rule)
@@ -694,7 +694,7 @@ static VALUE rb_git_submodule_set_ignore(VALUE self, VALUE rb_ignore_rule)
  *  call-seq:
  *    submodule.reset_ignore -> nil
  *
- *  Revert the ignore rule set by Submodule#ignore= to the value that
+ *  Revert the ignore rule set by #ignore= to the value that
  *  was in the config.
  */
 static VALUE rb_git_submodule_reset_ignore(VALUE self)
@@ -780,9 +780,9 @@ static git_submodule_update_t rb_git_subm_update_rule_toC(VALUE rb_update_rule)
  *    submodule.update = rule -> rule
  *
  *  Set the update +rule+ in memory for a submodule.
- *  See Submodule#update for a list of accepted rules.
+ *  See #update for a list of accepted rules.
  *
- *  Calling Submodule#reset_update or Submodule#reload will
+ *  Calling #reset_update or #reload will
  *  revert the +rule+ to the value that was in the config.
  */
 static VALUE rb_git_submodule_set_update(VALUE self, VALUE rb_update_rule)
@@ -803,7 +803,7 @@ static VALUE rb_git_submodule_set_update(VALUE self, VALUE rb_update_rule)
  *  call-seq:
  *    submodule.reset_update -> nil
  *
- *  Revert the update rule set by Submodule#update= to the value that
+ *  Revert the update rule set by #update= to the value that
  *  was in the config.
  */
 static VALUE rb_git_submodule_reset_update(VALUE self)
@@ -906,7 +906,7 @@ static VALUE rb_git_submodule_each(VALUE klass, VALUE rb_repo)
  *
  *  To fully emulate <tt>"git submodule add"</tt> call this function, then open
  *  the submodule repository and perform the clone step as needed.
- *  Lastly, call Submodule#finalize_add to wrap up adding the new submodule and
+ *  Lastly, call #finalize_add to wrap up adding the new submodule and
  *  +.gitmodules+ to the index to be ready to commit.
  *
  *  NOTE: Currently +libgit2+ and +Rugged+ don't support +clone+ with separate
@@ -973,11 +973,11 @@ static VALUE rb_git_submodule_setup_add(int argc, VALUE *argv, VALUE klass)
  *  Resolve the setup of a new submodule.
  *
  *  This should be called on a submodule once you have called
- *  Submodule::setup_add and done the clone of the submodule.
+ *  ::setup_add and done the clone of the submodule.
  *  This adds the +.gitmodules+ file and the newly cloned submodule to the index
  *  to be ready to be committed (but doesn't actually do the commit).
  *
- *  See Submodule::setup_add for usage.
+ *  See ::setup_add for usage.
  */
 static VALUE rb_git_submodule_finalize_add(VALUE self)
 {
