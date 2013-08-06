@@ -413,13 +413,6 @@ static VALUE rb_git_submodule_init(int argc, VALUE *argv, VALUE self)
 	return Qnil;
 }
 
-#define RB_GIT_STRING_GETTER(_klass, _attribute) \
-	git_##_klass *object; \
-	const char * value; \
-	Data_Get_Struct(self, git_##_klass, object); \
-	value = git_##_klass##_##_attribute(object); \
-	return value ? rb_str_new_utf8(value) : Qnil; \
-
 /*
  *  call-seq:
  *    submodule.name -> string
@@ -428,18 +421,33 @@ static VALUE rb_git_submodule_init(int argc, VALUE *argv, VALUE self)
  */
 static VALUE rb_git_submodule_name(VALUE self)
 {
-	RB_GIT_STRING_GETTER(submodule, name);
+	git_submodule *submodule;
+	const char *name;
+
+	Data_Get_Struct(self, git_submodule, submodule);
+
+	name = git_submodule_name(submodule);
+
+	return rb_str_new_utf8(name);
 }
 
 /*
  *  call-seq:
- *    submodule.url -> string
+ *    submodule.url -> string or nil
  *
  *  Returns the URL of the submodule.
  */
 static VALUE rb_git_submodule_url(VALUE self)
 {
-	RB_GIT_STRING_GETTER(submodule, url);
+
+	git_submodule *submodule;
+	const char *url;
+
+	Data_Get_Struct(self, git_submodule, submodule);
+
+	url = git_submodule_url(submodule);
+
+	return url ? rb_str_new_utf8(url) : Qnil;
 }
 
 /*
@@ -480,7 +488,14 @@ static VALUE rb_git_submodule_set_url(VALUE self, VALUE rb_url)
  */
 static VALUE rb_git_submodule_path(VALUE self)
 {
-	RB_GIT_STRING_GETTER(submodule, path);
+	git_submodule *submodule;
+	const char *path;
+
+	Data_Get_Struct(self, git_submodule, submodule);
+
+	path = git_submodule_path(submodule);
+
+	return rb_str_new_utf8(path);
 }
 
 #define RB_GIT_OID_GETTER(_klass, _attribute) \
