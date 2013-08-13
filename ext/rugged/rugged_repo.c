@@ -734,6 +734,18 @@ static VALUE rb_git_repo_is_bare(VALUE self)
 	RB_GIT_REPO_GETTER(is_bare);
 }
 
+/*
+ *  call-seq:
+ *    repo.shallow? -> true or false
+ *
+ *  Return whether a repository is a shallow clone or not. A shallow clone has
+ *  a truncated history and can not be cloned or fetched from, nor can be
+ *  pushed from nor into it.
+ */
+static VALUE rb_git_repo_is_shallow(VALUE self)
+{
+	RB_GIT_REPO_GETTER(is_shallow);
+}
 
 /*
  *  call-seq:
@@ -1406,6 +1418,7 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "config=",  rb_git_repo_set_config,  1);
 
 	rb_define_method(rb_cRuggedRepo, "bare?",  rb_git_repo_is_bare,  0);
+	rb_define_method(rb_cRuggedRepo, "shallow?",  rb_git_repo_is_shallow,  0);
 	rb_define_method(rb_cRuggedRepo, "empty?",  rb_git_repo_is_empty,  0);
 
 	rb_define_method(rb_cRuggedRepo, "head_detached?",  rb_git_repo_head_detached,  0);
