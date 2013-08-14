@@ -221,19 +221,19 @@ class IndexConflictsTest < Rugged::SandboxedTestCase
 
     assert_equal 2, conflicts.size
 
-    assert_equal "conflicts-one.txt", conflicts[0][0][:path]
-    assert_equal "conflicts-one.txt", conflicts[0][1][:path]
-    assert_equal "conflicts-one.txt", conflicts[0][2][:path]
-    assert_equal 1, conflicts[0][0][:stage]
-    assert_equal 2, conflicts[0][1][:stage]
-    assert_equal 3, conflicts[0][2][:stage]
+    assert_equal "conflicts-one.txt", conflicts[0][:ancestor][:path]
+    assert_equal "conflicts-one.txt", conflicts[0][:ours][:path]
+    assert_equal "conflicts-one.txt", conflicts[0][:theirs][:path]
+    assert_equal 1, conflicts[0][:ancestor][:stage]
+    assert_equal 2, conflicts[0][:ours][:stage]
+    assert_equal 3, conflicts[0][:theirs][:stage]
 
-    assert_equal "conflicts-two.txt", conflicts[1][0][:path]
-    assert_equal "conflicts-two.txt", conflicts[1][1][:path]
-    assert_equal "conflicts-two.txt", conflicts[1][2][:path]
-    assert_equal 1, conflicts[1][0][:stage]
-    assert_equal 2, conflicts[1][1][:stage]
-    assert_equal 3, conflicts[1][2][:stage]
+    assert_equal "conflicts-two.txt", conflicts[1][:ancestor][:path]
+    assert_equal "conflicts-two.txt", conflicts[1][:ours][:path]
+    assert_equal "conflicts-two.txt", conflicts[1][:theirs][:path]
+    assert_equal 1, conflicts[1][:ancestor][:stage]
+    assert_equal 2, conflicts[1][:ours][:stage]
+    assert_equal 3, conflicts[1][:theirs][:stage]
   end
 
   def test_conflict_at

@@ -985,10 +985,12 @@ static VALUE rb_git_index_conflicts(VALUE self)
 	rugged_exception_check(error);
 
 	while ((error = git_index_conflict_next(&ancestor, &ours, &theirs, iter)) == GIT_OK) {
-		VALUE rb_conflict = rb_ary_new2(3);
-		rb_ary_push(rb_conflict, rb_git_indexentry_fromC(ancestor));
-		rb_ary_push(rb_conflict, rb_git_indexentry_fromC(ours));
-		rb_ary_push(rb_conflict, rb_git_indexentry_fromC(theirs));
+		VALUE rb_conflict = rb_hash_new();
+
+		rb_hash_aset(rb_conflict, CSTR2SYM("ancestor"), rb_git_indexentry_fromC(ancestor));
+		rb_hash_aset(rb_conflict, CSTR2SYM("ours"),     rb_git_indexentry_fromC(ours));
+		rb_hash_aset(rb_conflict, CSTR2SYM("theirs"),   rb_git_indexentry_fromC(theirs));
+
 		rb_ary_push(rb_conflicts, rb_conflict);
 	}
 
