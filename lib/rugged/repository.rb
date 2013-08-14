@@ -27,11 +27,18 @@ module Rugged
 
       return checkout_head(options) if target == "HEAD"
 
-      if branch = Branch.lookup(self, target) rescue nil
+      if target.kind_of?(Rugged::Branch)
+        branch = target
+      else
+        branch = Branch.lookup(self, target, :local)
+        branch ||= Branch.lookup(self, target, :remote)
+      end
+
+      if branch
         self.checkout_tree(branch.tip, options)
 
         if branch.remote?
-          Reference.create(self, "HEAD", branch.tip, true)
+          Reference.create(self, "HEAD", branch.tip.oid, true)
         else
           Reference.create(self, "HEAD", branch.canonical_name, true)
         end
