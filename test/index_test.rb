@@ -236,8 +236,8 @@ class IndexConflictsTest < Rugged::SandboxedTestCase
     assert_equal 3, conflicts[1][2][:stage]
   end
 
-  def test_conflict_get
-    ancestor, ours, theirs = @repo.index.conflict_get("conflicts-one.txt")
+  def test_conflict_at
+    ancestor, ours, theirs = @repo.index.conflict_at("conflicts-one.txt")
 
     assert_equal "conflicts-one.txt", ancestor[:path]
     assert_equal "conflicts-one.txt", ours[:path]
@@ -246,7 +246,7 @@ class IndexConflictsTest < Rugged::SandboxedTestCase
     assert_equal 2, ours[:stage]
     assert_equal 3, theirs[:stage]
 
-    refute @repo.index.conflict_get("conflict-does-not-exists.txt")
+    refute @repo.index.conflict_at("conflict-does-not-exists.txt")
   end
 
   def test_conflict_remove
@@ -260,7 +260,7 @@ class IndexConflictsTest < Rugged::SandboxedTestCase
   end
 
   def test_conflict_add
-    ancestor, ours, theirs = @repo.index.conflict_get("conflicts-one.txt")
+    ancestor, ours, theirs = @repo.index.conflict_at("conflicts-one.txt")
 
     ancestor[:path] = ours[:path] = theirs[:path] = "new-conflict.txt"
     @repo.index.conflict_add(ancestor, ours, theirs)

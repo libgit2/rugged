@@ -905,7 +905,7 @@ static VALUE rb_git_conflict_remove(VALUE self, VALUE rb_path)
 
 /*
  *  call-seq:
- *    index.conflict_get(path) -> [ancestor, ours, theirs] or nil
+ *    index.conflict_at(path) -> [ancestor, ours, theirs] or nil
  *
  *  Return index entries from the ancestor, our side and their side of
  *  the conflict at +path+.
@@ -915,7 +915,7 @@ static VALUE rb_git_conflict_remove(VALUE self, VALUE rb_path)
  *
  *  Returns nil of no conflict is present at +path+.
  */
-static VALUE rb_git_conflict_get(VALUE self, VALUE rb_path)
+static VALUE rb_git_conflict_at(VALUE self, VALUE rb_path)
 {
 	git_index *index;
 	const git_index_entry *ancestor, *ours, *theirs;
@@ -1070,7 +1070,7 @@ void Init_rugged_index(void)
 
 	rb_define_method(rb_cRuggedIndex, "conflicts?", rb_git_index_conflicts_p, 0);
 	rb_define_method(rb_cRuggedIndex, "conflicts", rb_git_index_conflicts, 0);
-	rb_define_method(rb_cRuggedIndex, "conflict_get", rb_git_conflict_get, 1);
+	rb_define_method(rb_cRuggedIndex, "conflict_at", rb_git_conflict_at, 1);
 	rb_define_method(rb_cRuggedIndex, "conflict_add", rb_git_conflict_add, 3);
 	rb_define_method(rb_cRuggedIndex, "conflict_remove", rb_git_conflict_remove, 1);
 	rb_define_method(rb_cRuggedIndex, "conflict_cleanup", rb_git_conflict_cleanup, 0);
