@@ -891,7 +891,6 @@ static VALUE rb_git_conflict_add(VALUE self, VALUE rb_ancestor, VALUE rb_ours, V
 static VALUE rb_git_conflict_remove(VALUE self, VALUE rb_path)
 {
 	git_index *index;
-	const git_index_entry *ancestor, *ours, *theirs;
 	int error;
 
 	Check_Type(rb_path, T_STRING);
@@ -950,7 +949,6 @@ static VALUE rb_git_conflict_get(VALUE self, VALUE rb_path)
 static VALUE rb_git_conflict_cleanup(VALUE self)
 {
 	git_index *index;
-	const git_index_entry *ancestor, *ours, *theirs;
 
 	Data_Get_Struct(self, git_index, index);
 	git_index_conflict_cleanup(index);
