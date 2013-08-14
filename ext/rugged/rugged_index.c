@@ -956,13 +956,6 @@ static VALUE rb_git_conflict_cleanup(VALUE self)
 	return Qnil;
 }
 
-static VALUE rugged_yield_conflict(VALUE _args)
-{
-	VALUE *args = (VALUE *)_args;
-	rb_funcall(args[0], rb_intern("call"), 3, args[1], args[2], args[3]);
-	return GIT_OK;
-}
-
 /*
  *  call-seq:
  *    index.each_conflict { |ancestor, ours, theirs| block } -> index
