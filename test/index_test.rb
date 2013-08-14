@@ -212,13 +212,12 @@ class IndexConflictsTest < Rugged::SandboxedTestCase
     super
   end
 
-  def test_conflicts
+  def test_conflicts?
     assert @repo.index.conflicts?
   end
 
-  def test_each_conflict
-    conflicts = []
-    @repo.index.each_conflict { |*args| conflicts << args }
+  def test_conflicts
+    conflicts = @repo.index.conflicts
 
     assert_equal 2, conflicts.size
 
@@ -237,12 +236,6 @@ class IndexConflictsTest < Rugged::SandboxedTestCase
     assert_equal 3, conflicts[1][2][:stage]
   end
 
-  def test_each_conflict_enumerator
-    enum = @repo.index.each_conflict
-    assert_instance_of Enumerator, enum
-    assert_equal 2, enum.count
-  end
-
   def test_conflict_get
     ancestor, ours, theirs = @repo.index.conflict_get("conflicts-one.txt")
 
@@ -258,10 +251,10 @@ class IndexConflictsTest < Rugged::SandboxedTestCase
 
   def test_conflict_remove
     @repo.index.conflict_remove("conflicts-one.txt")
-    assert_equal @repo.index.each_conflict.count, 1
+    assert_equal @repo.index.conflicts.size, 1
 
     @repo.index.conflict_remove("conflicts-two.txt")
-    assert_equal @repo.index.each_conflict.count, 0
+    assert_equal @repo.index.conflicts.size, 0
 
     refute @repo.index.conflicts?
   end
@@ -272,18 +265,18 @@ class IndexConflictsTest < Rugged::SandboxedTestCase
     ancestor[:path] = ours[:path] = theirs[:path] = "new-conflict.txt"
     @repo.index.conflict_add(ancestor, ours, theirs)
 
-    assert_equal @repo.index.each_conflict.count, 3
+    assert_equal @repo.index.conflicts.size, 3
 
     ours[:path] = theirs[:path] = "another-new-conflict.txt"
     @repo.index.conflict_add(nil, ours, theirs)
 
-    assert_equal @repo.index.each_conflict.count, 4
+    assert_equal @repo.index.conflicts.size, 4
   end
 
   def test_conflict_cleanup
     @repo.index.conflict_cleanup
 
-    assert_equal @repo.index.each_conflict.count, 0
+    assert_equal @repo.index.conflicts.size, 0
     refute @repo.index.conflicts?
   end
 end
