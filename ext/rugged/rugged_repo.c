@@ -1505,134 +1505,135 @@ static int rugged__checkout_notify_cb(
  */
 static void rugged_parse_checkout_options(git_checkout_opts *opts, VALUE rb_options)
 {
-	if (!NIL_P(rb_options)) {
-		VALUE rb_value;
-		Check_Type(rb_options, T_HASH);
+	if (NIL_P(rb_options))
+		return;
 
-		rb_value = rb_hash_aref(rb_options, CSTR2SYM("progress"));
-		if (!NIL_P(rb_value)) {
-			struct rugged_cb_payload *payload = malloc(sizeof(struct rugged_cb_payload));
-			payload->rb_data = rb_value;
-			payload->exception = 0;
+	VALUE rb_value;
+	Check_Type(rb_options, T_HASH);
 
-			opts->progress_payload = payload;
-			opts->progress_cb = &rugged__checkout_progress_cb;
-		}
+	rb_value = rb_hash_aref(rb_options, CSTR2SYM("progress"));
+	if (!NIL_P(rb_value)) {
+		struct rugged_cb_payload *payload = malloc(sizeof(struct rugged_cb_payload));
+		payload->rb_data = rb_value;
+		payload->exception = 0;
 
-		rb_value = rb_hash_aref(rb_options, CSTR2SYM("notify"));
-		if (!NIL_P(rb_value)) {
-			struct rugged_cb_payload *payload = malloc(sizeof(struct rugged_cb_payload));
-			payload->rb_data = rb_value;
-			payload->exception = 0;
-
-			opts->notify_payload = payload;
-			opts->notify_cb = &rugged__checkout_notify_cb;
-		}
-
-		if (!NIL_P(rb_value = rb_hash_aref(rb_options, CSTR2SYM("strategy")))) {
-			int i;
-
-			rb_value = rb_ary_to_ary(rb_value);
-			for (i = 0; i < RARRAY_LEN(rb_value); ++i) {
-				VALUE rb_strategy = rb_ary_entry(rb_value, i);
-
-				if (rb_strategy == CSTR2SYM("safe")) {
-					opts->checkout_strategy |= GIT_CHECKOUT_SAFE;
-				} else if (rb_strategy == CSTR2SYM("safe_create")) {
-					opts->checkout_strategy |= GIT_CHECKOUT_SAFE_CREATE;
-				} else if (rb_strategy == CSTR2SYM("force")) {
-					opts->checkout_strategy |= GIT_CHECKOUT_FORCE;
-				} else if (rb_strategy == CSTR2SYM("allow_conflicts")) {
-					opts->checkout_strategy |= GIT_CHECKOUT_ALLOW_CONFLICTS;
-				} else if (rb_strategy == CSTR2SYM("remove_untracked")) {
-					opts->checkout_strategy |= GIT_CHECKOUT_REMOVE_UNTRACKED;
-				} else if (rb_strategy == CSTR2SYM("remove_ignored")) {
-					opts->checkout_strategy |= GIT_CHECKOUT_REMOVE_IGNORED;
-				} else if (rb_strategy == CSTR2SYM("update_only")) {
-					opts->checkout_strategy |= GIT_CHECKOUT_UPDATE_ONLY;
-				} else if (rb_strategy == CSTR2SYM("dont_update_index")) {
-					opts->checkout_strategy |= GIT_CHECKOUT_DONT_UPDATE_INDEX;
-				} else if (rb_strategy == CSTR2SYM("no_refresh")) {
-					opts->checkout_strategy |= GIT_CHECKOUT_NO_REFRESH;
-				} else if (rb_strategy == CSTR2SYM("disable_pathspec_match")) {
-					opts->checkout_strategy |= GIT_CHECKOUT_DISABLE_PATHSPEC_MATCH;
-				} else if (rb_strategy == CSTR2SYM("skip_locked_directories")) {
-					opts->checkout_strategy |= GIT_CHECKOUT_SKIP_LOCKED_DIRECTORIES;
-				} else if (rb_strategy == CSTR2SYM("skip_unmerged")) {
-					opts->checkout_strategy |= GIT_CHECKOUT_SKIP_UNMERGED;
-				} else if (rb_strategy == CSTR2SYM("use_ours")) {
-					opts->checkout_strategy |= GIT_CHECKOUT_USE_OURS;
-				} else if (rb_strategy == CSTR2SYM("use_theirs")) {
-					opts->checkout_strategy |= GIT_CHECKOUT_USE_THEIRS;
-				} else if (rb_strategy == CSTR2SYM("update_submodules")) {
-					opts->checkout_strategy |= GIT_CHECKOUT_UPDATE_SUBMODULES;
-				} else if (rb_strategy == CSTR2SYM("update_submodules_if_changed")) {
-					opts->checkout_strategy |= GIT_CHECKOUT_UPDATE_SUBMODULES_IF_CHANGED;
-				} else if (rb_strategy != CSTR2SYM("none")) {
-					rb_raise(rb_eArgError, "Unknown checkout strategy");
-				}
-			}
-		}
-
-		if (!NIL_P(rb_value = rb_hash_aref(rb_options, CSTR2SYM("notify_flags")))) {
-			int i;
-
-			rb_value = rb_ary_to_ary(rb_value);
-			for (i = 0; i < RARRAY_LEN(rb_value); ++i) {
-				VALUE rb_notify_flag = rb_ary_entry(rb_value, i);
-
-				if (rb_notify_flag == CSTR2SYM("conflict")) {
-					opts->notify_flags |= GIT_CHECKOUT_NOTIFY_CONFLICT;
-				} else if (rb_notify_flag == CSTR2SYM("dirty")) {
-					opts->notify_flags |= GIT_CHECKOUT_NOTIFY_DIRTY;
-				} else if (rb_notify_flag == CSTR2SYM("updated")) {
-					opts->notify_flags |= GIT_CHECKOUT_NOTIFY_UPDATED;
-				} else if (rb_notify_flag == CSTR2SYM("untracked")) {
-					opts->notify_flags |= GIT_CHECKOUT_NOTIFY_UNTRACKED;
-				} else if (rb_notify_flag == CSTR2SYM("ignored")) {
-					opts->notify_flags |= GIT_CHECKOUT_NOTIFY_IGNORED;
-				} else if (rb_notify_flag == CSTR2SYM("all")) {
-					opts->notify_flags |= GIT_CHECKOUT_NOTIFY_ALL;
-				} else if (rb_notify_flag != CSTR2SYM("none")) {
-					rb_raise(rb_eArgError, "Unknown checkout notify flag");
-				}
-			}
-		}
-
-		opts->disable_filters = RTEST(rb_hash_aref(rb_options, CSTR2SYM("disable_filters")));
-
-		rb_value = rb_hash_aref(rb_options, CSTR2SYM("dir_mode"));
-		if (!NIL_P(rb_value)) {
-			opts->dir_mode = FIX2UINT(rb_value);
-		}
-
-		rb_value = rb_hash_aref(rb_options, CSTR2SYM("file_mode"));
-		if (!NIL_P(rb_value)) {
-			opts->file_mode = FIX2UINT(rb_value);
-		}
-
-		rb_value = rb_hash_aref(rb_options, CSTR2SYM("file_open_flags"));
-		if (!NIL_P(rb_value)) {
-			opts->file_mode = FIX2INT(rb_value);
-		}
-
-		rb_value = rb_hash_aref(rb_options, CSTR2SYM("target_directory"));
-		if (!NIL_P(rb_value)) {
-			opts->target_directory = StringValueCStr(rb_value);
-		}
-
-		rb_value = rb_hash_aref(rb_options, CSTR2SYM("baseline"));
-		if (!NIL_P(rb_value)) {
-			if (rb_obj_is_kind_of(rb_value, rb_cRuggedTree)) {
-				Data_Get_Struct(rb_value, git_tree, opts->baseline);
-			} else {
-				rb_raise(rb_eTypeError, "Expected a Rugged::Tree.");
-			}
-		}
-
-		rb_value = rb_hash_aref(rb_options, CSTR2SYM("paths"));
-		rugged_rb_ary_to_strarray(rb_value, &opts->paths);
+		opts->progress_payload = payload;
+		opts->progress_cb = &rugged__checkout_progress_cb;
 	}
+
+	rb_value = rb_hash_aref(rb_options, CSTR2SYM("notify"));
+	if (!NIL_P(rb_value)) {
+		struct rugged_cb_payload *payload = malloc(sizeof(struct rugged_cb_payload));
+		payload->rb_data = rb_value;
+		payload->exception = 0;
+
+		opts->notify_payload = payload;
+		opts->notify_cb = &rugged__checkout_notify_cb;
+	}
+
+	if (!NIL_P(rb_value = rb_hash_aref(rb_options, CSTR2SYM("strategy")))) {
+		int i;
+
+		rb_value = rb_ary_to_ary(rb_value);
+		for (i = 0; i < RARRAY_LEN(rb_value); ++i) {
+			VALUE rb_strategy = rb_ary_entry(rb_value, i);
+
+			if (rb_strategy == CSTR2SYM("safe")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_SAFE;
+			} else if (rb_strategy == CSTR2SYM("safe_create")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_SAFE_CREATE;
+			} else if (rb_strategy == CSTR2SYM("force")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_FORCE;
+			} else if (rb_strategy == CSTR2SYM("allow_conflicts")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_ALLOW_CONFLICTS;
+			} else if (rb_strategy == CSTR2SYM("remove_untracked")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_REMOVE_UNTRACKED;
+			} else if (rb_strategy == CSTR2SYM("remove_ignored")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_REMOVE_IGNORED;
+			} else if (rb_strategy == CSTR2SYM("update_only")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_UPDATE_ONLY;
+			} else if (rb_strategy == CSTR2SYM("dont_update_index")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_DONT_UPDATE_INDEX;
+			} else if (rb_strategy == CSTR2SYM("no_refresh")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_NO_REFRESH;
+			} else if (rb_strategy == CSTR2SYM("disable_pathspec_match")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_DISABLE_PATHSPEC_MATCH;
+			} else if (rb_strategy == CSTR2SYM("skip_locked_directories")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_SKIP_LOCKED_DIRECTORIES;
+			} else if (rb_strategy == CSTR2SYM("skip_unmerged")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_SKIP_UNMERGED;
+			} else if (rb_strategy == CSTR2SYM("use_ours")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_USE_OURS;
+			} else if (rb_strategy == CSTR2SYM("use_theirs")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_USE_THEIRS;
+			} else if (rb_strategy == CSTR2SYM("update_submodules")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_UPDATE_SUBMODULES;
+			} else if (rb_strategy == CSTR2SYM("update_submodules_if_changed")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_UPDATE_SUBMODULES_IF_CHANGED;
+			} else if (rb_strategy != CSTR2SYM("none")) {
+				rb_raise(rb_eArgError, "Unknown checkout strategy");
+			}
+		}
+	}
+
+	if (!NIL_P(rb_value = rb_hash_aref(rb_options, CSTR2SYM("notify_flags")))) {
+		int i;
+
+		rb_value = rb_ary_to_ary(rb_value);
+		for (i = 0; i < RARRAY_LEN(rb_value); ++i) {
+			VALUE rb_notify_flag = rb_ary_entry(rb_value, i);
+
+			if (rb_notify_flag == CSTR2SYM("conflict")) {
+				opts->notify_flags |= GIT_CHECKOUT_NOTIFY_CONFLICT;
+			} else if (rb_notify_flag == CSTR2SYM("dirty")) {
+				opts->notify_flags |= GIT_CHECKOUT_NOTIFY_DIRTY;
+			} else if (rb_notify_flag == CSTR2SYM("updated")) {
+				opts->notify_flags |= GIT_CHECKOUT_NOTIFY_UPDATED;
+			} else if (rb_notify_flag == CSTR2SYM("untracked")) {
+				opts->notify_flags |= GIT_CHECKOUT_NOTIFY_UNTRACKED;
+			} else if (rb_notify_flag == CSTR2SYM("ignored")) {
+				opts->notify_flags |= GIT_CHECKOUT_NOTIFY_IGNORED;
+			} else if (rb_notify_flag == CSTR2SYM("all")) {
+				opts->notify_flags |= GIT_CHECKOUT_NOTIFY_ALL;
+			} else if (rb_notify_flag != CSTR2SYM("none")) {
+				rb_raise(rb_eArgError, "Unknown checkout notify flag");
+			}
+		}
+	}
+
+	opts->disable_filters = RTEST(rb_hash_aref(rb_options, CSTR2SYM("disable_filters")));
+
+	rb_value = rb_hash_aref(rb_options, CSTR2SYM("dir_mode"));
+	if (!NIL_P(rb_value)) {
+		opts->dir_mode = FIX2UINT(rb_value);
+	}
+
+	rb_value = rb_hash_aref(rb_options, CSTR2SYM("file_mode"));
+	if (!NIL_P(rb_value)) {
+		opts->file_mode = FIX2UINT(rb_value);
+	}
+
+	rb_value = rb_hash_aref(rb_options, CSTR2SYM("file_open_flags"));
+	if (!NIL_P(rb_value)) {
+		opts->file_mode = FIX2INT(rb_value);
+	}
+
+	rb_value = rb_hash_aref(rb_options, CSTR2SYM("target_directory"));
+	if (!NIL_P(rb_value)) {
+		opts->target_directory = StringValueCStr(rb_value);
+	}
+
+	rb_value = rb_hash_aref(rb_options, CSTR2SYM("baseline"));
+	if (!NIL_P(rb_value)) {
+		if (rb_obj_is_kind_of(rb_value, rb_cRuggedTree)) {
+			Data_Get_Struct(rb_value, git_tree, opts->baseline);
+		} else {
+			rb_raise(rb_eTypeError, "Expected a Rugged::Tree.");
+		}
+	}
+
+	rb_value = rb_hash_aref(rb_options, CSTR2SYM("paths"));
+	rugged_rb_ary_to_strarray(rb_value, &opts->paths);
 }
 
 /**
