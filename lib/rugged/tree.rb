@@ -2,6 +2,9 @@ module Rugged
   class Tree
     include Enumerable
 
+    attr_reader :owner
+    alias repo owner
+
     def inspect
       data = "#<Rugged::Tree:#{object_id} {oid: #{oid}}>\n"
       self.each { |e| data << "  <\"#{e[:name]}\" #{e[:oid]}>\n" }
