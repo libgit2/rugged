@@ -1,8 +1,6 @@
 module Rugged
   class Diff
     class Delta
-      include Enumerable
-
       attr_reader :owner
       alias diff owner
 
