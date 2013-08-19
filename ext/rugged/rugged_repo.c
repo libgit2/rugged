@@ -704,11 +704,11 @@ static VALUE rb_git_repo_write(VALUE self, VALUE rb_buffer, VALUE rub_type)
 	git_odb_free(odb);
 	rugged_exception_check(error);
 
-	error = stream->write(stream, RSTRING_PTR(rb_buffer), RSTRING_LEN(rb_buffer));
+	error = git_odb_stream_write(stream, RSTRING_PTR(rb_buffer), RSTRING_LEN(rb_buffer));
 	if (!error)
-		error = stream->finalize_write(&oid, stream);
+		error = git_odb_stream_finalize_write(&oid, stream);
 
-	stream->free(stream);
+	git_odb_stream_free(stream);
 	rugged_exception_check(error);
 
 	return rugged_create_oid(&oid);
