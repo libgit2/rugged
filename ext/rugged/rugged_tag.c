@@ -34,12 +34,12 @@ VALUE rb_cRuggedTagAnnotation;
 
 /*
  *  call-seq:
- *    tag.target -> object
+ *    annotation.target -> object
  *
- *  Return the +object+ pointed at by this tag, as a <tt>Rugged::Object</tt>
+ *  Return the +object+ pointed at by this tag annotation, as a <tt>Rugged::Object</tt>
  *  instance.
  *
- *    tag.target #=> #<Rugged::Commit:0x108828918>
+ *    annotation.target #=> #<Rugged::Commit:0x108828918>
  */
 static VALUE rb_git_tag_annotation_target(VALUE self)
 {
@@ -59,13 +59,13 @@ static VALUE rb_git_tag_annotation_target(VALUE self)
 
 /*
  *  call-seq:
- *    tag.target_oid -> oid
- *    tag.target_id -> oid
+ *    annotation.target_oid -> oid
+ *    annotation.target_id -> oid
  *
- *  Return the oid pointed at by this tag, as a <tt>String</tt>
+ *  Return the oid pointed at by this tag annotation, as a <tt>String</tt>
  *  instance.
  *
- *    tag.target_id #=> "2cb831a8aea28b2c1b9c63385585b864e4d3bad1"
+ *    annotation.target_id #=> "2cb831a8aea28b2c1b9c63385585b864e4d3bad1"
  */
 static VALUE rb_git_tag_annotation_target_id(VALUE self)
 {
@@ -81,15 +81,15 @@ static VALUE rb_git_tag_annotation_target_id(VALUE self)
 
 /*
  *  call-seq:
- *    tag.type -> t
+ *    annotation.type -> t
  *
  *  Return a symbol representing the type of the objeced pointed at by
- *  this +tag+. Possible values are +:blob+, +:commit+, +:tree+ and +:tag+.
+ *  this +annotation+. Possible values are +:blob+, +:commit+, +:tree+ and +:tag+.
  *
- *  This is always the same as the +type+ of the returned <tt>tag.target</tt>
+ *  This is always the same as the +type+ of the returned <tt>annotation.target</tt>
  *
- *    tag.type #=> :commit
- *    tag.target.type == tag.type #=> true
+ *    annotation.type #=> :commit
+ *    annotation.target.type == annotation.type #=> true
  */
 static VALUE rb_git_tag_annotation_target_type(VALUE self)
 {
@@ -101,11 +101,11 @@ static VALUE rb_git_tag_annotation_target_type(VALUE self)
 
 /*
  *  call-seq:
- *    tag.name -> name
+ *    annotation.name -> name
  *
- *  Return a string with the name of this +tag+.
+ *  Return a string with the name of this tag +annotation+.
  *
- *    tag.name #=> "v0.16.0"
+ *    annotation.name #=> "v0.16.0"
  */
 static VALUE rb_git_tag_annotation_name(VALUE self)
 {
@@ -117,13 +117,13 @@ static VALUE rb_git_tag_annotation_name(VALUE self)
 
 /*
  *  call-seq:
- *    tag.tagger -> signature
+ *    annotation.tagger -> signature
  *
- *  Return the signature for the author of this +tag+. The signature
+ *  Return the signature for the author of this tag +annotation+. The signature
  *  is returned as a +Hash+ containing +:name+, +:email+ of the author
  *  and +:time+ of the tagging.
  *
- *    tag.tagger #=> {:email=>"tanoku@gmail.com", :time=>Tue Jan 24 05:42:45 UTC 2012, :name=>"Vicent Mart\303\255"}
+ *    annotation.tagger #=> {:email=>"tanoku@gmail.com", :time=>Tue Jan 24 05:42:45 UTC 2012, :name=>"Vicent Mart\303\255"}
  */
 static VALUE rb_git_tag_annotation_tagger(VALUE self)
 {
@@ -141,12 +141,12 @@ static VALUE rb_git_tag_annotation_tagger(VALUE self)
 
 /*
  *  call-seq:
- *    tag.message -> msg
+ *    annotation.message -> msg
  *
- *  Return the message of this +tag+. This includes the full body of the
+ *  Return the message of this tag +annotation+. This includes the full body of the
  *  message and any optional footers or signatures after it.
  *
- *    tag.message #=> "Release v0.16.0, codename 'broken stuff'"
+ *    annotation.message #=> "Release v0.16.0, codename 'broken stuff'"
  */
 static VALUE rb_git_tag_annotation_message(VALUE self)
 {
