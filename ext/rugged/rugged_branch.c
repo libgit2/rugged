@@ -35,7 +35,7 @@ static inline VALUE rugged_branch_new(VALUE owner, git_reference *ref)
 	return rugged_ref_new(rb_cRuggedBranch, owner, ref);
 }
 
-static int parse_branch_type(VALUE rb_filter)
+static git_branch_t parse_branch_type(VALUE rb_filter)
 {
 	ID id_filter;
 
@@ -119,7 +119,7 @@ static VALUE rb_git_branch_lookup(int argc, VALUE *argv, VALUE self)
 
 	VALUE rb_repo, rb_name, rb_type;
 	int error;
-	int branch_type = GIT_BRANCH_LOCAL;
+	git_branch_t branch_type = GIT_BRANCH_LOCAL;
 
 	rb_scan_args(argc, argv, "21", &rb_repo, &rb_name, &rb_type);
 
@@ -190,7 +190,7 @@ static VALUE each_branch(int argc, VALUE *argv, VALUE self, int branch_names_onl
 	git_repository *repo;
 	int error;
 	struct rugged_cb_payload payload;
-	int filter = (GIT_BRANCH_LOCAL | GIT_BRANCH_REMOTE);
+	git_branch_t filter = (GIT_BRANCH_LOCAL | GIT_BRANCH_REMOTE);
 
 	rb_scan_args(argc, argv, "11", &rb_repo, &rb_filter);
 
