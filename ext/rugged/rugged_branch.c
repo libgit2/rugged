@@ -310,7 +310,7 @@ static VALUE rb_git_branch_head_p(VALUE self)
  *
  *  Returns the name of +branch+.
  *
- *  See Rugged::Branch#canonical_name if you need the fully qualified
+ *  See Rugged::Reference#canonical_name if you need the fully qualified
  *  name of the underlying reference.
  */
 static VALUE rb_git_branch_name(VALUE self)

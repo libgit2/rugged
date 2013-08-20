@@ -371,6 +371,7 @@ static VALUE rb_git_ref_type(VALUE self)
 /*
  *  call-seq:
  *    reference.name -> name
+ *    reference.canonical_name -> name
  *
  *  Returns the name of the reference
  *
@@ -645,6 +646,7 @@ void Init_rugged_reference(void)
 	rb_define_method(rb_cRuggedReference, "type", rb_git_ref_type, 0);
 
 	rb_define_method(rb_cRuggedReference, "name", rb_git_ref_name, 0);
+	rb_define_method(rb_cRuggedReference, "canonical_name", rb_git_ref_name, 0);
 	rb_define_method(rb_cRuggedReference, "rename", rb_git_ref_rename, -1);
 
 	rb_define_method(rb_cRuggedReference, "resolve", rb_git_ref_resolve, 0);
