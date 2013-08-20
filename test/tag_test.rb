@@ -65,12 +65,10 @@ class TagWriteTest < Rugged::TestCase
   include Rugged::TempRepositoryAccess
 
   def test_writing_a_tag
-    person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
-    tag_oid = Rugged::Tag.create(@repo,
-      :name    => 'tag',
+    tag_oid = Rugged::Tag.create(@repo, 'tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
       :message => "test tag message\n",
-      :target  => "5b5b025afb0b4c913b4c338a42934a3863bf3644",
-      :tagger => person)
+      :tagger  => { :name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
+    })
 
     tag = @repo.lookup(tag_oid)
     assert_equal :tag, tag.type
@@ -97,20 +95,16 @@ class TagWriteTest < Rugged::TestCase
   end
 
   def test_tag_invalid_message_type
-    person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
     assert_raises TypeError do
-      Rugged::Tag.create(@repo,
-        :name    => 'tag',
+      Rugged::Tag.create(@repo, 'tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
         :message => :invalid_message,
-        :target  => "5b5b025afb0b4c913b4c338a42934a3863bf3644",
-        :tagger => person)
+        :tagger  => {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
+      })
     end
   end
 
   def test_writing_light_tags
-    Rugged::Tag.create(@repo,
-      :name    => 'tag',
-      :target  => "5b5b025afb0b4c913b4c338a42934a3863bf3644")
+    Rugged::Tag.create(@repo, 'tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644")
 
     tag = Rugged::Reference.lookup(@repo, "refs/tags/tag")
     assert_equal "5b5b025afb0b4c913b4c338a42934a3863bf3644", tag.target
