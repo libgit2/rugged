@@ -38,7 +38,7 @@ VALUE rb_cRuggedTag;
  *
  *    tag.target #=> #<Rugged::Commit:0x108828918>
  */
-static VALUE rb_git_tag_target_GET(VALUE self)
+static VALUE rb_git_tag_target(VALUE self)
 {
 	git_tag *tag;
 	git_object *target;
@@ -64,7 +64,7 @@ static VALUE rb_git_tag_target_GET(VALUE self)
  *
  *    tag.target_id #=> "2cb831a8aea28b2c1b9c63385585b864e4d3bad1"
  */
-static VALUE rb_git_tag_target_id_GET(VALUE self)
+static VALUE rb_git_tag_target_id(VALUE self)
 {
 	git_tag *tag;
 	const git_oid *target_oid;
@@ -88,7 +88,7 @@ static VALUE rb_git_tag_target_id_GET(VALUE self)
  *    tag.type #=> :commit
  *    tag.target.type == tag.type #=> true
  */
-static VALUE rb_git_tag_target_type_GET(VALUE self)
+static VALUE rb_git_tag_target_type(VALUE self)
 {
 	git_tag *tag;
 	Data_Get_Struct(self, git_tag, tag);
@@ -104,7 +104,7 @@ static VALUE rb_git_tag_target_type_GET(VALUE self)
  *
  *    tag.name #=> "v0.16.0"
  */
-static VALUE rb_git_tag_name_GET(VALUE self)
+static VALUE rb_git_tag_name(VALUE self)
 {
 	git_tag *tag;
 	Data_Get_Struct(self, git_tag, tag);
@@ -122,7 +122,7 @@ static VALUE rb_git_tag_name_GET(VALUE self)
  *
  *    tag.tagger #=> {:email=>"tanoku@gmail.com", :time=>Tue Jan 24 05:42:45 UTC 2012, :name=>"Vicent Mart\303\255"}
  */
-static VALUE rb_git_tag_tagger_GET(VALUE self)
+static VALUE rb_git_tag_tagger(VALUE self)
 {
 	git_tag *tag;
 	const git_signature *tagger;
@@ -145,7 +145,7 @@ static VALUE rb_git_tag_tagger_GET(VALUE self)
  *
  *    tag.message #=> "Release v0.16.0, codename 'broken stuff'"
  */
-static VALUE rb_git_tag_message_GET(VALUE self)
+static VALUE rb_git_tag_message(VALUE self)
 {
 	git_tag *tag;
 	const char *message;
@@ -342,11 +342,11 @@ void Init_rugged_tag(void)
 	rb_define_singleton_method(rb_cRuggedTag, "each", rb_git_tag_each, -1);
 	rb_define_singleton_method(rb_cRuggedTag, "delete", rb_git_tag_delete, 2);
 
-	rb_define_method(rb_cRuggedTag, "message", rb_git_tag_message_GET, 0);
-	rb_define_method(rb_cRuggedTag, "name", rb_git_tag_name_GET, 0);
-	rb_define_method(rb_cRuggedTag, "target", rb_git_tag_target_GET, 0);
-	rb_define_method(rb_cRuggedTag, "target_oid", rb_git_tag_target_id_GET, 0);
-	rb_define_method(rb_cRuggedTag, "target_id", rb_git_tag_target_id_GET, 0);
-	rb_define_method(rb_cRuggedTag, "target_type", rb_git_tag_target_type_GET, 0);
-	rb_define_method(rb_cRuggedTag, "tagger", rb_git_tag_tagger_GET, 0);
+	rb_define_method(rb_cRuggedTag, "message", rb_git_tag_message, 0);
+	rb_define_method(rb_cRuggedTag, "name", rb_git_tag_name, 0);
+	rb_define_method(rb_cRuggedTag, "target", rb_git_tag_target, 0);
+	rb_define_method(rb_cRuggedTag, "target_oid", rb_git_tag_target_id, 0);
+	rb_define_method(rb_cRuggedTag, "target_id", rb_git_tag_target_id, 0);
+	rb_define_method(rb_cRuggedTag, "target_type", rb_git_tag_target_type, 0);
+	rb_define_method(rb_cRuggedTag, "tagger", rb_git_tag_tagger, 0);
 }
