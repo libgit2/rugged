@@ -373,7 +373,11 @@ static VALUE rb_git_ref_type(VALUE self)
  *    reference.name -> name
  *    reference.canonical_name -> name
  *
- *  Returns the name of the reference
+ *  Returns the fully qualified name of the reference.
+ *
+ *  +name+ gets overwritten in subclasess like Rugged::Branch or Rugged::Tag
+ *  to return "nicer" names for presentational purposes, while +canonical_name+
+ *  is always supposed to return the fully qualified reference path.
  *
  *    reference.name #=> 'HEAD'
  */
