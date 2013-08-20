@@ -161,102 +161,74 @@ static VALUE rb_git_tag_message(VALUE self)
 
 /*
  *  call-seq:
- *    Tag.create(repo, data) -> oid
+ *    Tag.create(repo, name, target[, force = false][, annotation = nil]) -> oid
  *
- *  Create a new tag in +repo+.
+ *  Create a new tag with the specified +name+ on +target+ in +repo+.
  *
- *  If +data+ is a String, it has to contain the raw tag data.
- *
- *  If +data+ is a Hash, it has to contain the following key value pairs:
- *
- *  :name ::
- *    A String holding the tag's new name.
- *
- *  :force ::
- *    If +true+, existing tags will be overwritten. Defaults to +false+.
+ *  If +annotation+ is not +nil+, it will cause the creation of an annotated tag object.
+ *  +annotation+ has to contain the following key value pairs:
  *
  *  :tagger ::
  *    An optional Hash containing a git signature. Defaults to the signature
- *    from the configuration.
+ *    from the configuration if only `:message` is given. Will cause the
+ *    creation of an annotated tag object if present.
  *
  *  :message ::
- *    An optional string containing the message for the new tag. Will cause
- *    the creation of an annotated tag if present.
- *
- *  :target ::
- *    The OID of the object that the new tag should point to.
+ *    An optional string containing the message for the new tag.
  *
  *  Returns the OID of the newly created tag.
  */
-static VALUE rb_git_tag_create(VALUE self, VALUE rb_repo, VALUE rb_data)
+static VALUE rb_git_tag_create(int argc, VALUE *argv, VALUE self)
 {
 	git_oid tag_oid;
 	git_repository *repo = NULL;
+	git_object *target = NULL;
 	int error, force = 0;
 
-	VALUE rb_name, rb_target, rb_tagger, rb_message, rb_force;
+	VALUE rb_repo, rb_name, rb_target, rb_force, rb_annotation;
+
+	rb_scan_args(argc, argv, "31:", &rb_repo, &rb_name, &rb_target, &rb_force, &rb_annotation);
 
 	rugged_check_repo(rb_repo);
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
-	if (TYPE(rb_data) == T_STRING) {
-		error = git_tag_create_frombuffer(
+	Check_Type(rb_name, T_STRING);
+
+	if (!NIL_P(rb_force))
+		force = rugged_parse_bool(rb_force);
+
+	target = rugged_object_get(repo, rb_target, GIT_OBJ_ANY);
+
+	if (NIL_P(rb_annotation)) {
+		error = git_tag_create_lightweight(
 			&tag_oid,
 			repo,
-			StringValueCStr(rb_data),
+			StringValueCStr(rb_name),
+			target,
 			force
 		);
-	} else if (TYPE(rb_data) == T_HASH) {
-		git_object *target = NULL;
-
-		rb_name = rb_hash_aref(rb_data, CSTR2SYM("name"));
-		Check_Type(rb_name, T_STRING);
-
-		rb_force = rb_hash_aref(rb_data, CSTR2SYM("force"));
-		if (!NIL_P(rb_force))
-			force = rugged_parse_bool(rb_force);
-
-		/* only for heavy tags */
-		rb_tagger = rb_hash_aref(rb_data, CSTR2SYM("tagger"));
-		rb_message = rb_hash_aref(rb_data, CSTR2SYM("message"));
-
-		if (!NIL_P(rb_message))
-			Check_Type(rb_message, T_STRING);
-
-		rb_target = rb_hash_aref(rb_data, CSTR2SYM("target"));
-		target = rugged_object_get(repo, rb_target, GIT_OBJ_ANY);
-
-		if (!NIL_P(rb_message)) {
-			git_signature *tagger = NULL;
-
-			tagger = rugged_signature_get(rb_tagger, repo);
-
-			error = git_tag_create(
-				&tag_oid,
-				repo,
-				StringValueCStr(rb_name),
-				target,
-				tagger,
-				StringValueCStr(rb_message),
-				force
-			);
-
-			git_signature_free(tagger);
-		} else {
-			error = git_tag_create_lightweight(
-				&tag_oid,
-				repo,
-				StringValueCStr(rb_name),
-				target,
-				force
-			);
-		}
-
-		git_object_free(target);
 	} else {
-		rb_raise(rb_eTypeError, "Invalid tag data: expected a String or a Hash");
+		git_signature *tagger = rugged_signature_get(
+			rb_hash_aref(rb_annotation, CSTR2SYM("tagger")), repo
+		);
+		VALUE rb_message = rb_hash_aref(rb_annotation, CSTR2SYM("message"));
+
+		Check_Type(rb_message, T_STRING);
+
+		error = git_tag_create(
+			&tag_oid,
+			repo,
+			StringValueCStr(rb_name),
+			target,
+			tagger,
+			StringValueCStr(rb_message),
+			force
+		);
+
+		git_signature_free(tagger);
 	}
 
+	git_object_free(target);
 	rugged_exception_check(error);
 	return rugged_create_oid(&tag_oid);
 }
@@ -338,7 +310,7 @@ void Init_rugged_tag(void)
 {
 	rb_cRuggedTag = rb_define_class_under(rb_mRugged, "Tag", rb_cRuggedObject);
 
-	rb_define_singleton_method(rb_cRuggedTag, "create", rb_git_tag_create, 2);
+	rb_define_singleton_method(rb_cRuggedTag, "create", rb_git_tag_create, -1);
 	rb_define_singleton_method(rb_cRuggedTag, "each", rb_git_tag_each, -1);
 	rb_define_singleton_method(rb_cRuggedTag, "delete", rb_git_tag_delete, 2);
 
