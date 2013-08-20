@@ -25,7 +25,7 @@
 #include "rugged.h"
 
 extern VALUE rb_mRugged;
-extern VALUE rb_cRuggedTag;
+extern VALUE rb_cRuggedTagAnnotation;
 extern VALUE rb_cRuggedTree;
 extern VALUE rb_cRuggedCommit;
 extern VALUE rb_cRuggedBlob;
@@ -165,7 +165,7 @@ VALUE rugged_object_new(VALUE owner, git_object *object)
 			break;
 
 		case GIT_OBJ_TAG:
-			klass = rb_cRuggedTag;
+			klass = rb_cRuggedTagAnnotation;
 			break;
 
 		case GIT_OBJ_TREE:
@@ -192,7 +192,7 @@ static git_otype class2otype(VALUE klass)
 	if (RTEST(rb_class_inherited_p(klass, rb_cRuggedCommit)))
         return GIT_OBJ_COMMIT;
 
-	if (RTEST(rb_class_inherited_p(klass, rb_cRuggedTag)))
+	if (RTEST(rb_class_inherited_p(klass, rb_cRuggedTagAnnotation)))
 		return GIT_OBJ_TAG;
 
 	if (RTEST(rb_class_inherited_p(klass, rb_cRuggedBlob)))

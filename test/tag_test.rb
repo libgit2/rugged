@@ -59,6 +59,29 @@ class TagTest < Rugged::TestCase
 
     assert_equal "5b5b025afb0b4c913b4c338a42934a3863bf3644", obj.target_oid
   end
+
+  def test_lookup
+    tag = Rugged::Tag.lookup(@repo, "v0.9")
+
+    assert_equal tag.name, "v0.9"
+    assert_equal tag.canonical_name, "refs/tags/v0.9"
+  end
+
+  def test_each
+    tags = Rugged::Tag.each(@repo).sort_by(&:name)
+
+    assert_equal tags.count, 2
+    assert_equal tags[0].name, "v0.9"
+    assert_equal tags[1].name, "v1.0"
+  end
+
+  def test_each_name
+    tag_names = Rugged::Tag.each_name(@repo).sort
+
+    assert_equal tag_names.count, 2
+    assert_equal tag_names[0], "v0.9"
+    assert_equal tag_names[1], "v1.0"
+  end
 end
 
 class TagWriteTest < Rugged::TestCase
