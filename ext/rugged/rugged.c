@@ -384,6 +384,8 @@ void Init_rugged(void)
 	rb_define_module_function(rb_mRugged, "prettify_message", rb_git_prettify_message, 2);
 	rb_define_module_function(rb_mRugged, "__cache_usage__", rb_git_cache_usage, 0);
 
+	Init_rugged_reference();
+
 	Init_rugged_object();
 	Init_rugged_commit();
 	Init_rugged_tree();
@@ -393,7 +395,6 @@ void Init_rugged(void)
 	Init_rugged_index();
 	Init_rugged_repo();
 	Init_rugged_revwalk();
-	Init_rugged_reference();
 	Init_rugged_branch();
 	Init_rugged_config();
 	Init_rugged_remote();
