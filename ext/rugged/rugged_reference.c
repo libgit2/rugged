@@ -371,8 +371,13 @@ static VALUE rb_git_ref_type(VALUE self)
 /*
  *  call-seq:
  *    reference.name -> name
+ *    reference.canonical_name -> name
  *
- *  Returns the name of the reference
+ *  Returns the fully qualified name of the reference.
+ *
+ *  +name+ gets overwritten in subclasess like Rugged::Branch or Rugged::Tag
+ *  to return "nicer" names for presentational purposes, while +canonical_name+
+ *  is always supposed to return the fully qualified reference path.
  *
  *    reference.name #=> 'HEAD'
  */
@@ -645,6 +650,7 @@ void Init_rugged_reference(void)
 	rb_define_method(rb_cRuggedReference, "type", rb_git_ref_type, 0);
 
 	rb_define_method(rb_cRuggedReference, "name", rb_git_ref_name, 0);
+	rb_define_method(rb_cRuggedReference, "canonical_name", rb_git_ref_name, 0);
 	rb_define_method(rb_cRuggedReference, "rename", rb_git_ref_rename, -1);
 
 	rb_define_method(rb_cRuggedReference, "resolve", rb_git_ref_resolve, 0);

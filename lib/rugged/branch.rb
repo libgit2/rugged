@@ -10,16 +10,7 @@ module Rugged
       other.instance_of?(Rugged::Branch) &&
         other.canonical_name == self.canonical_name
     end
-
-    # The full name of the branch, as a fully-qualified reference
-    # path.
-    #
-    # This is the same as calling Reference#name for the reference behind
-    # the path
-    def canonical_name
-      super
-    end
-
+    
     # Get the remote the branch belongs to.
     #
     # If the branch is remote returns the remote it belongs to.
