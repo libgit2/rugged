@@ -164,6 +164,39 @@ static VALUE rb_git_tag_annotation_message(VALUE self)
 
 /*
  *  call-seq:
+ *    Tag.lookup(repo, name) -> tag
+ *
+ *  Lookup a tag in +repo+, with the given +name+.
+ *
+ *  +name+ can be a short or canonical tag name
+ *  (e.g. +v0.1.0+ or +refs/tags/v0.1.0+).
+ *
+ *  Returns the looked up tag, or +nil+ if the tag doesn't exist.
+ */
+static VALUE rb_git_tag_lookup(VALUE self, VALUE rb_repo, VALUE rb_name)
+{
+	git_reference *tag;
+	git_repository *repo;
+	int error;
+
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	Check_Type(rb_name, T_STRING);
+
+	if (!RTEST(rb_funcall(rb_name, rb_intern("start_with?"), 1, rb_str_new2("refs/tags/")))) {
+		rb_funcall(rb_name, rb_intern("prepend"), 1, rb_str_new2("refs/tags/"));
+	}
+
+	error = git_reference_lookup(&tag, repo, StringValueCStr(rb_name));
+	if (error == GIT_ENOTFOUND)
+		return Qnil;
+	rugged_exception_check(error);
+
+	return rugged_ref_new(rb_cRuggedTag, rb_repo, tag);
+}
+
+/*
+ *  call-seq:
  *    Tag.create(repo, name, target[, force = false][, annotation = nil]) -> oid
  *
  *  Create a new tag with the specified +name+ on +target+ in +repo+.
@@ -233,7 +266,8 @@ static VALUE rb_git_tag_create(int argc, VALUE *argv, VALUE self)
 
 	git_object_free(target);
 	rugged_exception_check(error);
-	return rugged_create_oid(&tag_oid);
+
+	return rb_git_tag_lookup(self, rb_repo, rb_name);
 }
 
 /*
@@ -255,39 +289,6 @@ static VALUE rb_git_tag_delete(VALUE self, VALUE rb_repo, VALUE rb_name)
 	error = git_tag_delete(repo, StringValueCStr(rb_name));
 	rugged_exception_check(error);
 	return Qnil;
-}
-
-/*
- *  call-seq:
- *    Tag.lookup(repo, name) -> tag
- *
- *  Lookup a tag in +repo+, with the given +name+.
- *
- *  +name+ can be a short or canonical tag name
- *  (e.g. +v0.1.0+ or +refs/tags/v0.1.0+).
- *
- *  Returns the looked up tag, or +nil+ if the tag doesn't exist.
- */
-static VALUE rb_git_tag_lookup(VALUE self, VALUE rb_repo, VALUE rb_name)
-{
-	git_reference *tag;
-	git_repository *repo;
-	int error;
-
-	Data_Get_Struct(rb_repo, git_repository, repo);
-
-	Check_Type(rb_name, T_STRING);
-
-	if (!RTEST(rb_funcall(rb_name, rb_intern("start_with?"), 1, rb_str_new2("refs/tags/")))) {
-		rb_funcall(rb_name, rb_intern("prepend"), 1, rb_str_new2("refs/tags/"));
-	}
-
-	error = git_reference_lookup(&tag, repo, StringValueCStr(rb_name));
-	if (error == GIT_ENOTFOUND)
-		return Qnil;
-	rugged_exception_check(error);
-
-	return rugged_ref_new(rb_cRuggedTag, rb_repo, tag);
 }
 
 static VALUE each_tag(int argc, VALUE *argv, VALUE self, int tag_names_only)
