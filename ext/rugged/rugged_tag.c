@@ -375,6 +375,77 @@ static VALUE rb_git_tag_each(int argc, VALUE *argv, VALUE self)
 	return each_tag(argc, argv, self, 0);
 }
 
+/*
+ *  call-seq:
+ *    tag.annotation -> annotation or nil
+ */
+static VALUE rb_git_tag_annotation(VALUE self)
+{
+	git_reference *ref, *resolved_ref;
+	git_repository *repo;
+	git_object *target;
+	int error;
+	VALUE rb_repo = rugged_owner(self);
+
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(self, git_reference, ref);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	error = git_reference_resolve(&resolved_ref, ref);
+	rugged_exception_check(error);
+
+	error = git_object_lookup(&target, repo, git_reference_target(resolved_ref), GIT_OBJ_ANY);
+	git_reference_free(resolved_ref);
+	rugged_exception_check(error);
+
+	if (git_object_type(target) == GIT_OBJ_TAG) {
+		return rugged_object_new(rb_repo, target);
+	} else {
+		return Qnil;
+	}
+}
+
+/*
+ *  call-seq:
+ *    tag.target -> git_object
+ */
+static VALUE rb_git_tag_target(VALUE self)
+{
+	git_reference *ref, *resolved_ref;
+	git_repository *repo;
+	git_object *target;
+	int error;
+	VALUE rb_repo = rugged_owner(self);
+
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(self, git_reference, ref);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	error = git_reference_resolve(&resolved_ref, ref);
+	rugged_exception_check(error);
+
+	error = git_object_lookup(&target, repo, git_reference_target(resolved_ref), GIT_OBJ_ANY);
+	git_reference_free(resolved_ref);
+	rugged_exception_check(error);
+
+	if (git_object_type(target) == GIT_OBJ_TAG) {
+		git_object *annotation_target;
+
+		error = git_tag_target(&annotation_target, (git_tag *)target);
+		git_object_free(target);
+		rugged_exception_check(error);
+
+		return rugged_object_new(rb_repo, annotation_target);
+	} else {
+		return rugged_object_new(rb_repo, target);
+	}
+}
+
+static VALUE rb_git_tag_annotated_p(VALUE self)
+{
+	return RTEST(rb_git_tag_annotation(self)) ? Qtrue : Qfalse;
+}
+
 void Init_rugged_tag(void)
 {
 	rb_cRuggedTag = rb_define_class_under(rb_mRugged, "Tag", rb_cRuggedReference);
@@ -384,6 +455,10 @@ void Init_rugged_tag(void)
 	rb_define_singleton_method(rb_cRuggedTag, "each_name", rb_git_tag_each_name, -1);
 	rb_define_singleton_method(rb_cRuggedTag, "delete", rb_git_tag_delete, 2);
 	rb_define_singleton_method(rb_cRuggedTag, "lookup", rb_git_tag_lookup, 2);
+
+	rb_define_method(rb_cRuggedTag, "annotation", rb_git_tag_annotation, 0);
+	rb_define_method(rb_cRuggedTag, "annotated?", rb_git_tag_annotated_p, 0);
+	rb_define_method(rb_cRuggedTag, "target", rb_git_tag_target, 0);
 
 	rb_cRuggedTagAnnotation = rb_define_class_under(rb_mRugged, "TagAnnotation", rb_cRuggedObject);
 

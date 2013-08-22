@@ -84,6 +84,73 @@ class TagTest < Rugged::TestCase
   end
 end
 
+class AnnotatedTagTest < Rugged::SandboxedTestCase
+  def setup
+    super
+    @repo = sandbox_init("testrepo.git")
+    Rugged::Tag.create(@repo, 'annotated_tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
+      :message => "test tag message\n",
+      :tagger  => { :name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
+    })
+    @tag = Rugged::Tag.lookup(@repo, "annotated_tag")
+  end
+
+  def teardown
+    @repo.close
+    super
+  end
+
+  def test_is_annotated
+    assert_equal true, @tag.annotated?
+  end
+
+  def test_annotation
+    annotation = @tag.annotation
+
+    assert_kind_of Rugged::TagAnnotation, annotation
+    assert_equal "test tag message\n", annotation.message
+    assert_equal 'Scott', annotation.tagger[:name]
+    assert_equal 'schacon@gmail.com', annotation.tagger[:email]
+    assert_kind_of Time, annotation.tagger[:time]
+  end
+
+  def test_target
+    target = @tag.target
+
+    assert_kind_of Rugged::Commit, target
+    assert_equal "5b5b025afb0b4c913b4c338a42934a3863bf3644", target.oid
+  end
+end
+
+class LightweightTagTest < Rugged::SandboxedTestCase
+  def setup
+    super
+    @repo = sandbox_init("testrepo.git")
+    Rugged::Tag.create(@repo, 'lightweight_tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644")
+    @tag = Rugged::Tag.lookup(@repo, "lightweight_tag")
+  end
+
+  def teardown
+    @repo.close
+    super
+  end
+
+  def test_is_not_annotated
+    assert_equal false, @tag.annotated?
+  end
+
+  def test_has_no_annotation
+    assert_nil @tag.annotation
+  end
+
+  def test_target
+    target = @tag.target
+
+    assert_kind_of Rugged::Commit, target
+    assert_equal "5b5b025afb0b4c913b4c338a42934a3863bf3644", target.oid
+  end
+end
+
 class TagWriteTest < Rugged::TestCase
   include Rugged::TempRepositoryAccess
 
