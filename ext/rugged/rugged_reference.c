@@ -562,7 +562,7 @@ static VALUE rb_git_has_reflog(VALUE self)
 
 /*
  *  call-seq:
- *    reference.log!(committer, message = nil) -> nil
+ *    reference.log!(message = nil, committer = default) -> nil
  *
  *  Log a modification for this reference to the reflog.
  */
@@ -570,6 +570,7 @@ static VALUE rb_git_reflog_write(int argc, VALUE *argv, VALUE self)
 {
 	git_reference *ref;
 	git_reflog *reflog;
+	git_repository *repo;
 	int error;
 
 	VALUE rb_committer, rb_message;
@@ -579,7 +580,7 @@ static VALUE rb_git_reflog_write(int argc, VALUE *argv, VALUE self)
 
 	Data_Get_Struct(self, git_reference, ref);
 
-	rb_scan_args(argc, argv, "11", &rb_committer, &rb_message);
+	rb_scan_args(argc, argv, "02", &rb_message, &rb_committer);
 
 	if (!NIL_P(rb_message)) {
 		Check_Type(rb_message, T_STRING);
@@ -589,7 +590,8 @@ static VALUE rb_git_reflog_write(int argc, VALUE *argv, VALUE self)
 	error = git_reflog_read(&reflog, ref);
 	rugged_exception_check(error);
 
-	committer = rugged_signature_get(rb_committer);
+	repo = git_reference_owner(ref);
+	committer = rugged_signature_get(rb_committer, repo);
 
 	if (!(error = git_reflog_append(reflog,
 					git_reference_target(ref),
