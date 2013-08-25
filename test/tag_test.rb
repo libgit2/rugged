@@ -46,6 +46,22 @@ class TagWriteTest < Rugged::TestCase
     assert_equal "schacon@gmail.com", tag.tagger[:email]
   end
 
+  def test_writing_a_tag_without_signature
+    name = 'Rugged User'
+    email = 'rugged@example.com'
+    @repo.config['user.name'] = name
+    @repo.config['user.email'] = email
+
+    tag_oid = Rugged::Tag.create(@repo,
+      :name    => 'tag',
+      :message => "test tag message\n",
+      :target  => "5b5b025afb0b4c913b4c338a42934a3863bf3644")
+
+    tag = @repo.lookup(tag_oid)
+    assert_equal name, tag.tagger[:name]
+    assert_equal email, tag.tagger[:email]
+  end
+
   def test_tag_invalid_message_type
     person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
     assert_raises TypeError do
