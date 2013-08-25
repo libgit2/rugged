@@ -1381,6 +1381,42 @@ static VALUE rb_git_repo_ahead_behind(VALUE self, VALUE rb_local, VALUE rb_upstr
 	return rb_result;
 }
 
+/*
+ *  call-seq:
+ *    repo.default_signature -> signature or nil
+ *
+ *  Returns a +Hash+ with the default user +signature+ or +nil+.
+ *
+ *  Looks up the +user.name+ and +user.email+ from the configuration and
+ *  uses the current time as the timestamp, and creates a new signature
+ *  based on that information.  It will return +nil+ if either the
+ *  +user.name+ or +user.email+ are not set.
+ *
+ *  Returns a +Hash+:
+ *  - +:name+: the +user.name+ config value
+ *  - +:email+: the +user.email+ config value
+ *  - +:time+: the current time as a +Time+ instance
+ */
+static VALUE rb_git_repo_default_signature(VALUE self) {
+	int error;
+	git_repository *repo;
+	git_signature *signature;
+	VALUE rb_signature;
+
+	Data_Get_Struct(self, git_repository, repo);
+
+	error = git_signature_default(&signature, repo);
+
+	if (error == GIT_ENOTFOUND)
+		return Qnil;
+
+	rugged_exception_check(error);
+
+	rb_signature = rugged_signature_new(signature, NULL);
+	git_signature_free(signature);
+	return rb_signature;
+}
+
 void Init_rugged_repo(void)
 {
 	id_call = rb_intern("call");
@@ -1434,6 +1470,8 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "namespace", rb_git_repo_get_namespace, 0);
 
 	rb_define_method(rb_cRuggedRepo, "ahead_behind", rb_git_repo_ahead_behind, 2);
+
+	rb_define_method(rb_cRuggedRepo, "default_signature", rb_git_repo_default_signature, 0);
 
 	rb_cRuggedOdbObject = rb_define_class_under(rb_mRugged, "OdbObject", rb_cObject);
 	rb_define_method(rb_cRuggedOdbObject, "data",  rb_git_odbobj_data,  0);
