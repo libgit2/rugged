@@ -77,6 +77,30 @@ class NoteWriteTest < Rugged::TestCase
     assert_equal note[:message], message
   end
 
+  def test_create_note_without_signature
+    name = 'Rugged User'
+    email = 'rugged@example.com'
+    @repo.config['user.name'] = name
+    @repo.config['user.email'] = email
+
+    oid = "8496071c1b46c854b31185ea97743be6a8774479"
+    message ="This is the note message\n\nThis note is created from Rugged"
+    obj = @repo.lookup(oid)
+
+    note_oid = obj.create_note(
+      :message => message,
+      :ref => 'refs/notes/test'
+    )
+    assert_equal '38c3a690c474d8dcdb13088205a464a60312eec4', note_oid
+    note_commit = @repo.lookup(
+      Rugged::Reference.lookup(@repo, 'refs/notes/test').target
+    )
+    assert_equal name, note_commit.committer[:name]
+    assert_equal email, note_commit.committer[:email]
+    assert_equal name, note_commit.author[:name]
+    assert_equal email, note_commit.author[:email]
+  end
+
   def test_create_note_on_object_with_notes_raises
     person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
     oid = "8496071c1b46c854b31185ea97743be6a8774479"
@@ -143,6 +167,32 @@ class NoteWriteTest < Rugged::TestCase
     )
 
     assert_nil obj.notes('refs/notes/test')
+  end
+
+  def test_remote_without_signature
+    name = 'Rugged User'
+    email = 'rugged@example.com'
+    @repo.config['user.name'] = name
+    @repo.config['user.email'] = email
+    oid = "36060c58702ed4c2a40832c51758d5344201d89a"
+
+    message ="This is the note message\n\nThis note is created from Rugged"
+    obj = @repo.lookup(oid)
+
+    obj.create_note(
+      :message => message,
+      :ref => 'refs/notes/test'
+    )
+
+    obj.create_note(
+      :message => message,
+    )
+
+    assert obj.remove_note(:ref => 'refs/notes/test')
+    assert obj.remove_note
+
+    assert_nil obj.notes('refs/notes/test')
+    assert_nil obj.notes
   end
 
   def test_remove_missing_note

@@ -54,7 +54,7 @@ end
 class CommitWriteTest < Rugged::TestCase
   include Rugged::TempRepositoryAccess
 
-  def test_write_a_commit
+  def test_write_commit_with_time
     person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
 
     Rugged::Commit.create(@repo,
@@ -79,15 +79,46 @@ class CommitWriteTest < Rugged::TestCase
     assert_equal 3600, commit.committer[:time].utc_offset
   end
 
-  def test_write_invalid_parents
-    person = {:name => 'Jake', :email => 'jake@github.com', :time => Time.now, :time_offset => 3600}
+  def test_write_commit_without_time
+    person = {:name => 'Jake', :email => 'jake@github.com'}
 
+    oid = Rugged::Commit.create(@repo,
+      :message => "This is the commit message\n\nThis commit is created from Rugged",
+      :committer => person,
+      :author => person,
+      :parents => [@repo.head.target],
+      :tree => "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
+
+    commit = @repo.lookup(oid)
+    assert_kind_of Time, commit.committer[:time]
+  end
+
+  def test_write_commit_without_signature
+    name = 'Rugged User'
+    email = 'rugged@example.com'
+    @repo.config['user.name'] = name
+    @repo.config['user.email'] = email
+
+    oid = Rugged::Commit.create(@repo,
+      :message => "This is the commit message\n\nThis commit is created from Rugged",
+      :parents => [@repo.head.target],
+      :tree => "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
+
+    commit = @repo.lookup(oid)
+    assert_equal name, commit.committer[:name]
+    assert_equal email, commit.committer[:email]
+    assert_equal name, commit.author[:name]
+    assert_equal email, commit.author[:email]
+  end
+
+  def test_write_invalid_parents
+    person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
     assert_raises TypeError do
       Rugged::Commit.create(@repo,
         :message => "This is the commit message\n\nThis commit is created from Rugged",
+        :parents => [:invalid_parent],
         :committer => person,
         :author => person,
-        :parents => [:invalid_parent],
         :tree => "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
     end
   end

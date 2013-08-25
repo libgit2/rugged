@@ -250,8 +250,10 @@ static VALUE rb_git_commit_parent_ids_GET(VALUE self)
  *  arguments, passed as a +Hash+:
  *
  *  - +:message+: a string with the full text for the commit's message
- *  - +:committer+: a hash with the signature for the committer
- *  - +:author+: a hash with the signature for the author
+ *  - +:committer+ (optional): a hash with the signature for the committer,
+ *    defaults to the signature from the configuration
+ *  - +:author+ (optional): a hash with the signature for the author,
+ *    defaults to the signature from the configuration
  *  - +:parents+: an +Array+ with zero or more parents for this commit,
  *    represented as <tt>Rugged::Commit</tt> instances, or OID +String+.
  *  - +:tree+: the tree for this commit, represented as a <tt>Rugged::Tree</tt>
@@ -299,11 +301,11 @@ static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 	Check_Type(rb_message, T_STRING);
 
 	committer = rugged_signature_get(
-		rb_hash_aref(rb_data, CSTR2SYM("committer"))
+		rb_hash_aref(rb_data, CSTR2SYM("committer")), repo
 	);
 
 	author = rugged_signature_get(
-		rb_hash_aref(rb_data, CSTR2SYM("author"))
+		rb_hash_aref(rb_data, CSTR2SYM("author")), repo
 	);
 
 	rb_parents = rb_hash_aref(rb_data, CSTR2SYM("parents"));

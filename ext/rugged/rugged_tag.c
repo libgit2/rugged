@@ -176,8 +176,8 @@ static VALUE rb_git_tag_message_GET(VALUE self)
  *    If +true+, existing tags will be overwritten. Defaults to +false+.
  *
  *  :tagger ::
- *    An optional Hash containing a git signature. Will cause the creation of
- *    an annotated tag object if present.
+ *    An optional Hash containing a git signature. Defaults to the signature
+ *    from the configuration.
  *
  *  :message ::
  *    An optional string containing the message for the new tag. Will cause
@@ -226,10 +226,10 @@ static VALUE rb_git_tag_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 		rb_target = rb_hash_aref(rb_data, CSTR2SYM("target"));
 		target = rugged_object_get(repo, rb_target, GIT_OBJ_ANY);
 
-		if (!NIL_P(rb_tagger) && !NIL_P(rb_message)) {
+		if (!NIL_P(rb_message)) {
 			git_signature *tagger = NULL;
 
-			tagger = rugged_signature_get(rb_tagger);
+			tagger = rugged_signature_get(rb_tagger, repo);
 
 			error = git_tag_create(
 				&tag_oid,

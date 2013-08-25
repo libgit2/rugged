@@ -105,8 +105,10 @@ static VALUE rb_git_note_lookup(int argc, VALUE *argv, VALUE self)
  *  arguments, passed as a +Hash+:
  *
  *  - +:message+: the content of the note to add to the object
- *  - +:committer+: a hash with the signature for the committer
- *  - +:author+: a hash with the signature for the author
+ *  - +:committer+: (optional) a hash with the signature for the committer
+ *    defaults to the signature from the configuration
+ *  - +:author+: (optional) a hash with the signature for the author
+ *    defaults to the signature from the configuration
  *  - +:ref+: (optional): canonical name of the reference to use, defaults to "refs/notes/commits"
  *  - +:force+: (optional): overwrite existing note (disabled by default)
  *
@@ -159,11 +161,11 @@ static VALUE rb_git_note_create(VALUE self, VALUE rb_data)
 	Check_Type(rb_message, T_STRING);
 
 	committer = rugged_signature_get(
-		rb_hash_aref(rb_data, CSTR2SYM("committer"))
+		rb_hash_aref(rb_data, CSTR2SYM("committer")), repo
 	);
 
 	author = rugged_signature_get(
-		rb_hash_aref(rb_data, CSTR2SYM("author"))
+		rb_hash_aref(rb_data, CSTR2SYM("author")), repo
 	);
 
 	error = git_note_create(
@@ -192,8 +194,10 @@ static VALUE rb_git_note_create(VALUE self, VALUE rb_data)
  *  Removes a +note+ from +object+, with the given +data+
  *  arguments, passed as a +Hash+:
  *
- *  - +:committer+: a hash with the signature for the committer
- *  - +:author+: a hash with the signature for the author
+ *  - +:committer+ (optional): a hash with the signature for the committer,
+ *    defaults to the signature from the configuration
+ *  - +:author+ (optional): a hash with the signature for the author,
+ *    defaults to the signature from the configuration
  *  - +:ref+: (optional): canonical name of the reference to use, defaults to "refs/notes/commits"
  *
  *  When the note is successfully removed +true+ will be
@@ -207,40 +211,41 @@ static VALUE rb_git_note_create(VALUE self, VALUE rb_data)
  *      :ref       => 'refs/notes/builds'
  *    )
  */
-static VALUE rb_git_note_remove(VALUE self, VALUE rb_data)
+static VALUE rb_git_note_remove(int argc, VALUE *argv, VALUE self)
 {
-	VALUE rb_ref;
-	git_repository *repo = NULL;
-	const char *notes_ref = NULL;
-
-	VALUE owner;
-
-	git_signature *author, *committer;
-
-	git_object *target = NULL;
 	int error = 0;
-
-	Check_Type(rb_data, T_HASH);
+	const char *notes_ref = NULL;
+	git_repository *repo = NULL;
+	git_signature *author, *committer;
+	git_object *target = NULL;
+	VALUE rb_data;
+	VALUE rb_ref = Qnil;
+	VALUE rb_author = Qnil;
+	VALUE rb_committer = Qnil;
+	VALUE owner;
 
 	Data_Get_Struct(self, git_object, target);
 
 	owner = rugged_owner(self);
 	Data_Get_Struct(owner, git_repository, repo);
 
-	rb_ref = rb_hash_aref(rb_data, CSTR2SYM("ref"));
+	rb_scan_args(argc, argv, "01", &rb_data);
 
-	if (!NIL_P(rb_ref)) {
-		Check_Type(rb_ref, T_STRING);
-		notes_ref = StringValueCStr(rb_ref);
+	if (!NIL_P(rb_data)) {
+		Check_Type(rb_data, T_HASH);
+
+		rb_ref = rb_hash_aref(rb_data, CSTR2SYM("ref"));
+		if (!NIL_P(rb_ref)) {
+			Check_Type(rb_ref, T_STRING);
+			notes_ref = StringValueCStr(rb_ref);
+		}
+
+		rb_committer = rb_hash_aref(rb_data, CSTR2SYM("committer"));
+		rb_author = rb_hash_aref(rb_data, CSTR2SYM("author"));
 	}
 
-	committer = rugged_signature_get(
-		rb_hash_aref(rb_data, CSTR2SYM("committer"))
-	);
-
-	author = rugged_signature_get(
-		rb_hash_aref(rb_data, CSTR2SYM("author"))
-	);
+	committer = rugged_signature_get(rb_committer, repo);
+	author = rugged_signature_get(rb_author, repo);
 
 	error = git_note_remove(
 			repo,
@@ -359,7 +364,7 @@ void Init_rugged_notes(void)
 {
 	rb_define_method(rb_cRuggedObject, "notes", rb_git_note_lookup, -1);
 	rb_define_method(rb_cRuggedObject, "create_note", rb_git_note_create, 1);
-	rb_define_method(rb_cRuggedObject, "remove_note", rb_git_note_remove, 1);
+	rb_define_method(rb_cRuggedObject, "remove_note", rb_git_note_remove, -1);
 
 	rb_define_method(rb_cRuggedRepo, "each_note", rb_git_note_each, -1);
 	rb_define_method(rb_cRuggedRepo, "default_notes_ref", rb_git_note_default_ref_GET, 0);

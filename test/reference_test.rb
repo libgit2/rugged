@@ -198,24 +198,51 @@ class ReflogTest < Rugged::TestCase
   end
 
   def test_create_reflog_entries
-    @ref.log!({ :name => "foo", :email => "foo@bar", :time => Time.now })
-    @ref.log!({ :name => "foo", :email => "foo@bar", :time => Time.now }, "commit: bla bla")
+    @ref.log!(nil, { name: 'foo', email: 'foo@bar', time: Time.now })
+    @ref.log!('commit: bla bla', { name: 'foo', email: 'foo@bar', time: Time.now })
 
     reflog = @ref.log
     assert_equal reflog.size, 2
 
-    assert_equal reflog[0][:id_old], "0000000000000000000000000000000000000000"
-    assert_equal reflog[0][:id_new], "36060c58702ed4c2a40832c51758d5344201d89a"
-    assert_equal reflog[0][:message], nil
-    assert_equal reflog[0][:committer][:name], "foo"
-    assert_equal reflog[0][:committer][:email], "foo@bar"
+    assert_equal '0000000000000000000000000000000000000000', reflog[0][:id_old]
+    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', reflog[0][:id_new]
+    assert_equal nil, reflog[0][:message]
+    assert_equal 'foo', reflog[0][:committer][:name]
+    assert_equal 'foo@bar', reflog[0][:committer][:email]
     assert_kind_of Time, reflog[0][:committer][:time]
 
-    assert_equal reflog[1][:id_old], "36060c58702ed4c2a40832c51758d5344201d89a"
-    assert_equal reflog[1][:id_new], "36060c58702ed4c2a40832c51758d5344201d89a"
-    assert_equal reflog[1][:message], "commit: bla bla"
-    assert_equal reflog[1][:committer][:name], "foo"
-    assert_equal reflog[1][:committer][:email], "foo@bar"
+    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', reflog[1][:id_old]
+    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', reflog[1][:id_new]
+    assert_equal 'commit: bla bla', reflog[1][:message]
+    assert_equal 'foo', reflog[1][:committer][:name]
+    assert_equal 'foo@bar', reflog[1][:committer][:email]
+    assert_kind_of Time, reflog[1][:committer][:time]
+  end
+
+  def test_create_reflog_entries_without_signature
+    name = 'Rugged User'
+    email = 'rugged@example.com'
+    @repo.config['user.name'] = name
+    @repo.config['user.email'] = email
+
+    @ref.log!
+    @ref.log!("commit: bla bla")
+
+    reflog = @ref.log
+    assert_equal reflog.size, 2
+
+    assert_equal '0000000000000000000000000000000000000000', reflog[0][:id_old]
+    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', reflog[0][:id_new]
+    assert_equal nil, reflog[0][:message]
+    assert_equal name, reflog[0][:committer][:name]
+    assert_equal email, reflog[0][:committer][:email]
+    assert_kind_of Time, reflog[0][:committer][:time]
+
+    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', reflog[1][:id_old]
+    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', reflog[1][:id_new]
+    assert_equal 'commit: bla bla', reflog[1][:message]
+    assert_equal name, reflog[1][:committer][:name]
+    assert_equal email, reflog[1][:committer][:email]
     assert_kind_of Time, reflog[1][:committer][:time]
   end
 end

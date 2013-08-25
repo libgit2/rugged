@@ -89,7 +89,7 @@ void rugged_parse_diff_options(git_diff_options *opts, VALUE rb_options);
 VALUE rugged_otype_new(git_otype t);
 git_otype rugged_otype_get(VALUE rb_type);
 
-git_signature *rugged_signature_get(VALUE rb_person);
+git_signature *rugged_signature_get(VALUE rb_person, git_repository *repo);
 git_object *rugged_object_get(git_repository *repo, VALUE object_value, git_otype type);
 int rugged_oid_get(git_oid *oid, git_repository *repo, VALUE p);
 

@@ -261,6 +261,15 @@ class RepositoryWriteTest < Rugged::TestCase
     baseless = Rugged::Commit.create(@repo, info.merge(:parents => []))
     assert_nil @repo.merge_base('HEAD', baseless)
   end
+
+  def test_default_signature
+    name = 'Rugged User'
+    email = 'rugged@example.com'
+    @repo.config['user.name'] = name
+    @repo.config['user.email'] = email
+    assert_equal name, @repo.default_signature[:name]
+    assert_equal email, @repo.default_signature[:email]
+  end
 end
 
 class RepositoryInitTest < Rugged::TestCase

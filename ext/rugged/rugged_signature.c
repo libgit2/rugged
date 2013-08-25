@@ -52,11 +52,18 @@ VALUE rugged_signature_new(const git_signature *sig, const char *encoding_name)
 	return rb_sig;
 }
 
-git_signature *rugged_signature_get(VALUE rb_sig)
+git_signature *rugged_signature_get(VALUE rb_sig, git_repository *repo)
 {
 	int error;
 	VALUE rb_time, rb_unix_t, rb_offset, rb_name, rb_email, rb_time_offset;
 	git_signature *sig;
+
+	if (NIL_P(rb_sig)) {
+		rugged_exception_check(
+			git_signature_default(&sig, repo)
+		);
+		return sig;
+	}
 
 	Check_Type(rb_sig, T_HASH);
 
@@ -67,26 +74,33 @@ git_signature *rugged_signature_get(VALUE rb_sig)
 
 	Check_Type(rb_name, T_STRING);
 	Check_Type(rb_email, T_STRING);
-	if (!rb_obj_is_kind_of(rb_time, rb_cTime))
-		rb_raise(rb_eTypeError, "expected Time object");
 
-	rb_unix_t = rb_funcall(rb_time, rb_intern("tv_sec"), 0);
 
-	if (NIL_P(rb_time_offset)) {
-		rb_offset = rb_funcall(rb_time, rb_intern("utc_offset"), 0);
+	if (NIL_P(rb_time)) {
+		error = git_signature_now(&sig,
+				StringValueCStr(rb_name),
+				StringValueCStr(rb_email));
 	} else {
-		Check_Type(rb_time_offset, T_FIXNUM);
-		rb_offset = rb_time_offset;
-	}
+		if (!rb_obj_is_kind_of(rb_time, rb_cTime))
+			rb_raise(rb_eTypeError, "expected Time object");
 
-	error = git_signature_new(&sig,
-		StringValueCStr(rb_name),
-		StringValueCStr(rb_email),
-		NUM2LONG(rb_unix_t),
-		FIX2INT(rb_offset) / 60);
+		rb_unix_t = rb_funcall(rb_time, rb_intern("tv_sec"), 0);
+
+		if (NIL_P(rb_time_offset)) {
+			rb_offset = rb_funcall(rb_time, rb_intern("utc_offset"), 0);
+		} else {
+			Check_Type(rb_time_offset, T_FIXNUM);
+			rb_offset = rb_time_offset;
+		}
+
+		error = git_signature_new(&sig,
+				StringValueCStr(rb_name),
+				StringValueCStr(rb_email),
+				NUM2LONG(rb_unix_t),
+				FIX2INT(rb_offset) / 60);
+	}
 
 	rugged_exception_check(error);
 
 	return sig;
 }
-
