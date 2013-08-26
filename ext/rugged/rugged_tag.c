@@ -185,7 +185,7 @@ static VALUE rb_git_tag_lookup(VALUE self, VALUE rb_repo, VALUE rb_name)
 
 	error = git_reference_lookup(&tag, repo, StringValueCStr(rb_name));
 	if (error == GIT_ENOTFOUND || error == GIT_EINVALIDSPEC) {
-		char *canonical_ref = xmalloc(((int)RSTRING_LEN(rb_name) + 10 + 1) * sizeof(char));
+		char *canonical_ref = xmalloc((RSTRING_LEN(rb_name) + strlen("refs/tags/") + 1) * sizeof(char));
 		strcpy(canonical_ref, "refs/tags/");
 		strcat(canonical_ref, StringValueCStr(rb_name));
 
