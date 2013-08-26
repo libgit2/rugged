@@ -967,18 +967,15 @@ static VALUE rb_git_conflict_cleanup(VALUE self)
 
 /*
  *  call-seq:
- *    index.each_conflict { |conflict| block } -> index
- *    index.each_conflict                      -> enumerator
+ *    index.conflicts -> conflicts
  *
- *  Iterate through all the conflicts in +index+.
+ *  Return all conflicts in +index+.
  *
- *  The given block will be called once with a hash containing the index entries
- *  from the ancestor, our side and their side for each conflict.
+ *  Each conflict is represented as a Hash with +:ancestor+, +:ours+ or
+ *  +:theirs+ key-value pairs, each containing index entry data.
  *
- *  If +:ancestor+, +:ours+ or +:theirs+ is +nil+, that indicates that the file
- *  in conflict did not exist in the respective tree.
- *
- *  If no block is given, an enumerator will be returned.
+ *  If the value of the +:ancestor+, +:ours+ or +:theirs+ key is +nil+,
+ *  that indicates that file in conflict did not exists in the respective tree.
  */
 static VALUE rb_git_index_conflicts(VALUE self)
 {
