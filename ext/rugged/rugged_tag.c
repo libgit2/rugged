@@ -309,7 +309,7 @@ static VALUE each_tag(int argc, VALUE *argv, VALUE self, int tag_names_only)
 
 	if (!rb_block_given_p()) {
 		VALUE symbol = tag_names_only ? CSTR2SYM("each_name") : CSTR2SYM("each");
-		return rb_funcall(self, rb_intern("to_enum"), 3, symbol, rb_repo, rb_pattern);		
+		return rb_funcall(self, rb_intern("to_enum"), 3, symbol, rb_repo, rb_pattern);
 	}
 
 	if (!NIL_P(rb_pattern)) {
@@ -325,7 +325,7 @@ static VALUE each_tag(int argc, VALUE *argv, VALUE self, int tag_names_only)
 
 	if (tag_names_only) {
 		for (i = 0; !exception && i < tags.count; ++i)
-			rb_protect(rb_yield, rb_str_new_utf8(tags.strings[i]), &exception);		
+			rb_protect(rb_yield, rb_str_new_utf8(tags.strings[i]), &exception);
 	} else {
 		for (i = 0; !exception && i < tags.count; ++i) {
 			rb_protect(rb_yield, rb_git_tag_lookup(self, rb_repo,
