@@ -183,13 +183,18 @@ static VALUE rb_git_tag_lookup(VALUE self, VALUE rb_repo, VALUE rb_name)
 
 	Check_Type(rb_name, T_STRING);
 
-	if (!RTEST(rb_funcall(rb_name, rb_intern("start_with?"), 1, rb_str_new2("refs/tags/")))) {
-		rb_funcall(rb_name, rb_intern("prepend"), 1, rb_str_new2("refs/tags/"));
+	error = git_reference_lookup(&tag, repo, StringValueCStr(rb_name));
+	if (error == GIT_ENOTFOUND || error == GIT_EINVALIDSPEC) {
+		char *canonical_ref = xmalloc(((int)RSTRING_LEN(rb_name) + 10 + 1) * sizeof(char));
+		strcpy(canonical_ref, "refs/tags/");
+		strcat(canonical_ref, StringValueCStr(rb_name));
+
+		error = git_reference_lookup(&tag, repo, canonical_ref);
+		xfree(canonical_ref);
+		if (error == GIT_ENOTFOUND)
+			return Qnil;
 	}
 
-	error = git_reference_lookup(&tag, repo, StringValueCStr(rb_name));
-	if (error == GIT_ENOTFOUND)
-		return Qnil;
 	rugged_exception_check(error);
 
 	return rugged_ref_new(rb_cRuggedTag, rb_repo, tag);
