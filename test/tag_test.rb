@@ -193,6 +193,6 @@ class TagWriteTest < Rugged::TestCase
 
   def test_writing_light_tags
     tag = Rugged::Tag.create(@repo, 'tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644")
-    assert_equal "5b5b025afb0b4c913b4c338a42934a3863bf3644", tag.target
+    assert_equal @repo.lookup("5b5b025afb0b4c913b4c338a42934a3863bf3644"), tag.target
   end
 end
