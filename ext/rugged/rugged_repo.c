@@ -31,6 +31,9 @@ extern VALUE rb_cRuggedIndex;
 extern VALUE rb_cRuggedConfig;
 extern VALUE rb_cRuggedBackend;
 extern VALUE rb_cRuggedRemote;
+extern VALUE rb_cRuggedCommit;
+extern VALUE rb_cRuggedTag;
+extern VALUE rb_cRuggedTree;
 extern VALUE rb_cRuggedReference;
 
 VALUE rb_cRuggedRepo;
@@ -1417,6 +1420,444 @@ static VALUE rb_git_repo_default_signature(VALUE self) {
 	return rb_signature;
 }
 
+static VALUE rugged__block_yield_splat(VALUE args) {
+	VALUE block = rb_ary_shift(args);
+	int n = RARRAY_LEN(args);
+	if (n == 0) {
+		return rb_funcall(block, rb_intern("call"), 0);
+	} else {
+		int i;
+		VALUE *argv;
+		argv = ALLOCA_N(VALUE, n);
+
+		for (i=0; i<n; i++) {
+			argv[i] = rb_ary_entry(args, i);
+		}
+
+		return rb_funcall2(block, rb_intern("call"), n, argv);
+	}
+}
+
+void rugged__checkout_progress_cb(
+	const char *path,
+	size_t completed_steps,
+	size_t total_steps,
+	void *data
+) {
+	struct rugged_cb_payload *payload = data;
+	VALUE args = rb_ary_new2(4);
+	rb_ary_push(args, payload->rb_data);
+	rb_ary_push(args, path == NULL ? Qnil : rb_str_new2(path));
+	rb_ary_push(args, INT2FIX(completed_steps));
+	rb_ary_push(args, INT2FIX(total_steps));
+
+	rb_protect(rugged__block_yield_splat, args, &payload->exception);
+}
+
+static int rugged__checkout_notify_cb(
+	git_checkout_notify_t why,
+	const char *path,
+	const git_diff_file *baseline,
+	const git_diff_file *target,
+	const git_diff_file *workdir,
+	void *data
+) {
+	struct rugged_cb_payload *payload = data;
+	VALUE args = rb_ary_new2(5);
+	rb_ary_push(args, payload->rb_data);
+
+	switch (why) {
+		case GIT_CHECKOUT_NOTIFY_CONFLICT:
+			rb_ary_push(args, CSTR2SYM("conflict"));
+		break;
+
+		case GIT_CHECKOUT_NOTIFY_DIRTY:
+			rb_ary_push(args, CSTR2SYM("dirty"));
+		break;
+
+		case GIT_CHECKOUT_NOTIFY_UPDATED:
+			rb_ary_push(args, CSTR2SYM("updated"));
+		break;
+
+		case GIT_CHECKOUT_NOTIFY_UNTRACKED:
+			rb_ary_push(args, CSTR2SYM("untracked"));
+		break;
+
+		case GIT_CHECKOUT_NOTIFY_IGNORED:
+			rb_ary_push(args, CSTR2SYM("ignored"));
+		break;
+
+		default:
+			rb_ary_push(args, CSTR2SYM("unknown"));
+	}
+
+	rb_ary_push(args, rb_git_delta_file_fromC(baseline));
+	rb_ary_push(args, rb_git_delta_file_fromC(target));
+	rb_ary_push(args, rb_git_delta_file_fromC(workdir));
+
+	rb_protect(rugged__block_yield_splat, args, &payload->exception);
+
+	return payload->exception ? GIT_ERROR : GIT_OK;
+}
+
+/**
+ * The caller has to free the returned git_checkout_opts paths strings array.
+ */
+static void rugged_parse_checkout_options(git_checkout_opts *opts, VALUE rb_options)
+{
+	if (NIL_P(rb_options))
+		return;
+
+	VALUE rb_value;
+	Check_Type(rb_options, T_HASH);
+
+	rb_value = rb_hash_aref(rb_options, CSTR2SYM("progress"));
+	if (!NIL_P(rb_value)) {
+		struct rugged_cb_payload *payload = malloc(sizeof(struct rugged_cb_payload));
+		payload->rb_data = rb_value;
+		payload->exception = 0;
+
+		opts->progress_payload = payload;
+		opts->progress_cb = &rugged__checkout_progress_cb;
+	}
+
+	rb_value = rb_hash_aref(rb_options, CSTR2SYM("notify"));
+	if (!NIL_P(rb_value)) {
+		struct rugged_cb_payload *payload = malloc(sizeof(struct rugged_cb_payload));
+		payload->rb_data = rb_value;
+		payload->exception = 0;
+
+		opts->notify_payload = payload;
+		opts->notify_cb = &rugged__checkout_notify_cb;
+	}
+
+	if (!NIL_P(rb_value = rb_hash_aref(rb_options, CSTR2SYM("strategy")))) {
+		int i;
+
+		rb_value = rb_ary_to_ary(rb_value);
+		for (i = 0; i < RARRAY_LEN(rb_value); ++i) {
+			VALUE rb_strategy = rb_ary_entry(rb_value, i);
+
+			if (rb_strategy == CSTR2SYM("safe")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_SAFE;
+			} else if (rb_strategy == CSTR2SYM("safe_create")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_SAFE_CREATE;
+			} else if (rb_strategy == CSTR2SYM("force")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_FORCE;
+			} else if (rb_strategy == CSTR2SYM("allow_conflicts")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_ALLOW_CONFLICTS;
+			} else if (rb_strategy == CSTR2SYM("remove_untracked")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_REMOVE_UNTRACKED;
+			} else if (rb_strategy == CSTR2SYM("remove_ignored")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_REMOVE_IGNORED;
+			} else if (rb_strategy == CSTR2SYM("update_only")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_UPDATE_ONLY;
+			} else if (rb_strategy == CSTR2SYM("dont_update_index")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_DONT_UPDATE_INDEX;
+			} else if (rb_strategy == CSTR2SYM("no_refresh")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_NO_REFRESH;
+			} else if (rb_strategy == CSTR2SYM("disable_pathspec_match")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_DISABLE_PATHSPEC_MATCH;
+			} else if (rb_strategy == CSTR2SYM("skip_locked_directories")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_SKIP_LOCKED_DIRECTORIES;
+			} else if (rb_strategy == CSTR2SYM("skip_unmerged")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_SKIP_UNMERGED;
+			} else if (rb_strategy == CSTR2SYM("use_ours")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_USE_OURS;
+			} else if (rb_strategy == CSTR2SYM("use_theirs")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_USE_THEIRS;
+			} else if (rb_strategy == CSTR2SYM("update_submodules")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_UPDATE_SUBMODULES;
+			} else if (rb_strategy == CSTR2SYM("update_submodules_if_changed")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_UPDATE_SUBMODULES_IF_CHANGED;
+			} else if (rb_strategy != CSTR2SYM("none")) {
+				rb_raise(rb_eArgError, "Unknown checkout strategy");
+			}
+		}
+	}
+
+	if (!NIL_P(rb_value = rb_hash_aref(rb_options, CSTR2SYM("notify_flags")))) {
+		int i;
+
+		rb_value = rb_ary_to_ary(rb_value);
+		for (i = 0; i < RARRAY_LEN(rb_value); ++i) {
+			VALUE rb_notify_flag = rb_ary_entry(rb_value, i);
+
+			if (rb_notify_flag == CSTR2SYM("conflict")) {
+				opts->notify_flags |= GIT_CHECKOUT_NOTIFY_CONFLICT;
+			} else if (rb_notify_flag == CSTR2SYM("dirty")) {
+				opts->notify_flags |= GIT_CHECKOUT_NOTIFY_DIRTY;
+			} else if (rb_notify_flag == CSTR2SYM("updated")) {
+				opts->notify_flags |= GIT_CHECKOUT_NOTIFY_UPDATED;
+			} else if (rb_notify_flag == CSTR2SYM("untracked")) {
+				opts->notify_flags |= GIT_CHECKOUT_NOTIFY_UNTRACKED;
+			} else if (rb_notify_flag == CSTR2SYM("ignored")) {
+				opts->notify_flags |= GIT_CHECKOUT_NOTIFY_IGNORED;
+			} else if (rb_notify_flag == CSTR2SYM("all")) {
+				opts->notify_flags |= GIT_CHECKOUT_NOTIFY_ALL;
+			} else if (rb_notify_flag != CSTR2SYM("none")) {
+				rb_raise(rb_eArgError, "Unknown checkout notify flag");
+			}
+		}
+	}
+
+	opts->disable_filters = RTEST(rb_hash_aref(rb_options, CSTR2SYM("disable_filters")));
+
+	rb_value = rb_hash_aref(rb_options, CSTR2SYM("dir_mode"));
+	if (!NIL_P(rb_value)) {
+		opts->dir_mode = FIX2UINT(rb_value);
+	}
+
+	rb_value = rb_hash_aref(rb_options, CSTR2SYM("file_mode"));
+	if (!NIL_P(rb_value)) {
+		opts->file_mode = FIX2UINT(rb_value);
+	}
+
+	rb_value = rb_hash_aref(rb_options, CSTR2SYM("file_open_flags"));
+	if (!NIL_P(rb_value)) {
+		opts->file_mode = FIX2INT(rb_value);
+	}
+
+	rb_value = rb_hash_aref(rb_options, CSTR2SYM("target_directory"));
+	if (!NIL_P(rb_value)) {
+		opts->target_directory = StringValueCStr(rb_value);
+	}
+
+	rb_value = rb_hash_aref(rb_options, CSTR2SYM("baseline"));
+	if (!NIL_P(rb_value)) {
+		if (rb_obj_is_kind_of(rb_value, rb_cRuggedTree)) {
+			Data_Get_Struct(rb_value, git_tree, opts->baseline);
+		} else {
+			rb_raise(rb_eTypeError, "Expected a Rugged::Tree.");
+		}
+	}
+
+	rb_value = rb_hash_aref(rb_options, CSTR2SYM("paths"));
+	rugged_rb_ary_to_strarray(rb_value, &opts->paths);
+}
+
+/**
+ *  call-seq:
+ *    repo.checkout_tree(treeish[, options])
+ *
+ *  Updates files in the index and working tree to match the content of the
+ *  tree pointed at by the +treeish+.
+ *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :progress ::
+ *    A callback that will be executed for checkout progress notifications.
+ *    Up to 3 parameters are passed on each execution:
+ *
+ *    - The path to the last updated file (or +nil+ on the very first invocation).
+ *    - The number of completed checkout steps.
+ *    - The number of total checkout steps to be performed.
+ *
+ *  :notify ::
+ *    A callback that will be executed for each checkout notification types specified
+ *    with +:notify_flags+. Up to 5 parameters are passed on each execution:
+ *
+ *    - An array containing the +:notify_flags+ that caused the callback execution.
+ *    - The path of the current file.
+ *    - A hash describing the baseline blob (or +nil+ if it does not exist).
+ *    - A hash describing the target blob (or +nil+ if it does not exist).
+ *    - A hash describing the workdir blob (or +nil+ if it does not exist).
+ *
+ *  :strategy ::
+ *    A single symbol or an array of symbols representing the strategies to use when
+ *    performing the checkout. Possible values are:
+ *    
+ *    :none ::
+ *      Perform a dry run (default).
+ *
+ *    :safe ::
+ *      Allow safe updates that cannot overwrite uncommitted data.
+ *
+ *    :safe_create ::
+ *      Allow safe updates plus creation of missing files.
+ *
+ *    :force ::
+ *      Allow all updates to force working directory to look like index.
+ *
+ *    :allow_conflicts ::
+ *      Allow checkout to make safe updates even if conflicts are found.
+ *
+ *    :remove_untracked ::
+ *      Remove untracked files not in index (that are not ignored).
+ *
+ *    :remove_ignored ::
+ *      Remove ignored files not in index.
+ *
+ *    :update_only ::
+ *      Only update existing files, don't create new ones.
+ *
+ *    :dont_update_index ::
+ *      Normally checkout updates index entries as it goes; this stops that.
+ *
+ *    :no_refresh ::
+ *      Don't refresh index/config/etc before doing checkout.
+ *
+ *    :disable_pathspec_match ::
+ *      Treat pathspec as simple list of exact match file paths.
+ *
+ *    :skip_locked_directories ::
+ *      Ignore directories in use, they will be left empty.
+ *
+ *    :skip_unmerged ::
+ *      Allow checkout to skip unmerged files (NOT IMPLEMENTED).
+ *
+ *    :use_ours ::
+ *      For unmerged files, checkout stage 2 from index (NOT IMPLEMENTED).
+ *
+ *    :use_theirs ::
+ *      For unmerged files, checkout stage 3 from index (NOT IMPLEMENTED).
+ *
+ *    :update_submodules ::
+ *      Recursively checkout submodules with same options (NOT IMPLEMENTED).
+ *
+ *    :update_submodules_if_changed ::
+ *      Recursively checkout submodules if HEAD moved in super repo (NOT IMPLEMENTED).
+ *
+ *  :disable_filters ::
+ *    If +true+, filters like CRLF line conversion will be disabled.
+ *
+ *  :dir_mode ::
+ *    Mode for newly created directories. Default: +0755+.
+ *
+ *  :file_mode ::
+ *    Mode for newly created files. Default: +0755+ or +0644+.
+ *
+ *  :file_open_flags ::
+ *    Mode for opening files. Default: <code>IO::CREAT | IO::TRUNC | IO::WRONLY</code>.
+ *
+ *  :notify_flags ::
+ *    A single symbol or an array of symbols representing the cases in which the +:notify+
+ *    callback should be invoked. Possible values are:
+ *
+ *    :none ::
+ *      Do not invoke the +:notify+ callback (default).
+ *
+ *    :conflict ::
+ *      Invoke the callback for conflicting paths.
+ *
+ *    :dirty ::
+ *      Invoke the callback for "dirty" files, i.e. those that do not need an update but
+ *      no longer match the baseline.
+ *
+ *    :updated ::
+ *      Invoke the callback for any file that was changed.
+ *
+ *    :untracked ::
+ *      Invoke the callback for untracked files.
+ *
+ *    :ignored ::
+ *      Invoke the callback for ignored files.
+ *
+ *    :all ::
+ *      Invoke the callback for all these cases.
+ *
+ *  :paths ::
+ *    A glob string or an array of glob strings specifying which paths should be taken
+ *    into account for the checkout operation. +nil+ will match all files.
+ *    Default: +nil+.
+ *
+ *  :baseline ::
+ *    A Rugged::Tree that represents the current, expected contents of the workdir.
+ *    Default: +HEAD+.
+ *
+ *  :target_directory ::
+ *    A path to an alternative workdir directory in which the checkout should be performed.
+ */
+static VALUE rb_git_checkout_tree(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_treeish, rb_options;
+	git_repository *repo;
+	git_object *treeish;
+	git_checkout_opts opts = GIT_CHECKOUT_OPTS_INIT;
+	struct rugged_cb_payload *payload;
+	int error, exception = 0;
+
+	rb_scan_args(argc, argv, "10:", &rb_treeish, &rb_options);
+
+	if (TYPE(rb_treeish) == T_STRING) {
+		rb_treeish = rugged_object_rev_parse(self, rb_treeish, 1);
+	}
+
+	if (!rb_obj_is_kind_of(rb_treeish, rb_cRuggedCommit) &&
+			!rb_obj_is_kind_of(rb_treeish, rb_cRuggedTag) &&
+			!rb_obj_is_kind_of(rb_treeish, rb_cRuggedTree)) {
+		rb_raise(rb_eTypeError, "Expected Rugged::Commit, Rugged::Tag or Rugged::Tree");
+	}
+
+	Data_Get_Struct(self, git_repository, repo);
+	Data_Get_Struct(rb_treeish, git_object, treeish);
+
+	rugged_parse_checkout_options(&opts, rb_options);
+
+	error = git_checkout_tree(repo, treeish, &opts);
+	xfree(opts.paths.strings);
+
+	if ((payload = opts.notify_payload) != NULL) {
+		exception = payload->exception;
+		xfree(opts.notify_payload);
+	}
+
+	if ((payload = opts.progress_payload) != NULL) {
+		exception = payload->exception;
+		xfree(opts.progress_payload);
+	}
+
+	if (exception)
+		rb_jump_tag(exception);
+
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
+/**
+ *  call-seq: repo.checkout_head([options]) -> nil
+ *
+ *  Updates files in the index and the working tree to match the content of the
+ *  commit pointed at by +HEAD+.
+ *
+ *  See Repository#checkout_tree for a list of supported +options+.
+ */
+static VALUE rb_git_checkout_head(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_options;
+	git_repository *repo;
+	git_checkout_opts opts = GIT_CHECKOUT_OPTS_INIT;
+	struct rugged_cb_payload *payload;
+	int error, exception = 0;
+
+	rb_scan_args(argc, argv, "00:", &rb_options);
+
+	Data_Get_Struct(self, git_repository, repo);
+
+	rugged_parse_checkout_options(&opts, rb_options);
+
+	error = git_checkout_head(repo, &opts);
+	xfree(opts.paths.strings);
+
+	if ((payload = opts.notify_payload) != NULL) {
+		exception = payload->exception;
+		xfree(opts.notify_payload);
+	}
+
+	if ((payload = opts.progress_payload) != NULL) {
+		exception = payload->exception;
+		xfree(opts.progress_payload);
+	}
+
+	if (exception)
+		rb_jump_tag(exception);
+
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
 void Init_rugged_repo(void)
 {
 	id_call = rb_intern("call");
@@ -1472,6 +1913,9 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "ahead_behind", rb_git_repo_ahead_behind, 2);
 
 	rb_define_method(rb_cRuggedRepo, "default_signature", rb_git_repo_default_signature, 0);
+
+	rb_define_method(rb_cRuggedRepo, "checkout_tree", rb_git_checkout_tree, -1);
+	rb_define_method(rb_cRuggedRepo, "checkout_head", rb_git_checkout_head, -1);
 
 	rb_cRuggedOdbObject = rb_define_class_under(rb_mRugged, "OdbObject", rb_cObject);
 	rb_define_method(rb_cRuggedOdbObject, "data",  rb_git_odbobj_data,  0);
