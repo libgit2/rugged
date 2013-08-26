@@ -1,7 +1,15 @@
 require "test_helper"
 
-class TagTest < Rugged::TestCase
-  include Rugged::RepositoryAccess
+class TagTest < Rugged::SandboxedTestCase
+  def setup
+    super
+    @repo = sandbox_init("testrepo.git")
+  end
+
+  def teardown
+    @repo.close
+    super
+  end
 
   def test_lookup_raises_error_if_object_type_does_not_match
     assert_raises Rugged::InvalidError do
@@ -65,6 +73,20 @@ class TagTest < Rugged::TestCase
 
     assert_equal tag.name, "v0.9"
     assert_equal tag.canonical_name, "refs/tags/v0.9"
+  end
+
+  def test_lookup_git_compliance
+    Rugged::Tag.create(@repo, "refs/tags/v2.0", "5b5b025afb0b4c913b4c338a42934a3863bf3644")
+
+    assert_nil Rugged::Tag.lookup(@repo, "v2.0")
+    assert_equal "refs/tags/refs/tags/v2.0", Rugged::Tag.lookup(@repo, "refs/tags/v2.0").canonical_name
+    assert_equal "refs/tags/refs/tags/v2.0", Rugged::Tag.lookup(@repo, "refs/tags/refs/tags/v2.0").canonical_name
+
+    Rugged::Tag.create(@repo, "v2.0", "5b5b025afb0b4c913b4c338a42934a3863bf3644")
+
+    assert_equal "refs/tags/v2.0", Rugged::Tag.lookup(@repo, "v2.0").canonical_name
+    assert_equal "refs/tags/v2.0", Rugged::Tag.lookup(@repo, "refs/tags/v2.0").canonical_name
+    assert_equal "refs/tags/refs/tags/v2.0", Rugged::Tag.lookup(@repo, "refs/tags/refs/tags/v2.0").canonical_name
   end
 
   def test_each
