@@ -194,10 +194,9 @@ class TagWriteTest < Rugged::TestCase
     @repo.config['user.name'] = name
     @repo.config['user.email'] = email
 
-    tag_oid = Rugged::Tag.create(@repo,
-      :name    => 'tag',
-      :message => "test tag message\n",
-      :target  => "5b5b025afb0b4c913b4c338a42934a3863bf3644")
+    tag_oid = Rugged::Tag.create(@repo, 'tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
+      :message => "test tag message\n"
+    })
 
     tag = @repo.lookup(tag_oid)
     assert_equal name, tag.tagger[:name]
