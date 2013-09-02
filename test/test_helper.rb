@@ -12,6 +12,7 @@ module Rugged
     Enumerator = defined?(::Enumerator) ? ::Enumerator : ::Enumerable::Enumerator
 
     TEST_DIR = File.dirname(File.expand_path(__FILE__))
+    LIBGIT2_FIXTURE_DIR = File.expand_path("../../vendor/libgit2/tests-clar/resources", __FILE__)
 
     protected
     def with_default_encoding(encoding, &block)
@@ -40,7 +41,7 @@ module Rugged
     # Fills the current sandbox folder with the files
     # found in the given repository
     def sandbox_init(repository)
-      FileUtils.cp_r(File.join(TestCase::TEST_DIR, 'fixtures', repository), @_sandbox_path)
+      FileUtils.cp_r(File.join(TestCase::LIBGIT2_FIXTURE_DIR, repository), @_sandbox_path)
 
       Dir.chdir(File.join(@_sandbox_path, repository)) do
         File.rename(".gitted", ".git") if File.exists?(".gitted")
