@@ -175,7 +175,7 @@ class RemotePushTest < Rugged::SandboxedTestCase
     result = @remote.push(["refs/heads/master", "refs/heads/master:refs/heads/foobar", "refs/heads/unit_test"])
     assert_equal({}, result)
 
-    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", @remote_repo.ref("refs/heads/foobar").target
+    assert_equal "a65fedf39aefe402d3bb6e24df4d4f5fe4547750", @remote_repo.ref("refs/heads/foobar").target
     assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @remote_repo.ref("refs/heads/unit_test").target
   end
 
@@ -192,7 +192,7 @@ class RemotePushTest < Rugged::SandboxedTestCase
       @remote.push(["refs/heads/unit_test:refs/heads/master"])
     end
 
-    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", @remote_repo.ref("refs/heads/master").target
+    assert_equal "a65fedf39aefe402d3bb6e24df4d4f5fe4547750", @remote_repo.ref("refs/heads/master").target
   end
 
   def test_push_non_forward_forced_raise_no_error

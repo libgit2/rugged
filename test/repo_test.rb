@@ -16,7 +16,7 @@ class RepositoryTest < Rugged::SandboxedTestCase
 
   def test_last_commit
     assert @repo.respond_to? :last_commit
-    assert "36060c58702ed4c2a40832c51758d5344201d89a", @repo.last_commit.oid
+    assert "a65fedf39aefe402d3bb6e24df4d4f5fe4547750", @repo.last_commit.oid
   end
 
   def test_fails_to_open_unexisting_repos
@@ -89,34 +89,34 @@ class RepositoryTest < Rugged::SandboxedTestCase
 
   def test_match_all_refs
     refs = @repo.refs 'refs/heads/*'
-    assert_equal 2, refs.count
+    assert_equal 12, refs.count
   end
 
   def test_return_all_ref_names
     refs = @repo.ref_names
     refs.each {|name| assert name.kind_of?(String)}
-    assert_equal 5, refs.count
+    assert_equal 21, refs.count
   end
 
   def test_return_all_tags
     tags = @repo.tags
-    assert_equal 2, tags.count
+    assert_equal 7, tags.count
   end
 
   def test_return_matching_tags
-    tags = @repo.tags 'v0.9'
-    assert_equal 1, tags.count
+    assert_equal 1, @repo.tags('e90810b').count
+    assert_equal 4, @repo.tags('*tag*').count
   end
 
   def test_return_all_remotes
     remotes = @repo.remotes
-    assert_equal 2, remotes.count
+    assert_equal 4, remotes.count
   end
 
   def test_lookup_head
     head = @repo.head
     assert_equal "refs/heads/master", head.name
-    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", head.target
+    assert_equal "a65fedf39aefe402d3bb6e24df4d4f5fe4547750", head.target
     assert_equal :direct, head.type
   end
 
@@ -127,18 +127,18 @@ class RepositoryTest < Rugged::SandboxedTestCase
 
   def test_set_head_invalid
     assert_raises Rugged::ReferenceError do
-      @repo.head = "36060c58702ed4c2a40832c51758d5344201d89a"
+      @repo.head = "a65fedf39aefe402d3bb6e24df4d4f5fe4547750"
     end
   end
 
   def test_access_a_file
-    sha = '36060c58702ed4c2a40832c51758d5344201d89a'
+    sha = 'a65fedf39aefe402d3bb6e24df4d4f5fe4547750'
     blob = @repo.blob_at(sha, 'new.txt')
-    assert_equal "new file\n", blob.content
+    assert_equal "my new file\n", blob.content
   end
 
   def test_access_a_missing_file
-    sha = '36060c58702ed4c2a40832c51758d5344201d89a'
+    sha = 'a65fedf39aefe402d3bb6e24df4d4f5fe4547750'
     blob = @repo.blob_at(sha, 'file-not-found.txt')
     assert_nil blob
   end
@@ -149,14 +149,14 @@ class RepositoryTest < Rugged::SandboxedTestCase
   end
 
   def test_enumerate_all_objects
-    assert_equal 37, @repo.each_id.to_a.length
+    assert_equal 1687, @repo.each_id.count
   end
 
   def test_loading_alternates
     alt_path = File.dirname(__FILE__) + '/fixtures/alternate/objects'
     repo = Rugged::Repository.new(@repo.path, :alternates => [alt_path])
     begin
-      assert_equal 40, repo.each_id.to_a.length
+      assert_equal 1690, repo.each_id.count
       assert repo.read('146ae76773c91e3b1d00cf7a338ec55ae58297e2')
     ensure
       repo.close
@@ -171,50 +171,50 @@ class RepositoryTest < Rugged::SandboxedTestCase
 
   def test_find_merge_base_between_oids
     commit1 = 'a4a7dce85cf63874e984719f4fdd239f5145052f'
-    commit2 = '36060c58702ed4c2a40832c51758d5344201d89a'
-    base    = '5b5b025afb0b4c913b4c338a42934a3863bf3644'
+    commit2 = 'a65fedf39aefe402d3bb6e24df4d4f5fe4547750'
+    base    = 'c47800c7266a2be04c571c04d5a6614691ea99bd'
     assert_equal base, @repo.merge_base(commit1, commit2)
   end
 
   def test_find_merge_base_between_commits
     commit1 = @repo.lookup('a4a7dce85cf63874e984719f4fdd239f5145052f')
-    commit2 = @repo.lookup('36060c58702ed4c2a40832c51758d5344201d89a')
-    base    = '5b5b025afb0b4c913b4c338a42934a3863bf3644'
+    commit2 = @repo.lookup('a65fedf39aefe402d3bb6e24df4d4f5fe4547750')
+    base    = 'c47800c7266a2be04c571c04d5a6614691ea99bd'
     assert_equal base, @repo.merge_base(commit1, commit2)
   end
 
   def test_find_merge_base_between_ref_and_oid
     commit1 = 'a4a7dce85cf63874e984719f4fdd239f5145052f'
     commit2 = "refs/heads/master"
-    base    = '5b5b025afb0b4c913b4c338a42934a3863bf3644'
+    base    = 'c47800c7266a2be04c571c04d5a6614691ea99bd'
     assert_equal base, @repo.merge_base(commit1, commit2)
   end
 
   def test_find_merge_base_between_many
     commit1 = 'a4a7dce85cf63874e984719f4fdd239f5145052f'
     commit2 = "refs/heads/packed"
-    commit3 = @repo.lookup('36060c58702ed4c2a40832c51758d5344201d89a')
+    commit3 = @repo.lookup('a65fedf39aefe402d3bb6e24df4d4f5fe4547750')
 
-    base    = '5b5b025afb0b4c913b4c338a42934a3863bf3644'
+    base    = 'c47800c7266a2be04c571c04d5a6614691ea99bd'
     assert_equal base, @repo.merge_base(commit1, commit2, commit3)
   end
 
   def test_ahead_behind_with_oids
     ahead, behind = @repo.ahead_behind(
       'a4a7dce85cf63874e984719f4fdd239f5145052f',
-      '36060c58702ed4c2a40832c51758d5344201d89a'
+      'a65fedf39aefe402d3bb6e24df4d4f5fe4547750'
     )
-    assert_equal 1, ahead
-    assert_equal 4, behind
+    assert_equal 2, ahead
+    assert_equal 1, behind
   end
 
   def test_ahead_behind_with_commits
     ahead, behind = @repo.ahead_behind(
       @repo.lookup('a4a7dce85cf63874e984719f4fdd239f5145052f'),
-      @repo.lookup('36060c58702ed4c2a40832c51758d5344201d89a')
+      @repo.lookup('a65fedf39aefe402d3bb6e24df4d4f5fe4547750')
     )
-    assert_equal 1, ahead
-    assert_equal 4, behind
+    assert_equal 2, ahead
+    assert_equal 1, behind
   end
 end
 
@@ -445,7 +445,7 @@ class RepositoryPushTest < Rugged::SandboxedTestCase
     result = @repo.push("origin", ["refs/heads/master", "refs/heads/master:refs/heads/foobar", "refs/heads/unit_test"])
     assert_equal({}, result)
 
-    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", @remote_repo.ref("refs/heads/foobar").target
+    assert_equal "a65fedf39aefe402d3bb6e24df4d4f5fe4547750", @remote_repo.ref("refs/heads/foobar").target
     assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @remote_repo.ref("refs/heads/unit_test").target
   end
 
@@ -468,7 +468,7 @@ class RepositoryPushTest < Rugged::SandboxedTestCase
       @repo.push("origin", ["refs/heads/unit_test:refs/heads/master"])
     end
 
-    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", @remote_repo.ref("refs/heads/master").target
+    assert_equal "a65fedf39aefe402d3bb6e24df4d4f5fe4547750", @remote_repo.ref("refs/heads/master").target
   end
 
   def test_push_non_forward_forced_raise_no_error
@@ -587,7 +587,6 @@ class RepositoryCheckoutTest < Rugged::SandboxedTestCase
 
       assert File.exists?(File.join(dir, "README"))
       assert File.exists?(File.join(dir, "new.txt"))
-      assert File.exists?(File.join(dir, "subdir"))
     end
   end
 
