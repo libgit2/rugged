@@ -29,13 +29,13 @@ class RemoteTest < Rugged::TestCase
 
   def test_list_remote_names
     remote_names = Rugged::Remote.names(@repo)
-    assert_equal [ "test_remote", "libgit2" ], remote_names
+    assert_equal ["test_remote", "libgit2"].sort, remote_names.sort
   end
 
   def test_list_remotes
     remotes = @repo.remotes
     assert remotes.kind_of? Enumerable
-    assert_equal [ "test_remote", "libgit2" ], remotes.map(&:name)
+    assert_equal ["test_remote", "libgit2"].sort, remotes.map(&:name).sort
   end
 
   def test_remotes_each_protect
