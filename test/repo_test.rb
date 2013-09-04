@@ -110,7 +110,7 @@ class RepositoryTest < Rugged::SandboxedTestCase
 
   def test_return_all_remotes
     remotes = @repo.remotes
-    assert_equal 4, remotes.count
+    assert_equal 5, remotes.count
   end
 
   def test_lookup_head
