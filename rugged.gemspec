@@ -23,7 +23,7 @@ Gem::Specification.new do |s|
 Rugged is a Ruby bindings to the libgit2 linkable C Git library. This is
 for testing and using the libgit2 library in a language that is awesome.
 desc
-  s.add_development_dependency "rake-compiler", ">= 0.9.1"
+  s.add_development_dependency "rake-compiler", ">= 0.9.0"
   s.add_development_dependency "pry"
   s.add_development_dependency "minitest", "~> 3.0.0"
 end
