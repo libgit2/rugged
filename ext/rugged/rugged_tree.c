@@ -469,6 +469,119 @@ static VALUE rb_git_tree_diff_workdir(int argc, VALUE *argv, VALUE self)
 	return rugged_diff_new(rb_cRuggedDiff, self, diff);
 }
 
+void rugged_parse_merge_options(git_merge_tree_opts *opts, VALUE rb_options)
+{
+	if (!NIL_P(rb_options)) {
+		VALUE rb_value;
+		Check_Type(rb_options, T_HASH);
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("rename_threshold"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_FIXNUM);
+			opts->rename_threshold = FIX2UINT(rb_value);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("target_limit"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_FIXNUM);
+			opts->target_limit = FIX2UINT(rb_value);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("automerge"));
+		if (!NIL_P(rb_value)) {
+			ID id_automerge;
+
+			Check_Type(rb_value, T_SYMBOL);
+			id_automerge = SYM2ID(rb_value);
+
+			if (id_automerge == rb_intern("normal")) {
+				opts->automerge_flags = GIT_MERGE_AUTOMERGE_NORMAL;
+			} else if (id_automerge == rb_intern("none")) {
+				opts->automerge_flags = GIT_MERGE_AUTOMERGE_NONE;
+			} else if (id_automerge == rb_intern("favor_ours")) {
+				opts->automerge_flags = GIT_MERGE_AUTOMERGE_FAVOR_OURS;
+			} else if (id_automerge == rb_intern("favor_theirs")) {
+				opts->automerge_flags = GIT_MERGE_AUTOMERGE_FAVOR_THEIRS;
+			} else {
+				rb_raise(rb_eTypeError,
+					"Invalid automerge mode. Expected `:normal`, `:none`, `:favor_ours` or `:favor_theirs`");
+			}
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("renames")))) {
+			opts->flags |= GIT_MERGE_TREE_FIND_RENAMES;
+		}
+	}
+}
+
+/*
+ *  tree.merge(other_tree[, ancestor_tree[, options]]) -> Rugged::Index
+ *  tree.merge(other_tree[, options]) -> Rugged::Index
+ *
+ *  Merges two trees and returns the a Rugged::Index object that reflects
+ *  the result of the merge.
+ *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :renames ::
+ *    If true, looking for renames will be enabled (`--find-renames`).
+ *
+ *  :rename_threshold ::
+ *    An integer specifying the minimum similarity of a file to be
+ *    seen as an eligible rename source (default 50).
+ *
+ *  :target_limit ::
+ *    An integer specifying the maximum byte size of a file before a it will
+ *    be treated as binary. The default value is 512MB.
+ *
+ *  :automerge ::
+ *    Specifies how and if conflicts are auto-resolved by favoring a specific
+ *    version. Can be one of `:normal`, `:none`, `:favor_ours` or `:favor_theirs`.
+ *
+ */
+static VALUE rb_git_tree_merge(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_other_tree, rb_ancestor_tree, rb_options;
+	VALUE rb_repo = rugged_owner(self);
+
+	git_tree *tree, *other_tree, *ancestor_tree;
+	git_repository *repo;
+	git_index *index;
+	git_merge_tree_opts opts = GIT_MERGE_TREE_OPTS_INIT;
+	int error;
+
+	if (rb_scan_args(argc, argv, "12", &rb_other_tree, &rb_ancestor_tree, &rb_options) == 2) {
+		if (TYPE(rb_ancestor_tree) == T_HASH) {
+			rb_options = rb_ancestor_tree;
+			rb_ancestor_tree = Qnil;
+		}
+	}
+
+	if (!NIL_P(rb_options)) {
+		Check_Type(rb_options, T_HASH);
+		rugged_parse_merge_options(&opts, rb_options);
+	}
+
+	if (!rb_obj_is_kind_of(rb_other_tree, rb_cRuggedTree))
+		rb_raise(rb_eTypeError, "Expecting a Rugged::Tree instance");
+	else if (!NIL_P(rb_ancestor_tree) && !rb_obj_is_kind_of(rb_ancestor_tree, rb_cRuggedTree))
+		rb_raise(rb_eTypeError, "Expecting a Rugged::Tree instance");
+
+	Data_Get_Struct(self, git_tree, tree);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+	Data_Get_Struct(rb_other_tree, git_tree, other_tree);
+
+	if (!NIL_P(rb_ancestor_tree))
+		Data_Get_Struct(rb_ancestor_tree, git_tree, ancestor_tree);
+	else
+		ancestor_tree = NULL;
+
+	error = git_merge_trees(&index, repo, ancestor_tree, tree, other_tree, &opts);
+	rugged_exception_check(error);
+
+	return rugged_index_new(rb_cRuggedIndex, rb_repo, index);
+}
+
 static void rb_git_treebuilder_free(git_treebuilder *bld)
 {
 	git_treebuilder_free(bld);
@@ -668,6 +781,7 @@ void Init_rugged_tree(void)
 	rb_define_method(rb_cRuggedTree, "[]", rb_git_tree_get_entry, 1);
 	rb_define_method(rb_cRuggedTree, "each", rb_git_tree_each, 0);
 	rb_define_method(rb_cRuggedTree, "walk", rb_git_tree_walk, 1);
+	rb_define_method(rb_cRuggedTree, "merge", rb_git_tree_merge, -1);
 
 	rb_cRuggedTreeBuilder = rb_define_class_under(rb_cRuggedTree, "Builder", rb_cObject);
 	rb_define_alloc_func(rb_cRuggedTreeBuilder, rb_git_treebuilder_allocate);
