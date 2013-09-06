@@ -21,7 +21,7 @@ class IndexTest < Rugged::TestCase
       }
   end
 
-  def setup 
+  def setup
     path = File.dirname(__FILE__) + '/fixtures/testrepo.git/index'
     @index = Rugged::Index.new(path)
   end
@@ -116,7 +116,7 @@ class IndexTest < Rugged::TestCase
 end
 
 class IndexWriteTest < Rugged::TestCase
-  def setup 
+  def setup
     path = File.dirname(__FILE__) + '/fixtures/testrepo.git/index'
 
     @tmpfile = Tempfile.new('index', Dir.tmpdir, encoding: "binary")
@@ -154,7 +154,7 @@ class IndexWriteTest < Rugged::TestCase
 end
 
 class IndexWorkdirTest < Rugged::TestCase
-  def setup 
+  def setup
     @tmppath = Dir.mktmpdir
     @repo = Rugged::Repository.init_at(@tmppath, false)
     @index = @repo.index
@@ -212,8 +212,74 @@ class IndexConflictsTest < Rugged::SandboxedTestCase
     super
   end
 
-  def test_conflicts
+  def test_conflicts?
     assert @repo.index.conflicts?
+  end
+
+  def test_conflicts
+    conflicts = @repo.index.conflicts
+
+    assert_equal 2, conflicts.size
+
+    assert_equal "conflicts-one.txt", conflicts[0][:ancestor][:path]
+    assert_equal "conflicts-one.txt", conflicts[0][:ours][:path]
+    assert_equal "conflicts-one.txt", conflicts[0][:theirs][:path]
+    assert_equal 1, conflicts[0][:ancestor][:stage]
+    assert_equal 2, conflicts[0][:ours][:stage]
+    assert_equal 3, conflicts[0][:theirs][:stage]
+
+    assert_equal "conflicts-two.txt", conflicts[1][:ancestor][:path]
+    assert_equal "conflicts-two.txt", conflicts[1][:ours][:path]
+    assert_equal "conflicts-two.txt", conflicts[1][:theirs][:path]
+    assert_equal 1, conflicts[1][:ancestor][:stage]
+    assert_equal 2, conflicts[1][:ours][:stage]
+    assert_equal 3, conflicts[1][:theirs][:stage]
+  end
+
+  def test_conflict_get
+    conflict = @repo.index.conflict_get("conflicts-one.txt")
+
+    assert_equal "conflicts-one.txt", conflict[:ancestor][:path]
+    assert_equal "conflicts-one.txt", conflict[:ours][:path]
+    assert_equal "conflicts-one.txt", conflict[:theirs][:path]
+    assert_equal 1, conflict[:ancestor][:stage]
+    assert_equal 2, conflict[:ours][:stage]
+    assert_equal 3, conflict[:theirs][:stage]
+
+    refute @repo.index.conflict_get("conflict-does-not-exists.txt")
+  end
+
+  def test_conflict_remove
+    @repo.index.conflict_remove("conflicts-one.txt")
+    assert_equal @repo.index.conflicts.size, 1
+
+    @repo.index.conflict_remove("conflicts-two.txt")
+    assert_equal @repo.index.conflicts.size, 0
+
+    refute @repo.index.conflicts?
+  end
+
+  def test_conflict_add
+    conflict = @repo.index.conflict_get("conflicts-one.txt")
+
+    conflict[:ancestor][:path] = conflict[:ours][:path] = conflict[:theirs][:path] = "new-conflict.txt"
+    @repo.index.conflict_add(conflict)
+
+    assert_equal @repo.index.conflicts.size, 3
+
+    conflict[:ancestor] = nil
+    conflict[:ours][:path] = conflict[:theirs][:path] = "another-new-conflict.txt"
+
+    @repo.index.conflict_add(conflict)
+
+    assert_equal @repo.index.conflicts.size, 4
+  end
+
+  def test_conflict_cleanup
+    @repo.index.conflict_cleanup
+
+    assert_equal @repo.index.conflicts.size, 0
+    refute @repo.index.conflicts?
   end
 end
 

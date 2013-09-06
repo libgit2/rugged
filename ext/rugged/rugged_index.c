@@ -847,6 +847,166 @@ static VALUE rb_git_index_conflicts_p(VALUE self)
 	return git_index_has_conflicts(index) ? Qtrue : Qfalse;
 }
 
+/*
+ *  call-seq:
+ *    index.conflict_add(conflict) -> nil
+ *
+ *  Add or update index entries that represent a conflict.
+ *
+ *  +conflict+ has to be a hash containing +:ancestor+, +:ours+ and
+ *  +:theirs+ key/value pairs. Any of those paris can be +nil+ (or left out)
+ *  to indicate that the file was not present in the respective tree during
+ *  the merge.
+ */
+static VALUE rb_git_conflict_add(VALUE self, VALUE rb_conflict)
+{
+	VALUE rb_ancestor, rb_ours, rb_theirs;
+	git_index *index;
+	git_index_entry ancestor, ours, theirs;
+	int error;
+
+	Check_Type(rb_conflict, T_HASH);
+
+	rb_ancestor = rb_hash_aref(rb_conflict, CSTR2SYM("ancestor"));
+	rb_ours     = rb_hash_aref(rb_conflict, CSTR2SYM("ours"));
+	rb_theirs   = rb_hash_aref(rb_conflict, CSTR2SYM("theirs"));
+
+	if (!NIL_P(rb_ancestor))
+		rb_git_indexentry_toC(&ancestor, rb_ancestor);
+
+	if (!NIL_P(rb_ours))
+		rb_git_indexentry_toC(&ours, rb_ours);
+
+	if (!NIL_P(rb_theirs))
+		rb_git_indexentry_toC(&theirs, rb_theirs);
+
+	Data_Get_Struct(self, git_index, index);
+
+	error = git_index_conflict_add(index,
+		NIL_P(rb_ancestor) ? NULL : &ancestor,
+		NIL_P(rb_theirs) ? NULL : &ours,
+		NIL_P(rb_ours) ? NULL : &theirs);
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
+/*
+ *  call-seq:
+ *    index.conflict_remove(path) -> nil
+ *
+ *  Removes the index entries that represent the conflict at +path+.
+ */
+static VALUE rb_git_conflict_remove(VALUE self, VALUE rb_path)
+{
+	git_index *index;
+	int error;
+
+	Check_Type(rb_path, T_STRING);
+
+	Data_Get_Struct(self, git_index, index);
+
+	error = git_index_conflict_remove(index, StringValueCStr(rb_path));
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
+/*
+ *  call-seq:
+ *    index.conflict_get(path) -> conflict or nil
+ *
+ *  Return index entries from the ancestor, our side and their side of
+ *  the conflict at +path+.
+ *
+ *  If +:ancestor+, +:ours+ or +:theirs+ is +nil+, that indicates that +path+
+ *  did not exist in the respective tree.
+ *
+ *  Returns nil if no conflict is present at +path+.
+ */
+static VALUE rb_git_conflict_get(VALUE self, VALUE rb_path)
+{
+	VALUE rb_result = rb_hash_new();
+	git_index *index;
+	const git_index_entry *ancestor, *ours, *theirs;
+	int error;
+
+	Check_Type(rb_path, T_STRING);
+
+	Data_Get_Struct(self, git_index, index);
+
+	error = git_index_conflict_get(&ancestor, &ours, &theirs, index, StringValueCStr(rb_path));
+	if (error == GIT_ENOTFOUND)
+		return Qnil;
+	else
+		rugged_exception_check(error);
+
+	rb_hash_aset(rb_result, CSTR2SYM("ancestor"), rb_git_indexentry_fromC(ancestor));
+	rb_hash_aset(rb_result, CSTR2SYM("ours"),     rb_git_indexentry_fromC(ours));
+	rb_hash_aset(rb_result, CSTR2SYM("theirs"),   rb_git_indexentry_fromC(theirs));
+
+	return rb_result;
+}
+
+/*
+ *  call-seq:
+ *    index.conflict_cleanup -> nil
+ *
+ *  Remove all conflicting entries (entries with a stage greater than 0)
+ *  from the index.
+ */
+static VALUE rb_git_conflict_cleanup(VALUE self)
+{
+	git_index *index;
+
+	Data_Get_Struct(self, git_index, index);
+	git_index_conflict_cleanup(index);
+
+	return Qnil;
+}
+
+/*
+ *  call-seq:
+ *    index.conflicts -> conflicts
+ *
+ *  Return all conflicts in +index+.
+ *
+ *  Each conflict is represented as a Hash with +:ancestor+, +:ours+ or
+ *  +:theirs+ key-value pairs, each containing index entry data.
+ *
+ *  If the value of the +:ancestor+, +:ours+ or +:theirs+ key is +nil+,
+ *  that indicates that file in conflict did not exists in the respective tree.
+ */
+static VALUE rb_git_index_conflicts(VALUE self)
+{
+	VALUE rb_conflicts = rb_ary_new();
+	git_index *index;
+	git_index_conflict_iterator *iter;
+	const git_index_entry *ancestor, *ours, *theirs;
+	int error;
+
+	Data_Get_Struct(self, git_index, index);
+
+	error = git_index_conflict_iterator_new(&iter, index);
+	rugged_exception_check(error);
+
+	while ((error = git_index_conflict_next(&ancestor, &ours, &theirs, iter)) == GIT_OK) {
+		VALUE rb_conflict = rb_hash_new();
+
+		rb_hash_aset(rb_conflict, CSTR2SYM("ancestor"), rb_git_indexentry_fromC(ancestor));
+		rb_hash_aset(rb_conflict, CSTR2SYM("ours"),     rb_git_indexentry_fromC(ours));
+		rb_hash_aset(rb_conflict, CSTR2SYM("theirs"),   rb_git_indexentry_fromC(theirs));
+
+		rb_ary_push(rb_conflicts, rb_conflict);
+	}
+
+	git_index_conflict_iterator_free(iter);
+
+	if (error != GIT_ITEROVER)
+		rugged_exception_check(error);
+
+	return rb_conflicts;
+}
 
 /*
  *  Document-class: Rugged::Index
@@ -910,6 +1070,11 @@ void Init_rugged_index(void)
 	rb_define_method(rb_cRuggedIndex, "diff", rb_git_index_diff, -1);
 
 	rb_define_method(rb_cRuggedIndex, "conflicts?", rb_git_index_conflicts_p, 0);
+	rb_define_method(rb_cRuggedIndex, "conflicts", rb_git_index_conflicts, 0);
+	rb_define_method(rb_cRuggedIndex, "conflict_get", rb_git_conflict_get, 1);
+	rb_define_method(rb_cRuggedIndex, "conflict_add", rb_git_conflict_add, 1);
+	rb_define_method(rb_cRuggedIndex, "conflict_remove", rb_git_conflict_remove, 1);
+	rb_define_method(rb_cRuggedIndex, "conflict_cleanup", rb_git_conflict_cleanup, 0);
 
 	rb_define_method(rb_cRuggedIndex, "add", rb_git_index_add, 1);
 	rb_define_method(rb_cRuggedIndex, "update", rb_git_index_add, 1);
