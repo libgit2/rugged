@@ -400,15 +400,13 @@ static VALUE rb_git_tag_annotation(VALUE self)
 	error = git_reference_resolve(&resolved_ref, ref);
 	rugged_exception_check(error);
 
-	error = git_object_lookup(&target, repo, git_reference_target(resolved_ref), GIT_OBJ_ANY);
+	error = git_object_lookup(&target, repo, git_reference_target(resolved_ref), GIT_OBJ_TAG);
 	git_reference_free(resolved_ref);
-	rugged_exception_check(error);
 
-	if (git_object_type(target) == GIT_OBJ_TAG) {
-		return rugged_object_new(rb_repo, target);
-	} else {
+	if (error == GIT_ENOTFOUND)
 		return Qnil;
-	}
+
+	return rugged_object_new(rb_repo, target);
 }
 
 /*
