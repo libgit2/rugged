@@ -10,10 +10,9 @@ Gem::Specification.new do |s|
   s.email                 = "schacon@gmail.com"
   s.authors               = [ "Scott Chacon", "Vicent Marti" ]
   s.license               = "MIT"
-  s.files                 = %w( README.md Rakefile LICENSE )
+  s.files                 = %w( README.md LICENSE )
   s.files                 += Dir.glob("lib/**/*.rb")
   s.files                 += Dir.glob("man/**/*")
-  s.files                 += Dir.glob("test/**/*")
   s.files                 += Dir.glob("ext/**/*.[ch]")
   s.files                 += Dir.glob("vendor/libgit2/{include,src,deps}/**/*.[ch]")
   s.files                 += Dir.glob("vendor/libgit2/Makefile.embed")
