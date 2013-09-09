@@ -18,6 +18,23 @@ class TreeTest < Rugged::TestCase
       # tag
       Rugged::Tree.lookup(@repo, "0c37a5391bbff43c37f0d0371823a5509eed5b1d")
     end
+
+    subclass = Class.new(Rugged::Tree)
+
+    assert_raises Rugged::InvalidError do
+      # blob
+      subclass.lookup(@repo, "fa49b077972391ad58037050f2a75f74e3671e92")
+    end
+
+    assert_raises Rugged::InvalidError do
+      # commit
+      subclass.lookup(@repo, "8496071c1b46c854b31185ea97743be6a8774479")
+    end
+
+    assert_raises Rugged::InvalidError do
+      # tag
+      subclass.lookup(@repo, "0c37a5391bbff43c37f0d0371823a5509eed5b1d")
+    end
   end
 
   def setup

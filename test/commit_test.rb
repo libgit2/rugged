@@ -18,6 +18,23 @@ class TestCommit < Rugged::TestCase
       # tree
       Rugged::Commit.lookup(@repo, "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
     end
+
+    subclass = Class.new(Rugged::Commit)
+
+    assert_raises Rugged::InvalidError do
+      # blob
+      subclass.lookup(@repo, "fa49b077972391ad58037050f2a75f74e3671e92")
+    end
+
+    assert_raises Rugged::InvalidError do
+      # tag
+      subclass.lookup(@repo, "0c37a5391bbff43c37f0d0371823a5509eed5b1d")
+    end
+
+    assert_raises Rugged::InvalidError do
+      # tree
+      subclass.lookup(@repo, "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
+    end
   end
 
   def test_read_commit_data

@@ -18,6 +18,23 @@ class BlobTest < Rugged::TestCase
       # tree
       Rugged::Blob.lookup(@repo, "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
     end
+
+    subclass = Class.new(Rugged::Blob)
+
+    assert_raises Rugged::InvalidError do
+      # commit
+      subclass.lookup(@repo, "8496071c1b46c854b31185ea97743be6a8774479")
+    end
+
+    assert_raises Rugged::InvalidError do
+      # tag
+      subclass.lookup(@repo, "0c37a5391bbff43c37f0d0371823a5509eed5b1d")
+    end
+
+    assert_raises Rugged::InvalidError do
+      # tree
+      subclass.lookup(@repo, "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
+    end
   end
 
   def test_read_blob_data

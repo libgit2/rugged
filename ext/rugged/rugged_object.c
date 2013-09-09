@@ -189,17 +189,24 @@ VALUE rugged_object_new(VALUE owner, git_object *object)
 
 static git_otype class2otype(VALUE klass)
 {
-	if (klass == rb_cRuggedCommit)
-		return GIT_OBJ_COMMIT;
+	int i;
+	VALUE ancestors = rb_mod_ancestors(klass);
 
-	if (klass == rb_cRuggedTag)
-		return GIT_OBJ_TAG;
+	for (i = 0; i < RARRAY_LEN(ancestors); i++) {
+		VALUE ancestor = rb_ary_entry(ancestors, i);
 
-	if (klass == rb_cRuggedBlob)
-		return GIT_OBJ_BLOB;
+		if (ancestor == rb_cRuggedCommit)
+			return GIT_OBJ_COMMIT;
 
-	if (klass == rb_cRuggedTree)
-		return GIT_OBJ_TREE;
+		if (ancestor == rb_cRuggedTag)
+			return GIT_OBJ_TAG;
+
+		if (ancestor == rb_cRuggedBlob)
+			return GIT_OBJ_BLOB;
+
+		if (ancestor == rb_cRuggedTree)
+			return GIT_OBJ_TREE;
+    }
 
 	return GIT_OBJ_BAD;
 }
