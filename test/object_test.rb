@@ -4,6 +4,34 @@ require 'base64'
 class ObjectTest < Rugged::TestCase
   include Rugged::RepositoryAccess
 
+  def test_lookup_can_lookup_any_object_type
+    blob = Rugged::Object.lookup(@repo, "fa49b077972391ad58037050f2a75f74e3671e92")
+    assert_instance_of Rugged::Blob, blob
+
+    commit = Rugged::Object.lookup(@repo, "8496071c1b46c854b31185ea97743be6a8774479")
+    assert_instance_of Rugged::Commit, commit
+
+    tag = Rugged::Object.lookup(@repo, "0c37a5391bbff43c37f0d0371823a5509eed5b1d")
+    assert_instance_of Rugged::Tag, tag
+
+    tree = Rugged::Object.lookup(@repo, "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
+    assert_instance_of Rugged::Tree, tree
+
+    subclass = Class.new(Rugged::Object)
+
+    blob = subclass.lookup(@repo, "fa49b077972391ad58037050f2a75f74e3671e92")
+    assert_instance_of Rugged::Blob, blob
+
+    commit = subclass.lookup(@repo, "8496071c1b46c854b31185ea97743be6a8774479")
+    assert_instance_of Rugged::Commit, commit
+
+    tag = subclass.lookup(@repo, "0c37a5391bbff43c37f0d0371823a5509eed5b1d")
+    assert_instance_of Rugged::Tag, tag
+
+    tree = subclass.lookup(@repo, "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
+    assert_instance_of Rugged::Tree, tree
+  end
+
   def test_fail_to_lookup_inexistant_object
     assert_raises Rugged::OdbError do
       @repo.lookup("a496071c1b46c854b31185ea97743be6a8774479")

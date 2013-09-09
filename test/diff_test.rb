@@ -204,7 +204,7 @@ end
 class TreeToWorkdirDiffTest < Rugged::SandboxedTestCase
   def test_basic_diff
     repo = sandbox_init("status")
-    a = Rugged::Tree.lookup(repo, "26a125ee1bf").tree
+    a = Rugged::Commit.lookup(repo, "26a125ee1bf").tree
 
     diff = a.diff_workdir(
       :context_lines => 3,
@@ -239,9 +239,9 @@ end
 class TreeToTreeDiffTest < Rugged::SandboxedTestCase
   def test_basic_diff
     repo = sandbox_init("attr")
-    a = Rugged::Tree.lookup(repo, "605812a").tree
-    b = Rugged::Tree.lookup(repo, "370fe9ec22").tree
-    c = Rugged::Tree.lookup(repo, "f5b0af1fb4f5c").tree
+    a = Rugged::Commit.lookup(repo, "605812a").tree
+    b = Rugged::Commit.lookup(repo, "370fe9ec22").tree
+    c = Rugged::Commit.lookup(repo, "f5b0af1fb4f5c").tree
 
     diff = a.diff(b, :context_lines => 1, :interhunk_lines => 1)
 
@@ -289,7 +289,7 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
 
   def test_diff_with_empty_tree
     repo = sandbox_init("attr")
-    a = Rugged::Tree.lookup(repo, "605812a").tree
+    a = Rugged::Commit.lookup(repo, "605812a").tree
 
     diff = a.diff(nil, :context_lines => 1, :interhunk_lines => 1)
 
@@ -316,7 +316,7 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
 
   def test_diff_with_rev_string
     repo = sandbox_init("attr")
-    a = Rugged::Tree.lookup(repo, "605812a").tree
+    a = Rugged::Commit.lookup(repo, "605812a").tree
 
     diff = a.diff("370fe9ec22", :context_lines => 1, :interhunk_lines => 1)
 
@@ -343,9 +343,9 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
 
   def test_diff_merge
     repo = sandbox_init("attr")
-    a = Rugged::Tree.lookup(repo, "605812a").tree
-    b = Rugged::Tree.lookup(repo, "370fe9ec22").tree
-    c = Rugged::Tree.lookup(repo, "f5b0af1fb4f5c").tree
+    a = Rugged::Commit.lookup(repo, "605812a").tree
+    b = Rugged::Commit.lookup(repo, "370fe9ec22").tree
+    c = Rugged::Commit.lookup(repo, "f5b0af1fb4f5c").tree
 
     diff = a.diff(b).merge!(c.diff(b))
     
@@ -373,8 +373,8 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
   def test_symlink_blob_mode_changed_to_regular_file
     repo = sandbox_init("unsymlinked.git")
 
-    a = Rugged::Tree.lookup(repo, "7fccd7").tree
-    b = Rugged::Tree.lookup(repo, "806999").tree
+    a = Rugged::Commit.lookup(repo, "7fccd7").tree
+    b = Rugged::Commit.lookup(repo, "806999").tree
 
     diff = a.diff(b)
 
@@ -394,8 +394,8 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
   def test_symlink_blob_mode_changed_to_regular_file_as_typechange
     repo = sandbox_init("unsymlinked.git")
 
-    a = Rugged::Tree.lookup(repo, "7fccd7").tree
-    b = Rugged::Tree.lookup(repo, "806999").tree
+    a = Rugged::Commit.lookup(repo, "7fccd7").tree
+    b = Rugged::Commit.lookup(repo, "806999").tree
 
     diff = a.diff(b, :include_typechange => true)
 
@@ -415,8 +415,8 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
   def test_regular_blob_mode_changed_to_executable_file
     repo = sandbox_init("unsymlinked.git")
 
-    a = Rugged::Tree.lookup(repo, "806999").tree
-    b = Rugged::Tree.lookup(repo, "a8595c").tree
+    a = Rugged::Commit.lookup(repo, "806999").tree
+    b = Rugged::Commit.lookup(repo, "a8595c").tree
 
     diff = a.diff(b)
 

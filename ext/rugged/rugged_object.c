@@ -189,6 +189,9 @@ VALUE rugged_object_new(VALUE owner, git_object *object)
 
 static git_otype class2otype(VALUE klass)
 {
+	int i;
+	VALUE ancestors;
+
 	if (klass == rb_cRuggedCommit)
 		return GIT_OBJ_COMMIT;
 
@@ -200,6 +203,27 @@ static git_otype class2otype(VALUE klass)
 
 	if (klass == rb_cRuggedTree)
 		return GIT_OBJ_TREE;
+
+	if (klass == rb_cRuggedObject)
+		return GIT_OBJ_BAD;
+
+	ancestors = rb_mod_ancestors(klass);
+
+	for (i = 0; i < RARRAY_LEN(ancestors); i++) {
+		VALUE ancestor = rb_ary_entry(ancestors, i);
+
+		if (ancestor == rb_cRuggedCommit)
+			return GIT_OBJ_COMMIT;
+
+		if (ancestor == rb_cRuggedTag)
+			return GIT_OBJ_TAG;
+
+		if (ancestor == rb_cRuggedBlob)
+			return GIT_OBJ_BLOB;
+
+		if (ancestor == rb_cRuggedTree)
+			return GIT_OBJ_TREE;
+    }
 
 	return GIT_OBJ_BAD;
 }
@@ -224,7 +248,7 @@ VALUE rb_git_object_lookup(VALUE klass, VALUE rb_repo, VALUE rb_hex)
 
 	git_repository *repo;
 
-	type = class2otype(rb_obj_class(klass));
+	type = class2otype(klass);
 
 	if (type == GIT_OBJ_BAD)
 		type = GIT_OBJ_ANY;
