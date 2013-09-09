@@ -12,7 +12,6 @@ Gem::Specification.new do |s|
   s.license               = "MIT"
   s.files                 = %w( README.md LICENSE )
   s.files                 += Dir.glob("lib/**/*.rb")
-  s.files                 += Dir.glob("man/**/*")
   s.files                 += Dir.glob("ext/**/*.[ch]")
   s.files                 += Dir.glob("vendor/libgit2/{include,src,deps}/**/*.[ch]")
   s.files                 += Dir.glob("vendor/libgit2/Makefile.embed")
