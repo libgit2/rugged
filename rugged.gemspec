@@ -14,7 +14,7 @@ Gem::Specification.new do |s|
   s.files                 += Dir.glob("lib/**/*.rb")
   s.files                 += Dir.glob("ext/**/*.[ch]")
   s.files                 += Dir.glob("vendor/libgit2/{include,src,deps}/**/*.[ch]")
-  s.files                 += Dir.glob("vendor/libgit2/Makefile.embed")
+  s.files                 += Dir.glob("vendor/libgit2/{Makefile.embed,AUTHORS,COPYING}")
   s.extensions            = ['ext/rugged/extconf.rb']
   s.required_ruby_version = '>= 1.9.3'
   s.description           = <<desc
