@@ -3,6 +3,23 @@ require "test_helper"
 class TestCommit < Rugged::TestCase
   include Rugged::RepositoryAccess
 
+  def test_lookup_raises_error_if_object_type_does_not_match
+    assert_raises Rugged::InvalidError do
+      # blob
+      Rugged::Commit.lookup(@repo, "fa49b077972391ad58037050f2a75f74e3671e92")
+    end
+
+    assert_raises Rugged::InvalidError do
+      # tag
+      Rugged::Commit.lookup(@repo, "0c37a5391bbff43c37f0d0371823a5509eed5b1d")
+    end
+
+    assert_raises Rugged::InvalidError do
+      # tree
+      Rugged::Commit.lookup(@repo, "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
+    end
+  end
+
   def test_read_commit_data
     oid = "8496071c1b46c854b31185ea97743be6a8774479"
     obj = @repo.lookup(oid)

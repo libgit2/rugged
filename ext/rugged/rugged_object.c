@@ -224,7 +224,7 @@ VALUE rb_git_object_lookup(VALUE klass, VALUE rb_repo, VALUE rb_hex)
 
 	git_repository *repo;
 
-	type = class2otype(rb_obj_class(klass));
+	type = class2otype(klass);
 
 	if (type == GIT_OBJ_BAD)
 		type = GIT_OBJ_ANY;
