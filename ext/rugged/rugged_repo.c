@@ -217,7 +217,7 @@ static VALUE rb_git_repo_open_bare(int argc, VALUE *argv, VALUE klass)
  *  Open a Git repository in the given +path+ and return a +Repository+ object
  *  representing it. An exception will be thrown if +path+ doesn't point to a
  *  valid repository. If you need to create a repository from scratch, use
- *  Rugged::Repository.init instead.
+ *  Rugged::Repository.init_at instead.
  *
  *  The +path+ must point to either the actual folder (+.git+) of a Git repository,
  *  or to the directorly that contains the +.git+ folder.
