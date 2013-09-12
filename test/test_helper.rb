@@ -1,5 +1,3 @@
-require 'rubygems'
-
 require 'tempfile'
 require 'tmpdir'
 require 'minitest/autorun'
