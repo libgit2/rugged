@@ -6,9 +6,6 @@ require 'pp'
 
 module Rugged
   class TestCase < MiniTest::Unit::TestCase
-    # Ruby 1.8 / 1.9 Shim
-    Enumerator = defined?(::Enumerator) ? ::Enumerator : ::Enumerable::Enumerator
-
     TEST_DIR = File.dirname(File.expand_path(__FILE__))
     LIBGIT2_FIXTURE_DIR = File.expand_path("../../vendor/libgit2/tests-clar/resources", __FILE__)
 
