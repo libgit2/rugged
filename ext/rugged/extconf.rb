@@ -2,6 +2,8 @@ require 'mkmf'
 
 RbConfig::MAKEFILE_CONFIG['CC'] = ENV['CC'] if ENV['CC']
 
+$LDFLAGS << " -lz -lcrypto"
+
 $CFLAGS << " #{ENV["CFLAGS"]}"
 $CFLAGS << " -g"
 
