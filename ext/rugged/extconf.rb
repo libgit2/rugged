@@ -55,7 +55,7 @@ else
     Dir.mkdir("build") if !Dir.exists?("build")
 
     Dir.chdir("build") do
-      sys("cmake .. -DBUILD_CLAR=OFF -DBUILD_SHARED_LIBS=OFF")
+      sys("cmake .. -DBUILD_CLAR=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS=-fPIC")
       sys("cmake --build .")
     end
   end
