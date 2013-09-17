@@ -494,13 +494,30 @@ static VALUE rb_git_diff_size(VALUE self)
 	return INT2FIX(git_diff_num_deltas(diff));
 }
 
+struct diff_stats {
+	size_t files, adds, dels;
+};
+
 static int diff_file_stats_cb(
 	const git_diff_delta *delta,
 	float progress,
 	void *payload)
 {
-	struct { size_t files, adds, dels; } *stats = payload;
-	stats->files++;
+	struct diff_stats *stats = payload;
+
+	switch (delta->status) {
+	case GIT_DELTA_ADDED:
+	case GIT_DELTA_DELETED:
+	case GIT_DELTA_MODIFIED:
+	case GIT_DELTA_RENAMED:
+	case GIT_DELTA_COPIED:
+	case GIT_DELTA_TYPECHANGE:
+		stats->files++;
+		break;
+	default:
+		/* unmodified, ignored, and untracked files don't count */
+		break;
+	}
 	return GIT_OK;
 }
 
@@ -512,7 +529,7 @@ static int diff_line_stats_cb(
 	size_t content_len,
 	void *payload)
 {
-	struct { size_t files, adds, dels; } *stats = payload;
+	struct diff_stats *stats = payload;
 
 	switch (line_origin) {
 	case GIT_DIFF_LINE_ADDITION: stats->adds++; break;
@@ -531,7 +548,7 @@ static int diff_line_stats_cb(
 static VALUE rb_git_diff_stat(VALUE self)
 {
 	git_diff_list *diff;
-	struct { size_t files, adds, dels; } stats = { 0, 0, 0 };
+	struct diff_stats stats = { 0, 0, 0 };
 
 	Data_Get_Struct(self, git_diff_list, diff);
 
