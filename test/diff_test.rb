@@ -774,4 +774,27 @@ M\tanother.txt
 M\treadme.txt
 EOS
   end
+
+  def test_stats
+    repo = sandbox_init("diff")
+
+    a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+    b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
+
+    diff = a.tree.diff(b.tree)
+
+    files, adds, dels = diff.stat
+    assert_equal 2, files
+    assert_equal 7, adds
+    assert_equal 14, dels
+
+    expected_patch_stat = [ [ 5, 5 ], [ 2, 9 ] ]
+
+    diff.each_patch do |patch|
+      expected_adds, expected_dels = expected_patch_stat.shift
+      actual_adds, actual_dels = patch.stat
+      assert_equal expected_adds, actual_adds
+      assert_equal expected_dels, actual_dels
+    end
+  end
 end

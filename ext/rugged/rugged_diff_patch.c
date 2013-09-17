@@ -105,6 +105,23 @@ static VALUE rb_git_diff_patch_delta(VALUE self)
 
 /*
  *  call-seq:
+ *    patch.stat -> int, int
+ *
+ *  Returns the number of additions and deletions in the patch.
+ */
+static VALUE rb_git_diff_patch_stat(VALUE self)
+{
+	git_diff_patch *patch;
+	size_t additions, deletions;
+	Data_Get_Struct(self, git_diff_patch, patch);
+
+	git_diff_patch_line_stats(NULL, &additions, &deletions, patch);
+
+	return rb_ary_new3(2, INT2FIX(additions), INT2FIX(deletions));
+}
+
+/*
+ *  call-seq:
  *    patch.additions -> int
  *
  *  Returns the number of addition lines in the patch.
@@ -158,6 +175,7 @@ void Init_rugged_diff_patch(void)
 {
 	rb_cRuggedDiffPatch = rb_define_class_under(rb_cRuggedDiff, "Patch", rb_cObject);
 
+	rb_define_method(rb_cRuggedDiffPatch, "stat", rb_git_diff_patch_stat, 0);
 	rb_define_method(rb_cRuggedDiffPatch, "context", rb_git_diff_patch_context, 0);
 	rb_define_method(rb_cRuggedDiffPatch, "additions", rb_git_diff_patch_additions, 0);
 	rb_define_method(rb_cRuggedDiffPatch, "deletions", rb_git_diff_patch_deletions, 0);

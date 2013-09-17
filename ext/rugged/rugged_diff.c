@@ -492,6 +492,55 @@ static VALUE rb_git_diff_size(VALUE self)
 	return INT2FIX(git_diff_num_deltas(diff));
 }
 
+static int diff_file_stats_cb(
+	const git_diff_delta *delta,
+	float progress,
+	void *payload)
+{
+	struct { size_t files, adds, dels; } *stats = payload;
+	stats->files++;
+	return GIT_OK;
+}
+
+static int diff_line_stats_cb(
+	const git_diff_delta *delta,
+	const git_diff_range *range,
+	char line_origin,
+	const char *content,
+	size_t content_len,
+	void *payload)
+{
+	struct { size_t files, adds, dels; } *stats = payload;
+
+	switch (line_origin) {
+	case GIT_DIFF_LINE_ADDITION: stats->adds++; break;
+	case GIT_DIFF_LINE_DELETION: stats->dels++; break;
+	default: break;
+	}
+
+	return GIT_OK;
+}
+
+/*
+ *  call-seq: diff.stat -> int, int, int
+ *
+ *  Returns the number of files/additions/deletions in this diff.
+ */
+static VALUE rb_git_diff_stat(VALUE self)
+{
+	git_diff_list *diff;
+	struct { size_t files, adds, dels; } stats = { 0, 0, 0 };
+
+	Data_Get_Struct(self, git_diff_list, diff);
+
+	git_diff_foreach(
+		diff, diff_file_stats_cb, NULL, diff_line_stats_cb, &stats);
+
+	return rb_ary_new3(
+		3, INT2FIX(stats.files), INT2FIX(stats.adds), INT2FIX(stats.dels));
+}
+
+
 void Init_rugged_diff(void)
 {
 	rb_cRuggedDiff = rb_define_class_under(rb_mRugged, "Diff", rb_cObject);
@@ -503,6 +552,7 @@ void Init_rugged_diff(void)
 	rb_define_method(rb_cRuggedDiff, "merge!", rb_git_diff_merge, 1);
 
 	rb_define_method(rb_cRuggedDiff, "size", rb_git_diff_size, 0);
+	rb_define_method(rb_cRuggedDiff, "stat", rb_git_diff_stat, 0);
 
 	rb_define_method(rb_cRuggedDiff, "each_patch", rb_git_diff_each_patch, 0);
 	rb_define_method(rb_cRuggedDiff, "each_delta", rb_git_diff_each_delta, 0);
