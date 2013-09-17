@@ -55,7 +55,8 @@ static VALUE rb_git_diff_patch_each_hunk(VALUE self)
 	const git_diff_range *range;
 	const char *header;
 	size_t header_len, lines_in_hunk;
-	int error = 0, hooks_count, h;
+	int error = 0;
+	size_t hunks_count, h;
 
 	if (!rb_block_given_p()) {
 		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_hunk"), self);
@@ -63,8 +64,8 @@ static VALUE rb_git_diff_patch_each_hunk(VALUE self)
 
 	Data_Get_Struct(self, git_diff_patch, patch);
 
-	hooks_count = git_diff_patch_num_hunks(patch);
-	for (h = 0; h < hooks_count; ++h) {
+	hunks_count = git_diff_patch_num_hunks(patch);
+	for (h = 0; h < hunks_count; ++h) {
 		error = git_diff_patch_get_hunk(&range, &header, &header_len, &lines_in_hunk, patch, h);
 		if (error) break;
 

@@ -421,7 +421,8 @@ static VALUE rb_git_diff_each_patch(VALUE self)
 {
 	git_diff_list *diff;
 	git_diff_patch *patch;
-	int error = 0, d, delta_count;
+	int error = 0;
+	size_t d, delta_count;
 
 	if (!rb_block_given_p()) {
 		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_patch"), self);
@@ -457,7 +458,8 @@ static VALUE rb_git_diff_each_delta(VALUE self)
 {
 	git_diff_list *diff;
 	const git_diff_delta *delta;
-	int error = 0, d, delta_count;
+	int error = 0;
+	size_t d, delta_count;
 
 	if (!rb_block_given_p()) {
 		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_delta"), self);
