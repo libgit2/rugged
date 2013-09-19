@@ -292,19 +292,25 @@ class TreeToWorkdirDiffTest < Rugged::SandboxedTestCase
     assert_equal 8, adds
     assert_equal 5, dels
 
-    # again, expected values from the diff --stat output
+    # expected per-file values from the diff --stat output plus total lines
     expected_patch_stat = [
-      [ 0, 1 ], [ 1, 0 ], [ 1, 0 ], [ 0, 1 ], [ 2, 0 ], [ 0, 1 ],
-      [ 0, 1 ], [ 1, 0 ], [ 2, 0 ], [ 0, 1 ], [ 1, 0 ]
+      [ 0, 1, 1 ], [ 1, 0, 2 ], [ 1, 0, 2 ], [ 0, 1, 1 ], [ 2, 0, 3 ],
+      [ 0, 1, 1 ], [ 0, 1, 1 ], [ 1, 0, 1 ], [ 2, 0, 2 ], [ 0, 1, 1 ],
+      [ 1, 0, 2 ]
     ]
 
     diff.each_patch do |patch|
       next if [:unmodified, :ignored, :untracked].include? patch.delta.status
 
-      expected_adds, expected_dels = expected_patch_stat.shift
+      expected_adds, expected_dels, expected_lines = expected_patch_stat.shift
+
       actual_adds, actual_dels = patch.stat
+
       assert_equal expected_adds, actual_adds
       assert_equal expected_dels, actual_dels
+      assert_equal expected_adds + expected_dels, patch.changes
+
+      assert_equal expected_lines, patch.lines
     end
   end
 end
@@ -861,13 +867,18 @@ EOS
     assert_equal 7, adds
     assert_equal 14, dels
 
-    expected_patch_stat = [ [ 5, 5 ], [ 2, 9 ] ]
+    expected_patch_stat = [ [ 5, 5, 26 ], [ 2, 9, 28 ] ]
 
     diff.each_patch do |patch|
-      expected_adds, expected_dels = expected_patch_stat.shift
+      expected_adds, expected_dels, expected_lines = expected_patch_stat.shift
+
       actual_adds, actual_dels = patch.stat
+
       assert_equal expected_adds, actual_adds
       assert_equal expected_dels, actual_dels
+      assert_equal expected_adds + expected_dels, patch.changes
+
+      assert_equal expected_lines, patch.lines
     end
   end
 end

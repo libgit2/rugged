@@ -16,7 +16,7 @@ module Rugged
 
       # Returns the number of changes in the patch.
       def changes
-        additions + deletions
+        stat.reduce { |t,v| t + v }
       end
 
       # Returns an Array containing all hunks of the patch.

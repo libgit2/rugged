@@ -123,53 +123,19 @@ static VALUE rb_git_diff_patch_stat(VALUE self)
 
 /*
  *  call-seq:
- *    patch.additions -> int
+ *    patch.lines -> int
  *
- *  Returns the number of addition lines in the patch.
+ *  Returns the total number of lines in the patch.
  */
-static VALUE rb_git_diff_patch_additions(VALUE self)
+static VALUE rb_git_diff_patch_lines(VALUE self)
 {
 	git_diff_patch *patch;
-	size_t additions;
+	size_t context, adds, dels;
 	Data_Get_Struct(self, git_diff_patch, patch);
 
-	git_diff_patch_line_stats(NULL, &additions, NULL, patch);
+	git_diff_patch_line_stats(&context, &adds, &dels, patch);
 
-	return INT2FIX(additions);
-}
-
-/*
- *  call-seq:
- *    patch.deletions -> int
- *
- *  Returns the number of deletion lines in the patch.
- */
-static VALUE rb_git_diff_patch_deletions(VALUE self)
-{
-	git_diff_patch *patch;
-	size_t deletions;
-	Data_Get_Struct(self, git_diff_patch, patch);
-
-	git_diff_patch_line_stats(NULL, NULL, &deletions, patch);
-
-	return INT2FIX(deletions);
-}
-
-/*
- *  call-seq:
- *    patch.context -> int
- *
- *  Returns the number of context lines in the patch.
- */
-static VALUE rb_git_diff_patch_context(VALUE self)
-{
-	git_diff_patch *patch;
-	size_t context;
-	Data_Get_Struct(self, git_diff_patch, patch);
-
-	git_diff_patch_line_stats(&context, NULL, NULL, patch);
-
-	return INT2FIX(context);
+	return INT2FIX(context + adds + dels);
 }
 
 void Init_rugged_diff_patch(void)
@@ -177,9 +143,7 @@ void Init_rugged_diff_patch(void)
 	rb_cRuggedDiffPatch = rb_define_class_under(rb_cRuggedDiff, "Patch", rb_cObject);
 
 	rb_define_method(rb_cRuggedDiffPatch, "stat", rb_git_diff_patch_stat, 0);
-	rb_define_method(rb_cRuggedDiffPatch, "context", rb_git_diff_patch_context, 0);
-	rb_define_method(rb_cRuggedDiffPatch, "additions", rb_git_diff_patch_additions, 0);
-	rb_define_method(rb_cRuggedDiffPatch, "deletions", rb_git_diff_patch_deletions, 0);
+	rb_define_method(rb_cRuggedDiffPatch, "lines", rb_git_diff_patch_lines, 0);
 
 	rb_define_method(rb_cRuggedDiffPatch, "delta", rb_git_diff_patch_delta, 0);
 
