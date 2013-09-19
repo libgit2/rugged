@@ -28,7 +28,7 @@ extern VALUE rb_cRuggedDiff;
 VALUE rb_cRuggedDiffHunk;
 
 VALUE rugged_diff_hunk_new(
-	VALUE owner, int hunk_idx,
+	VALUE owner, size_t hunk_idx,
 	const git_diff_range *range,
 	const char *header,
 	size_t header_len,
