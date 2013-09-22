@@ -506,7 +506,7 @@ static VALUE rb_git_repo_merge_base(VALUE self, VALUE rb_args)
 		rugged_exception_check(error);
 	}
 
-	error = git_merge_base_many(&base, repo, input_array, len);
+	error = git_merge_base_many(&base, repo, len, input_array);
 	xfree(input_array);
 
 	if (error == GIT_ENOTFOUND)
@@ -775,13 +775,14 @@ static VALUE rb_git_repo_head_detached(VALUE self)
 
 /*
  *  call-seq:
- *    repo.head_orphan? -> true or false
+ *    repo.head_unborn? -> true or false
  *
- *  Return whether the +HEAD+ of a repository is orphaned or not.
+ *  Return whether the current branch is unborn (+HEAD+ points to a
+ *  non-existent branch).
  */
-static VALUE rb_git_repo_head_orphan(VALUE self)
+static VALUE rb_git_repo_head_unborn(VALUE self)
 {
-	RB_GIT_REPO_GETTER(head_orphan);
+	RB_GIT_REPO_GETTER(head_unborn);
 }
 
 /*
@@ -1899,7 +1900,7 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "empty?",  rb_git_repo_is_empty,  0);
 
 	rb_define_method(rb_cRuggedRepo, "head_detached?",  rb_git_repo_head_detached,  0);
-	rb_define_method(rb_cRuggedRepo, "head_orphan?",  rb_git_repo_head_orphan,  0);
+	rb_define_method(rb_cRuggedRepo, "head_unborn?",  rb_git_repo_head_unborn,  0);
 	rb_define_method(rb_cRuggedRepo, "head=", rb_git_repo_set_head, 1);
 	rb_define_method(rb_cRuggedRepo, "head", rb_git_repo_get_head, 0);
 

@@ -182,7 +182,7 @@ class RemotePushTest < Rugged::SandboxedTestCase
   def test_push_to_non_bare_raise_error
     @remote_repo.config['core.bare'] = 'false'
 
-    assert_raises Rugged::Error do
+    assert_raises Rugged::InvalidError do
       @remote.push(["refs/heads/master"])
     end
   end
