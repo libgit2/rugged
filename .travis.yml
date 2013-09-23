@@ -15,11 +15,6 @@ script:
   - git config --global user.name 'The rugged tests are fragile'
   - rake
 
-# Only watch the development branch
-branches:
- only:
-   - development
-
 # Notify development list when needed
 notifications:
  recipients:
