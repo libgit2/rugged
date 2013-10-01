@@ -14,20 +14,20 @@ class TagTest < Rugged::SandboxedTestCase
   def test_lookup_raises_error_if_object_type_does_not_match
     assert_raises Rugged::InvalidError do
       # blob
-      Rugged::Tag.lookup(@repo, "fa49b077972391ad58037050f2a75f74e3671e92")
+      Rugged::TagAnnotation.lookup(@repo, "fa49b077972391ad58037050f2a75f74e3671e92")
     end
 
     assert_raises Rugged::InvalidError do
       # commit
-      Rugged::Tag.lookup(@repo, "8496071c1b46c854b31185ea97743be6a8774479")
+      Rugged::TagAnnotation.lookup(@repo, "8496071c1b46c854b31185ea97743be6a8774479")
     end
 
     assert_raises Rugged::InvalidError do
       # tree
-      Rugged::Tag.lookup(@repo, "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
+      Rugged::TagAnnotation.lookup(@repo, "181037049a54a1eb5fab404658a3a250b44335d7")
     end
 
-    subclass = Class.new(Rugged::Tag)
+    subclass = Class.new(Rugged::TagAnnotation)
 
     assert_raises Rugged::InvalidError do
       # blob
@@ -41,7 +41,7 @@ class TagTest < Rugged::SandboxedTestCase
 
     assert_raises Rugged::InvalidError do
       # tree
-      subclass.lookup(@repo, "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
+      subclass.lookup(@repo, "181037049a54a1eb5fab404658a3a250b44335d7")
     end
   end
 
