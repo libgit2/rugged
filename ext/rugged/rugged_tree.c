@@ -58,6 +58,10 @@ static VALUE rb_git_treeentry_fromC(const git_tree_entry *entry)
 			type = CSTR2SYM("blob");
 			break;
 
+		case GIT_OBJ_COMMIT:
+			type = CSTR2SYM("commit");
+			break;
+
 		default:
 			type = Qnil;
 			break;
