@@ -353,8 +353,14 @@ class RepositoryCloneTest < Rugged::TestCase
   def test_clone_with_progress
     total_objects = indexed_objects = received_objects = received_bytes = nil
     callsback = 0
-    repo = Rugged::Repository.clone_at(@source_path, @tmppath,
-      :progress => lambda { |*args| callsback += 1 ; total_objects, indexed_objects, received_objects, received_bytes = args })
+    repo = Rugged::Repository.clone_at(@source_path, @tmppath,{
+      :callbacks => {
+        :transfer_progress => lambda { |*args|
+          total_objects, indexed_objects, received_objects, received_bytes = args
+          callsback += 1
+        }
+      }
+    })
     repo.close
     assert_equal 22,   callsback
     assert_equal 19,   total_objects
@@ -365,7 +371,9 @@ class RepositoryCloneTest < Rugged::TestCase
 
   def test_clone_quits_on_error
     begin
-      Rugged::Repository.clone_at(@source_path, @tmppath, :progress => lambda { |*_| raise 'boom' })
+      Rugged::Repository.clone_at(@source_path, @tmppath, :callbacks => {
+        :transfer_progress => lambda { |*_| raise 'boom' }
+      })
     rescue => e
       assert_equal 'boom', e.message
     end
@@ -374,7 +382,9 @@ class RepositoryCloneTest < Rugged::TestCase
 
   def test_clone_with_bad_progress_callback
     assert_raises ArgumentError do
-      Rugged::Repository.clone_at(@source_path, @tmppath, :progress => Object.new)
+      Rugged::Repository.clone_at(@source_path, @tmppath, :callbacks => {
+        :transfer_progress => Object.new
+      })
     end
     assert_no_dotgit_dir(@tmppath)
   end

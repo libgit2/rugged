@@ -285,38 +285,48 @@ static VALUE rb_git_repo_init_at(int argc, VALUE *argv, VALUE klass)
 	return rugged_repo_new(klass, repo);
 }
 
-struct clone_fetch_callback_payload
+static VALUE rugged__block_yield_splat(VALUE args) {
+	VALUE block = rb_ary_shift(args);
+	int n = RARRAY_LEN(args);
+	if (n == 0) {
+		return rb_funcall(block, rb_intern("call"), 0);
+	} else {
+		int i;
+		VALUE *argv;
+		argv = ALLOCA_N(VALUE, n);
+
+		for (i=0; i<n; i++) {
+			argv[i] = rb_ary_entry(args, i);
+		}
+
+		return rb_funcall2(block, rb_intern("call"), n, argv);
+	}
+}
+
+struct rugged_remote_cb_payload
 {
-	VALUE proc;
-	VALUE exception;
-	const git_transfer_progress *stats;
+	VALUE progress;
+	VALUE completion;
+	VALUE transfer_progress;
+	VALUE update_tips;
+    int exception;
 };
 
-static VALUE clone_fetch_callback_inner(struct clone_fetch_callback_payload *fetch_payload)
+static int rugged__remote_transfer_progress_cb(const git_transfer_progress *stats, void *payload)
 {
-	rb_funcall(fetch_payload->proc, id_call, 4,
-		UINT2NUM(fetch_payload->stats->total_objects),
-		UINT2NUM(fetch_payload->stats->indexed_objects),
-		UINT2NUM(fetch_payload->stats->received_objects),
-		INT2FIX(fetch_payload->stats->received_bytes));
-	return GIT_OK;
+	struct rugged_remote_cb_payload *remote_payload = payload;
+	VALUE args = rb_ary_new2(4);
+	rb_ary_push(args, remote_payload->transfer_progress);
+	rb_ary_push(args, UINT2NUM(stats->total_objects));
+	rb_ary_push(args, UINT2NUM(stats->indexed_objects));
+	rb_ary_push(args, UINT2NUM(stats->received_objects));
+	rb_ary_push(args, INT2FIX(stats->received_bytes));
+	rb_protect(rugged__block_yield_splat, args, &remote_payload->exception);
+
+	return remote_payload->exception ? GIT_ERROR : GIT_OK;
 }
 
-static VALUE clone_fetch_callback_rescue(struct clone_fetch_callback_payload *fetch_payload, VALUE exception)
-{
-	fetch_payload->exception = exception;
-	return GIT_ERROR;
-}
-
-static int clone_fetch_callback(const git_transfer_progress *stats, void *payload)
-{
-	struct clone_fetch_callback_payload *fetch_payload = payload;
-	fetch_payload->stats = stats;
-	return rb_rescue(clone_fetch_callback_inner, (VALUE) fetch_payload,
-		clone_fetch_callback_rescue, (VALUE) fetch_payload);
-}
-
-static void parse_clone_options(git_clone_options *ret, VALUE rb_options_hash, struct clone_fetch_callback_payload *fetch_progress_payload)
+static void parse_clone_options(git_clone_options *ret, VALUE rb_options_hash, struct rugged_remote_cb_payload *remote_payload)
 {
 	if (!NIL_P(rb_options_hash)) {
 		VALUE val;
@@ -325,15 +335,24 @@ static void parse_clone_options(git_clone_options *ret, VALUE rb_options_hash, s
 		if (RTEST(val))
 			ret->bare = 1;
 
-		val = rb_hash_aref(rb_options_hash, CSTR2SYM("progress"));
+		val = rb_hash_aref(rb_options_hash, CSTR2SYM("callbacks"));
 		if (RTEST(val)) {
-			if (rb_respond_to(val, rb_intern("call"))) {
-				fetch_progress_payload->proc = val;
-				ret->fetch_progress_payload = fetch_progress_payload;
-				ret->fetch_progress_cb = clone_fetch_callback;
-			} else {
-				rb_raise(rb_eArgError, "Expected a Proc or an object that responds to call (:progress).");
+			git_remote_callbacks remote_callbacks = GIT_REMOTE_CALLBACKS_INIT;
+			VALUE cb;
+
+			cb = rb_hash_aref(val, CSTR2SYM("transfer_progress"));
+			if (RTEST(cb)) {
+				if (!rb_respond_to(cb, rb_intern("call"))) {
+					rb_raise(rb_eArgError, "Expected a Proc or an object that responds to call (:transfer_progress).");
+				}
+				
+				remote_payload->transfer_progress = cb;
+				remote_callbacks.transfer_progress = rugged__remote_transfer_progress_cb;
 			}
+
+			remote_callbacks.payload = remote_payload;
+
+			ret->remote_callbacks = remote_callbacks;
 		}
 	}
 }
@@ -350,22 +369,50 @@ static void parse_clone_options(git_clone_options *ret, VALUE rb_options_hash, s
  *    If +true+, the clone will be created as a bare repository.
  *    Defaults to +false+.
  *
- *  :progress ::
- *    A callback that will be executed to report clone progress information. It will be passed
- *    the amount of +total_objects+, +indexed_objects+, +received_objects+ and +received_bytes+.
+ *  :branch ::
+ *    The name of a branch to checkout. Defaults to the remote's +HEAD+.
+ *
+ *  :remote ::
+ *    The name to give to the "origin" remote. Defaults to <tt>"origin"</tt>.
+ *
+ *  :ignore_cert_errors ::
+ *    If set to +true+, errors while validating the remote's host certificate will be ignored.
+ *
+ *  :callbacks ::
+ *    A Hash containing name-value pairs that define different callbacks to run during
+ *    the clone operation. Possible callbacks are:
+ *
+ *    :progress ::
+ *      Not yet implemented.
+ *
+ *    :completion ::
+ *      Not yet implemented.
+ *
+ *    :credentials ::
+ *      Not yet implemented.
+ *
+ *    :transfer_progress ::
+ *      A callback that will be executed to report clone progress information. It will be passed
+ *      the amount of +total_objects+, +indexed_objects+, +received_objects+ and +received_bytes+.
+ *
+ *    :update_tips ::
+ *      Not yet implemented.
  *
  *  Example:
  *
- *    progress = lambda { |total_objects, indexed_objects, received_objects, received_bytes|
- *      # ...
- *    }
- *    Repository.clone_at("https://github.com/libgit2/rugged.git", "./some/dir", :progress => progress)
+ *    Repository.clone_at("https://github.com/libgit2/rugged.git", "./some/dir", {
+ *		:callbacks => {
+ *        :progress => lambda { |total_objects, indexed_objects, received_objects, received_bytes|
+ *          # ...
+ *        }
+ *      }
+ *    })
  */
 static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
 {
 	VALUE url, local_path, rb_options_hash;
 	git_clone_options options = GIT_CLONE_OPTIONS_INIT;
-	struct clone_fetch_callback_payload fetch_payload;
+	struct rugged_remote_cb_payload remote_payload = { Qnil, Qnil, Qnil, Qnil, 0 };
 	git_repository *repo;
 	int error;
 
@@ -373,13 +420,12 @@ static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
 	Check_Type(url, T_STRING);
 	Check_Type(local_path, T_STRING);
 
-	fetch_payload.proc = Qnil;
-	fetch_payload.exception = Qnil;
-	parse_clone_options(&options, rb_options_hash, &fetch_payload);
+	parse_clone_options(&options, rb_options_hash, &remote_payload);
 
 	error = git_clone(&repo, StringValueCStr(url), StringValueCStr(local_path), &options);
-	if (RTEST(fetch_payload.exception))
-		rb_exc_raise(fetch_payload.exception);
+	
+	if (RTEST(remote_payload.exception))
+		rb_jump_tag(remote_payload.exception);
 	rugged_exception_check(error);
 
 	return rugged_repo_new(klass, repo);
@@ -1419,24 +1465,6 @@ static VALUE rb_git_repo_default_signature(VALUE self) {
 	rb_signature = rugged_signature_new(signature, NULL);
 	git_signature_free(signature);
 	return rb_signature;
-}
-
-static VALUE rugged__block_yield_splat(VALUE args) {
-	VALUE block = rb_ary_shift(args);
-	int n = RARRAY_LEN(args);
-	if (n == 0) {
-		return rb_funcall(block, rb_intern("call"), 0);
-	} else {
-		int i;
-		VALUE *argv;
-		argv = ALLOCA_N(VALUE, n);
-
-		for (i=0; i<n; i++) {
-			argv[i] = rb_ary_entry(args, i);
-		}
-
-		return rb_funcall2(block, rb_intern("call"), n, argv);
-	}
 }
 
 void rugged__checkout_progress_cb(
