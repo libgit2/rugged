@@ -11,6 +11,10 @@ error
 end
 
 gemspec = Gem::Specification::load(File.expand_path('../rugged.gemspec', __FILE__))
+
+Gem::PackageTask.new(gemspec) do |pkg|
+end
+
 Rake::ExtensionTask.new('rugged', gemspec) do |r|
   r.lib_dir = 'lib/rugged'
 
