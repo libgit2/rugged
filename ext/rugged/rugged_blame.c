@@ -30,10 +30,36 @@ VALUE rb_cRuggedBlame;
 void rugged_parse_blame_options(git_blame_options *opts, VALUE rb_options)
 {
 	if (!NIL_P(rb_options)) {
+		VALUE rb_value;
 		Check_Type(rb_options, T_HASH);
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("min_line"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_FIXNUM);
+			opts->min_line = FIX2UINT(rb_value);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("max_line"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_FIXNUM);
+			opts->min_line = FIX2UINT(rb_value);
+		}
 	}
 }
 
+/*
+ *  call-seq: new(repo, path, options = {}) -> blame
+ *
+ *  Get blame data for the file at +path+ in +repo+.
+ *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :min_line ::
+ *    The first line in the file to blame. Line numbers start with 1. Defaults to +1+.
+ *
+ *  :max_line ::
+ *    The last line in the file to blame. Defaults to the last line in the file.
+ */
 static VALUE rb_git_blame_new(int argc, VALUE *argv, VALUE klass)
 {
 	VALUE rb_repo, rb_path, rb_options;
