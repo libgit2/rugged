@@ -511,7 +511,7 @@ static VALUE rb_git_remote_download(VALUE self)
 
 	Data_Get_Struct(self, git_remote, remote);
 
-	error = git_remote_download(remote, NULL, NULL);
+	error = git_remote_download(remote);
 	rugged_exception_check(error);
 
 	return Qnil;
