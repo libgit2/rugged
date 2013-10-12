@@ -272,6 +272,53 @@ class RepositoryWriteTest < Rugged::TestCase
   end
 end
 
+class RepositoryDiscoverTest < Rugged::TestCase
+  def setup
+    @tmpdir = Dir.mktmpdir
+    Dir.mkdir(File.join(@tmpdir, 'foo'))
+  end
+
+  def teardown
+    FileUtils.remove_entry_secure(@tmpdir)
+  end
+
+  def test_discover_false
+    assert_raises Rugged::RepositoryError do
+      Rugged::Repository.discover(@tmpdir)
+    end
+  end
+
+  def test_discover_nested_false
+    assert_raises Rugged::RepositoryError do
+      Rugged::Repository.discover(File.join(@tmpdir, 'foo'))
+    end
+  end
+
+  def test_discover_true
+    repo = Rugged::Repository.init_at(@tmpdir, true)
+    root = Rugged::Repository.discover(@tmpdir)
+    begin
+      assert root.bare?
+      assert_equal repo.path, root.path
+    ensure
+      repo.close
+      root.close
+    end
+  end
+
+  def test_discover_nested_true
+    repo = Rugged::Repository.init_at(@tmpdir, true)
+    root = Rugged::Repository.discover(File.join(@tmpdir, 'foo'))
+    begin
+      assert root.bare?
+      assert_equal repo.path, root.path
+    ensure
+      repo.close
+      root.close
+    end
+  end
+end
+
 class RepositoryInitTest < Rugged::TestCase
   def setup
     @tmppath = Dir.mktmpdir

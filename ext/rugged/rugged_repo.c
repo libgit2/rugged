@@ -915,8 +915,9 @@ static VALUE rb_git_repo_set_workdir(VALUE self, VALUE rb_workdir)
  *  a different device than the one that contained +path+ (only applies
  *  to UNIX-based OSses).
  */
-static VALUE rb_git_repo_discover(int argc, VALUE *argv, VALUE self)
+static VALUE rb_git_repo_discover(int argc, VALUE *argv, VALUE klass)
 {
+	git_repository *repo;
 	VALUE rb_path, rb_across_fs;
 	char repository_path[GIT_PATH_MAX];
 	int error, across_fs = 0;
@@ -942,7 +943,11 @@ static VALUE rb_git_repo_discover(int argc, VALUE *argv, VALUE self)
 	);
 
 	rugged_exception_check(error);
-	return rb_str_new_utf8(repository_path);
+
+	error = git_repository_open(&repo, repository_path);
+	rugged_exception_check(error);
+
+	return rugged_repo_new(klass, repo);
 }
 
 static VALUE flags_to_rb(unsigned int flags)
@@ -1667,7 +1672,7 @@ static void rugged_parse_checkout_options(git_checkout_opts *opts, VALUE rb_opti
  *  :strategy ::
  *    A single symbol or an array of symbols representing the strategies to use when
  *    performing the checkout. Possible values are:
- *    
+ *
  *    :none ::
  *      Perform a dry run (default).
  *
