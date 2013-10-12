@@ -66,6 +66,7 @@ void Init_rugged_patch(void);
 void Init_rugged_diff_delta(void);
 void Init_rugged_diff_hunk(void);
 void Init_rugged_diff_line(void);
+void Init_rugged_blame(void);
 
 VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE self);
 
