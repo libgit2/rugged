@@ -13,12 +13,7 @@ rvm:
 # We need the config so the tests don't fail
 script:
   - git config --global user.name 'The rugged tests are fragile'
-  - rake
-
-# Only watch the development branch
-branches:
- only:
-   - development
+  - bundle exec rake
 
 # Notify development list when needed
 notifications:
