@@ -917,7 +917,7 @@ static VALUE rb_git_repo_set_workdir(VALUE self, VALUE rb_workdir)
  */
 static VALUE rb_git_repo_discover(int argc, VALUE *argv, VALUE klass)
 {
-        git_repository *repo;
+	git_repository *repo;
 	VALUE rb_path, rb_across_fs;
 	char repository_path[GIT_PATH_MAX];
 	int error, across_fs = 0;
@@ -944,10 +944,10 @@ static VALUE rb_git_repo_discover(int argc, VALUE *argv, VALUE klass)
 
 	rugged_exception_check(error);
 
-        error = git_repository_open(&repo, repository_path);
-        rugged_exception_check(error);
+	error = git_repository_open(&repo, repository_path);
+	rugged_exception_check(error);
 
-        return rugged_repo_new(klass, repo);
+	return rugged_repo_new(klass, repo);
 }
 
 static VALUE flags_to_rb(unsigned int flags)
