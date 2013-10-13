@@ -123,7 +123,7 @@ static VALUE rb_git_blame_new(int argc, VALUE *argv, VALUE klass)
 	return Data_Wrap_Struct(klass, NULL, &git_blame_free, blame);
 }
 
-static VALUE rb_git_blame_get_by_line(VALUE self, VALUE rb_line_no)
+static VALUE rb_git_blame_for_line(VALUE self, VALUE rb_line_no)
 {
 	git_blame *blame;
 
@@ -157,9 +157,8 @@ void Init_rugged_blame(void)
 	rb_cRuggedBlame = rb_define_class_under(rb_mRugged, "Blame", rb_cObject);
 	rb_define_singleton_method(rb_cRuggedBlame, "new", rb_git_blame_new, -1);
 
-
 	rb_define_method(rb_cRuggedBlame, "[]", rb_git_blame_get_by_index, 1);
-	rb_define_method(rb_cRuggedBlame, "hunk_by_line", rb_git_blame_get_by_line, 1);
+	rb_define_method(rb_cRuggedBlame, "for_line", rb_git_blame_for_line, 1);
 
 	rb_define_method(rb_cRuggedBlame, "count", rb_git_blame_count, 0);
 	rb_define_method(rb_cRuggedBlame, "size", rb_git_blame_count, 0);
