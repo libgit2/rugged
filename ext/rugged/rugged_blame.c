@@ -178,9 +178,40 @@ static VALUE rb_git_blame_count(VALUE self)
 	return UINT2NUM(git_blame_get_hunk_count(blame));
 }
 
+/*
+ *  call-seq:
+ *    blame.each { |hunk| ... } -> blame
+ *    blame.each -> enumerator
+ *
+ *  If given a block, yields each +hunk+ that is part of +blame+.
+ *  If no block is given, an enumerator will be returned.
+ */
+static VALUE rb_git_blame_each(VALUE self)
+{
+	git_blame *blame;
+	uint32_t i, blame_count;
+
+	if (!rb_block_given_p()) {
+		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each"), self);
+	}
+
+	Data_Get_Struct(self, git_blame, blame);
+
+	blame_count = git_blame_get_hunk_count(blame);
+	for (i = 0; i < blame_count; ++i) {
+		rb_yield(rb_git_blame_hunk_fromC(
+			git_blame_get_hunk_byindex(blame, i)
+		));
+	}
+
+	return self;
+}
+
 void Init_rugged_blame(void)
 {
 	rb_cRuggedBlame = rb_define_class_under(rb_mRugged, "Blame", rb_cObject);
+	rb_include_module(rb_cRuggedBlame, rb_mEnumerable);
+
 	rb_define_singleton_method(rb_cRuggedBlame, "new", rb_git_blame_new, -1);
 
 	rb_define_method(rb_cRuggedBlame, "[]", rb_git_blame_get_by_index, 1);
@@ -188,4 +219,6 @@ void Init_rugged_blame(void)
 
 	rb_define_method(rb_cRuggedBlame, "count", rb_git_blame_count, 0);
 	rb_define_method(rb_cRuggedBlame, "size", rb_git_blame_count, 0);
+
+	rb_define_method(rb_cRuggedBlame, "each", rb_git_blame_each, 0);
 }

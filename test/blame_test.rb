@@ -99,4 +99,15 @@ class BlameTest < Rugged::SandboxedTestCase
       @blame.for_line(-1)
     end
   end
+
+  def test_each
+    hunks = []
+    @blame.each do |hunk|
+      hunks << hunk
+    end
+
+    assert_equal 2, hunks.count
+    assert_equal @blame[0], hunks[0]
+    assert_equal @blame[1], hunks[1]
+  end
 end
