@@ -79,7 +79,8 @@ static void rugged_parse_blame_options(git_blame_options *opts, git_repository *
 }
 
 /*
- *  call-seq: new(repo, path, options = {}) -> blame
+ *  call-seq:
+ *    Blame.new(repo, path, options = {}) -> blame
  *
  *  Get blame data for the file at +path+ in +repo+.
  *
@@ -123,6 +124,13 @@ static VALUE rb_git_blame_new(int argc, VALUE *argv, VALUE klass)
 	return Data_Wrap_Struct(klass, NULL, &git_blame_free, blame);
 }
 
+/*
+ *  call-seq:
+ *    blame.for_line(line_no) -> hunk
+ *
+ *  Returns the blame hunk data for the given +line_no+ in +blame+.
+ *  Line number counting starts with +1+.
+ */
 static VALUE rb_git_blame_for_line(VALUE self, VALUE rb_line_no)
 {
 	git_blame *blame;
@@ -134,6 +142,12 @@ static VALUE rb_git_blame_for_line(VALUE self, VALUE rb_line_no)
 	);
 }
 
+/*
+ *  call-seq:
+ *    blame[index] -> hunk
+ *
+ *  Returns the blame hunk data at the given +index+ in +blame+.
+ */
 static VALUE rb_git_blame_get_by_index(VALUE self, VALUE rb_index)
 {
 	git_blame *blame;
@@ -145,6 +159,13 @@ static VALUE rb_git_blame_get_by_index(VALUE self, VALUE rb_index)
 	);
 }
 
+/*
+ *  call-seq:
+ *    blame.count -> count
+ *    blame.size -> count
+ *
+ *  Returns the total +count+ of blame hunks in +blame+.
+ */
 static VALUE rb_git_blame_count(VALUE self)
 {
 	git_blame *blame;
