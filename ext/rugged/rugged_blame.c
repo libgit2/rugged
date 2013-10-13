@@ -63,6 +63,18 @@ static void rugged_parse_blame_options(git_blame_options *opts, git_repository *
 			Check_Type(rb_value, T_FIXNUM);
 			opts->min_line = FIX2UINT(rb_value);
 		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("newest_commit"));
+		if (!NIL_P(rb_value)) {
+			int error = rugged_oid_get(&opts->newest_commit, repo, rb_value);
+			rugged_exception_check(error);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("oldest_commit"));
+		if (!NIL_P(rb_value)) {
+			int error = rugged_oid_get(&opts->oldest_commit, repo, rb_value);
+			rugged_exception_check(error);
+		}
 	}
 }
 
@@ -73,11 +85,20 @@ static void rugged_parse_blame_options(git_blame_options *opts, git_repository *
  *
  *  The following options can be passed in the +options+ Hash:
  *
+ *  :newest_commit ::
+ *    The ID of the newest commit to consider in the blame. Defaults to +HEAD+.
+ *
+ *  :oldest_commit ::
+ *    The id of the oldest commit to consider. Defaults to the first commit
+ *    encountered with a NULL parent.
+ *
  *  :min_line ::
- *    The first line in the file to blame. Line numbers start with 1. Defaults to +1+.
+ *    The first line in the file to blame. Line numbers start with 1.
+ *    Defaults to +1+.
  *
  *  :max_line ::
- *    The last line in the file to blame. Defaults to the last line in the file.
+ *    The last line in the file to blame. Defaults to the last line in
+ *    the file.
  */
 static VALUE rb_git_blame_new(int argc, VALUE *argv, VALUE klass)
 {
