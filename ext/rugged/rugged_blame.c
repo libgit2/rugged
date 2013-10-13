@@ -29,7 +29,12 @@ VALUE rb_cRuggedBlame;
 
 static VALUE rb_git_blame_hunk_fromC(const git_blame_hunk *hunk)
 {
-	VALUE rb_hunk = rb_hash_new();
+	VALUE rb_hunk;
+	if (!hunk)  {
+		return Qnil;
+	}
+
+	rb_hunk = rb_hash_new();
 	rb_hash_aset(rb_hunk, CSTR2SYM("lines_in_hunk"), UINT2NUM(hunk->lines_in_hunk));
 
 	rb_hash_aset(rb_hunk, CSTR2SYM("final_commit_id"), rugged_create_oid(&(hunk->final_commit_id)));
