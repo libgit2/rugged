@@ -93,10 +93,13 @@ static void rugged_parse_blame_options(git_blame_options *opts, git_repository *
  *
  *  :newest_commit ::
  *    The ID of the newest commit to consider in the blame. Defaults to +HEAD+.
+ *    This can either be a Rugged::Object instance, or a full or abbreviated
+ *    SHA1 id.
  *
  *  :oldest_commit ::
  *    The id of the oldest commit to consider. Defaults to the first commit
- *    encountered with a NULL parent.
+ *    encountered with a NULL parent. This can either be a Rugged::Object
+ *    instance, or a full or abbreviated SHA1 id.
  *
  *  :min_line ::
  *    The first line in the file to blame. Line numbers start with 1.
