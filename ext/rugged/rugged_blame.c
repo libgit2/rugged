@@ -27,7 +27,26 @@
 extern VALUE rb_mRugged;
 VALUE rb_cRuggedBlame;
 
-void rugged_parse_blame_options(git_blame_options *opts, VALUE rb_options)
+static VALUE rb_git_blame_hunk_fromC(const git_blame_hunk *hunk)
+{
+	VALUE rb_hunk = rb_hash_new();
+	rb_hash_aset(rb_hunk, CSTR2SYM("lines_in_hunk"), UINT2NUM(hunk->lines_in_hunk));
+
+	rb_hash_aset(rb_hunk, CSTR2SYM("final_commit_id"), rugged_create_oid(&(hunk->final_commit_id)));
+	rb_hash_aset(rb_hunk, CSTR2SYM("final_start_line_number"), UINT2NUM(hunk->final_start_line_number));
+	rb_hash_aset(rb_hunk, CSTR2SYM("final_signature"), hunk->final_signature ? rugged_signature_new(hunk->final_signature, NULL) : Qnil);
+
+	rb_hash_aset(rb_hunk, CSTR2SYM("orig_commit_id"), rugged_create_oid(&(hunk->orig_commit_id)));
+	rb_hash_aset(rb_hunk, CSTR2SYM("orig_path"), hunk->orig_path ? rb_str_new2(hunk->orig_path) : Qnil);
+	rb_hash_aset(rb_hunk, CSTR2SYM("orig_start_line_number"), UINT2NUM(hunk->orig_start_line_number));
+	rb_hash_aset(rb_hunk, CSTR2SYM("orig_signature"), hunk->orig_signature ? rugged_signature_new(hunk->orig_signature, NULL) : Qnil);
+
+	rb_hash_aset(rb_hunk, CSTR2SYM("boundary"), hunk->boundary ? Qtrue : Qfalse);
+
+	return rb_hunk;
+}
+
+static void rugged_parse_blame_options(git_blame_options *opts, git_repository *repo, VALUE rb_options)
 {
 	if (!NIL_P(rb_options)) {
 		VALUE rb_value;
@@ -74,13 +93,35 @@ static VALUE rb_git_blame_new(int argc, VALUE *argv, VALUE klass)
 
 	Check_Type(rb_path, T_STRING);
 
-	rugged_parse_blame_options(&opts, rb_options);
+	rugged_parse_blame_options(&opts, repo, rb_options);
 
 	rugged_exception_check(git_blame_file(
-		&blame, repo, StringValueCStr(rb_path), &opts
+		&blame, repo, StringValueCStr(rb_path), NULL
 	));
 
 	return Data_Wrap_Struct(klass, NULL, &git_blame_free, blame);
+}
+
+static VALUE rb_git_blame_get_by_line(VALUE self, VALUE rb_line_no)
+{
+	git_blame *blame;
+
+	Data_Get_Struct(self, git_blame, blame);
+
+	return rb_git_blame_hunk_fromC(
+		git_blame_get_hunk_byline(blame, FIX2UINT(rb_line_no))
+	);
+}
+
+static VALUE rb_git_blame_get_by_index(VALUE self, VALUE rb_index)
+{
+	git_blame *blame;
+
+	Data_Get_Struct(self, git_blame, blame);
+
+	return rb_git_blame_hunk_fromC(
+		git_blame_get_hunk_byindex(blame, FIX2UINT(rb_index))
+	);
 }
 
 static VALUE rb_git_blame_count(VALUE self)
@@ -94,6 +135,10 @@ void Init_rugged_blame(void)
 {
 	rb_cRuggedBlame = rb_define_class_under(rb_mRugged, "Blame", rb_cObject);
 	rb_define_singleton_method(rb_cRuggedBlame, "new", rb_git_blame_new, -1);
+
+
+	rb_define_method(rb_cRuggedBlame, "[]", rb_git_blame_get_by_index, 1);
+	rb_define_method(rb_cRuggedBlame, "hunk_by_line", rb_git_blame_get_by_line, 1);
 
 	rb_define_method(rb_cRuggedBlame, "count", rb_git_blame_count, 0);
 	rb_define_method(rb_cRuggedBlame, "size", rb_git_blame_count, 0);
