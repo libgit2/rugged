@@ -11,6 +11,10 @@ error
 end
 
 gemspec = Gem::Specification::load(File.expand_path('../rugged.gemspec', __FILE__))
+
+Gem::PackageTask.new(gemspec) do |pkg|
+end
+
 Rake::ExtensionTask.new('rugged', gemspec) do |r|
   r.lib_dir = 'lib/rugged'
 
@@ -72,9 +76,7 @@ Rake::Task[:compile].prerequisites.insert(0, :checkout)
 
 namespace :clean do
   task :libgit2 do
-    Dir.chdir("vendor/libgit2") do
-      sh "make -f Makefile.embed clean"
-    end
+    FileUtils.rm_rf("vendor/libgit2/build")
   end
 end
 Rake::Task[:clean].prerequisites << "clean:libgit2"
