@@ -2,6 +2,8 @@ require 'mkmf'
 
 RbConfig::MAKEFILE_CONFIG['CC'] = ENV['CC'] if ENV['CC']
 
+$LDFLAGS << " -lz -lcrypto"
+
 $CFLAGS << " #{ENV["CFLAGS"]}"
 $CFLAGS << " -g"
 
@@ -47,11 +49,28 @@ else
   CWD = File.expand_path(File.dirname(__FILE__))
   LIBGIT2_DIR = File.join(CWD, '..', '..', 'vendor', 'libgit2')
 
-  Dir.chdir(LIBGIT2_DIR) do
-    sys("#{MAKE_PROGRAM} -f Makefile.embed")
+  if find_executable('cmake')
+    Dir.chdir(LIBGIT2_DIR) do
+      Dir.mkdir("build") if !Dir.exists?("build")
+
+      Dir.chdir("build") do
+        sys("cmake .. -DBUILD_CLAR=OFF -DTHREADSAFE=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS=-fPIC ")
+        sys("cmake --build .")
+      end
+    end
+
+    dir_config('git2', "#{LIBGIT2_DIR}/include", "#{LIBGIT2_DIR}/build")
+  else
+    warn "WARN: CMake was not found!"
+    warn "WARN: Rugged will be built without ssl or ssh support!"
+
+    Dir.chdir(LIBGIT2_DIR) do
+      sys("#{MAKE_PROGRAM} -f Makefile.embed")
+    end
+
+    dir_config('git2', "#{LIBGIT2_DIR}/include", LIBGIT2_DIR)
   end
 
-  dir_config('git2', "#{LIBGIT2_DIR}/include", LIBGIT2_DIR)
   unless have_library 'git2' and have_header 'git2.h'
     abort "ERROR: Failed to build libgit2"
   end
