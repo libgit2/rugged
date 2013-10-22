@@ -27,14 +27,9 @@
 extern VALUE rb_mRugged;
 VALUE rb_cRuggedDiff;
 
-static void rb_git_diff__free(git_diff_list *diff)
+VALUE rugged_diff_new(VALUE klass, VALUE owner, git_diff *diff)
 {
-	git_diff_list_free(diff);
-}
-
-VALUE rugged_diff_new(VALUE klass, VALUE owner, git_diff_list *diff)
-{
-	VALUE rb_diff = Data_Wrap_Struct(klass, NULL, rb_git_diff__free, diff);
+	VALUE rb_diff = Data_Wrap_Struct(klass, NULL, git_diff_free, diff);
 	rugged_set_owner(rb_diff, owner);
 	return rb_diff;
 }
@@ -114,8 +109,8 @@ void rugged_parse_diff_options(git_diff_options *opts, VALUE rb_options)
 			opts->flags |= GIT_DIFF_DISABLE_PATHSPEC_MATCH;
 		}
 
-		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("include_untracked_content")))) {
-			opts->flags |= GIT_DIFF_INCLUDE_UNTRACKED_CONTENT ;
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("show_untracked_content")))) {
+			opts->flags |= GIT_DIFF_SHOW_UNTRACKED_CONTENT ;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("skip_binary_check")))) {
@@ -159,15 +154,13 @@ void rugged_parse_diff_options(git_diff_options *opts, VALUE rb_options)
 
 static int diff_print_cb(
 	const git_diff_delta *delta,
-	const git_diff_range *range,
-	char line_origin,
-	const char *content,
-	size_t content_len,
+	const git_diff_hunk *hunk,
+	const git_diff_line *line,
 	void *payload)
 {
 	VALUE rb_str = (VALUE)payload;
 
-	rb_str_cat(rb_str, content, content_len);
+	rb_str_cat(rb_str, line->content, line->content_len);
 
 	return GIT_OK;
 }
@@ -181,21 +174,21 @@ static int diff_print_cb(
  */
 static VALUE rb_git_diff_patch(int argc, VALUE *argv, VALUE self)
 {
-	git_diff_list *diff;
+	git_diff *diff;
 	VALUE rb_str = rb_str_new(NULL, 0);
 	VALUE rb_opts;
 
 	rb_scan_args(argc, argv, "00:", &rb_opts);
 
-	Data_Get_Struct(self, git_diff_list, diff);
+	Data_Get_Struct(self, git_diff, diff);
 
 	if (!NIL_P(rb_opts)) {
 		if (rb_hash_aref(rb_opts, CSTR2SYM("compact")) == Qtrue)
-			git_diff_print_compact(diff, diff_print_cb, (void*)rb_str);
+			git_diff_print(diff, GIT_DIFF_FORMAT_PATCH, diff_print_cb, (void*)rb_str); // Todo: This was git_diff_print_compact before!
 		else
-			git_diff_print_patch(diff, diff_print_cb, (void*)rb_str);
+			git_diff_print(diff, GIT_DIFF_FORMAT_PATCH, diff_print_cb, (void*)rb_str);
 	} else {
-		git_diff_print_patch(diff, diff_print_cb, (void*)rb_str);
+		git_diff_print(diff, GIT_DIFF_FORMAT_PATCH, diff_print_cb, (void*)rb_str);
 	}
 
 	return rb_str;
@@ -203,13 +196,11 @@ static VALUE rb_git_diff_patch(int argc, VALUE *argv, VALUE self)
 
 static int diff_write_cb(
 	const git_diff_delta *delta,
-	const git_diff_range *range,
-	char line_origin,
-	const char *content,
-	size_t content_len,
+	const git_diff_hunk *hunk,
+	const git_diff_line *line,
 	void *payload)
 {
-	VALUE rb_io = (VALUE)payload, str = rb_str_new(content, content_len);
+	VALUE rb_io = (VALUE)payload, str = rb_str_new(line->content, line->content_len);
 
 	rb_io_write(rb_io, str);
 
@@ -225,7 +216,7 @@ static int diff_write_cb(
  */
 static VALUE rb_git_diff_write_patch(int argc, VALUE *argv, VALUE self)
 {
-	git_diff_list *diff;
+	git_diff *diff;
 	VALUE rb_io, rb_opts;
 
 	rb_scan_args(argc, argv, "10:", &rb_io, &rb_opts);
@@ -233,15 +224,15 @@ static VALUE rb_git_diff_write_patch(int argc, VALUE *argv, VALUE self)
 	if (!rb_respond_to(rb_io, rb_intern("write")))
 		rb_raise(rb_eArgError, "Expected io to respond to \"write\"");
 
-	Data_Get_Struct(self, git_diff_list, diff);
+	Data_Get_Struct(self, git_diff, diff);
 
 	if (!NIL_P(rb_opts)) {
 		if (rb_hash_aref(rb_opts, CSTR2SYM("compact")) == Qtrue)
-			git_diff_print_compact(diff, diff_write_cb, (void*)rb_io);
+			git_diff_print(diff, GIT_DIFF_FORMAT_PATCH, diff_write_cb, (void*)rb_io); // Todo: This was git_diff_print_compact before!
 		else
-			git_diff_print_patch(diff, diff_write_cb, (void*)rb_io);
+			git_diff_print(diff, GIT_DIFF_FORMAT_PATCH, diff_write_cb, (void*)rb_io);
 	} else {
-		git_diff_print_patch(diff, diff_write_cb, (void*)rb_io);
+		git_diff_print(diff, GIT_DIFF_FORMAT_PATCH, diff_write_cb, (void*)rb_io);
 	}
 
 	return Qnil;
@@ -255,15 +246,15 @@ static VALUE rb_git_diff_write_patch(int argc, VALUE *argv, VALUE self)
  */
 static VALUE rb_git_diff_merge(VALUE self, VALUE rb_other)
 {
-	git_diff_list *diff;
-	git_diff_list *other;
+	git_diff *diff;
+	git_diff *other;
 	int error;
 
 	if (!rb_obj_is_kind_of(rb_other, rb_cRuggedDiff))
 		rb_raise(rb_eTypeError, "A Rugged::Diff instance is required");
 
-	Data_Get_Struct(self, git_diff_list, diff);
-	Data_Get_Struct(rb_other, git_diff_list, other);
+	Data_Get_Struct(self, git_diff, diff);
+	Data_Get_Struct(rb_other, git_diff, other);
 
 	error = git_diff_merge(diff, other);
 	rugged_exception_check(error);
@@ -330,12 +321,12 @@ static VALUE rb_git_diff_merge(VALUE self, VALUE rb_other)
  */
 static VALUE rb_git_diff_find_similar(int argc, VALUE *argv, VALUE self)
 {
-	git_diff_list *diff;
+	git_diff *diff;
 	git_diff_find_options opts = GIT_DIFF_FIND_OPTIONS_INIT;
 	VALUE rb_options;
 	int error;
 
-	Data_Get_Struct(self, git_diff_list, diff);
+	Data_Get_Struct(self, git_diff, diff);
 
 	rb_scan_args(argc, argv, "00:", &rb_options);
 
@@ -419,8 +410,8 @@ static VALUE rb_git_diff_find_similar(int argc, VALUE *argv, VALUE self)
  */
 static VALUE rb_git_diff_each_patch(VALUE self)
 {
-	git_diff_list *diff;
-	git_diff_patch *patch;
+	git_diff *diff;
+	git_patch *patch;
 	int error = 0;
 	size_t d, delta_count;
 
@@ -428,11 +419,11 @@ static VALUE rb_git_diff_each_patch(VALUE self)
 		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_patch"), self);
 	}
 
-	Data_Get_Struct(self, git_diff_list, diff);
+	Data_Get_Struct(self, git_diff, diff);
 
 	delta_count = git_diff_num_deltas(diff);
 	for (d = 0; d < delta_count; ++d) {
-		error = git_diff_get_patch(&patch, NULL, diff, d);
+		error = git_patch_from_diff(&patch, diff, d);
 		if (error) break;
 
 		rb_yield(rugged_diff_patch_new(self, patch));
@@ -456,7 +447,7 @@ static VALUE rb_git_diff_each_patch(VALUE self)
  */
 static VALUE rb_git_diff_each_delta(VALUE self)
 {
-	git_diff_list *diff;
+	git_diff *diff;
 	const git_diff_delta *delta;
 	int error = 0;
 	size_t d, delta_count;
@@ -465,13 +456,11 @@ static VALUE rb_git_diff_each_delta(VALUE self)
 		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_delta"), self);
 	}
 
-	Data_Get_Struct(self, git_diff_list, diff);
+	Data_Get_Struct(self, git_diff, diff);
 
 	delta_count = git_diff_num_deltas(diff);
 	for (d = 0; d < delta_count; ++d) {
-		error = git_diff_get_patch(NULL, &delta, diff, d);
-		if (error) break;
-
+		delta = git_diff_get_delta(diff, d);
 		rb_yield(rugged_diff_delta_new(self, delta));
 	}
 
@@ -487,9 +476,9 @@ static VALUE rb_git_diff_each_delta(VALUE self)
  */
 static VALUE rb_git_diff_size(VALUE self)
 {
-	git_diff_list *diff;
+	git_diff *diff;
 
-	Data_Get_Struct(self, git_diff_list, diff);
+	Data_Get_Struct(self, git_diff, diff);
 
 	return INT2FIX(git_diff_num_deltas(diff));
 }
@@ -523,15 +512,13 @@ static int diff_file_stats_cb(
 
 static int diff_line_stats_cb(
 	const git_diff_delta *delta,
-	const git_diff_range *range,
-	char line_origin,
-	const char *content,
-	size_t content_len,
+	const git_diff_hunk *hunk,
+	const git_diff_line *line,
 	void *payload)
 {
 	struct diff_stats *stats = payload;
 
-	switch (line_origin) {
+	switch (line->origin) {
 	case GIT_DIFF_LINE_ADDITION: stats->adds++; break;
 	case GIT_DIFF_LINE_DELETION: stats->dels++; break;
 	default: break;
@@ -547,10 +534,10 @@ static int diff_line_stats_cb(
  */
 static VALUE rb_git_diff_stat(VALUE self)
 {
-	git_diff_list *diff;
+	git_diff *diff;
 	struct diff_stats stats = { 0, 0, 0 };
 
-	Data_Get_Struct(self, git_diff_list, diff);
+	Data_Get_Struct(self, git_diff, diff);
 
 	git_diff_foreach(
 		diff, diff_file_stats_cb, NULL, diff_line_stats_cb, &stats);

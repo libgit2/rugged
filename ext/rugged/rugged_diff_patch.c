@@ -28,14 +28,9 @@ extern VALUE rb_cRuggedDiff;
 extern VALUE rb_cRuggedDiffDelta;
 VALUE rb_cRuggedDiffPatch;
 
-static void rb_git_diff_patch__free(git_diff_patch *patch)
+VALUE rugged_diff_patch_new(VALUE owner, git_patch *patch)
 {
-	git_diff_patch_free(patch);
-}
-
-VALUE rugged_diff_patch_new(VALUE owner, git_diff_patch *patch)
-{
-	VALUE rb_patch = Data_Wrap_Struct(rb_cRuggedDiffPatch, NULL, rb_git_diff_patch__free, patch);
+	VALUE rb_patch = Data_Wrap_Struct(rb_cRuggedDiffPatch, NULL, git_patch_free, patch);
 	rugged_set_owner(rb_patch, owner);
 	return rb_patch;
 }
@@ -51,10 +46,9 @@ VALUE rugged_diff_patch_new(VALUE owner, git_diff_patch *patch)
  */
 static VALUE rb_git_diff_patch_each_hunk(VALUE self)
 {
-	git_diff_patch *patch;
-	const git_diff_range *range;
-	const char *header;
-	size_t header_len, lines_in_hunk;
+	git_patch *patch;
+	const git_diff_hunk *hunk;
+	size_t lines_in_hunk;
 	int error = 0;
 	size_t hunks_count, h;
 
@@ -62,14 +56,14 @@ static VALUE rb_git_diff_patch_each_hunk(VALUE self)
 		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_hunk"), self);
 	}
 
-	Data_Get_Struct(self, git_diff_patch, patch);
+	Data_Get_Struct(self, git_patch, patch);
 
-	hunks_count = git_diff_patch_num_hunks(patch);
+	hunks_count = git_patch_num_hunks(patch);
 	for (h = 0; h < hunks_count; ++h) {
-		error = git_diff_patch_get_hunk(&range, &header, &header_len, &lines_in_hunk, patch, h);
+		error = git_patch_get_hunk(&hunk, &lines_in_hunk, patch, h);
 		if (error) break;
 
-		rb_yield(rugged_diff_hunk_new(self, h, range, header, header_len, lines_in_hunk));
+		rb_yield(rugged_diff_hunk_new(self, h, hunk, lines_in_hunk));
 	}
 	rugged_exception_check(error);
 
@@ -84,10 +78,10 @@ static VALUE rb_git_diff_patch_each_hunk(VALUE self)
  */
 static VALUE rb_git_diff_patch_hunk_count(VALUE self)
 {
-	git_diff_patch *patch;
-	Data_Get_Struct(self, git_diff_patch, patch);
+	git_patch *patch;
+	Data_Get_Struct(self, git_patch, patch);
 
-	return INT2FIX(git_diff_patch_num_hunks(patch));
+	return INT2FIX(git_patch_num_hunks(patch));
 }
 
 /*
@@ -98,10 +92,10 @@ static VALUE rb_git_diff_patch_hunk_count(VALUE self)
  */
 static VALUE rb_git_diff_patch_delta(VALUE self)
 {
-	git_diff_patch *patch;
-	Data_Get_Struct(self, git_diff_patch, patch);
+	git_patch *patch;
+	Data_Get_Struct(self, git_patch, patch);
 
-	return rugged_diff_delta_new(rugged_owner(self), git_diff_patch_delta(patch));
+	return rugged_diff_delta_new(rugged_owner(self), git_patch_get_delta(patch));
 }
 
 /*
@@ -112,11 +106,11 @@ static VALUE rb_git_diff_patch_delta(VALUE self)
  */
 static VALUE rb_git_diff_patch_stat(VALUE self)
 {
-	git_diff_patch *patch;
+	git_patch *patch;
 	size_t additions, deletions;
-	Data_Get_Struct(self, git_diff_patch, patch);
+	Data_Get_Struct(self, git_patch, patch);
 
-	git_diff_patch_line_stats(NULL, &additions, &deletions, patch);
+	git_patch_line_stats(NULL, &additions, &deletions, patch);
 
 	return rb_ary_new3(2, INT2FIX(additions), INT2FIX(deletions));
 }
@@ -129,11 +123,11 @@ static VALUE rb_git_diff_patch_stat(VALUE self)
  */
 static VALUE rb_git_diff_patch_lines(VALUE self)
 {
-	git_diff_patch *patch;
+	git_patch *patch;
 	size_t context, adds, dels;
-	Data_Get_Struct(self, git_diff_patch, patch);
+	Data_Get_Struct(self, git_patch, patch);
 
-	git_diff_patch_line_stats(&context, &adds, &dels, patch);
+	git_patch_line_stats(&context, &adds, &dels, patch);
 
 	return INT2FIX(context + adds + dels);
 }

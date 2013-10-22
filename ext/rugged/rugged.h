@@ -78,11 +78,11 @@ VALUE rugged_config_new(VALUE klass, VALUE owner, git_config *cfg);
 VALUE rugged_object_new(VALUE owner, git_object *object);
 VALUE rugged_object_rev_parse(VALUE rb_repo, VALUE rb_spec, int as_obj);
 VALUE rugged_ref_new(VALUE klass, VALUE owner, git_reference *ref);
-VALUE rugged_diff_new(VALUE klass, VALUE owner, git_diff_list *diff);
-VALUE rugged_diff_patch_new(VALUE owner, git_diff_patch *patch);
+VALUE rugged_diff_new(VALUE klass, VALUE owner, git_diff *diff);
+VALUE rugged_diff_patch_new(VALUE owner, git_patch *patch);
 VALUE rugged_diff_delta_new(VALUE owner, const git_diff_delta *delta);
-VALUE rugged_diff_hunk_new(VALUE owner, size_t hunk_idx, const git_diff_range *range, const char *header, size_t header_len, size_t lines_in_hunk);
-VALUE rugged_diff_line_new(VALUE owner, const char line_origin, const char *content, size_t content_len, int old_lineno, int new_lineno);
+VALUE rugged_diff_hunk_new(VALUE owner, size_t hunk_idx, const git_diff_hunk *hunk, size_t lines_in_hunk);
+VALUE rugged_diff_line_new(VALUE owner, const git_diff_line *line);
 VALUE rb_git_delta_file_fromC(const git_diff_file *file);
 
 void rugged_parse_diff_options(git_diff_options *opts, VALUE rb_options);

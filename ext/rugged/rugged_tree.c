@@ -388,7 +388,7 @@ static VALUE rb_git_tree_diff(int argc, VALUE *argv, VALUE self)
 	git_tree *tree;
 	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
 	git_repository *repo;
-	git_diff_list *diff = NULL;
+	git_diff *diff = NULL;
 	VALUE owner, rb_other, rb_options;
 	int error;
 
@@ -454,7 +454,7 @@ static VALUE rb_git_tree_diff_workdir(int argc, VALUE *argv, VALUE self)
 	git_tree *tree;
 	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
 	git_repository *repo;
-	git_diff_list *diff;
+	git_diff *diff;
 	VALUE owner, rb_options;
 	int error;
 

@@ -429,7 +429,7 @@ static VALUE rb_git_blob_diff(int argc, VALUE *argv, VALUE self)
 {
 	git_blob *blob;
 	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
-	git_diff_patch *patch;
+	git_patch *patch;
 	const char *old_path = NULL, *new_path = NULL;
 	VALUE rb_other, rb_options;
 	int error;
@@ -456,17 +456,17 @@ static VALUE rb_git_blob_diff(int argc, VALUE *argv, VALUE self)
 	Data_Get_Struct(self, git_blob, blob);
 
 	if (NIL_P(rb_other)) {
-		error = git_diff_patch_from_blobs(&patch, blob, old_path, NULL, new_path, &opts);
+		error = git_patch_from_blobs(&patch, blob, old_path, NULL, new_path, &opts);
 	} else if (rb_obj_is_kind_of(rb_other, rb_cRuggedBlob)) {
 		git_blob *other_blob;
 
 		Data_Get_Struct(rb_other, git_blob, other_blob);
 
-		error = git_diff_patch_from_blobs(&patch, blob, old_path, other_blob, new_path, &opts);
+		error = git_patch_from_blobs(&patch, blob, old_path, other_blob, new_path, &opts);
 	} else if (TYPE(rb_other) == T_STRING) {
 		const char * buffer = StringValueCStr(rb_other);
 
-		error = git_diff_patch_from_blob_and_buffer(&patch, blob, old_path, buffer, RSTRING_LEN(rb_other), new_path, &opts);
+		error = git_patch_from_blob_and_buffer(&patch, blob, old_path, buffer, RSTRING_LEN(rb_other), new_path, &opts);
 	} else {
 		rb_raise(rb_eTypeError, "wrong argument type %s (expected Rugged::Blob, String, or nil)",
 			rb_obj_classname(rb_other));
