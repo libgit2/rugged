@@ -160,6 +160,13 @@ static int diff_print_cb(
 {
 	VALUE rb_str = (VALUE)payload;
 
+	switch (line->origin) {
+		case GIT_DIFF_LINE_CONTEXT:
+		case GIT_DIFF_LINE_ADDITION:
+		case GIT_DIFF_LINE_DELETION:
+			rb_str_cat(rb_str, &line->origin, 1);
+	}
+
 	rb_str_cat(rb_str, line->content, line->content_len);
 
 	return GIT_OK;
