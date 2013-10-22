@@ -191,7 +191,7 @@ static VALUE rb_git_diff_patch(int argc, VALUE *argv, VALUE self)
 
 	if (!NIL_P(rb_opts)) {
 		if (rb_hash_aref(rb_opts, CSTR2SYM("compact")) == Qtrue)
-			git_diff_print(diff, GIT_DIFF_FORMAT_PATCH, diff_print_cb, (void*)rb_str); // Todo: This was git_diff_print_compact before!
+			git_diff_print(diff, GIT_DIFF_FORMAT_NAME_STATUS, diff_print_cb, (void*)rb_str);
 		else
 			git_diff_print(diff, GIT_DIFF_FORMAT_PATCH, diff_print_cb, (void*)rb_str);
 	} else {
@@ -235,7 +235,7 @@ static VALUE rb_git_diff_write_patch(int argc, VALUE *argv, VALUE self)
 
 	if (!NIL_P(rb_opts)) {
 		if (rb_hash_aref(rb_opts, CSTR2SYM("compact")) == Qtrue)
-			git_diff_print(diff, GIT_DIFF_FORMAT_PATCH, diff_write_cb, (void*)rb_io); // Todo: This was git_diff_print_compact before!
+			git_diff_print(diff, GIT_DIFF_FORMAT_NAME_STATUS, diff_write_cb, (void*)rb_io);
 		else
 			git_diff_print(diff, GIT_DIFF_FORMAT_PATCH, diff_write_cb, (void*)rb_io);
 	} else {
