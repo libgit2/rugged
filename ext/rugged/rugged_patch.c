@@ -28,7 +28,7 @@ extern VALUE rb_cRuggedDiff;
 extern VALUE rb_cRuggedDiffDelta;
 VALUE rb_cRuggedDiffPatch;
 
-VALUE rugged_diff_patch_new(VALUE owner, git_patch *patch)
+VALUE rugged_patch_new(VALUE owner, git_patch *patch)
 {
 	VALUE rb_patch = Data_Wrap_Struct(rb_cRuggedDiffPatch, NULL, git_patch_free, patch);
 	rugged_set_owner(rb_patch, owner);
@@ -132,7 +132,7 @@ static VALUE rb_git_diff_patch_lines(VALUE self)
 	return INT2FIX(context + adds + dels);
 }
 
-void Init_rugged_diff_patch(void)
+void Init_rugged_patch(void)
 {
 	rb_cRuggedDiffPatch = rb_define_class_under(rb_cRuggedDiff, "Patch", rb_cObject);
 

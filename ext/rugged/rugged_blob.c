@@ -474,7 +474,7 @@ static VALUE rb_git_blob_diff(int argc, VALUE *argv, VALUE self)
 
 	rugged_exception_check(error);
 
-	return rugged_diff_patch_new(self, patch);
+	return rugged_patch_new(self, patch);
 }
 
 void Init_rugged_blob(void)

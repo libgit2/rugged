@@ -433,7 +433,7 @@ static VALUE rb_git_diff_each_patch(VALUE self)
 		error = git_patch_from_diff(&patch, diff, d);
 		if (error) break;
 
-		rb_yield(rugged_diff_patch_new(self, patch));
+		rb_yield(rugged_patch_new(self, patch));
 	}
 
 	rugged_exception_check(error);
