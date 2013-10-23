@@ -4,6 +4,10 @@ RbConfig::MAKEFILE_CONFIG['CC'] = ENV['CC'] if ENV['CC']
 
 $LDFLAGS << " -lz -lcrypto"
 
+if RUBY_PLATFORM =~ /darwin/
+  $LDFLAGS << " -liconv"
+end
+
 $CFLAGS << " #{ENV["CFLAGS"]}"
 $CFLAGS << " -g"
 

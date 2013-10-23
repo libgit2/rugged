@@ -400,7 +400,7 @@ void Init_rugged(void)
 	Init_rugged_notes();
 	Init_rugged_settings();
 	Init_rugged_diff();
-	Init_rugged_diff_patch();
+	Init_rugged_patch();
 	Init_rugged_diff_delta();
 	Init_rugged_diff_hunk();
 	Init_rugged_diff_line();

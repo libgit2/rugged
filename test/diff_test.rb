@@ -649,7 +649,7 @@ EOS
     patches = []
 
     diff.each_patch do |patch|
-      assert_instance_of Rugged::Diff::Patch, patch
+      assert_instance_of Rugged::Patch, patch
       patches << patch
     end
 
@@ -721,7 +721,7 @@ EOS
 
     patches = []
     diff.each_patch.each do |patch|
-      assert_instance_of Rugged::Diff::Patch, patch
+      assert_instance_of Rugged::Patch, patch
       patches << patch
     end
     assert_equal 2, patches.size
