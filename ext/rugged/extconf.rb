@@ -2,12 +2,6 @@ require 'mkmf'
 
 RbConfig::MAKEFILE_CONFIG['CC'] = ENV['CC'] if ENV['CC']
 
-$LDFLAGS << " -lz -lcrypto"
-
-if RUBY_PLATFORM =~ /darwin/
-  $LDFLAGS << " -liconv"
-end
-
 $CFLAGS << " #{ENV["CFLAGS"]}"
 $CFLAGS << " -g"
 
@@ -59,6 +53,9 @@ else
 
       Dir.chdir("build") do
         sys("cmake .. -DBUILD_CLAR=OFF -DTHREADSAFE=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS=-fPIC ")
+        # Grab the flags from an authoritative source
+        pcfile = File.join(LIBGIT2_DIR, "build", "libgit2.pc")
+        $LDFLAGS << " " + `pkg-config --libs --static #{pcfile}`.strip
         sys("cmake --build .")
       end
     end
