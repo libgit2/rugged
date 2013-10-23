@@ -24,13 +24,13 @@
 
 #include "rugged.h"
 
-extern VALUE rb_cRuggedDiff;
+extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedDiffDelta;
-VALUE rb_cRuggedDiffPatch;
+VALUE rb_cRuggedPatch;
 
 VALUE rugged_patch_new(VALUE owner, git_patch *patch)
 {
-	VALUE rb_patch = Data_Wrap_Struct(rb_cRuggedDiffPatch, NULL, git_patch_free, patch);
+	VALUE rb_patch = Data_Wrap_Struct(rb_cRuggedPatch, NULL, git_patch_free, patch);
 	rugged_set_owner(rb_patch, owner);
 	return rb_patch;
 }
@@ -134,13 +134,13 @@ static VALUE rb_git_diff_patch_lines(VALUE self)
 
 void Init_rugged_patch(void)
 {
-	rb_cRuggedDiffPatch = rb_define_class_under(rb_cRuggedDiff, "Patch", rb_cObject);
+	rb_cRuggedPatch = rb_define_class_under(rb_mRugged, "Patch", rb_cObject);
 
-	rb_define_method(rb_cRuggedDiffPatch, "stat", rb_git_diff_patch_stat, 0);
-	rb_define_method(rb_cRuggedDiffPatch, "lines", rb_git_diff_patch_lines, 0);
+	rb_define_method(rb_cRuggedPatch, "stat", rb_git_diff_patch_stat, 0);
+	rb_define_method(rb_cRuggedPatch, "lines", rb_git_diff_patch_lines, 0);
 
-	rb_define_method(rb_cRuggedDiffPatch, "delta", rb_git_diff_patch_delta, 0);
+	rb_define_method(rb_cRuggedPatch, "delta", rb_git_diff_patch_delta, 0);
 
-	rb_define_method(rb_cRuggedDiffPatch, "each_hunk", rb_git_diff_patch_each_hunk, 0);
-	rb_define_method(rb_cRuggedDiffPatch, "hunk_count", rb_git_diff_patch_hunk_count, 0);
+	rb_define_method(rb_cRuggedPatch, "each_hunk", rb_git_diff_patch_each_hunk, 0);
+	rb_define_method(rb_cRuggedPatch, "hunk_count", rb_git_diff_patch_hunk_count, 0);
 }
