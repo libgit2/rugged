@@ -30,7 +30,7 @@ VALUE rb_cRuggedPatch;
 
 VALUE rugged_patch_new(VALUE owner, git_patch *patch)
 {
-	VALUE rb_patch = Data_Wrap_Struct(rb_cRuggedPatch, NULL, git_patch_free, patch);
+	VALUE rb_patch = Data_Wrap_Struct(rb_cRuggedPatch, NULL, &git_patch_free, patch);
 	rugged_set_owner(rb_patch, owner);
 	return rb_patch;
 }

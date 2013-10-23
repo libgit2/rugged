@@ -30,9 +30,7 @@ VALUE rb_cRuggedDiffHunk;
 
 VALUE rugged_diff_hunk_new(VALUE owner, size_t hunk_idx, const git_diff_hunk *hunk, size_t lines_in_hunk)
 {
-	VALUE rb_hunk;
-
-	rb_hunk = rb_class_new_instance(0, NULL, rb_cRuggedDiffHunk);
+	VALUE rb_hunk = rb_class_new_instance(0, NULL, rb_cRuggedDiffHunk);
 	rugged_set_owner(rb_hunk, owner);
 
 	rb_iv_set(rb_hunk, "@header", rb_str_new(hunk->header, hunk->header_len));
