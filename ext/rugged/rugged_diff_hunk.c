@@ -59,9 +59,6 @@ VALUE rugged_diff_hunk_new(VALUE owner, size_t hunk_idx, const git_diff_hunk *hu
 static VALUE rb_git_diff_hunk_each_line(VALUE self)
 {
 	git_patch *patch;
-	char line_origin;
-	const char *content;
-	size_t content_len = 0;
 	int error = 0, l, lines_count, hunk_idx;
 
 	if (!rb_block_given_p()) {
