@@ -530,7 +530,7 @@ static VALUE rb_git_reflog(VALUE self)
 
 	Data_Get_Struct(self, git_reference, ref);
 
-	error = git_reflog_read(&reflog, ref);
+	error = git_reflog_read(&reflog, git_reference_owner(ref), git_reference_name(ref));
 	rugged_exception_check(error);
 
 	ref_count = git_reflog_entrycount(reflog);
@@ -587,7 +587,7 @@ static VALUE rb_git_reflog_write(int argc, VALUE *argv, VALUE self)
 		message = StringValueCStr(rb_message);
 	}
 
-	error = git_reflog_read(&reflog, ref);
+	error = git_reflog_read(&reflog, git_reference_owner(ref), git_reference_name(ref));
 	rugged_exception_check(error);
 
 	repo = git_reference_owner(ref);
