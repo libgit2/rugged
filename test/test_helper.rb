@@ -39,9 +39,9 @@ module Rugged
       FileUtils.cp_r(File.join(TestCase::LIBGIT2_FIXTURE_DIR, repository), @_sandbox_path)
 
       Dir.chdir(File.join(@_sandbox_path, repository)) do
-        File.rename(".gitted", ".git") if File.exists?(".gitted")
-        File.rename("gitattributes", ".gitattributes") if File.exists?("gitattributes")
-        File.rename("gitignore", ".gitignore") if File.exists?("gitignore")
+        File.rename(".gitted", ".git") if File.exist?(".gitted")
+        File.rename("gitattributes", ".gitattributes") if File.exist?("gitattributes")
+        File.rename("gitignore", ".gitignore") if File.exist?("gitignore")
       end
 
       Rugged::Repository.new(File.join(@_sandbox_path, repository))
