@@ -1539,10 +1539,11 @@ static int rugged__checkout_notify_cb(
  */
 static void rugged_parse_checkout_options(git_checkout_opts *opts, VALUE rb_options)
 {
+	VALUE rb_value;
+
 	if (NIL_P(rb_options))
 		return;
 
-	VALUE rb_value;
 	Check_Type(rb_options, T_HASH);
 
 	rb_value = rb_hash_aref(rb_options, CSTR2SYM("progress"));
