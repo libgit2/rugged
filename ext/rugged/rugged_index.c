@@ -106,7 +106,7 @@ static VALUE rb_git_index_read(VALUE self)
 
 	Data_Get_Struct(self, git_index, index);
 
-	error = git_index_read(index);
+	error = git_index_read(index, 0);
 	rugged_exception_check(error);
 
 	return Qnil;
