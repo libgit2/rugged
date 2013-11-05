@@ -25,6 +25,7 @@
 #include "rugged.h"
 
 const char *RUGGED_ERROR_NAMES[] = {
+	"None",            /* GITERR_NONE */
 	"NoMemError",      /* GITERR_NOMEMORY, */
 	"OSError",         /* GITERR_OS, */
 	"InvalidError",    /* GITERR_INVALID, */
