@@ -11,6 +11,12 @@ rvm:
   - rbx-19mode
   - rbx-20mode
 
+matrix:
+  allow_failures:
+    - rvm: ruby-head
+    - rvm: rbx-19mode
+    - rvm: rbx-20mode
+
 # We need the config so the tests don't fail
 script:
   - git config --global user.name 'The rugged tests are fragile'
