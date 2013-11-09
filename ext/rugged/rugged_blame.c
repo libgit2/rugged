@@ -196,7 +196,7 @@ static VALUE rb_git_blame_get_by_index(VALUE self, VALUE rb_index)
 	blame_count = git_blame_get_hunk_count(blame);
 
 	if (index < 0) {
-		if (-index > blame_count) {
+		if ((uint32_t)(-index) > blame_count) {
 			return Qnil;
 		}
 
@@ -205,7 +205,7 @@ static VALUE rb_git_blame_get_by_index(VALUE self, VALUE rb_index)
 		);
 	}
 
-	if (index > blame_count)
+	if ((uint32_t)index > blame_count)
 		return Qnil;
 
 	return rb_git_blame_hunk_fromC(
