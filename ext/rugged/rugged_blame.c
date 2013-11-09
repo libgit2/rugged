@@ -152,23 +152,6 @@ static VALUE rb_git_blame_for_line(VALUE self, VALUE rb_line_no)
 
 /*
  *  call-seq:
- *    blame[index] -> hunk
- *
- *  Returns the blame hunk data at the given +index+ in +blame+.
- */
-static VALUE rb_git_blame_get_by_index(VALUE self, VALUE rb_index)
-{
-	git_blame *blame;
-
-	Data_Get_Struct(self, git_blame, blame);
-
-	return rb_git_blame_hunk_fromC(
-		git_blame_get_hunk_byindex(blame, FIX2UINT(rb_index))
-	);
-}
-
-/*
- *  call-seq:
  *    blame.count -> count
  *    blame.size -> count
  *
@@ -179,6 +162,43 @@ static VALUE rb_git_blame_count(VALUE self)
 	git_blame *blame;
 	Data_Get_Struct(self, git_blame, blame);
 	return UINT2NUM(git_blame_get_hunk_count(blame));
+}
+
+/*
+ *  call-seq:
+ *    blame[index] -> hunk
+ *
+ *  Returns the blame hunk data at the given +index+ in +blame+.
+ *
+ *  Negative indices count backward from the end of the blame hunks (-1 is the last
+ *  element).
+ *
+ *  Returns +nil+ if no blame hunk exists at the given +index+.
+ */
+static VALUE rb_git_blame_get_by_index(VALUE self, VALUE rb_index)
+{
+	git_blame *blame;
+
+	Data_Get_Struct(self, git_blame, blame);
+	Check_Type(rb_index, T_FIXNUM);
+
+	VALUE blame_count = rb_git_blame_count(self);
+
+	if (RTEST(rb_funcall(rb_index, rb_intern(">="), 1, blame_count))) {
+		return Qnil;
+	}
+
+	if (RTEST(rb_funcall(rb_index, rb_intern("<"), 1, INT2FIX(0)))) {
+		rb_index = rb_funcall(blame_count, rb_intern("+"), 1, rb_index);
+
+		if (RTEST(rb_funcall(rb_index, rb_intern("<"), 1, INT2FIX(0)))) {
+			return Qnil;
+		}
+	}
+
+	return rb_git_blame_hunk_fromC(
+		git_blame_get_hunk_byindex(blame, FIX2UINT(rb_index))
+	);
 }
 
 /*
