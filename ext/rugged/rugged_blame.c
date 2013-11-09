@@ -144,6 +144,11 @@ static VALUE rb_git_blame_for_line(VALUE self, VALUE rb_line_no)
 	git_blame *blame;
 
 	Data_Get_Struct(self, git_blame, blame);
+	Check_Type(rb_line_no, T_FIXNUM);
+
+	if (RTEST(rb_funcall(rb_line_no, rb_intern("<"), 1, INT2FIX(0)))) {
+		rb_raise(rb_eArgError, "line number can't be negative");
+	}
 
 	return rb_git_blame_hunk_fromC(
 		git_blame_get_hunk_byline(blame, FIX2UINT(rb_line_no))

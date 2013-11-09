@@ -95,7 +95,7 @@ class BlameTest < Rugged::SandboxedTestCase
     assert_nil @blame.for_line(0)
     assert_nil @blame.for_line(1000000)
 
-    assert_raises RangeError do
+    assert_raises ArgumentError do
       @blame.for_line(-1)
     end
   end
