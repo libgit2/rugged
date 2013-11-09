@@ -142,16 +142,19 @@ static VALUE rb_git_blame_new(int argc, VALUE *argv, VALUE klass)
 static VALUE rb_git_blame_for_line(VALUE self, VALUE rb_line_no)
 {
 	git_blame *blame;
+	int line_no;
 
 	Data_Get_Struct(self, git_blame, blame);
 	Check_Type(rb_line_no, T_FIXNUM);
 
-	if (RTEST(rb_funcall(rb_line_no, rb_intern("<"), 1, INT2FIX(0)))) {
+	line_no = NUM2INT(rb_line_no);
+
+	if (line_no < 0) {
 		rb_raise(rb_eArgError, "line number can't be negative");
 	}
 
 	return rb_git_blame_hunk_fromC(
-		git_blame_get_hunk_byline(blame, FIX2UINT(rb_line_no))
+		git_blame_get_hunk_byline(blame, (uint32_t)line_no)
 	);
 }
 
@@ -183,26 +186,30 @@ static VALUE rb_git_blame_count(VALUE self)
 static VALUE rb_git_blame_get_by_index(VALUE self, VALUE rb_index)
 {
 	git_blame *blame;
+	int index;
+	uint32_t blame_count;
 
 	Data_Get_Struct(self, git_blame, blame);
 	Check_Type(rb_index, T_FIXNUM);
 
-	VALUE blame_count = rb_git_blame_count(self);
+	index = NUM2INT(rb_index);
+	blame_count = git_blame_get_hunk_count(blame);
 
-	if (RTEST(rb_funcall(rb_index, rb_intern(">="), 1, blame_count))) {
-		return Qnil;
-	}
-
-	if (RTEST(rb_funcall(rb_index, rb_intern("<"), 1, INT2FIX(0)))) {
-		rb_index = rb_funcall(blame_count, rb_intern("+"), 1, rb_index);
-
-		if (RTEST(rb_funcall(rb_index, rb_intern("<"), 1, INT2FIX(0)))) {
+	if (index < 0) {
+		if (-index > blame_count) {
 			return Qnil;
 		}
+
+		return rb_git_blame_hunk_fromC(
+			git_blame_get_hunk_byindex(blame, (uint32_t)(blame_count + index))
+		);
 	}
 
+	if (index > blame_count)
+		return Qnil;
+
 	return rb_git_blame_hunk_fromC(
-		git_blame_get_hunk_byindex(blame, FIX2UINT(rb_index))
+		git_blame_get_hunk_byindex(blame, (uint32_t)index)
 	);
 }
 

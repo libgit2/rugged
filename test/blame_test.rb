@@ -52,9 +52,6 @@ class BlameTest < Rugged::SandboxedTestCase
     assert_equal @blame[0], @blame[-2]
 
     assert_nil @blame[-3]
-
-    assert_nil @blame[4294967296]
-    assert_nil @blame[-4294967296]
   end
 
   def test_blame_for_line
