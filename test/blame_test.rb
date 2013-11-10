@@ -47,14 +47,11 @@ class BlameTest < Rugged::SandboxedTestCase
       :orig_signature => nil,
       :boundary => false
     }, @blame[1])
-  end
 
-  def test_blame_with_invalid_index
-    assert_nil @blame[100000]
+    assert_equal @blame[1], @blame[-1]
+    assert_equal @blame[0], @blame[-2]
 
-    assert_raises RangeError do
-      @blame[-1]
-    end
+    assert_nil @blame[-3]
   end
 
   def test_blame_for_line
@@ -95,7 +92,7 @@ class BlameTest < Rugged::SandboxedTestCase
     assert_nil @blame.for_line(0)
     assert_nil @blame.for_line(1000000)
 
-    assert_raises RangeError do
+    assert_raises ArgumentError do
       @blame.for_line(-1)
     end
   end
