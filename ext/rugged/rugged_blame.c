@@ -126,7 +126,7 @@ static VALUE rb_git_blame_new(int argc, VALUE *argv, VALUE klass)
 	rugged_parse_blame_options(&opts, repo, rb_options);
 
 	rugged_exception_check(git_blame_file(
-		&blame, repo, StringValueCStr(rb_path), NULL
+		&blame, repo, StringValueCStr(rb_path), &opts
 	));
 
 	return Data_Wrap_Struct(klass, NULL, &git_blame_free, blame);
