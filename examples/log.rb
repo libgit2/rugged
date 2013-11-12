@@ -17,6 +17,23 @@ require 'optparse'
 require 'ostruct'
 require 'rugged'
 
+# This example demonstrates the Rugged rev walker APIs to roughly
+# simulate the output of `git log` and a few of command line arguments.
+# `git log` has many many options and this only shows a few of them.
+#
+# This does not have:
+#
+# - Robust error handling
+# - Colorized or paginated output formatting
+# - Most of the `git log` options
+#
+# This does have:
+#
+# - Examples of translating command line arguments to equivalent Rugged
+#   revwalker configuration calls
+# - Simplified options to apply pathspec limits and to show basic diffs
+
+# Helper to print a commit object.
 def print_commit(commit)
   puts "commit #{commit.oid}"
 
@@ -39,6 +56,7 @@ def print_commit(commit)
   puts ""
 end
 
+# Parse some log command line options.
 def parse_options(args)
   options = OpenStruct.new
   options.repodir = "."
