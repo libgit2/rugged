@@ -84,10 +84,10 @@ else
 end
 
 lines.each do |line|
-  if hunk = blame.for_line(line_index)
-    sig = "#{hunk[:final_signature][:name]} <#{hunk[:final_signature][:email]}>"
-    printf("%s (%-30s %3d) %.*s", hunk[:final_commit_id][0..7], sig, line_index, line.size, line)
-  end
+  hunk = blame.for_line(line_index)
+
+  sig = "#{hunk[:final_signature][:name]} <#{hunk[:final_signature][:email]}>"
+  printf("%s (%-30s %3d) %.*s", hunk[:final_commit_id][0..7], sig, line_index, line.size, line)
 
   line_index += 1
 end
