@@ -66,7 +66,7 @@ static void rugged_parse_blame_options(git_blame_options *opts, git_repository *
 		rb_value = rb_hash_aref(rb_options, CSTR2SYM("max_line"));
 		if (!NIL_P(rb_value)) {
 			Check_Type(rb_value, T_FIXNUM);
-			opts->min_line = FIX2UINT(rb_value);
+			opts->max_line = FIX2UINT(rb_value);
 		}
 
 		rb_value = rb_hash_aref(rb_options, CSTR2SYM("newest_commit"));
