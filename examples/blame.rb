@@ -31,10 +31,10 @@ def parse_options(args)
       options.repodir = dir
     end
 
-    opts.on "-L", String do |lines|
+    opts.on "-L [LINES]", String do |lines|
       if lines.match(/(\d+),(\d+)/)
-        options.start_line = $1
-        options.end_line = $2
+        options.start_line = $1.to_i
+        options.end_line = $2.to_i
       else
         raise "-L format error"
       end
@@ -72,16 +72,22 @@ if options.commitspec
   # TODO: Rugged can't parse revspecs yet.
 end
 
-blame = Rugged::Blame.new(repo, options.path)
+blame = Rugged::Blame.new(repo, options.path, { min_line: options.start_line, max_line: options.end_line })
 blob = repo.rev_parse "HEAD:#{options.path}"
 
+if options.start_line
+  line_index = options.start_line
+  lines = blob.content.lines[(options.start_line - 1)..(options.end_line - 1)]
+else
+  line_index = 1
+  lines = blob.content.lines
+end
 
-break_on_nil_hunk = false
-blob.content.lines.each_with_index do |line, i|
-  hunk = blame.for_line(i+1)
-
-  if hunk
+lines.each do |line|
+  if hunk = blame.for_line(line_index)
     sig = "#{hunk[:final_signature][:name]} <#{hunk[:final_signature][:email]}>"
-    printf("%s (%-30s %3d) %.*s", hunk[:final_commit_id][0..7], sig, i+1, line.size, line)
+    printf("%s (%-30s %3d) %.*s", hunk[:final_commit_id][0..7], sig, line_index, line.size, line)
   end
+
+  line_index += 1
 end
