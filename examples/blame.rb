@@ -31,7 +31,7 @@ def parse_options(args)
       options.repodir = dir
     end
 
-    opts.on "-L [LINES]", String do |lines|
+    opts.on "-L [LINES]" do |lines|
       if lines.match(/(\d+),(\d+)/)
         options.start_line = $1.to_i
         options.end_line = $2.to_i
