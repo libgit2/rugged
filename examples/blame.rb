@@ -47,7 +47,13 @@ def parse_options(args)
     opts.on "-C", "Find line copies within and across files" do
       options.c = true
     end
+
+    opts.on "-h", "--help", "Show this message" do
+      puts opts
+      exit
+    end
   end
+
   opt_parser.parse!(args)
 
   case args.length
