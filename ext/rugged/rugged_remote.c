@@ -217,7 +217,7 @@ static VALUE rb_git_remote_connect(VALUE self, VALUE rb_direction)
 	return Qnil;
 }
 
-static VALUE rugged_rhead_new(git_remote_head *head)
+static VALUE rugged_rhead_new(const git_remote_head *head)
 {
 	VALUE rb_head = rb_hash_new();
 
@@ -228,13 +228,6 @@ static VALUE rugged_rhead_new(git_remote_head *head)
 	rb_hash_aset(rb_head, CSTR2SYM("name"), rb_str_new_utf8(head->name));
 
 	return rb_head;
-}
-
-static int cb_remote__ls(git_remote_head *head, void *payload)
-{
-	int *exception = (int *)payload;
-	rb_protect(rb_yield, rugged_rhead_new(head), exception);
-	return *exception ? GIT_ERROR : GIT_OK;
 }
 
 /*
@@ -263,12 +256,18 @@ static VALUE rb_git_remote_ls(VALUE self)
 {
 	int error, exception = 0;
 	git_remote *remote;
+	const git_remote_head **heads;
+	size_t heads_len, i;
 	Data_Get_Struct(self, git_remote, remote);
 
 	if (!rb_block_given_p())
 		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("ls"));
 
-	error = git_remote_ls(remote, &cb_remote__ls, &exception);
+	error = git_remote_ls(&heads, &heads_len, remote);
+
+	for (i = 0; i < heads_len && !exception; i++) {
+		rb_protect(rb_yield, rugged_rhead_new(heads[i]), &exception);
+   	}
 
 	if (exception)
 		rb_jump_tag(exception);
