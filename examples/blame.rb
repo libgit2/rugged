@@ -62,9 +62,9 @@ def parse_options(args)
   when 1
     options.path = args[0]
   when 2
-    options.path, options.commitspec = *args
+    options.commitspec, options.path = *args
   else
-    options.path, options.commitspec = args[0], "#{args[1]}..#{args[2]}"
+    options.commitspec, options.path = "#{args[0]}..#{args[1]}", args[2]
   end
 
   options
@@ -74,8 +74,9 @@ options = parse_options(ARGV)
 
 repo = Rugged::Repository.new(options.repodir)
 
+from, to = nil, nil
 if options.commitspec
-  # TODO: Rugged can't parse revspecs yet.
+  from, to = options.commitspec.split("..").map { |part| repo.rev_parse_oid(part) }
 end
 
 blame = Rugged::Blame.new(repo, options.path, {
@@ -83,8 +84,10 @@ blame = Rugged::Blame.new(repo, options.path, {
   max_line: options.end_line,
   track_copies_same_file: options.m,
   track_copies_same_commit_moves: options.c,
+  oldest_commit: from,
+  newest_commit: to,
 })
-blob = repo.rev_parse "HEAD:#{options.path}"
+blob = repo.rev_parse "#{to || "HEAD"}:#{options.path}"
 
 if options.start_line
   line_index = options.start_line
