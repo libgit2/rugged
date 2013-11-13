@@ -27,11 +27,11 @@ def parse_options(args)
   opt_parser = OptionParser.new do |opts|
     opts.banner = "Usage blame.rb [options] [<commit range>] <path>"
 
-    opts.on "--git-dir=DIR" do |dir|
+    opts.on "--git-dir=<path>", "Set the path to the repository." do |dir|
       options.repodir = dir
     end
 
-    opts.on "-L [LINES]" do |lines|
+    opts.on "-L", "=<n,m>", "Process only line range n-m, counting from 1" do |lines|
       if lines.match(/(\d+),(\d+)/)
         options.start_line = $1.to_i
         options.end_line = $2.to_i
@@ -40,11 +40,11 @@ def parse_options(args)
       end
     end
 
-    opts.on "-M" do |skip|
+    opts.on "-M", "Find line moves within and across files" do
       options.m = true
     end
 
-    opts.on "-C" do
+    opts.on "-C", "Find line copies within and across files" do
       options.c = true
     end
   end
@@ -72,7 +72,12 @@ if options.commitspec
   # TODO: Rugged can't parse revspecs yet.
 end
 
-blame = Rugged::Blame.new(repo, options.path, { min_line: options.start_line, max_line: options.end_line })
+blame = Rugged::Blame.new(repo, options.path, {
+  min_line: options.start_line,
+  max_line: options.end_line,
+  track_copies_same_file: options.m,
+  track_copies_same_commit_moves: options.c,
+})
 blob = repo.rev_parse "HEAD:#{options.path}"
 
 if options.start_line
