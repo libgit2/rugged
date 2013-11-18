@@ -7,7 +7,7 @@ require 'pp'
 module Rugged
   class TestCase < MiniTest::Unit::TestCase
     TEST_DIR = File.dirname(File.expand_path(__FILE__))
-    LIBGIT2_FIXTURE_DIR = File.expand_path("../../vendor/libgit2/tests-clar/resources", __FILE__)
+    LIBGIT2_FIXTURE_DIR = File.expand_path("../../vendor/libgit2/tests/resources", __FILE__)
 
     protected
     def with_default_encoding(encoding, &block)
