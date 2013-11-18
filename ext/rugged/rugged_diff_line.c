@@ -62,6 +62,11 @@ VALUE rugged_diff_line_new(VALUE owner, const git_diff_line *line)
 	rb_iv_set(rb_line, "@old_lineno", INT2FIX(line->old_lineno));
 	rb_iv_set(rb_line, "@new_lineno", INT2FIX(line->new_lineno));
 
+	if (line->content_offset == -1)
+		rb_iv_set(rb_line, "@content_offset", Qnil);
+	else
+		rb_iv_set(rb_line, "@content_offset", INT2FIX(line->content_offset));
+
 	return rb_line;
 }
 
