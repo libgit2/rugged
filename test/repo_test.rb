@@ -397,7 +397,7 @@ class RepositoryCloneTest < Rugged::TestCase
     end
   end
 
-  def test_clone_with_progress
+  def test_clone_with_transfer_progress_callback
     total_objects = indexed_objects = received_objects = received_bytes = nil
     callsback = 0
     repo = Rugged::Repository.clone_at(@source_path, @tmppath,{
@@ -414,6 +414,29 @@ class RepositoryCloneTest < Rugged::TestCase
     assert_equal 19,   indexed_objects
     assert_equal 19,   received_objects
     assert_equal 1563, received_bytes
+  end
+
+  def test_clone_with_update_tips_callback
+    calls = 0
+    updated_tips = {}
+
+    repo = Rugged::Repository.clone_at(@source_path, @tmppath, {
+      callbacks: {
+        update_tips: lambda { |refname, a, b|
+          calls += 1
+          updated_tips[refname] = [a, b]
+        }
+      }
+    })
+    repo.close
+
+    assert_equal 4, calls
+    assert_equal({
+      "refs/remotes/origin/master" => ["0000000000000000000000000000000000000000", "36060c58702ed4c2a40832c51758d5344201d89a"], 
+      "refs/remotes/origin/packed" => ["0000000000000000000000000000000000000000", "41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9"],
+      "refs/tags/v0.9"             => ["0000000000000000000000000000000000000000", "5b5b025afb0b4c913b4c338a42934a3863bf3644"],
+      "refs/tags/v1.0"             => ["0000000000000000000000000000000000000000", "0c37a5391bbff43c37f0d0371823a5509eed5b1d"],
+    }, updated_tips)
   end
 
   def test_clone_quits_on_error
