@@ -48,6 +48,8 @@ const char *RUGGED_ERROR_NAMES[] = {
 	"CheckoutError",   /* GITERR_CHECKOUT, */
 	"FetchheadError",  /* GITERR_FETCHHEAD, */
 	"MergeError",      /* GITERR_MERGE, */
+	"SshError",        /* GITERR_SSH, */
+	"FilterError"      /* GITERR_FILTER, */
 };
 
 #define RUGGED_ERROR_COUNT (int)((sizeof(RUGGED_ERROR_NAMES)/sizeof(RUGGED_ERROR_NAMES[0])))
