@@ -695,18 +695,41 @@ EOS
 
     assert_equal :deletion, lines[0].line_origin
     assert_equal "The Git feature that really makes it stand apart from nearly every other SCM\n", lines[0].content
+    assert_equal 0, lines[0].content_offset
 
     assert_equal :addition, lines[1].line_origin
     assert_equal "The Git feature that r3ally mak3s it stand apart from n3arly 3v3ry other SCM\n", lines[1].content
+    assert_equal 0, lines[1].content_offset
 
     assert_equal :context, lines[2].line_origin
     assert_equal "out there is its branching model.\n", lines[2].content
+    assert_nil lines[2].content_offset
 
     assert_equal :context, lines[3].line_origin
     assert_equal "\n", lines[3].content
 
     assert_equal :context, lines[4].line_origin
     assert_equal "Git allows and encourages you to have multiple local branches that can be\n", lines[4].content
+
+    lines = hunks[2].each_line.to_a
+
+    assert_equal 14, lines.size
+
+    assert_equal :deletion, lines[3].line_origin
+    assert_equal "of your branches. You can choose to share just one of your branches, a few\n", lines[3].content
+    assert_equal 1248, lines[3].content_offset
+
+    assert_equal :deletion, lines[4].line_origin
+    assert_equal "of them, or all of them. This tends to free people to try new ideas without\n", lines[4].content
+    assert_equal 1323, lines[4].content_offset
+
+    assert_equal :deletion, lines[11].line_origin
+    assert_equal "it.\n", lines[11].content
+    assert_equal 1721, lines[11].content_offset
+
+    assert_equal :addition, lines[12].line_origin
+    assert_equal "it.!", lines[12].content
+    assert_equal 1289, lines[12].content_offset
   end
 
   def test_each_patch_returns_enumerator
