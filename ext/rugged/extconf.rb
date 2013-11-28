@@ -56,7 +56,7 @@ else
         # Grab the flags from an authoritative source
         pcfile = File.join(LIBGIT2_DIR, "build", "libgit2.pc")
         $LDFLAGS << " " + `pkg-config --libs --static #{pcfile}`.strip
-        sys("cmake --build .")
+        sys(MAKE_PROGRAM)
       end
     end
 
