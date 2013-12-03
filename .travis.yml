@@ -16,15 +16,17 @@ matrix:
     - rvm: rbx-19mode
     - rvm: rbx-20mode
 
-# We need the config so the tests don't fail
-script:
-  - git config --global user.name 'The rugged tests are fragile'
-  - bundle exec rake
+install:
+  - bundle install --deployment
+  - sudo apt-get -qq update
+  - sudo apt-get -qq install cmake libssh2-1-dev openssh-client openssh-server
+
+script: script/cibuild
 
 # Notify development list when needed
 notifications:
- recipients:
-   - vicent@github.com
- email:
-   on_success: change
-   on_failure: always
+  recipients:
+    - vicent@github.com
+  email:
+    on_success: change
+    on_failure: always

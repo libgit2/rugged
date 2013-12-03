@@ -343,10 +343,6 @@ static VALUE rugged__extract_cred(VALUE payload) {
 	git_cred **cred = cred_payload->cred;
 	VALUE rb_cred = cred_payload->rb_cred;
 
-	if (NIL_P(rb_cred)) {
-		rb_raise(rb_eArgError, "Credentials can't be nil");
-	}
-
 	if (rb_obj_is_kind_of(rb_cred, rb_cRuggedCredPlaintext)) {
 		if (!(cred_payload->allowed_types & GIT_CREDTYPE_USERPASS_PLAINTEXT)) {
 			rb_raise(rb_eArgError, "Invalid credential type");
