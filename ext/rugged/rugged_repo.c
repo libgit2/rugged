@@ -565,6 +565,56 @@ static VALUE rb_git_repo_merge_base(VALUE self, VALUE rb_args)
 
 /*
  *  call-seq:
+ *    repo.merge_commits(our_commit, their_commit, options = {}) -> index
+ *
+ *  Merges the two given commits, returning a Rugged::Index that reflects
+ *  the result of the merge.
+ *
+ *  +our_commit+ and +their_commit+ can either be Rugged::Commit objects,
+ *  or OIDs resolving to the former.
+ */
+static VALUE rb_git_repo_merge_commits(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_our_commit, rb_their_commit, rb_options;
+	git_commit *our_commit, *their_commit;
+	git_index *index;
+	git_repository *repo;
+	git_merge_tree_opts opts = GIT_MERGE_TREE_OPTS_INIT;
+
+	rb_scan_args(argc, argv, "20:", &rb_our_commit, &rb_their_commit, &rb_options);
+
+	if (TYPE(rb_our_commit) == T_STRING) {
+		rb_our_commit = rugged_object_rev_parse(self, rb_our_commit, 1);
+	}
+
+	if (!rb_obj_is_kind_of(rb_our_commit, rb_cRuggedCommit)) {
+		rb_raise(rb_eArgError, "Expected a Rugged::Commit.");
+	}
+
+	if (TYPE(rb_their_commit) == T_STRING) {
+		rb_their_commit = rugged_object_rev_parse(self, rb_their_commit, 1);
+	}
+
+	if (!rb_obj_is_kind_of(rb_their_commit, rb_cRuggedCommit)) {
+		rb_raise(rb_eArgError, "Expected a Rugged::Commit.");
+	}
+
+	if (!NIL_P(rb_options)) {
+		Check_Type(rb_options, T_HASH);
+		rugged_parse_merge_options(&opts, rb_options);
+	}
+
+	Data_Get_Struct(self, git_repository, repo);
+	Data_Get_Struct(rb_our_commit, git_commit, our_commit);
+	Data_Get_Struct(rb_their_commit, git_commit, their_commit);
+
+	rugged_exception_check(git_merge_commits(&index, repo, our_commit, their_commit, &opts));
+
+	return rugged_index_new(rb_cRuggedIndex, self, index);
+}
+
+/*
+ *  call-seq:
  *    repo.include?(oid) -> true or false
  *    repo.exists?(oid) -> true or false
  *
@@ -1939,6 +1989,8 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "head", rb_git_repo_get_head, 0);
 
 	rb_define_method(rb_cRuggedRepo, "merge_base", rb_git_repo_merge_base, -2);
+	rb_define_method(rb_cRuggedRepo, "merge_commits", rb_git_repo_merge_commits, -1);
+
 	rb_define_method(rb_cRuggedRepo, "reset", rb_git_repo_reset, 2);
 	rb_define_method(rb_cRuggedRepo, "reset_path", rb_git_repo_reset_path, -1);
 
