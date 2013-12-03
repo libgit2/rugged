@@ -315,12 +315,42 @@ struct rugged_remote_cb_payload
 static int rugged__remote_transfer_progress_cb(const git_transfer_progress *stats, void *payload)
 {
 	struct rugged_remote_cb_payload *remote_payload = payload;
-	VALUE args = rb_ary_new2(4);
+	VALUE args = rb_ary_new2(5);
+
 	rb_ary_push(args, remote_payload->transfer_progress);
 	rb_ary_push(args, UINT2NUM(stats->total_objects));
 	rb_ary_push(args, UINT2NUM(stats->indexed_objects));
 	rb_ary_push(args, UINT2NUM(stats->received_objects));
 	rb_ary_push(args, INT2FIX(stats->received_bytes));
+
+	rb_protect(rugged__block_yield_splat, args, &remote_payload->exception);
+
+	return remote_payload->exception ? GIT_ERROR : GIT_OK;
+}
+
+static int rugged__remote_progress_cb(const char *str, int len, void *payload)
+{
+	struct rugged_remote_cb_payload *remote_payload = payload;
+	VALUE args = rb_ary_new2(2);
+
+	rb_ary_push(args, remote_payload->progress);
+	rb_ary_push(args, rb_str_new(str, len));
+
+	rb_protect(rugged__block_yield_splat, args, &remote_payload->exception);
+
+	return remote_payload->exception ? GIT_ERROR : GIT_OK;
+}
+
+static int rugged__remote_update_tips_cb(const char *refname, const git_oid *a, const git_oid *b, void *payload)
+{
+	struct rugged_remote_cb_payload *remote_payload = payload;
+	VALUE args = rb_ary_new2(4);
+
+	rb_ary_push(args, remote_payload->update_tips);
+	rb_ary_push(args, rb_str_new2(refname));
+	rb_ary_push(args, rugged_create_oid(a));
+	rb_ary_push(args, rugged_create_oid(b));
+
 	rb_protect(rugged__block_yield_splat, args, &remote_payload->exception);
 
 	return remote_payload->exception ? GIT_ERROR : GIT_OK;
@@ -340,6 +370,15 @@ static void parse_clone_options(git_clone_options *ret, VALUE rb_options_hash, s
 			git_remote_callbacks remote_callbacks = GIT_REMOTE_CALLBACKS_INIT;
 			VALUE cb;
 
+			cb = rb_hash_aref(val, CSTR2SYM("progress"));
+			if (RTEST(cb)) {
+				if (!rb_respond_to(cb, rb_intern("call"))) {
+					rb_raise(rb_eArgError, "Expected a Proc or an object that responds to call (:progress).");
+				}
+				remote_payload->progress = cb;
+				remote_callbacks.progress = rugged__remote_progress_cb;
+			}
+
 			cb = rb_hash_aref(val, CSTR2SYM("transfer_progress"));
 			if (RTEST(cb)) {
 				if (!rb_respond_to(cb, rb_intern("call"))) {
@@ -348,6 +387,16 @@ static void parse_clone_options(git_clone_options *ret, VALUE rb_options_hash, s
 				
 				remote_payload->transfer_progress = cb;
 				remote_callbacks.transfer_progress = rugged__remote_transfer_progress_cb;
+			}
+
+			cb = rb_hash_aref(val, CSTR2SYM("update_tips"));
+			if (RTEST(cb)) {
+				if (!rb_respond_to(cb, rb_intern("call"))) {
+					rb_raise(rb_eArgError, "Expected a Proc or an object that responds to call (:update_tips).");
+				}
+
+				remote_payload->update_tips = cb;
+				remote_callbacks.update_tips = rugged__remote_update_tips_cb;
 			}
 
 			remote_callbacks.payload = remote_payload;
@@ -383,20 +432,15 @@ static void parse_clone_options(git_clone_options *ret, VALUE rb_options_hash, s
  *    the clone operation. Possible callbacks are:
  *
  *    :progress ::
- *      Not yet implemented.
- *
- *    :completion ::
- *      Not yet implemented.
- *
- *    :credentials ::
- *      Not yet implemented.
+ *      A callback that will be executed with the textual progress from the remote.
  *
  *    :transfer_progress ::
  *      A callback that will be executed to report clone progress information. It will be passed
  *      the amount of +total_objects+, +indexed_objects+, +received_objects+ and +received_bytes+.
  *
  *    :update_tips ::
- *      Not yet implemented.
+ *      A callback that is called each time a reference is updated locally. It is passed the fully
+ *      qualified +refname+, the previous +oid+, and the new oid.
  *
  *  Example:
  *
