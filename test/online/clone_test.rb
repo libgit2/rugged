@@ -10,12 +10,12 @@ class OnlineCloneTest < Rugged::TestCase
   end
 
   def ssh_key_credential
-    Rugged::Credentials::SshKey.new(
-      ENV["GITTEST_REMOTE_SSH_USER"],
-      ENV["GITTEST_REMOTE_SSH_PUBKEY"],
-      ENV["GITTEST_REMOTE_SSH_KEY"],
-      ENV["GITTEST_REMOTE_SSH_PASSPHASE"],
-    )
+    Rugged::Credentials::SshKey.new({
+      username:   ENV["GITTEST_REMOTE_SSH_USER"],
+      publickey:  ENV["GITTEST_REMOTE_SSH_PUBKEY"],
+      privatekey: ENV["GITTEST_REMOTE_SSH_KEY"],
+      passphrase: ENV["GITTEST_REMOTE_SSH_PASSPHASE"],
+    })
   end
 
   def test_clone_over_git
