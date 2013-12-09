@@ -408,6 +408,7 @@ void Init_rugged(void)
 	Init_rugged_diff_hunk();
 	Init_rugged_diff_line();
 	Init_rugged_blame();
+	Init_rugged_cred();
 
 	/*
 	 * Sort the repository contents in no particular ordering;
