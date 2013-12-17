@@ -17,8 +17,7 @@ Rugged is a self-contained gem. You can install it by running:
 
     $ gem install rugged
 
-To build rugged with HTTPS support, you'll need to have [CMake](http://www.cmake.org/) available on your system.
-If you additionally want SSH support, you'll also need [libssh2](http://www.libssh2.org/).
+Check the list of optional [libgit2 dependencies](https://github.com/libgit2/libgit2#optional-dependencies) for different functionalities (like HTTPS and SSH support).
 
 If you're using bundler and want to bundle libgit2 with rugged, you can use the `:submodules` option:
 
