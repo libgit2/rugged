@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
   s.version               = Rugged::Version
   s.date                  = Time.now.strftime('%Y-%m-%d')
   s.summary               = "Rugged is a Ruby binding to the libgit2 linkable library"
-  s.homepage              = "http://github.com/libgit2/rugged"
+  s.homepage              = "https://github.com/libgit2/rugged"
   s.email                 = "schacon@gmail.com"
   s.authors               = [ "Scott Chacon", "Vicent Marti" ]
   s.license               = "MIT"
