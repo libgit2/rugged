@@ -556,8 +556,12 @@ static VALUE rb_git_reflog(VALUE self)
 static VALUE rb_git_has_reflog(VALUE self)
 {
 	git_reference *ref;
+	git_repository *repo;
+
 	Data_Get_Struct(self, git_reference, ref);
-	return git_reference_has_log(ref) ? Qtrue : Qfalse;
+	repo = git_reference_owner(ref);
+
+	return git_reference_has_log(repo, git_reference_name(ref)) ? Qtrue : Qfalse;
 }
 
 /*
