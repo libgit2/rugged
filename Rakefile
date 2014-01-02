@@ -68,7 +68,7 @@ end
 
 desc "checkout libgit2 source"
 task :checkout do
-  if !ENV['LIBGIT2_DEV']
+  if !ENV['CI_BUILD']
     sh "git submodule update --init"
   end
 end

@@ -1,23 +1,28 @@
 #!/bin/sh
 
-# Create a test repo which we can use for the online::push tests
-mkdir $HOME/_temp
-git init --bare $HOME/_temp/test.git
-git daemon --listen=localhost --export-all --enable=receive-pack --base-path=$HOME/_temp $HOME/_temp 2>/dev/null &
+set -ex
 
-sudo start ssh
+# change into root dir and setup path
+cd $(dirname "$0")/..
+PATH="$(pwd)/bin:$(pwd)/script:/usr/share/rbenv/shims:$PATH"
 
-ssh-keygen -t rsa -f ~/.ssh/id_rsa -N "" -q
-cat ~/.ssh/id_rsa.pub >>~/.ssh/authorized_keys
-ssh-keyscan -t rsa localhost >>~/.ssh/known_hosts
+export RBENV_VERSION="1.9.3-p231-tcs-github"
+export CI_BUILD=1
 
-export GITTEST_REMOTE_GIT_URL="git://localhost/test.git"
-export GITTEST_REMOTE_SSH_URL="ssh://localhost/$HOME/_temp/test.git"
-export GITTEST_REMOTE_SSH_USER=$USER
-export GITTEST_REMOTE_SSH_KEY="$HOME/.ssh/id_rsa"
-export GITTEST_REMOTE_SSH_PUBKEY="$HOME/.ssh/id_rsa.pub"
-export GITTEST_REMOTE_SSH_PASSPHRASE=""
+# Write commit we're building at
+git log -n 1 || true
+echo
 
-# We need the config so the tests don't fail
-git config --global user.name 'The rugged tests are fragile'
-bundle exec rake || exit $?
+git submodule update --init
+
+(
+    cd vendor/libgit2
+    git fetch origin
+    git reset -q --hard origin/development
+    make -f Makefile.embed clean
+)
+
+bundle install --path vendor/gems --binstubs
+bundle exec rake clean
+bundle exec rake compile
+bundle exec rake test

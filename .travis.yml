@@ -16,12 +16,4 @@ install:
   - sudo apt-get -qq update
   - sudo apt-get -qq install cmake libssh2-1-dev openssh-client openssh-server
 
-script: script/cibuild
-
-# Notify development list when needed
-notifications:
-  recipients:
-    - vicent@github.com
-  email:
-    on_success: change
-    on_failure: always
+script: script/travisbuild
