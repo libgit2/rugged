@@ -25,10 +25,14 @@ class BlameTest < Rugged::SandboxedTestCase
         :email => "schacon@gmail.com",
         :time => Time.parse("2010-05-25 11:58:14 -0700")
       },
-      :orig_commit_id => "0000000000000000000000000000000000000000",
+      :orig_commit_id => "c47800c7266a2be04c571c04d5a6614691ea99bd",
       :orig_path => "branch_file.txt",
       :orig_start_line_number => 1,
-      :orig_signature => nil,
+      :orig_signature => {
+        :name => "Scott Chacon",
+        :email => "schacon@gmail.com",
+        :time => Time.parse("2010-05-25 11:58:14 -0700")
+      },
       :boundary => false
     }, @blame[0])
 
@@ -41,10 +45,14 @@ class BlameTest < Rugged::SandboxedTestCase
         :email => "schacon@gmail.com",
         :time => Time.parse("2011-08-09 19:33:46 -0700")
       },
-      :orig_commit_id => "0000000000000000000000000000000000000000",
+      :orig_commit_id => "a65fedf39aefe402d3bb6e24df4d4f5fe4547750",
       :orig_path => "branch_file.txt",
       :orig_start_line_number => 2,
-      :orig_signature => nil,
+      :orig_signature => {
+        :name => "Scott Chacon",
+        :email => "schacon@gmail.com",
+        :time => Time.parse("2011-08-09 19:33:46 -0700")
+      },
       :boundary => false
     }, @blame[1])
 
@@ -67,10 +75,14 @@ class BlameTest < Rugged::SandboxedTestCase
         :email => "schacon@gmail.com",
         :time => Time.parse("2010-05-25 11:58:14 -0700")
       },
-      :orig_commit_id => "0000000000000000000000000000000000000000",
+      :orig_commit_id => "c47800c7266a2be04c571c04d5a6614691ea99bd",
       :orig_path => "branch_file.txt",
       :orig_start_line_number => 1,
-      :orig_signature => nil,
+      :orig_signature => {
+        :name => "Scott Chacon",
+        :email => "schacon@gmail.com",
+        :time => Time.parse("2010-05-25 11:58:14 -0700")
+      },
       :boundary => false
     }, blame[0])
 
@@ -87,10 +99,14 @@ class BlameTest < Rugged::SandboxedTestCase
         :email => "schacon@gmail.com",
         :time => Time.parse("2011-08-09 19:33:46 -0700")
       },
-      :orig_commit_id => "0000000000000000000000000000000000000000",
+      :orig_commit_id => "a65fedf39aefe402d3bb6e24df4d4f5fe4547750",
       :orig_path => "branch_file.txt",
       :orig_start_line_number => 2,
-      :orig_signature => nil,
+      :orig_signature => {
+        :name => "Scott Chacon",
+        :email => "schacon@gmail.com",
+        :time => Time.parse("2011-08-09 19:33:46 -0700")
+      },
       :boundary => false
     }, blame[0])
   end
@@ -105,10 +121,14 @@ class BlameTest < Rugged::SandboxedTestCase
         :email => "schacon@gmail.com",
         :time => Time.parse("2010-05-25 11:58:14 -0700")
       },
-      :orig_commit_id => "0000000000000000000000000000000000000000",
+      :orig_commit_id => "c47800c7266a2be04c571c04d5a6614691ea99bd",
       :orig_path => "branch_file.txt",
       :orig_start_line_number => 1,
-      :orig_signature => nil,
+      :orig_signature => {
+        :name => "Scott Chacon",
+        :email => "schacon@gmail.com",
+        :time => Time.parse("2010-05-25 11:58:14 -0700")
+      },
       :boundary => false
     }, @blame.for_line(1))
 
@@ -121,10 +141,14 @@ class BlameTest < Rugged::SandboxedTestCase
         :email => "schacon@gmail.com",
         :time => Time.parse("2011-08-09 19:33:46 -0700")
       },
-      :orig_commit_id => "0000000000000000000000000000000000000000",
+      :orig_commit_id => "a65fedf39aefe402d3bb6e24df4d4f5fe4547750",
       :orig_path => "branch_file.txt",
       :orig_start_line_number => 2,
-      :orig_signature => nil,
+      :orig_signature => {
+        :name => "Scott Chacon",
+        :email => "schacon@gmail.com",
+        :time => Time.parse("2011-08-09 19:33:46 -0700")
+      },
       :boundary => false
     }, @blame.for_line(2))
   end
