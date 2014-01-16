@@ -114,12 +114,12 @@ class ReferenceWriteTest < Rugged::TestCase
     Rugged::Reference.create(@repo,
                              "refs/heads/unit_test",
                              "refs/heads/master",
-                             true)
+                             force: true)
 
     Rugged::Reference.create(@repo,
                              "refs/heads/unit_test",
                              "refs/heads/master",
-                             :force)
+                             force: :force)
   end
 
   def test_list_unicode_refs
@@ -204,6 +204,83 @@ class ReflogTest < Rugged::TestCase
     @ref = Rugged::Reference.create(@repo,
       "refs/heads/test-reflog",
       "36060c58702ed4c2a40832c51758d5344201d89a")
+  end
+
+  def test_create_default_log
+    ref = Rugged::Reference.create(@repo,
+      "refs/heads/test-reflog-default",
+      "36060c58702ed4c2a40832c51758d5344201d89a")
+    reflog = ref.log
+
+    assert_equal reflog.size, 1
+
+    assert_equal '0000000000000000000000000000000000000000', reflog[0][:id_old]
+    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', reflog[0][:id_new]
+    assert_equal nil, reflog[0][:message]
+    assert_equal @comitter[:name], reflog[0][:committer][:name]
+    assert_equal @comitter[:email], reflog[0][:committer][:email]
+    assert_kind_of Time, reflog[0][:committer][:time]
+  end
+
+  def test_create_default_log_custom_signature
+    ref = Rugged::Reference.create(@repo,
+      "refs/heads/test-reflog-default",
+      "36060c58702ed4c2a40832c51758d5344201d89a", {
+        signature: {
+          name: "Other User",
+          email: "other@exmaple.com"
+        }
+      })
+    reflog = ref.log
+
+    assert_equal reflog.size, 1
+
+    assert_equal '0000000000000000000000000000000000000000', reflog[0][:id_old]
+    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', reflog[0][:id_new]
+    assert_equal nil, reflog[0][:message]
+    assert_equal "Other User", reflog[0][:committer][:name]
+    assert_equal "other@exmaple.com", reflog[0][:committer][:email]
+    assert_kind_of Time, reflog[0][:committer][:time]
+  end
+
+  def test_create_default_log_custom_log_message
+    ref = Rugged::Reference.create(@repo,
+      "refs/heads/test-reflog-default",
+      "36060c58702ed4c2a40832c51758d5344201d89a", {
+        message: "reference created"
+      })
+    reflog = ref.log
+
+    assert_equal reflog.size, 1
+
+    assert_equal '0000000000000000000000000000000000000000', reflog[0][:id_old]
+    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', reflog[0][:id_new]
+    assert_equal "reference created", reflog[0][:message]
+    assert_equal @comitter[:name], reflog[0][:committer][:name]
+    assert_equal @comitter[:email], reflog[0][:committer][:email]
+    assert_kind_of Time, reflog[0][:committer][:time]
+  end
+
+  def test_create_default_log_custom_signature_and_log_message
+    ref = Rugged::Reference.create(@repo,
+      "refs/heads/test-reflog-default",
+      "36060c58702ed4c2a40832c51758d5344201d89a", {
+        message: "reference created",
+        signature: {
+          name: "Other User",
+          email: "other@exmaple.com"
+        }
+      })
+    reflog = ref.log
+
+    assert_equal reflog.size, 1
+
+    assert_equal '0000000000000000000000000000000000000000', reflog[0][:id_old]
+    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', reflog[0][:id_new]
+    assert_equal "reference created", reflog[0][:message]
+    assert_equal "Other User", reflog[0][:committer][:name]
+    assert_equal "other@exmaple.com", reflog[0][:committer][:email]
+    assert_kind_of Time, reflog[0][:committer][:time]
   end
 
   def test_create_reflog_entries

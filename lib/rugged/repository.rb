@@ -38,13 +38,13 @@ module Rugged
         self.checkout_tree(branch.tip, options)
 
         if branch.remote?
-          Reference.create(self, "HEAD", branch.tip.oid, true)
+          Reference.create(self, "HEAD", branch.tip.oid, force: true)
         else
-          Reference.create(self, "HEAD", branch.canonical_name, true)
+          Reference.create(self, "HEAD", branch.canonical_name, force: true)
         end
       else
         commit = Commit.lookup(self, self.rev_parse_oid(target))
-        Reference.create(self, "HEAD", commit.oid, true)
+        Reference.create(self, "HEAD", commit.oid, force: true)
         self.checkout_tree(commit, options)
       end
     end
