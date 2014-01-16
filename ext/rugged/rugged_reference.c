@@ -267,10 +267,10 @@ static VALUE rb_git_ref_create(int argc, VALUE *argv, VALUE klass)
 
 	if (git_oid_fromstr(&oid, StringValueCStr(rb_target)) == GIT_OK) {
 		error = git_reference_create(
-			&ref, repo, StringValueCStr(rb_name), &oid, force);
+			&ref, repo, StringValueCStr(rb_name), &oid, force, NULL, NULL);
 	} else {
 		error = git_reference_symbolic_create(
-			&ref, repo, StringValueCStr(rb_name), StringValueCStr(rb_target), force);
+			&ref, repo, StringValueCStr(rb_name), StringValueCStr(rb_target), force, NULL, NULL);
 	}
 
 	rugged_exception_check(error);
@@ -338,9 +338,9 @@ static VALUE rb_git_ref_set_target(VALUE self, VALUE rb_target)
 		error = git_oid_fromstr(&target, StringValueCStr(rb_target));
 		rugged_exception_check(error);
 
-		error = git_reference_set_target(&out, ref, &target);
+		error = git_reference_set_target(&out, ref, &target, NULL, NULL);
 	} else {
-		error = git_reference_symbolic_set_target(&out, ref, StringValueCStr(rb_target));
+		error = git_reference_symbolic_set_target(&out, ref, StringValueCStr(rb_target), NULL, NULL);
 	}
 
 	rugged_exception_check(error);
