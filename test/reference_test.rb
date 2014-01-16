@@ -340,5 +340,54 @@ class ReflogTest < Rugged::TestCase
     assert_equal @comitter[:email], reflog[2][:committer][:email]
     assert_kind_of Time, reflog[2][:committer][:time]
   end
+
+  def test_set_target_default_log
+    @ref.set_target "5b5b025afb0b4c913b4c338a42934a3863bf3644"
+
+    reflog = @ref.log
+    assert_equal reflog.size, 2
+
+    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', reflog[1][:id_old]
+    assert_equal '5b5b025afb0b4c913b4c338a42934a3863bf3644', reflog[1][:id_new]
+    assert_equal nil, reflog[1][:message]
+    assert_equal @comitter[:name], reflog[1][:committer][:name]
+    assert_equal @comitter[:email], reflog[1][:committer][:email]
+    assert_kind_of Time, reflog[1][:committer][:time]
+  end
+
+  def test_set_target_default_log_custom_signature
+    @ref.set_target "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
+      signature: {
+        name: "Other User",
+        email: "other@exmaple.com"
+      }
+    }
+
+    reflog = @ref.log
+    assert_equal reflog.size, 2
+
+    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', reflog[1][:id_old]
+    assert_equal '5b5b025afb0b4c913b4c338a42934a3863bf3644', reflog[1][:id_new]
+    assert_equal nil, reflog[1][:message]
+    assert_equal "Other User", reflog[1][:committer][:name]
+    assert_equal "other@exmaple.com", reflog[1][:committer][:email]
+    assert_kind_of Time, reflog[1][:committer][:time]
+  end
+
+  def test_set_target_default_log_custom_log_message
+    @ref.set_target "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
+      message: "reference updated"
+    }
+
+    reflog = @ref.log
+    assert_equal reflog.size, 2
+
+    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', reflog[1][:id_old]
+    assert_equal '5b5b025afb0b4c913b4c338a42934a3863bf3644', reflog[1][:id_new]
+    assert_equal "reference updated", reflog[1][:message]
+    assert_equal @comitter[:name], reflog[1][:committer][:name]
+    assert_equal @comitter[:email], reflog[1][:committer][:email]
+    assert_kind_of Time, reflog[1][:committer][:time]
+  end
 end
 
