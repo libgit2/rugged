@@ -631,53 +631,6 @@ static VALUE rb_git_has_reflog(VALUE self)
 
 /*
  *  call-seq:
- *    reference.log!(message = nil, committer = default) -> nil
- *
- *  Log a modification for this reference to the reflog.
- */
-static VALUE rb_git_reflog_write(int argc, VALUE *argv, VALUE self)
-{
-	git_reference *ref;
-	git_reflog *reflog;
-	git_repository *repo;
-	int error;
-
-	VALUE rb_committer, rb_message;
-
-	git_signature *committer;
-	const char *message = NULL;
-
-	Data_Get_Struct(self, git_reference, ref);
-
-	rb_scan_args(argc, argv, "02", &rb_message, &rb_committer);
-
-	if (!NIL_P(rb_message)) {
-		Check_Type(rb_message, T_STRING);
-		message = StringValueCStr(rb_message);
-	}
-
-	error = git_reflog_read(&reflog, git_reference_owner(ref), git_reference_name(ref));
-	rugged_exception_check(error);
-
-	repo = git_reference_owner(ref);
-	committer = rugged_signature_get(rb_committer, repo);
-
-	if (!(error = git_reflog_append(reflog,
-					git_reference_target(ref),
-					committer,
-					message)))
-		error = git_reflog_write(reflog);
-
-	git_reflog_free(reflog);
-	git_signature_free(committer);
-
-	rugged_exception_check(error);
-
-	return Qnil;
-}
-
-/*
- *  call-seq:
  *    reference.branch? -> true or false
  *
  *  Return whether a given reference is a branch
@@ -732,5 +685,4 @@ void Init_rugged_reference(void)
 
 	rb_define_method(rb_cRuggedReference, "log", rb_git_reflog, 0);
 	rb_define_method(rb_cRuggedReference, "log?", rb_git_has_reflog, 0);
-	rb_define_method(rb_cRuggedReference, "log!", rb_git_reflog_write, -1);
 }
