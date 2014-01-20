@@ -51,7 +51,7 @@ def parse_options(args)
     end
 
     opts.on("-p", "-u", "--patch") do
-      # TODO
+      options.format = :patch
     end
 
     opts.on("--cached") do
