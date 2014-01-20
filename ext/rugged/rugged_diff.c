@@ -49,6 +49,18 @@ void rugged_parse_diff_options(git_diff_options *opts, VALUE rb_options)
 			opts->max_size = FIX2INT(rb_value);
 		}
 
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("new_prefix"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_STRING);
+			opts->new_prefix = StringValueCStr(rb_value);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("old_prefix"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_STRING);
+			opts->old_prefix = StringValueCStr(rb_value);
+		}
+
 		rb_value = rb_hash_aref(rb_options, CSTR2SYM("context_lines"));
 		if (!NIL_P(rb_value)) {
 			Check_Type(rb_value, T_FIXNUM);

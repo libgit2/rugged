@@ -303,6 +303,14 @@ static VALUE rb_git_tree_path(VALUE self, VALUE rb_path)
  *    The maximum number of unchanged lines between hunk boundaries before the hunks
  *    will be merged into a one. The default is 0.
  *
+ *  :old_prefix ::
+ *    The virtual "directory" to prefix to old filenames in hunk headers.
+ *    The default is "a".
+ *
+ *  :new_prefix ::
+ *    The virtual "directory" to prefix to new filenames in hunk headers.
+ *    The default is "b".
+ *
  *  :reverse ::
  *    If true, the sides of the diff will be reversed.
  *
