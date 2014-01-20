@@ -50,6 +50,15 @@ VALUE rugged_diff_line_new(const git_diff_line *line)
 		case GIT_DIFF_LINE_DEL_EOFNL: /* removed at end of old file */
 			rb_line_origin = CSTR2SYM("eof_newline_removed");
 			break;
+		case GIT_DIFF_LINE_FILE_HDR:
+			rb_line_origin = CSTR2SYM("file_header");
+			break;
+		case GIT_DIFF_LINE_HUNK_HDR:
+			rb_line_origin = CSTR2SYM("hunk_header");
+			break;
+		case GIT_DIFF_LINE_BINARY:
+			rb_line_origin = CSTR2SYM("binary");
+			break;			
 		default:
 			/* FIXME: raise here instead? */
 			rb_line_origin = CSTR2SYM("unknown");

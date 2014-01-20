@@ -488,6 +488,64 @@ static VALUE rb_git_diff_each_delta(VALUE self)
 	return self;
 }
 
+static int each_line_cb(
+    const git_diff_delta *delta,
+    const git_diff_hunk *hunk,
+    const git_diff_line *line,
+    void *payload)
+{
+	int *exception = (int *)payload;
+	rb_protect(rb_yield, rugged_diff_line_new(line), exception);
+	return *exception ? GIT_ERROR : GIT_OK;
+}
+
+/*
+ *  call-seq:
+ *    diff.each_line([format = :patch]) { |line| } -> self
+ *    diff.each_line([format = :patch]) -> enumerator
+ */
+static VALUE rb_git_diff_each_line(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_format;
+	git_diff *diff;
+	git_diff_format_t format;
+	int exception = 0, error;
+
+	Data_Get_Struct(self, git_diff, diff);
+
+	if (rb_scan_args(argc, argv, "01", &rb_format) == 1) {
+		Check_Type(rb_format, T_SYMBOL);
+	} else {
+		rb_format = CSTR2SYM("patch");
+	}
+
+	if (!rb_block_given_p())
+		return rb_funcall(self, rb_intern("to_enum"), 2, CSTR2SYM("each_line"), rb_format);
+
+	if (SYM2ID(rb_format) == rb_intern("patch")) {
+		format = GIT_DIFF_FORMAT_PATCH;
+	} else if (SYM2ID(rb_format) == rb_intern("patch_header")) {
+		format = GIT_DIFF_FORMAT_PATCH_HEADER;
+	} else if (SYM2ID(rb_format) == rb_intern("raw")) {
+		format = GIT_DIFF_FORMAT_RAW;
+	} else if (SYM2ID(rb_format) == rb_intern("name_only")) {
+		format = GIT_DIFF_FORMAT_NAME_ONLY;
+	} else if (SYM2ID(rb_format) == rb_intern("name_status")) {
+		format = GIT_DIFF_FORMAT_NAME_STATUS;
+	} else {
+		rb_raise(rb_eArgError, "unknown :format");
+	}
+
+	error = git_diff_print(diff, format, each_line_cb, &exception);
+
+	if (exception)
+		rb_jump_tag(exception);
+	rugged_exception_check(error);
+
+	return self;
+}
+
+
 /*
  *  call-seq: diff.size -> int
  *
@@ -581,4 +639,5 @@ void Init_rugged_diff(void)
 
 	rb_define_method(rb_cRuggedDiff, "each_patch", rb_git_diff_each_patch, 0);
 	rb_define_method(rb_cRuggedDiff, "each_delta", rb_git_diff_each_delta, 0);
+	rb_define_method(rb_cRuggedDiff, "each_line", rb_git_diff_each_line, -1);
 }
