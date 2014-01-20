@@ -41,6 +41,7 @@ def parse_options(args)
   options.diff = {}
   options.find = {}
   options.format = :patch
+  options.color = false
 
   opt_parser = OptionParser.new do |opts|
     opts.banner = "Usage blame.rb [options] [<commit range>] <path>"
@@ -70,11 +71,11 @@ def parse_options(args)
     end
 
     opts.on("--color") do
-      # TODO
+      options.color = true
     end
 
     opts.on("--no-color") do
-      # TODO
+      options.color = false
     end
 
     opts.on("-R") do
@@ -199,9 +200,32 @@ end
 
 diff.find_similar!(options.find)
 
+last_color = nil
+print COLORS[:reset] if options.color
 diff.each_line(options.format) do |line|
+  if options.color
+    color = if line.addition? || line.eof_newline_added?
+      :green
+    elsif line.deletion? || line.eof_newline_removed?
+      :red
+    elsif line.file_header?
+      :bold
+    elsif line.hunk_header?
+      :cyan
+    else
+      :reset
+    end
+
+    if color != last_color
+      print COLORS[:reset] if last_color == :bold || color == :bold
+      print COLORS[color]
+      last_color = color
+    end
+  end
+
   print ' ' if line.context?
   print '+' if line.addition?
   print '-' if line.deletion?
   print line.content
 end
+print COLORS[:reset] if options.color
