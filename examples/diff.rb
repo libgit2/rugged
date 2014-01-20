@@ -196,6 +196,6 @@ else
   repo.index.diff(options.diff)
 end
 
-diff.find_similar(options.find)
+diff.find_similar!(options.find)
 
 puts diff.patch
