@@ -38,6 +38,8 @@ COLORS = {
 def parse_options(args)
   options = OpenStruct.new
   options.repodir = "."
+  options.diff = {}
+  options.find = {}
 
   opt_parser = OptionParser.new do |opts|
     opts.banner = "Usage blame.rb [options] [<commit range>] <path>"
@@ -51,7 +53,7 @@ def parse_options(args)
     end
 
     opts.on("--cached") do
-      # TODO
+      optsions.cached = true
     end
 
     opts.on("--name-only") do
@@ -75,63 +77,66 @@ def parse_options(args)
     end
 
     opts.on("-R") do
-      # TODO
+      options.diff[:reverse] = true
     end
 
     opts.on("-a", "--text") do
-      # TODO
+      options.diff[:force_text] = true
     end
 
     opts.on("--ignore-space-at-eol") do
-
+      options.diff[:ignore_whitespace_eol] = true
     end
 
     opts.on("-b", "--ignore-space-change") do
-
+      options.diff[:ignore_whitespace_change] = true
     end
 
     opts.on("-w", "--ignore-all-space") do
-
+      options.diff[:ignore_whitespace] = true
     end
 
     opts.on("--ignored") do
-
+      options.diff[:include_ignored] = true
     end
 
     opts.on("--untracked") do
-
+      options.diff[:include_untracked] = true
     end
 
-    opts.on("-M", "--find-renames") do
-
+    opts.on("-M[<n>]", "--find-renames[=<n>]") do |similarity|
+      options.find[:rename_threshold] = similarity if similarity
+      options.find[:renames] = true
     end
 
-    opts.on("-C", "--find-copies") do
-
+    opts.on("-C[<n>]", "--find-copies[=<n>]") do |similarity|
+      options.find[:rename_threshold] = similarity if similarity
+      options.find[:copies] = true
     end
 
     opts.on("--find-copies-harder") do
-
+      options.find[:copies_from_unmodified] = true
     end
 
     opts.on("-B", "--break-rewrites") do
-
+      # TODO parse thresholds
+      options.find[:rewrites] = true
     end
 
-    opts.on("-U", "--unified") do
-
+    opts.on("-U<n>", "--unified=<n>", Integer) do |lines|
+      options.diff[:context_lines] = lines
     end
 
-    opts.on("--inter-hunk-context") do
-
+    opts.on("--inter-hunk-context=<lines>", Integer) do |lines|
+      options.diff[:interhunk_lines] = lines
     end
 
-    opts.on("--src-prefix") do
-
+    opts.on("--src-prefix=<prefix>") do |prefix|
+      options.diff[:old_prefix] = prefix
     end
 
-    opts.on("--dst-prefix") do
-
+    opts.on("--dst-prefix=<prefix>") do |prefix|
+      options.diff[:new_prefix] = prefix
     end
 
     opts.on "-h", "--help", "Show this message" do
@@ -180,15 +185,17 @@ tree2 = if options.treeish2
 end
 
 diff = if tree1 && tree2
-  tree1.diff(tree2)
+  tree1.diff(tree2, options.diff)
 elsif tree1 && options.cached
-  repo.index.diff(tree1)
+  repo.index.diff(tree1, options.diff)
 elsif tree1
-  tree1.diff_workdir
+  tree1.diff_workdir(options.diff)
 elsif options.cached
-  repo.index.diff(repo, repo.rev_parse("HEAD").tree)
+  repo.index.diff(repo, repo.rev_parse("HEAD").tree, options.diff)
 else
-  repo.index.diff
+  repo.index.diff(options.diff)
 end
+
+diff.find_similar(options.find)
 
 puts diff.patch
