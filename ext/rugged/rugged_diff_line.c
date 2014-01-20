@@ -27,11 +27,9 @@
 extern VALUE rb_cRuggedDiff;
 VALUE rb_cRuggedDiffLine;
 
-VALUE rugged_diff_line_new(VALUE owner, const git_diff_line *line)
+VALUE rugged_diff_line_new(const git_diff_line *line)
 {
 	VALUE rb_line = rb_class_new_instance(0, NULL, rb_cRuggedDiffLine), rb_line_origin;
-
-	rugged_set_owner(rb_line, owner);
 
 	switch(line->origin) {
 		case GIT_DIFF_LINE_CONTEXT:
