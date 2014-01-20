@@ -40,6 +40,7 @@ def parse_options(args)
   options.repodir = "."
   options.diff = {}
   options.find = {}
+  options.format = :patch
 
   opt_parser = OptionParser.new do |opts|
     opts.banner = "Usage blame.rb [options] [<commit range>] <path>"
@@ -57,15 +58,15 @@ def parse_options(args)
     end
 
     opts.on("--name-only") do
-      # TODO
+      options.format = :name_only
     end
 
     opts.on("--name-status") do
-      # TODO
+      options.format = :name_status
     end
 
     opts.on("--raw") do
-      # TODO
+      options.format = :raw
     end
 
     opts.on("--color") do
@@ -198,4 +199,9 @@ end
 
 diff.find_similar!(options.find)
 
-puts diff.patch
+diff.each_line(options.format) do |line|
+  print ' ' if line.context?
+  print '+' if line.addition?
+  print '-' if line.deletion?
+  print line.content
+end
