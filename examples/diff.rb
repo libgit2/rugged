@@ -53,7 +53,7 @@ def parse_options(args)
     end
 
     opts.on("--cached") do
-      optsions.cached = true
+      options.cached = true
     end
 
     opts.on("--name-only") do
@@ -191,7 +191,7 @@ elsif tree1 && options.cached
 elsif tree1
   tree1.diff_workdir(options.diff)
 elsif options.cached
-  repo.index.diff(repo, repo.rev_parse("HEAD").tree, options.diff)
+  repo.index.diff(repo.rev_parse("HEAD").tree, options.diff)
 else
   repo.index.diff(options.diff)
 end
