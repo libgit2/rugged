@@ -623,6 +623,16 @@ static VALUE rb_git_diff_stat(VALUE self)
 		3, INT2FIX(stats.files), INT2FIX(stats.adds), INT2FIX(stats.dels));
 }
 
+/*
+ *  call-seq: diff.sorted_icase?
+ *
+ *  Returns true when deltas are sorted case insensitively.
+ */
+static VALUE rb_git_diff_sorted_icase_p(VALUE self)
+{
+	git_diff *diff;
+	Data_Get_Struct(self, git_diff, diff);
+	return git_diff_is_sorted_icase(diff) ? Qtrue : Qfalse;
 
 void Init_rugged_diff(void)
 {
@@ -636,6 +646,8 @@ void Init_rugged_diff(void)
 
 	rb_define_method(rb_cRuggedDiff, "size", rb_git_diff_size, 0);
 	rb_define_method(rb_cRuggedDiff, "stat", rb_git_diff_stat, 0);
+
+	rb_define_method(rb_cRuggedDiff, "sorted_icase?", rb_git_diff_sorted_icase_p, 0);
 
 	rb_define_method(rb_cRuggedDiff, "each_patch", rb_git_diff_each_patch, 0);
 	rb_define_method(rb_cRuggedDiff, "each_delta", rb_git_diff_each_delta, 0);
