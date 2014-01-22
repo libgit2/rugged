@@ -114,12 +114,12 @@ class ReferenceWriteTest < Rugged::TestCase
     Rugged::Reference.create(@repo,
                              "refs/heads/unit_test",
                              "refs/heads/master",
-                             true)
+                             force: true)
 
     Rugged::Reference.create(@repo,
                              "refs/heads/unit_test",
                              "refs/heads/master",
-                             :force)
+                             force: :force)
   end
 
   def test_list_unicode_refs
@@ -206,12 +206,13 @@ class ReflogTest < Rugged::TestCase
       "36060c58702ed4c2a40832c51758d5344201d89a")
   end
 
-  def test_create_reflog_entries
-    @ref.log!(nil, { name: 'foo', email: 'foo@bar', time: Time.now })
-    @ref.log!('commit: bla bla', { name: 'foo', email: 'foo@bar', time: Time.now })
+  def test_create_default_log
+    ref = Rugged::Reference.create(@repo,
+      "refs/heads/test-reflog-default",
+      "36060c58702ed4c2a40832c51758d5344201d89a")
+    reflog = ref.log
 
-    reflog = @ref.log
-    assert_equal reflog.size, 3
+    assert_equal reflog.size, 1
 
     assert_equal '0000000000000000000000000000000000000000', reflog[0][:id_old]
     assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', reflog[0][:id_new]
@@ -219,49 +220,116 @@ class ReflogTest < Rugged::TestCase
     assert_equal @comitter[:name], reflog[0][:committer][:name]
     assert_equal @comitter[:email], reflog[0][:committer][:email]
     assert_kind_of Time, reflog[0][:committer][:time]
-
-    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', reflog[1][:id_old]
-    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', reflog[1][:id_new]
-    assert_equal nil, reflog[1][:message]
-    assert_equal 'foo', reflog[1][:committer][:name]
-    assert_equal 'foo@bar', reflog[1][:committer][:email]
-    assert_kind_of Time, reflog[1][:committer][:time]
-
-    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', reflog[2][:id_old]
-    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', reflog[2][:id_new]
-    assert_equal 'commit: bla bla', reflog[2][:message]
-    assert_equal 'foo', reflog[2][:committer][:name]
-    assert_equal 'foo@bar', reflog[2][:committer][:email]
-    assert_kind_of Time, reflog[2][:committer][:time]
   end
 
-  def test_create_reflog_entries_without_signature
-    @ref.log!
-    @ref.log!("commit: bla bla")
+  def test_create_default_log_custom_signature
+    ref = Rugged::Reference.create(@repo,
+      "refs/heads/test-reflog-default",
+      "36060c58702ed4c2a40832c51758d5344201d89a", {
+        signature: {
+          name: "Other User",
+          email: "other@exmaple.com"
+        }
+      })
+    reflog = ref.log
 
-    reflog = @ref.log
-    assert_equal reflog.size, 3
+    assert_equal reflog.size, 1
 
     assert_equal '0000000000000000000000000000000000000000', reflog[0][:id_old]
     assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', reflog[0][:id_new]
     assert_equal nil, reflog[0][:message]
+    assert_equal "Other User", reflog[0][:committer][:name]
+    assert_equal "other@exmaple.com", reflog[0][:committer][:email]
+    assert_kind_of Time, reflog[0][:committer][:time]
+  end
+
+  def test_create_default_log_custom_log_message
+    ref = Rugged::Reference.create(@repo,
+      "refs/heads/test-reflog-default",
+      "36060c58702ed4c2a40832c51758d5344201d89a", {
+        message: "reference created"
+      })
+    reflog = ref.log
+
+    assert_equal reflog.size, 1
+
+    assert_equal '0000000000000000000000000000000000000000', reflog[0][:id_old]
+    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', reflog[0][:id_new]
+    assert_equal "reference created", reflog[0][:message]
     assert_equal @comitter[:name], reflog[0][:committer][:name]
     assert_equal @comitter[:email], reflog[0][:committer][:email]
     assert_kind_of Time, reflog[0][:committer][:time]
+  end
+
+  def test_create_default_log_custom_signature_and_log_message
+    ref = Rugged::Reference.create(@repo,
+      "refs/heads/test-reflog-default",
+      "36060c58702ed4c2a40832c51758d5344201d89a", {
+        message: "reference created",
+        signature: {
+          name: "Other User",
+          email: "other@exmaple.com"
+        }
+      })
+    reflog = ref.log
+
+    assert_equal reflog.size, 1
+
+    assert_equal '0000000000000000000000000000000000000000', reflog[0][:id_old]
+    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', reflog[0][:id_new]
+    assert_equal "reference created", reflog[0][:message]
+    assert_equal "Other User", reflog[0][:committer][:name]
+    assert_equal "other@exmaple.com", reflog[0][:committer][:email]
+    assert_kind_of Time, reflog[0][:committer][:time]
+  end
+
+  def test_set_target_default_log
+    @ref.set_target "5b5b025afb0b4c913b4c338a42934a3863bf3644"
+
+    reflog = @ref.log
+    assert_equal reflog.size, 2
 
     assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', reflog[1][:id_old]
-    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', reflog[1][:id_new]
+    assert_equal '5b5b025afb0b4c913b4c338a42934a3863bf3644', reflog[1][:id_new]
     assert_equal nil, reflog[1][:message]
     assert_equal @comitter[:name], reflog[1][:committer][:name]
     assert_equal @comitter[:email], reflog[1][:committer][:email]
     assert_kind_of Time, reflog[1][:committer][:time]
+  end
 
-    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', reflog[2][:id_old]
-    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', reflog[2][:id_new]
-    assert_equal 'commit: bla bla', reflog[2][:message]
-    assert_equal @comitter[:name], reflog[2][:committer][:name]
-    assert_equal @comitter[:email], reflog[2][:committer][:email]
-    assert_kind_of Time, reflog[2][:committer][:time]
+  def test_set_target_default_log_custom_signature
+    @ref.set_target "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
+      signature: {
+        name: "Other User",
+        email: "other@exmaple.com"
+      }
+    }
+
+    reflog = @ref.log
+    assert_equal reflog.size, 2
+
+    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', reflog[1][:id_old]
+    assert_equal '5b5b025afb0b4c913b4c338a42934a3863bf3644', reflog[1][:id_new]
+    assert_equal nil, reflog[1][:message]
+    assert_equal "Other User", reflog[1][:committer][:name]
+    assert_equal "other@exmaple.com", reflog[1][:committer][:email]
+    assert_kind_of Time, reflog[1][:committer][:time]
+  end
+
+  def test_set_target_default_log_custom_log_message
+    @ref.set_target "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
+      message: "reference updated"
+    }
+
+    reflog = @ref.log
+    assert_equal reflog.size, 2
+
+    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', reflog[1][:id_old]
+    assert_equal '5b5b025afb0b4c913b4c338a42934a3863bf3644', reflog[1][:id_new]
+    assert_equal "reference updated", reflog[1][:message]
+    assert_equal @comitter[:name], reflog[1][:committer][:name]
+    assert_equal @comitter[:email], reflog[1][:committer][:email]
+    assert_kind_of Time, reflog[1][:committer][:time]
   end
 end
 

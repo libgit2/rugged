@@ -239,39 +239,71 @@ static VALUE rb_git_ref_exist(VALUE klass, VALUE rb_repo, VALUE rb_name)
 
 /*
  *  call-seq:
- *    Reference.create(repository, name, oid, force = false) -> new_ref
- *    Reference.create(repository, name, target, force = false) -> new_ref
+ *    Reference.create(repository, name, oid, options = {}) -> new_ref
+ *    Reference.create(repository, name, target, options = {}) -> new_ref
  *
  *  Create a symbolic or direct reference on +repository+ with the given +name+.
  *  If the third argument is a valid OID, the reference will be created as direct.
  *  Otherwise, it will be assumed the target is the name of another reference.
  *
- *  If a reference with the given +name+ already exists and +force+ is +true+,
- *  it will be overwritten. Otherwise, an exception will be raised.
+ *  If a reference with the given +name+ already exists and +:force+ is not +true+,
+ *  an exception will be raised.
+ *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :force ::
+ *    Overwrites the reference with the given +name+, if it already exists,
+ *    instead of raising an exception.
+ *
+ *  :message ::
+ *    A single line log message to be appended to the reflog.
+ *
+ *  :signature ::
+ *    The signature to be used for populating the reflog entry.
+ *
+ *  The +:message+ and +:signature+ options are ignored if the reference does not
+ *  belong to the standard set (+HEAD+, +refs/heads/*+, +refs/remotes/*+ or +refs/notes/*+)
+ *  and it does not have a reflog.
  */
 static VALUE rb_git_ref_create(int argc, VALUE *argv, VALUE klass)
 {
-	VALUE rb_repo, rb_name, rb_target, rb_force;
+	VALUE rb_repo, rb_name, rb_target, rb_options;
 	git_repository *repo;
 	git_reference *ref;
 	git_oid oid;
+	git_signature *signature = NULL;
+	char *log_message = NULL;
 	int error, force = 0;
 
-	rb_scan_args(argc, argv, "31", &rb_repo, &rb_name, &rb_target, &rb_force);
+	rb_scan_args(argc, argv, "30:", &rb_repo, &rb_name, &rb_target, &rb_options);
 
 	Data_Get_Struct(rb_repo, git_repository, repo);
 	Check_Type(rb_name, T_STRING);
 	Check_Type(rb_target, T_STRING);
 
-	force = RTEST(rb_force);
+	if (!NIL_P(rb_options)) {
+		VALUE rb_val;
+
+		force = RTEST(rb_hash_aref(rb_options, CSTR2SYM("force")));
+
+		rb_val = rb_hash_aref(rb_options, CSTR2SYM("signature"));
+		if (!NIL_P(rb_val))
+			signature = rugged_signature_get(rb_val, repo);
+
+		rb_val = rb_hash_aref(rb_options, CSTR2SYM("message"));
+		if (!NIL_P(rb_val))
+			log_message = StringValueCStr(rb_val);
+	}
 
 	if (git_oid_fromstr(&oid, StringValueCStr(rb_target)) == GIT_OK) {
 		error = git_reference_create(
-			&ref, repo, StringValueCStr(rb_name), &oid, force);
+			&ref, repo, StringValueCStr(rb_name), &oid, force, signature, log_message);
 	} else {
 		error = git_reference_symbolic_create(
-			&ref, repo, StringValueCStr(rb_name), StringValueCStr(rb_target), force);
+			&ref, repo, StringValueCStr(rb_name), StringValueCStr(rb_target), force, signature, log_message);
 	}
+
+	git_signature_free(signature);
 
 	rugged_exception_check(error);
 	return rugged_ref_new(klass, rb_repo, ref);
@@ -305,8 +337,8 @@ static VALUE rb_git_ref_target(VALUE self)
 
 /*
  *  call-seq:
- *    reference.set_target(oid) -> new_ref
- *    reference.set_target(ref_name) -> new_ref
+ *    reference.set_target(oid, options = {}) -> new_ref
+ *    reference.set_target(ref_name, options = {}) -> new_ref
  *
  *  Set the target of a reference. If +reference+ is a direct reference,
  *  the new target must be a +String+ representing a SHA1 OID.
@@ -314,7 +346,19 @@ static VALUE rb_git_ref_target(VALUE self)
  *  If +reference+ is symbolic, the new target must be a +String+ with
  *  the name of another reference.
  *
- *  The original reference is unaltered; a new reference object is
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :message ::
+ *    A single line log message to be appended to the reflog.
+ *
+ *  :signature ::
+ *    The signature to be used for populating the reflog entry.
+ *
+ *  The +:message+ and +:signature+ options are ignored if the reference does not
+ *  belong to the standard set (+HEAD+, +refs/heads/*+, +refs/remotes/*+ or +refs/notes/*+)
+ *  and it does not have a reflog.
+ *
+ *  The original reference is not modified; a new reference object is
  *  returned with the new target, and the changes are persisted to
  *  disk.
  *
@@ -324,26 +368,47 @@ static VALUE rb_git_ref_target(VALUE self)
  *    r2.type #=> :direct
  *    r2.set_target("de5ba987198bcf2518885f0fc1350e5172cded78") #=> <Reference>
  */
-static VALUE rb_git_ref_set_target(VALUE self, VALUE rb_target)
+static VALUE rb_git_ref_set_target(int argc, VALUE *argv, VALUE self)
 {
-	git_reference *ref, *out;
+	VALUE rb_target, rb_options;
+	git_reference *ref, *out = NULL;
+	git_signature *signature = NULL;
+	char *log_message = NULL;
 	int error;
+
+	rb_scan_args(argc, argv, "10:", &rb_target, &rb_options);
 
 	Data_Get_Struct(self, git_reference, ref);
 	Check_Type(rb_target, T_STRING);
+
+	if (!NIL_P(rb_options)) {
+		VALUE rb_val;
+
+		rb_val = rb_hash_aref(rb_options, CSTR2SYM("signature"));
+		if (!NIL_P(rb_val))
+			signature = rugged_signature_get(rb_val, git_reference_owner(ref));
+
+		rb_val = rb_hash_aref(rb_options, CSTR2SYM("message"));
+		if (!NIL_P(rb_val))
+			log_message = StringValueCStr(rb_val);
+	}
 
 	if (git_reference_type(ref) == GIT_REF_OID) {
 		git_oid target;
 
 		error = git_oid_fromstr(&target, StringValueCStr(rb_target));
-		rugged_exception_check(error);
+		if (error) goto cleanup;
 
-		error = git_reference_set_target(&out, ref, &target);
+		error = git_reference_set_target(&out, ref, &target, signature, log_message);
 	} else {
-		error = git_reference_symbolic_set_target(&out, ref, StringValueCStr(rb_target));
+		error = git_reference_symbolic_set_target(&out, ref, StringValueCStr(rb_target), signature, log_message);
 	}
 
+cleanup:
+
+	git_signature_free(signature);
 	rugged_exception_check(error);
+
 	return rugged_ref_new(rb_cRuggedReference, rugged_owner(self), out);
 }
 
@@ -566,53 +631,6 @@ static VALUE rb_git_has_reflog(VALUE self)
 
 /*
  *  call-seq:
- *    reference.log!(message = nil, committer = default) -> nil
- *
- *  Log a modification for this reference to the reflog.
- */
-static VALUE rb_git_reflog_write(int argc, VALUE *argv, VALUE self)
-{
-	git_reference *ref;
-	git_reflog *reflog;
-	git_repository *repo;
-	int error;
-
-	VALUE rb_committer, rb_message;
-
-	git_signature *committer;
-	const char *message = NULL;
-
-	Data_Get_Struct(self, git_reference, ref);
-
-	rb_scan_args(argc, argv, "02", &rb_message, &rb_committer);
-
-	if (!NIL_P(rb_message)) {
-		Check_Type(rb_message, T_STRING);
-		message = StringValueCStr(rb_message);
-	}
-
-	error = git_reflog_read(&reflog, git_reference_owner(ref), git_reference_name(ref));
-	rugged_exception_check(error);
-
-	repo = git_reference_owner(ref);
-	committer = rugged_signature_get(rb_committer, repo);
-
-	if (!(error = git_reflog_append(reflog,
-					git_reference_target(ref),
-					committer,
-					message)))
-		error = git_reflog_write(reflog);
-
-	git_reflog_free(reflog);
-	git_signature_free(committer);
-
-	rugged_exception_check(error);
-
-	return Qnil;
-}
-
-/*
- *  call-seq:
  *    reference.branch? -> true or false
  *
  *  Return whether a given reference is a branch
@@ -651,7 +669,7 @@ void Init_rugged_reference(void)
 
 	rb_define_method(rb_cRuggedReference, "target", rb_git_ref_target, 0);
 	rb_define_method(rb_cRuggedReference, "peel", rb_git_ref_peel, 0);
-	rb_define_method(rb_cRuggedReference, "set_target", rb_git_ref_set_target, 1);
+	rb_define_method(rb_cRuggedReference, "set_target", rb_git_ref_set_target, -1);
 
 	rb_define_method(rb_cRuggedReference, "type", rb_git_ref_type, 0);
 
@@ -667,5 +685,4 @@ void Init_rugged_reference(void)
 
 	rb_define_method(rb_cRuggedReference, "log", rb_git_reflog, 0);
 	rb_define_method(rb_cRuggedReference, "log?", rb_git_has_reflog, 0);
-	rb_define_method(rb_cRuggedReference, "log!", rb_git_reflog_write, -1);
 }
