@@ -44,6 +44,10 @@
 #define rb_str_new_utf8(str) rb_enc_str_new(str, strlen(str), rb_utf8_encoding())
 #define CSTR2SYM(s) (ID2SYM(rb_intern((s))))
 
+#ifndef HAVE_RB_FSTRING
+VALUE rb_fstring(VALUE str);
+#endif
+
 /*
  * Initialization functions
  */

@@ -60,6 +60,14 @@ VALUE rb_eRuggedErrors[RUGGED_ERROR_COUNT];
 
 static VALUE rb_mShutdownHook;
 
+#ifndef HAVE_RB_FSTRING
+VALUE rb_fstring(VALUE str)
+{
+  OBJ_FREEZE(str);
+  return str;
+}
+#endif
+
 /*
  *  call-seq:
  *     Rugged.libgit2_version -> version
