@@ -36,7 +36,7 @@ VALUE rb_git_delta_file_fromC(const git_diff_file *file)
 
 	rb_file = rb_hash_new();
 
-	rb_hash_aset(rb_file, CSTR2SYM("oid"), rugged_create_oid(&file->oid));
+	rb_hash_aset(rb_file, CSTR2SYM("oid"), rugged_create_oid(&file->id));
 	rb_hash_aset(rb_file, CSTR2SYM("path"), file->path ? rb_str_new2(file->path) : Qnil);
 	rb_hash_aset(rb_file, CSTR2SYM("size"), INT2FIX(file->size));
 	rb_hash_aset(rb_file, CSTR2SYM("flags"), UINT2NUM(file->flags));

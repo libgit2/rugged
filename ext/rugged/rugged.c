@@ -165,21 +165,18 @@ static VALUE rb_git_raw_to_hex(VALUE self, VALUE raw)
  */
 static VALUE rb_git_prettify_message(VALUE self, VALUE rb_message, VALUE rb_strip_comments)
 {
-	char *message;
-	int strip_comments, message_len;
-	VALUE result;
+	git_buf message = { NULL };
+	int strip_comments, error;
+	VALUE result = Qnil;
 
 	Check_Type(rb_message, T_STRING);
 	strip_comments = rugged_parse_bool(rb_strip_comments);
 
-	message_len = (int)RSTRING_LEN(rb_message) + 2;
-	message = xmalloc(message_len);
+	if ((error = git_message_prettify(&message, StringValueCStr(rb_message), strip_comments)) == GIT_OK)
+		result = rb_enc_str_new(message.ptr, message.size, rb_utf8_encoding());
 
-	message_len = git_message_prettify(message, message_len, StringValueCStr(rb_message), strip_comments);
-	rugged_exception_check(message_len);
-
-	result = rb_enc_str_new(message, message_len - 1, rb_utf8_encoding());
-	xfree(message);
+	git_buf_free(&message);
+	rugged_exception_check(error);
 
 	return result;
 }

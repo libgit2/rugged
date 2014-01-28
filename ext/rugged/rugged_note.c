@@ -42,7 +42,7 @@ static VALUE rugged_git_note_message(const git_note *note)
 static VALUE rugged_git_note_oid(const git_note* note)
 {
 	const git_oid *oid;
-	oid = git_note_oid(note);
+	oid = git_note_id(note);
 
 	return rugged_create_oid(oid);
 }

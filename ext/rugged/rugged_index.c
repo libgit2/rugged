@@ -531,7 +531,7 @@ static VALUE rb_git_indexentry_fromC(const git_index_entry *entry)
 	rb_entry = rb_hash_new();
 
 	rb_hash_aset(rb_entry, CSTR2SYM("path"), rb_str_new_utf8(entry->path));
-	rb_hash_aset(rb_entry, CSTR2SYM("oid"), rugged_create_oid(&entry->oid));
+	rb_hash_aset(rb_entry, CSTR2SYM("oid"), rugged_create_oid(&entry->id));
 
 	rb_hash_aset(rb_entry, CSTR2SYM("dev"), INT2FIX(entry->dev));
 	rb_hash_aset(rb_entry, CSTR2SYM("ino"), INT2FIX(entry->ino));
@@ -579,7 +579,7 @@ static void rb_git_indexentry_toC(git_index_entry *entry, VALUE rb_entry)
 	val = rb_hash_aref(rb_entry, CSTR2SYM("oid"));
 	Check_Type(val, T_STRING);
 	rugged_exception_check(
-		git_oid_fromstr(&entry->oid, StringValueCStr(val))
+		git_oid_fromstr(&entry->id, StringValueCStr(val))
 	);
 
 	entry->dev = default_entry_value(rb_entry, "dev");
