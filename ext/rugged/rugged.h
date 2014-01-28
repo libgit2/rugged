@@ -57,6 +57,7 @@ void Init_rugged_index(void);
 void Init_rugged_repo(void);
 void Init_rugged_revwalk(void);
 void Init_rugged_reference(void);
+void Init_rugged_reference_collection(void);
 void Init_rugged_config(void);
 void Init_rugged_remote(void);
 void Init_rugged_notes(void);

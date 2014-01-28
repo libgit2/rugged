@@ -385,6 +385,7 @@ void Init_rugged(void)
 	rb_define_module_function(rb_mRugged, "__cache_usage__", rb_git_cache_usage, 0);
 
 	Init_rugged_reference();
+	Init_rugged_reference_collection();
 
 	Init_rugged_object();
 	Init_rugged_commit();

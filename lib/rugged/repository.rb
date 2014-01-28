@@ -131,6 +131,10 @@ module Rugged
       Rugged::Reference.each(self, glob)
     end
 
+    def references
+      @references ||= ReferenceCollection.new(self)
+    end
+
     def ref_names(glob = nil)
       Rugged::Reference.each_name(self, glob)
     end
