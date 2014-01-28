@@ -310,30 +310,18 @@ static VALUE rb_git_branch_name(VALUE self)
 static VALUE rb_git_branch__remote_name(VALUE rb_repo, const char *canonical_name)
 {
 	git_repository *repo;
-
-	char *remote_name;
-	size_t remote_name_size;
+	git_buf remote_name = { };
 	int error;
 	VALUE result = Qnil;
 
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
-	remote_name_size = git_branch_remote_name(NULL, 0, repo, canonical_name);
-	rugged_exception_check(remote_name_size);
+	if ((error = git_branch_remote_name(&remote_name, repo, canonical_name)) == GIT_OK)
+		result = rb_enc_str_new(remote_name.ptr, remote_name.size, rb_utf8_encoding());
 
-	remote_name = xmalloc(remote_name_size * sizeof(char));
-
-	error = git_branch_remote_name(
-			remote_name, remote_name_size,
-			repo, canonical_name);
-
-	if (error > 0)
-		result = rb_enc_str_new(
-				remote_name, remote_name_size - 1,
-				rb_utf8_encoding());
-
-	xfree(remote_name);
+	git_buf_free(&remote_name);
 	rugged_exception_check(error);
+
 	return result;
 }
 

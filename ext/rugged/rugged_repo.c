@@ -1157,7 +1157,7 @@ static VALUE rb_git_repo_discover(int argc, VALUE *argv, VALUE klass)
 {
 	git_repository *repo;
 	VALUE rb_path, rb_across_fs;
-	char repository_path[GIT_PATH_MAX];
+	git_buf repository_path = { };
 	int error, across_fs = 0;
 
 	rb_scan_args(argc, argv, "02", &rb_path, &rb_across_fs);
@@ -1174,7 +1174,7 @@ static VALUE rb_git_repo_discover(int argc, VALUE *argv, VALUE klass)
 	Check_Type(rb_path, T_STRING);
 
 	error = git_repository_discover(
-		repository_path, GIT_PATH_MAX,
+		&repository_path,
 		StringValueCStr(rb_path),
 		across_fs,
 		NULL
@@ -1182,7 +1182,9 @@ static VALUE rb_git_repo_discover(int argc, VALUE *argv, VALUE klass)
 
 	rugged_exception_check(error);
 
-	error = git_repository_open(&repo, repository_path);
+	error = git_repository_open(&repo, repository_path.ptr);
+	git_buf_free(&repository_path);
+
 	rugged_exception_check(error);
 
 	return rugged_repo_new(klass, repo);
