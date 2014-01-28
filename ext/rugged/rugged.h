@@ -49,6 +49,7 @@
  */
 void Init_rugged_object(void);
 void Init_rugged_branch(void);
+void Init_rugged_branch_collection(void);
 void Init_rugged_commit(void);
 void Init_rugged_tree(void);
 void Init_rugged_tag(void);

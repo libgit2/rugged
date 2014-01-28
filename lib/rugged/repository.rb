@@ -158,7 +158,7 @@ module Rugged
     #
     # Returns an Enumerable::Enumerator containing Rugged::Branch objects
     def branches
-      Rugged::Branch.each(self)
+      @branches ||= BranchCollection.new(self)
     end
 
     # Create a new branch in the repository

@@ -1,5 +1,24 @@
 module Rugged
   class Branch < Rugged::Reference
+    def self.each(repository, filter = nil, &block)
+      warn "DEPRECATION WARNING: Rugged::Branch.each is deprecated and will be removed."
+      repository.branches.each(filter, &block)
+    end
+
+    def self.each_name(repository, filter = nil, &block)
+      warn "DEPRECATION WARNING: Rugged::Branch.each_name is deprecated and will be removed."
+      repository.branches.each_name(filter, &block)
+    end
+
+    def self.lookup(repository, name, branch_type = :local)
+      warn "DEPRECATION WARNING: Rugged::Branch.lookup is deprecated and will be removed."
+      repository.branches[name, branch_type]
+    end
+
+    def self.create(repository, name, target, force = false)
+      warn "DEPRECATION WARNING: Rugged::Branch.create is deprecated and will be removed."
+      repository.branches.create(name, target, force)
+    end
 
     # The object pointed at by the tip of this branch
     def tip
