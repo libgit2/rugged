@@ -310,7 +310,7 @@ static VALUE rb_git_branch_name(VALUE self)
 static VALUE rb_git_branch__remote_name(VALUE rb_repo, const char *canonical_name)
 {
 	git_repository *repo;
-	git_buf remote_name = { };
+	git_buf remote_name = { NULL };
 	int error;
 	VALUE result = Qnil;
 

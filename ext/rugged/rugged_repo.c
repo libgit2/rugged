@@ -1157,7 +1157,7 @@ static VALUE rb_git_repo_discover(int argc, VALUE *argv, VALUE klass)
 {
 	git_repository *repo;
 	VALUE rb_path, rb_across_fs;
-	git_buf repository_path = { };
+	git_buf repository_path = { NULL };
 	int error, across_fs = 0;
 
 	rb_scan_args(argc, argv, "02", &rb_path, &rb_across_fs);

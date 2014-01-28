@@ -165,7 +165,7 @@ static VALUE rb_git_raw_to_hex(VALUE self, VALUE raw)
  */
 static VALUE rb_git_prettify_message(VALUE self, VALUE rb_message, VALUE rb_strip_comments)
 {
-	git_buf message = { };
+	git_buf message = { NULL };
 	int strip_comments, error;
 	VALUE result = Qnil;
 
