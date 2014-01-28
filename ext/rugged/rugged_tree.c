@@ -147,7 +147,7 @@ static VALUE rb_git_tree_get_entry_by_oid(VALUE self, VALUE rb_oid)
 	Check_Type(rb_oid, T_STRING);
 	rugged_exception_check(git_oid_fromstr(&oid, StringValueCStr(rb_oid)));
 
-	return rb_git_treeentry_fromC(git_tree_entry_byoid(tree, &oid));
+	return rb_git_treeentry_fromC(git_tree_entry_byid(tree, &oid));
 }
 
 /*
