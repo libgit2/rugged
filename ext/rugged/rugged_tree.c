@@ -491,24 +491,24 @@ void rugged_parse_merge_options(git_merge_tree_opts *opts, VALUE rb_options)
 			opts->target_limit = FIX2UINT(rb_value);
 		}
 
-		rb_value = rb_hash_aref(rb_options, CSTR2SYM("automerge"));
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("favor"));
 		if (!NIL_P(rb_value)) {
-			ID id_automerge;
+			ID id_favor;
 
 			Check_Type(rb_value, T_SYMBOL);
-			id_automerge = SYM2ID(rb_value);
+			id_favor = SYM2ID(rb_value);
 
-			if (id_automerge == rb_intern("normal")) {
-				opts->automerge_flags = GIT_MERGE_AUTOMERGE_NORMAL;
-			} else if (id_automerge == rb_intern("none")) {
-				opts->automerge_flags = GIT_MERGE_AUTOMERGE_NONE;
-			} else if (id_automerge == rb_intern("favor_ours")) {
-				opts->automerge_flags = GIT_MERGE_AUTOMERGE_FAVOR_OURS;
-			} else if (id_automerge == rb_intern("favor_theirs")) {
-				opts->automerge_flags = GIT_MERGE_AUTOMERGE_FAVOR_THEIRS;
+			if (id_favor == rb_intern("normal")) {
+				opts->file_favor = GIT_MERGE_FILE_FAVOR_NORMAL;
+			} else if (id_favor == rb_intern("ours")) {
+				opts->file_favor = GIT_MERGE_FILE_FAVOR_OURS;
+			} else if (id_favor == rb_intern("theirs")) {
+				opts->file_favor = GIT_MERGE_FILE_FAVOR_THEIRS;
+			} else if (id_favor == rb_intern("union")) {
+				opts->file_favor = GIT_MERGE_FILE_FAVOR_UNION;
 			} else {
 				rb_raise(rb_eTypeError,
-					"Invalid automerge mode. Expected `:normal`, `:none`, `:favor_ours` or `:favor_theirs`");
+					"Invalid favor mode. Expected `:normal`, `:ours`, `:theirs` or `:union`");
 			}
 		}
 
