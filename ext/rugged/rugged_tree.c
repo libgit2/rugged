@@ -538,9 +538,9 @@ void rugged_parse_merge_options(git_merge_tree_opts *opts, VALUE rb_options)
  *    An integer specifying the maximum byte size of a file before a it will
  *    be treated as binary. The default value is 512MB.
  *
- *  :automerge ::
+ *  :favor ::
  *    Specifies how and if conflicts are auto-resolved by favoring a specific
- *    version. Can be one of `:normal`, `:none`, `:favor_ours` or `:favor_theirs`.
+ *    file output. Can be one of `:normal`, `:ours`, `:theirs` or `:union`.
  *
  */
 static VALUE rb_git_tree_merge(int argc, VALUE *argv, VALUE self)
