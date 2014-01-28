@@ -30,6 +30,21 @@ module Rugged
       repo.references.exists?(ref_name)
     end
 
+    def rename(new_name, force = false)
+      warn "DEPRECATION WARNING: Rugged::Reference#rename is deprecated and will be removed."
+      @owner.references.rename(self, new_name, force)
+    end
+
+    def set_target(target, options = {})
+      warn "DEPRECATION WARNING: Rugged::Reference#set_target is deprecated and will be removed."
+      @owner.references.update(self, target, options)
+    end
+
+    def delete!
+      warn "DEPRECATION WARNING: Rugged::Reference#set_target is deprecated and will be removed."
+      @owner.references.delete(self)
+    end
+
     def inspect
       "#<#{self.class}:#{object_id} {name: #{name.inspect}, target: #{target.inspect}}>"
     end

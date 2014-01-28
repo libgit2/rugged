@@ -125,83 +125,6 @@ static VALUE rb_git_ref_target(VALUE self)
 
 /*
  *  call-seq:
- *    reference.set_target(oid, options = {}) -> new_ref
- *    reference.set_target(ref_name, options = {}) -> new_ref
- *
- *  Set the target of a reference. If +reference+ is a direct reference,
- *  the new target must be a +String+ representing a SHA1 OID.
- *
- *  If +reference+ is symbolic, the new target must be a +String+ with
- *  the name of another reference.
- *
- *  The following options can be passed in the +options+ Hash:
- *
- *  :message ::
- *    A single line log message to be appended to the reflog.
- *
- *  :signature ::
- *    The signature to be used for populating the reflog entry.
- *
- *  The +:message+ and +:signature+ options are ignored if the reference does not
- *  belong to the standard set (+HEAD+, +refs/heads/*+, +refs/remotes/*+ or +refs/notes/*+)
- *  and it does not have a reflog.
- *
- *  The original reference is not modified; a new reference object is
- *  returned with the new target, and the changes are persisted to
- *  disk.
- *
- *    r1.type #=> :symbolic
- *    r1.set_target("refs/heads/master") #=> <Reference>
- *
- *    r2.type #=> :direct
- *    r2.set_target("de5ba987198bcf2518885f0fc1350e5172cded78") #=> <Reference>
- */
-static VALUE rb_git_ref_set_target(int argc, VALUE *argv, VALUE self)
-{
-	VALUE rb_target, rb_options;
-	git_reference *ref, *out = NULL;
-	git_signature *signature = NULL;
-	char *log_message = NULL;
-	int error;
-
-	rb_scan_args(argc, argv, "10:", &rb_target, &rb_options);
-
-	Data_Get_Struct(self, git_reference, ref);
-	Check_Type(rb_target, T_STRING);
-
-	if (!NIL_P(rb_options)) {
-		VALUE rb_val;
-
-		rb_val = rb_hash_aref(rb_options, CSTR2SYM("signature"));
-		if (!NIL_P(rb_val))
-			signature = rugged_signature_get(rb_val, git_reference_owner(ref));
-
-		rb_val = rb_hash_aref(rb_options, CSTR2SYM("message"));
-		if (!NIL_P(rb_val))
-			log_message = StringValueCStr(rb_val);
-	}
-
-	if (git_reference_type(ref) == GIT_REF_OID) {
-		git_oid target;
-
-		error = git_oid_fromstr(&target, StringValueCStr(rb_target));
-		if (error) goto cleanup;
-
-		error = git_reference_set_target(&out, ref, &target, signature, log_message);
-	} else {
-		error = git_reference_symbolic_set_target(&out, ref, StringValueCStr(rb_target), signature, log_message);
-	}
-
-cleanup:
-
-	git_signature_free(signature);
-	rugged_exception_check(error);
-
-	return rugged_ref_new(rb_cRuggedReference, rugged_owner(self), out);
-}
-
-/*
- *  call-seq:
  *    reference.type -> :symbolic or :direct
  *
  *  Return whether the reference is +:symbolic+ or +:direct+
@@ -266,38 +189,6 @@ static VALUE rb_git_ref_resolve(VALUE self)
 	rugged_exception_check(error);
 
 	return rugged_ref_new(rb_cRuggedReference, rugged_owner(self), resolved);
-}
-
-/*
- *  call-seq:
- *    reference.rename(new_name, force = false)
- *
- *  Change the name of a reference. If +force+ is +true+, any previously
- *  existing references will be overwritten when renaming.
- *
- *  Return a new reference object with the new object
- *
- *    reference.name #=> 'refs/heads/master'
- *    new_ref = reference.rename('refs/heads/development') #=> <Reference>
- *    new_ref.name #=> 'refs/heads/development'
- */
-static VALUE rb_git_ref_rename(int argc, VALUE *argv, VALUE self)
-{
-	git_reference *ref, *out;
-	VALUE rb_name, rb_force;
-	int error, force = 0;
-
-	Data_Get_Struct(self, git_reference, ref);
-	rb_scan_args(argc, argv, "11", &rb_name, &rb_force);
-
-	Check_Type(rb_name, T_STRING);
-	if (!NIL_P(rb_force))
-		force = rugged_parse_bool(rb_force);
-
-	error = git_reference_rename(&out, ref, StringValueCStr(rb_name), force, NULL, NULL);
-	rugged_exception_check(error);
-
-	return rugged_ref_new(rb_cRuggedReference, rugged_owner(self), out);
 }
 
 /*
@@ -451,16 +342,13 @@ void Init_rugged_reference(void)
 
 	rb_define_method(rb_cRuggedReference, "target", rb_git_ref_target, 0);
 	rb_define_method(rb_cRuggedReference, "peel", rb_git_ref_peel, 0);
-	rb_define_method(rb_cRuggedReference, "set_target", rb_git_ref_set_target, -1);
 
 	rb_define_method(rb_cRuggedReference, "type", rb_git_ref_type, 0);
 
 	rb_define_method(rb_cRuggedReference, "name", rb_git_ref_name, 0);
 	rb_define_method(rb_cRuggedReference, "canonical_name", rb_git_ref_name, 0);
-	rb_define_method(rb_cRuggedReference, "rename", rb_git_ref_rename, -1);
 
 	rb_define_method(rb_cRuggedReference, "resolve", rb_git_ref_resolve, 0);
-	rb_define_method(rb_cRuggedReference, "delete!", rb_git_ref_delete, 0);
 
 	rb_define_method(rb_cRuggedReference, "branch?", rb_git_ref_is_branch, 0);
 	rb_define_method(rb_cRuggedReference, "remote?", rb_git_ref_is_remote, 0);
