@@ -41,7 +41,7 @@ module Rugged
     end
 
     def delete!
-      warn "DEPRECATION WARNING: Rugged::Reference#set_target is deprecated and will be removed."
+      warn "DEPRECATION WARNING: Rugged::Reference#delete! is deprecated and will be removed."
       @owner.references.delete(self)
     end
 
