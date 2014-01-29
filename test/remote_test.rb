@@ -157,8 +157,7 @@ class RemotePushTest < Rugged::SandboxedTestCase
     @remote_repo.config['core.bare'] = 'true'
 
     @repo = sandbox_clone("testrepo.git", "testrepo")
-    Rugged::Reference.create(@repo,
-      "refs/heads/unit_test",
+    @repo.references.create("refs/heads/unit_test",
       "8496071c1b46c854b31185ea97743be6a8774479")
 
     @remote = Rugged::Remote.lookup(@repo, 'origin')
@@ -296,7 +295,7 @@ class RemoteTransportTest < Rugged::TestCase
     @remote.connect(:fetch) do |r|
       r.download
       r.update_tips! do |ref, source, destination|
-        assert Rugged::Reference.lookup(@repo, ref)
+        assert @repo.references[ref]
         assert_nil source
         assert destination
       end

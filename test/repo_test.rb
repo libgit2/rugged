@@ -230,8 +230,8 @@ class MergeCommitsRepositoryTest < Rugged::SandboxedTestCase
   end
 
   def test_merge_commits
-    our_commit = Rugged::Branch.lookup(@repo, "master").tip
-    their_commit = Rugged::Branch.lookup(@repo, "branch").tip
+    our_commit = @repo.branches["master"].tip
+    their_commit = @repo.branches["branch"].tip
 
     index = @repo.merge_commits(our_commit, their_commit)
 
@@ -520,8 +520,7 @@ class RepositoryPushTest < Rugged::SandboxedTestCase
     @remote_repo.config['core.bare'] = 'true'
 
     @repo = sandbox_clone("testrepo.git", "testrepo")
-    Rugged::Reference.create(@repo,
-      "refs/heads/unit_test",
+    @repo.references.create("refs/heads/unit_test",
       "8496071c1b46c854b31185ea97743be6a8774479")
   end
 

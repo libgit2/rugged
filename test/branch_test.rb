@@ -10,11 +10,11 @@ class BranchTest < Rugged::TestCase
       "origin/HEAD",
       "origin/master",
       "origin/packed",
-    ], Rugged::Branch.each_name(@repo).sort
+    ], @repo.branches.each_name.sort
   end
 
   def test_list_only_local_branches
-    assert_equal ["master"], Rugged::Branch.each_name(@repo, :local).sort
+    assert_equal ["master"], @repo.branches.each_name(:local).sort
   end
 
   def test_list_only_remote_branches
@@ -22,18 +22,18 @@ class BranchTest < Rugged::TestCase
       "origin/HEAD",
       "origin/master",
       "origin/packed",
-    ], Rugged::Branch.each_name(@repo, :remote).sort
+    ], @repo.branches.each_name(:remote).sort
   end
 
   def test_get_latest_commit_in_branch
-    tip = Rugged::Branch.lookup(@repo, "master").tip
+    tip = @repo.branches["master"].tip
 
     assert_kind_of Rugged::Commit, tip
     assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", tip.oid
   end
 
   def test_lookup_local_branch
-    branch = Rugged::Branch.lookup(@repo, "master")
+    branch = @repo.branches["master"]
     refute_nil branch
 
     assert_equal "master", branch.name
@@ -42,7 +42,7 @@ class BranchTest < Rugged::TestCase
   end
 
   def test_lookup_remote_branches
-    branch = Rugged::Branch.lookup(@repo, "origin/packed", :remote)
+    branch = @repo.branches["origin/packed"]
     refute_nil branch
 
     assert_equal "origin/packed", branch.name
@@ -54,7 +54,7 @@ class BranchTest < Rugged::TestCase
     new_branch = @repo.create_branch("Ångström", "5b5b025afb0b4c913b4c338a42934a3863bf3644")
     refute_nil new_branch
 
-    retrieved_branch = Rugged::Branch.lookup(@repo, "Ångström")
+    retrieved_branch = @repo.branches["Ångström"]
     refute_nil retrieved_branch
 
     assert_equal new_branch, retrieved_branch
@@ -62,24 +62,24 @@ class BranchTest < Rugged::TestCase
 
   def test_delete_branch
     branch = @repo.create_branch("test_branch")
-    branch.delete!
-    assert_nil Rugged::Branch.lookup(@repo, "test_branch")
+    @repo.branches.delete(branch)
+    assert_nil @repo.branches["test_branch"]
   end
 
   def test_is_head
-    assert Rugged::Branch.lookup(@repo, "master").head?
-    refute Rugged::Branch.lookup(@repo, "origin/master", :remote).head?
-    refute Rugged::Branch.lookup(@repo, "origin/packed", :remote).head?
+    assert @repo.branches["master"].head?
+    refute @repo.branches["origin/master"].head?
+    refute @repo.branches["origin/packed"].head?
     refute @repo.create_branch("test_branch").head?
   end
 
   def test_rename_branch
     branch = @repo.create_branch("test_branch")
 
-    branch.move('other_branch')
+    @repo.branches.move(branch, 'other_branch')
 
-    assert_nil Rugged::Branch.lookup(@repo, "test_branch")
-    refute_nil Rugged::Branch.lookup(@repo, "other_branch")
+    assert_nil @repo.branches["test_branch"]
+    refute_nil @repo.branches["other_branch"]
   end
 
   def test_create_new_branch
@@ -199,12 +199,12 @@ class BranchTest < Rugged::TestCase
 
   def test_branch_remote_remote_branch
     assert_equal 'origin',
-      Rugged::Branch.lookup(@repo, "origin/master", :remote).remote.name
+      @repo.branches["origin/master"].remote.name
   end
 
   def test_branch_remote_local_tracking_remote_branch
     assert_equal 'origin',
-      Rugged::Branch.lookup(@repo, "master", :local).remote.name
+      @repo.branches["master"].remote.name
   end
 
   def test_branch_remote_local_non_tracking_branch
@@ -214,23 +214,25 @@ class BranchTest < Rugged::TestCase
   end
 
   def test_branch_upstream
-    upstream_branch = Rugged::Branch.lookup(@repo, "master", :local).upstream
+    upstream_branch = @repo.branches["master"].upstream
     assert_equal 'origin/master', upstream_branch.name
   end
 
   def test_branch_upstream_remote_branch
-    assert_nil Rugged::Branch.lookup(@repo, "origin/master", :remote).upstream
+    assert_nil @repo.branches["origin/master"].upstream
   end
 
   def test_branch_upstream_no_tracking_branch
     branch = @repo.create_branch('test_branch',
-                                 '5b5b025afb0b4c913b4c338a42934a3863bf3644')
+      '5b5b025afb0b4c913b4c338a42934a3863bf3644')
+
     assert_nil branch.upstream
   end
 
   def test_branch_set_upstream_invalid
     branch = @repo.create_branch('test_branch',
-                                 '5b5b025afb0b4c913b4c338a42934a3863bf3644')
+      '5b5b025afb0b4c913b4c338a42934a3863bf3644')
+
     assert_raises TypeError do
       branch.upstream = :invalid_branch
     end
@@ -238,42 +240,46 @@ class BranchTest < Rugged::TestCase
 
   def test_branch_set_upstream_with_reference
     branch = @repo.create_branch('test_branch',
-                                 '5b5b025afb0b4c913b4c338a42934a3863bf3644')
-    branch.upstream =  Rugged::Reference.lookup(@repo, "refs/heads/master")
+      '5b5b025afb0b4c913b4c338a42934a3863bf3644')
+
+    branch.upstream = @repo.references["refs/heads/master"]
     assert_equal 'master',  branch.upstream.name
   end
 
   def test_branch_set_upstream_with_tag_reference
     branch = @repo.create_branch('test_branch',
-                                 '5b5b025afb0b4c913b4c338a42934a3863bf3644')
+      '5b5b025afb0b4c913b4c338a42934a3863bf3644')
+
     assert_raises Rugged::InvalidError do
-      branch.upstream =  Rugged::Reference.lookup(@repo, "refs/tags/v1.0")
+      branch.upstream = @repo.references["refs/tags/v1.0"]
     end
   end
 
   def test_branch_set_upstream_local
     branch = @repo.create_branch('test_branch',
-                                 '5b5b025afb0b4c913b4c338a42934a3863bf3644')
-    branch.upstream =  Rugged::Branch.lookup(@repo, "master", :local)
+      '5b5b025afb0b4c913b4c338a42934a3863bf3644')
+
+    branch.upstream =  @repo.branches["master"]
     assert_equal 'master',  branch.upstream.name
   end
 
   def test_branch_set_upstream_remote
     branch = @repo.create_branch('test_branch',
-                                 '5b5b025afb0b4c913b4c338a42934a3863bf3644')
-    branch.upstream =  Rugged::Branch.lookup(@repo, "origin/master", :remote)
+      '5b5b025afb0b4c913b4c338a42934a3863bf3644')
+
+    branch.upstream =  @repo.branches["origin/master"]
     assert_equal 'origin/master',  branch.upstream.name
   end
 
   def test_branch_unset_upstream
-    branch = Rugged::Branch.lookup(@repo, "master", :local)
+    branch = @repo.branches["master"]
     assert branch.upstream
     branch.upstream = nil
     assert_nil branch.upstream
   end
 
   def test_branch_set_upstream_on_remote_branch
-    branch = Rugged::Branch.lookup(@repo, "origin/master", :remote)
+    branch = @repo.branches["origin/master"]
 
     assert_raises Rugged::InvalidError do
       branch.upstream = @repo.create_branch('test_branch',
