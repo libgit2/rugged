@@ -30,7 +30,7 @@ module Rugged
     end
 
     def move(new_name, force = false)
-      warn "DEPRECATION WARNING: Rugged::Branch.delete! is deprecated and will be removed."
+      warn "DEPRECATION WARNING: Rugged::Branch.move is deprecated and will be removed."
       @owner.branches.move(self, new_name, force)
     end
 
