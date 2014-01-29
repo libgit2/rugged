@@ -37,61 +37,6 @@ static inline VALUE rugged_branch_new(VALUE owner, git_reference *ref)
 
 /*
  *  call-seq:
- *    branch.delete! -> nil
- *
- *  Remove a branch from the repository. The branch object will become invalidated
- *  and won't be able to be used for any other operations.
- */
-static VALUE rb_git_branch_delete(VALUE self)
-{
-	git_reference *branch = NULL;
-
-	Data_Get_Struct(self, git_reference, branch);
-
-	rugged_exception_check(
-		git_branch_delete(branch)
-	);
-
-	return Qnil;
-}
-
-/*
- *  call-seq:
- *    branch.move(new_name, force = false) -> new_branch
- *    branch.rename(new_name, force = false) -> new_branch
- *
- *  Rename a branch to +new_name+.
- *
- *  +new_name+ needs to be a branch name, not an absolute reference path
- *  (e.g. +development+ instead of +refs/heads/development+).
- *
- *  If +force+ is +true+, the branch will be renamed even if a branch
- *  with +new_name+ already exists.
- *
- *  A new Rugged::Branch object for the renamed branch will be returned.
- */
-static VALUE rb_git_branch_move(int argc, VALUE *argv, VALUE self)
-{
-	VALUE rb_new_branch_name, rb_force;
-	git_reference *old_branch = NULL, *new_branch = NULL;
-	int error, force = 0;
-
-	rb_scan_args(argc, argv, "11", &rb_new_branch_name, &rb_force);
-
-	Data_Get_Struct(self, git_reference, old_branch);
-	Check_Type(rb_new_branch_name, T_STRING);
-
-	if (!NIL_P(rb_force))
-		force = rugged_parse_bool(rb_force);
-
-	error = git_branch_move(&new_branch, old_branch, StringValueCStr(rb_new_branch_name), force, NULL, NULL);
-	rugged_exception_check(error);
-
-	return rugged_branch_new(rugged_owner(self), new_branch);
-}
-
-/*
- *  call-seq:
  *    branch.head? -> true or false
  *
  *  Returns +true+ if the branch is pointed at by +HEAD+, +false+ otherwise.
@@ -241,9 +186,6 @@ void Init_rugged_branch(void)
 {
 	rb_cRuggedBranch = rb_define_class_under(rb_mRugged, "Branch", rb_cRuggedReference);
 
-	rb_define_method(rb_cRuggedBranch, "delete!", rb_git_branch_delete, 0);
-	rb_define_method(rb_cRuggedBranch, "rename", rb_git_branch_move, -1);
-	rb_define_method(rb_cRuggedBranch, "move", rb_git_branch_move, -1);
 	rb_define_method(rb_cRuggedBranch, "head?", rb_git_branch_head_p, 0);
 	rb_define_method(rb_cRuggedBranch, "name", rb_git_branch_name, 0);
 	rb_define_method(rb_cRuggedBranch, "remote_name", rb_git_branch_remote_name, 0);

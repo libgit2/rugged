@@ -35,6 +35,45 @@ static inline VALUE rugged_branch_new(VALUE owner, git_reference *ref)
 	return rugged_ref_new(rb_cRuggedBranch, owner, ref);
 }
 
+static inline int rugged_branch_lookup(git_reference **branch, git_repository *repo, VALUE rb_name_or_branch)
+{
+	if (rb_obj_is_kind_of(rb_name_or_branch, rb_cRuggedBranch)) {
+		rb_name_or_branch = rb_funcall(rb_name_or_branch, rb_intern("canonical_name"), 0);
+
+		if (TYPE(rb_name_or_branch) != T_STRING)
+			rb_raise(rb_eTypeError, "Expected #canonical_name to return a String");
+
+		return git_reference_lookup(branch, repo, StringValueCStr(rb_name_or_branch));
+	} else if (TYPE(rb_name_or_branch) == T_STRING) {
+		char *branch_name = StringValueCStr(rb_name_or_branch), *ref_name;
+		int error;
+
+		if (strncmp(branch_name, "refs/heads/", strlen("refs/heads/")) == 0 ||
+		    strncmp(branch_name, "refs/remotes/", strlen("refs/remotes/")) == 0 ||
+		    strcmp(branch_name, "HEAD") == 0)
+			return git_reference_lookup(branch, repo, branch_name);			
+
+		if ((error = git_branch_lookup(branch, repo, branch_name, GIT_BRANCH_LOCAL)) == GIT_OK ||
+		    error != GIT_ENOTFOUND)
+			return error;
+
+		if ((error = git_branch_lookup(branch, repo, branch_name, GIT_BRANCH_REMOTE)) == GIT_OK ||
+		    error != GIT_ENOTFOUND)
+			return error;
+
+		ref_name = xmalloc((strlen(branch_name) + strlen("refs/") + 1)  * sizeof(char));
+		strcpy(ref_name, "refs/");
+		strcat(ref_name, branch_name);
+
+		error = git_reference_lookup(branch, repo, ref_name);
+		xfree(ref_name);
+
+		return error;
+	} else {
+		rb_raise(rb_eTypeError, "Expecting a String or Rugged::Branch instance");		
+	}
+}
+
 /*
  *  call-seq:
  *    BranchCollection.new(repo) -> refs
@@ -109,37 +148,28 @@ static VALUE rb_git_branch_collection_create(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *    Branch.lookup(repository, name, branch_type = :local) -> branch
+ *    Branch.lookup(repository, name) -> branch
  *
  *  Lookup a branch in +repository+, with the given +name+.
  *
  *  +name+ needs to be a branch name, not an absolute reference path
  *  (e.g. +development+ instead of +/refs/heads/development+).
  *
- *  +branch_type+ specifies whether the looked up branch is a local branch
- *  or a remote one. It defaults to looking up local branches.
- *
  *  Returns the looked up branch, or +nil+ if the branch doesn't exist.
  */
-static VALUE rb_git_branch_collection_aref(int argc, VALUE *argv, VALUE self) {
+static VALUE rb_git_branch_collection_aref(VALUE self, VALUE rb_name) {
 	git_reference *branch;
 	git_repository *repo;
 
-	VALUE rb_repo = rugged_owner(self), rb_name, rb_type;
+	VALUE rb_repo = rugged_owner(self);
 	int error;
-	git_branch_t branch_type = GIT_BRANCH_LOCAL;
-
-	rb_scan_args(argc, argv, "11", &rb_name, &rb_type);
 
 	rugged_check_repo(rb_repo);
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
 	Check_Type(rb_name, T_STRING);
 
-	if (!NIL_P(rb_type))
-		branch_type = parse_branch_type(rb_type);
-
-	error = git_branch_lookup(&branch, repo, StringValueCStr(rb_name), branch_type);
+	error = rugged_branch_lookup(&branch, repo, rb_name);
 	if (error == GIT_ENOTFOUND)
 		return Qnil;
 
@@ -227,6 +257,106 @@ static VALUE rb_git_branch_collection_each_name(int argc, VALUE *argv, VALUE sel
 	return each_branch(argc, argv, self, 1);
 }
 
+/*
+ *  call-seq:
+ *    branches.delete(branch) -> nil
+ *    branches.delete(name) -> nil
+ *
+ *  Remove a branch from the repository. The branch object will become invalidated
+ *  and won't be able to be used for any other operations.
+ */
+static VALUE rb_git_branch_collection_delete(VALUE self, VALUE rb_name_or_branch)
+{
+	git_reference *branch;
+	git_repository *repo;
+
+	VALUE rb_repo = rugged_owner(self);
+	int error;
+
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	error = rugged_branch_lookup(&branch, repo, rb_name_or_branch);
+	rugged_exception_check(error);
+
+	error = git_branch_delete(branch);
+	git_reference_free(branch);
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
+/*
+ *  call-seq:
+ *    branch.move(old_name, new_name, force = false) -> new_branch
+ *    branch.move(branch, new_name, force = false) -> new_branch
+ *    branch.rename(old_name, new_name, force = false) -> new_branch
+ *    branch.rename(branch, new_name, force = false) -> new_branch
+ *
+ *  Rename a branch to +new_name+.
+ *
+ *  +new_name+ needs to be a branch name, not an absolute reference path
+ *  (e.g. +development+ instead of +refs/heads/development+).
+ *
+ *  If +force+ is +true+, the branch will be renamed even if a branch
+ *  with +new_name+ already exists.
+ *
+ *  A new Rugged::Branch object for the renamed branch will be returned.
+ */
+static VALUE rb_git_branch_collection_move(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_repo = rugged_owner(self), rb_name_or_branch, rb_new_branch_name, rb_force;
+	git_reference *old_branch = NULL, *new_branch = NULL;
+	git_repository *repo;
+	int error, force = 0;
+
+	rb_scan_args(argc, argv, "21", &rb_name_or_branch, &rb_new_branch_name, &rb_force);
+	Check_Type(rb_new_branch_name, T_STRING);
+
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+	
+	error = rugged_branch_lookup(&old_branch, repo, rb_name_or_branch);
+	rugged_exception_check(error);
+
+	if (!NIL_P(rb_force))
+		force = rugged_parse_bool(rb_force);
+
+	error = git_branch_move(&new_branch, old_branch, StringValueCStr(rb_new_branch_name), force);
+	git_reference_free(old_branch);
+	rugged_exception_check(error);
+
+	return rugged_branch_new(rugged_owner(self), new_branch);
+}
+
+/*
+ *  call-seq:
+ *    branches.exist?(name) -> true or false
+ *    branches.exists?(name) -> true or false
+ *
+ *  Check if a given reference exists in the collection's +repository+.
+ */
+static VALUE rb_git_branch_collection_exist_p(VALUE self, VALUE rb_name)
+{
+	VALUE rb_repo = rugged_owner(self);
+	git_repository *repo;
+	git_reference *branch;
+	int error;
+
+	Check_Type(rb_name, T_STRING);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	error = rugged_branch_lookup(&branch, repo, rb_name);
+	git_reference_free(branch);
+
+	if (error == GIT_ENOTFOUND)
+		return Qfalse;
+	else
+		rugged_exception_check(error);
+
+	return Qtrue;
+}
+
 void Init_rugged_branch_collection(void)
 {
 	rb_cRuggedBranchCollection = rb_define_class_under(rb_mRugged, "BranchCollection", rb_cObject);
@@ -234,9 +364,17 @@ void Init_rugged_branch_collection(void)
 
 	rb_define_method(rb_cRuggedBranchCollection, "initialize", rb_git_branch_collection_initialize, 1);
 
+	rb_define_method(rb_cRuggedBranchCollection, "[]",         rb_git_branch_collection_aref, 1);
+	rb_define_method(rb_cRuggedBranchCollection, "create",     rb_git_branch_collection_create, -1);
+
 	rb_define_method(rb_cRuggedBranchCollection, "each",       rb_git_branch_collection_each, -1);
 	rb_define_method(rb_cRuggedBranchCollection, "each_name",  rb_git_branch_collection_each_name, -1);
 
-	rb_define_method(rb_cRuggedBranchCollection, "[]",         rb_git_branch_collection_aref, -1);
-	rb_define_method(rb_cRuggedBranchCollection, "create",     rb_git_branch_collection_create, -1);
+	rb_define_method(rb_cRuggedBranchCollection, "exist?",     rb_git_branch_collection_exist_p, 1);
+	rb_define_method(rb_cRuggedBranchCollection, "exists?",    rb_git_branch_collection_exist_p, 1);
+
+	rb_define_method(rb_cRuggedBranchCollection, "move",       rb_git_branch_collection_move, -1);
+	rb_define_method(rb_cRuggedBranchCollection, "rename",     rb_git_branch_collection_move, -1);
+	// rb_define_method(rb_cRuggedBranchCollection, "update",     rb_git_branch_collection_update, -1);
+	rb_define_method(rb_cRuggedBranchCollection, "delete",     rb_git_branch_collection_delete, 1);
 }

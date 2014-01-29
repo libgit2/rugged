@@ -12,12 +12,26 @@ module Rugged
 
     def self.lookup(repository, name, branch_type = :local)
       warn "DEPRECATION WARNING: Rugged::Branch.lookup is deprecated and will be removed."
-      repository.branches[name, branch_type]
+      if branch_type == :local
+        repository.branches["refs/heads/#{name}"]
+      else
+        repository.branches["refs/remotes/#{name}"]
+      end
     end
 
     def self.create(repository, name, target, force = false)
       warn "DEPRECATION WARNING: Rugged::Branch.create is deprecated and will be removed."
       repository.branches.create(name, target, force)
+    end
+
+    def delete!
+      warn "DEPRECATION WARNING: Rugged::Branch.delete! is deprecated and will be removed."
+      @owner.branches.delete(self)
+    end
+
+    def move(new_name, force = false)
+      warn "DEPRECATION WARNING: Rugged::Branch.delete! is deprecated and will be removed."
+      @owner.branches.move(self, new_name, force)
     end
 
     # The object pointed at by the tip of this branch
