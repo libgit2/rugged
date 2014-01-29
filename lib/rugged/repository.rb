@@ -141,9 +141,9 @@ module Rugged
 
     # All the tags in the repository.
     #
-    # Returns an Enumerable::Enumerator containing all the String tag names.
-    def tags(pattern="")
-      Rugged::Tag.each(self, pattern)
+    # Returns an TagCollection containing all the tags.
+    def tags
+      @tags ||= TagCollection.new(self)
     end
 
     # All the remotes in the repository.
@@ -156,7 +156,7 @@ module Rugged
 
     # All the branches in the repository
     #
-    # Returns an Enumerable::Enumerator containing Rugged::Branch objects
+    # Returns an BranchCollection containing Rugged::Branch objects
     def branches
       @branches ||= BranchCollection.new(self)
     end

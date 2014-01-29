@@ -391,6 +391,7 @@ void Init_rugged(void)
 	Init_rugged_commit();
 	Init_rugged_tree();
 	Init_rugged_tag();
+	Init_rugged_tag_collection();
 	Init_rugged_blob();
 
 	Init_rugged_index();

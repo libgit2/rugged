@@ -104,8 +104,8 @@ class RepositoryTest < Rugged::SandboxedTestCase
   end
 
   def test_return_matching_tags
-    assert_equal 1, @repo.tags('e90810b').count
-    assert_equal 4, @repo.tags('*tag*').count
+    assert_equal 1, @repo.tags.each('e90810b').count
+    assert_equal 4, @repo.tags.each('*tag*').count
   end
 
   def test_return_all_remotes

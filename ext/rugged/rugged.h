@@ -53,6 +53,7 @@ void Init_rugged_branch_collection(void);
 void Init_rugged_commit(void);
 void Init_rugged_tree(void);
 void Init_rugged_tag(void);
+void Init_rugged_tag_collection(void);
 void Init_rugged_blob(void);
 void Init_rugged_index(void);
 void Init_rugged_repo(void);
