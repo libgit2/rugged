@@ -14,20 +14,20 @@ class TagTest < Rugged::SandboxedTestCase
   def test_lookup_raises_error_if_object_type_does_not_match
     assert_raises Rugged::InvalidError do
       # blob
-      Rugged::TagAnnotation.lookup(@repo, "fa49b077972391ad58037050f2a75f74e3671e92")
+      Rugged::Tag::Annotation.lookup(@repo, "fa49b077972391ad58037050f2a75f74e3671e92")
     end
 
     assert_raises Rugged::InvalidError do
       # commit
-      Rugged::TagAnnotation.lookup(@repo, "8496071c1b46c854b31185ea97743be6a8774479")
+      Rugged::Tag::Annotation.lookup(@repo, "8496071c1b46c854b31185ea97743be6a8774479")
     end
 
     assert_raises Rugged::InvalidError do
       # tree
-      Rugged::TagAnnotation.lookup(@repo, "181037049a54a1eb5fab404658a3a250b44335d7")
+      Rugged::Tag::Annotation.lookup(@repo, "181037049a54a1eb5fab404658a3a250b44335d7")
     end
 
-    subclass = Class.new(Rugged::TagAnnotation)
+    subclass = Class.new(Rugged::Tag::Annotation)
 
     assert_raises Rugged::InvalidError do
       # blob
@@ -128,7 +128,7 @@ class AnnotatedTagTest < Rugged::SandboxedTestCase
   def test_annotation
     annotation = @tag.annotation
 
-    assert_kind_of Rugged::TagAnnotation, annotation
+    assert_kind_of Rugged::Tag::Annotation, annotation
     assert_equal "test tag message\n", annotation.message
     assert_equal 'Scott', annotation.tagger[:name]
     assert_equal 'schacon@gmail.com', annotation.tagger[:email]

@@ -239,7 +239,7 @@ void Init_rugged_tag(void)
 	rb_define_method(rb_cRuggedTag, "annotated?", rb_git_tag_annotated_p, 0);
 	rb_define_method(rb_cRuggedTag, "target", rb_git_tag_target, 0);
 
-	rb_cRuggedTagAnnotation = rb_define_class_under(rb_mRugged, "TagAnnotation", rb_cRuggedObject);
+	rb_cRuggedTagAnnotation = rb_define_class_under(rb_cRuggedTag, "Annotation", rb_cRuggedObject);
 
 	rb_define_method(rb_cRuggedTagAnnotation, "message", rb_git_tag_annotation_message, 0);
 	rb_define_method(rb_cRuggedTagAnnotation, "name", rb_git_tag_annotation_name, 0);
