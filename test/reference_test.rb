@@ -16,7 +16,7 @@ class ReferenceTest < Rugged::TestCase
 
   def test_each_can_handle_exceptions
     assert_raises Exception do
-      Rugged::Reference.each(@repo) do
+      @repo.references.each do
         raise Exception.new("fail")
       end
     end
@@ -38,7 +38,7 @@ class ReferenceTest < Rugged::TestCase
   end
 
   def test_can_open_reference
-    ref = Rugged::Reference.lookup(@repo, "refs/heads/master")
+    ref = @repo.references["refs/heads/master"]
     assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", ref.target
     assert_equal :direct, ref.type
     assert_equal "refs/heads/master", ref.name
@@ -47,7 +47,7 @@ class ReferenceTest < Rugged::TestCase
   end
 
   def test_can_open_a_symbolic_reference
-    ref = Rugged::Reference.lookup(@repo, "HEAD")
+    ref = @repo.references["HEAD"]
     assert_equal "refs/heads/master", ref.target
     assert_equal :symbolic, ref.type
 
@@ -58,12 +58,12 @@ class ReferenceTest < Rugged::TestCase
   end
 
   def test_looking_up_missing_ref_returns_nil
-    ref = Rugged::Reference.lookup(@repo, "lol/wut")
+    ref = @repo.references["lol/wut"]
     assert_equal nil, ref
   end
 
   def test_load_reflog
-    ref = Rugged::Reference.lookup(@repo, "refs/heads/master")
+    ref = @repo.references["refs/heads/master"]
     log = ref.log
     e =  log[1]
     assert_equal e[:id_old], "8496071c1b46c854b31185ea97743be6a8774479"
@@ -73,22 +73,22 @@ class ReferenceTest < Rugged::TestCase
   end
 
   def test_reference_exists
-    exists = Rugged::Reference.exist?(@repo, "refs/heads/master")
+    exists = @repo.references.exists?("refs/heads/master")
     assert exists
 
-    exists = Rugged::Reference.exist?(@repo, "lol/wut")
+    exists = @repo.references.exists?("lol/wut")
     assert !exists
   end
 
   def test_load_packed_ref
-    ref = Rugged::Reference.lookup(@repo, "refs/heads/packed")
+    ref = @repo.references["refs/heads/packed"]
     assert_equal "41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9", ref.target
     assert_equal :direct, ref.type
     assert_equal "refs/heads/packed", ref.name
   end
 
   def test_resolve_head
-    ref = Rugged::Reference.lookup(@repo, "HEAD")
+    ref = @repo.references["HEAD"]
     assert_equal "refs/heads/master", ref.target
     assert_equal :symbolic, ref.type
 
@@ -98,7 +98,7 @@ class ReferenceTest < Rugged::TestCase
   end
 
   def test_reference_to_tag
-    ref = Rugged::Reference.lookup(@repo, "refs/tags/v1.0")
+    ref = @repo.references["refs/tags/v1.0"]
 
     assert_equal "0c37a5391bbff43c37f0d0371823a5509eed5b1d", ref.target
     assert_equal "5b5b025afb0b4c913b4c338a42934a3863bf3644", ref.peel
@@ -109,21 +109,17 @@ class ReferenceWriteTest < Rugged::TestCase
   include Rugged::TempRepositoryAccess
 
   def test_create_force
-    Rugged::Reference.create(@repo, "refs/heads/unit_test", "refs/heads/master")
+    @repo.references.create("refs/heads/unit_test", "refs/heads/master")
 
-    Rugged::Reference.create(@repo,
-                             "refs/heads/unit_test",
-                             "refs/heads/master",
-                             force: true)
+    @repo.references.create("refs/heads/unit_test",
+      "refs/heads/master", force: true)
 
-    Rugged::Reference.create(@repo,
-                             "refs/heads/unit_test",
-                             "refs/heads/master",
-                             force: :force)
+    @repo.references.create("refs/heads/unit_test",
+      "refs/heads/master", force: :force)
   end
 
   def test_list_unicode_refs
-    Rugged::Reference.create(@repo,
+    @repo.references.create(
       "refs/heads/#{ReferenceTest::UNICODE_REF_NAME}",
       "refs/heads/master")
 
@@ -132,55 +128,53 @@ class ReferenceWriteTest < Rugged::TestCase
   end
 
   def test_create_symbolic_ref
-    ref = Rugged::Reference.create(@repo, "refs/heads/unit_test", "refs/heads/master")
+    ref = @repo.references.create("refs/heads/unit_test", "refs/heads/master")
     assert_equal "refs/heads/master", ref.target
     assert_equal :symbolic, ref.type
     assert_equal "refs/heads/unit_test", ref.name
-    ref.delete!
+    @repo.references.delete(ref)
   end
 
   def test_create_ref_from_oid
-    ref = Rugged::Reference.create(@repo,
+    ref = @repo.references.create(
       "refs/heads/unit_test",
       "36060c58702ed4c2a40832c51758d5344201d89a")
 
     assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", ref.target
     assert_equal :direct, ref.type
     assert_equal "refs/heads/unit_test", ref.name
-    ref.delete!
+    @repo.references.delete(ref)
   end
 
   def test_rename_ref
-    ref = Rugged::Reference.create(@repo,
-      "refs/heads/unit_test",
+    ref = @repo.references.create("refs/heads/unit_test",
       "36060c58702ed4c2a40832c51758d5344201d89a")
 
     assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", ref.target
     assert_equal :direct, ref.type
     assert_equal "refs/heads/unit_test", ref.name
 
-    new_ref = ref.rename "refs/heads/rug_new_name"
+    new_ref = @repo.references.rename(ref, "refs/heads/rug_new_name")
     assert_equal "refs/heads/rug_new_name", new_ref.name
-    new_ref.delete!
+    @repo.references.delete(new_ref)
   end
 
   def test_set_ref_target
-    ref = Rugged::Reference.create(@repo,
-      "refs/heads/unit_test",
+    ref = @repo.references.create("refs/heads/unit_test",
       "36060c58702ed4c2a40832c51758d5344201d89a")
 
     assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", ref.target
     assert_equal :direct, ref.type
     assert_equal "refs/heads/unit_test", ref.name
 
-    new_ref = ref.set_target "5b5b025afb0b4c913b4c338a42934a3863bf3644"
+    new_ref = @repo.references.update(ref, "5b5b025afb0b4c913b4c338a42934a3863bf3644")
     assert_equal "5b5b025afb0b4c913b4c338a42934a3863bf3644", new_ref.target
-    new_ref.delete!
+    @repo.references.delete(new_ref)
   end
 
   def test_write_and_read_unicode_refs
-    ref1 = Rugged::Reference.create(@repo, "refs/heads/Ångström", "refs/heads/master")
-    ref2 = Rugged::Reference.create(@repo, "refs/heads/foobar", "refs/heads/Ångström")
+    ref1 = @repo.references.create("refs/heads/Ångström", "refs/heads/master")
+    ref2 = @repo.references.create("refs/heads/foobar", "refs/heads/Ångström")
 
     assert_equal "refs/heads/Ångström", ref1.name
     assert_equal "refs/heads/Ångström", ref2.target
@@ -201,14 +195,12 @@ class ReflogTest < Rugged::TestCase
     @repo.config['user.name'] = @comitter[:name]
     @repo.config['user.email'] = @comitter[:email]
 
-    @ref = Rugged::Reference.create(@repo,
-      "refs/heads/test-reflog",
+    @ref = @repo.references.create("refs/heads/test-reflog",
       "36060c58702ed4c2a40832c51758d5344201d89a")
   end
 
   def test_create_default_log
-    ref = Rugged::Reference.create(@repo,
-      "refs/heads/test-reflog-default",
+    ref = @repo.references.create("refs/heads/test-reflog-default",
       "36060c58702ed4c2a40832c51758d5344201d89a")
     reflog = ref.log
 
@@ -223,8 +215,7 @@ class ReflogTest < Rugged::TestCase
   end
 
   def test_create_default_log_custom_signature
-    ref = Rugged::Reference.create(@repo,
-      "refs/heads/test-reflog-default",
+    ref = @repo.references.create("refs/heads/test-reflog-default",
       "36060c58702ed4c2a40832c51758d5344201d89a", {
         signature: {
           name: "Other User",
@@ -244,7 +235,7 @@ class ReflogTest < Rugged::TestCase
   end
 
   def test_create_default_log_custom_log_message
-    ref = Rugged::Reference.create(@repo,
+    ref = @repo.references.create(
       "refs/heads/test-reflog-default",
       "36060c58702ed4c2a40832c51758d5344201d89a", {
         message: "reference created"
@@ -262,7 +253,7 @@ class ReflogTest < Rugged::TestCase
   end
 
   def test_create_default_log_custom_signature_and_log_message
-    ref = Rugged::Reference.create(@repo,
+    ref = @repo.references.create(
       "refs/heads/test-reflog-default",
       "36060c58702ed4c2a40832c51758d5344201d89a", {
         message: "reference created",
@@ -284,7 +275,7 @@ class ReflogTest < Rugged::TestCase
   end
 
   def test_set_target_default_log
-    @ref.set_target "5b5b025afb0b4c913b4c338a42934a3863bf3644"
+    @repo.references.update(@ref, "5b5b025afb0b4c913b4c338a42934a3863bf3644")
 
     reflog = @ref.log
     assert_equal reflog.size, 2
@@ -298,12 +289,12 @@ class ReflogTest < Rugged::TestCase
   end
 
   def test_set_target_default_log_custom_signature
-    @ref.set_target "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
+    @repo.references.update(@ref, "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
       signature: {
         name: "Other User",
         email: "other@exmaple.com"
       }
-    }
+    })
 
     reflog = @ref.log
     assert_equal reflog.size, 2
@@ -317,9 +308,9 @@ class ReflogTest < Rugged::TestCase
   end
 
   def test_set_target_default_log_custom_log_message
-    @ref.set_target "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
+    @repo.references.update(@ref, "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
       message: "reference updated"
-    }
+    })
 
     reflog = @ref.log
     assert_equal reflog.size, 2
