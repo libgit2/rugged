@@ -69,28 +69,28 @@ class TagTest < Rugged::SandboxedTestCase
   end
 
   def test_lookup
-    tag = Rugged::Tag.lookup(@repo, "e90810b")
+    tag = @repo.tags["e90810b"]
 
     assert_equal tag.name, "e90810b"
     assert_equal tag.canonical_name, "refs/tags/e90810b"
   end
 
   def test_lookup_git_compliance
-    Rugged::Tag.create(@repo, "refs/tags/v2.0", "e90810b8df3e80c413d903f631643c716887138d")
+    @repo.tags.create("refs/tags/v2.0", "e90810b8df3e80c413d903f631643c716887138d")
 
-    assert_nil Rugged::Tag.lookup(@repo, "v2.0")
-    assert_equal "refs/tags/refs/tags/v2.0", Rugged::Tag.lookup(@repo, "refs/tags/v2.0").canonical_name
-    assert_equal "refs/tags/refs/tags/v2.0", Rugged::Tag.lookup(@repo, "refs/tags/refs/tags/v2.0").canonical_name
+    assert_nil @repo.tags["v2.0"]
+    assert_equal "refs/tags/refs/tags/v2.0", @repo.tags["refs/tags/v2.0"].canonical_name
+    assert_equal "refs/tags/refs/tags/v2.0", @repo.tags["refs/tags/refs/tags/v2.0"].canonical_name
 
-    Rugged::Tag.create(@repo, "v2.0", "e90810b8df3e80c413d903f631643c716887138d")
+    @repo.tags.create("v2.0", "e90810b8df3e80c413d903f631643c716887138d")
 
-    assert_equal "refs/tags/v2.0", Rugged::Tag.lookup(@repo, "v2.0").canonical_name
-    assert_equal "refs/tags/v2.0", Rugged::Tag.lookup(@repo, "refs/tags/v2.0").canonical_name
-    assert_equal "refs/tags/refs/tags/v2.0", Rugged::Tag.lookup(@repo, "refs/tags/refs/tags/v2.0").canonical_name
+    assert_equal "refs/tags/v2.0", @repo.tags["v2.0"].canonical_name
+    assert_equal "refs/tags/v2.0", @repo.tags["refs/tags/v2.0"].canonical_name
+    assert_equal "refs/tags/refs/tags/v2.0", @repo.tags["refs/tags/refs/tags/v2.0"].canonical_name
   end
 
   def test_each
-    tags = Rugged::Tag.each(@repo).sort_by(&:name)
+    tags = @repo.tags.each.sort_by(&:name)
 
     assert_equal tags.count, 7
     assert_equal tags[0].name, "annotated_tag_to_blob"
@@ -98,7 +98,7 @@ class TagTest < Rugged::SandboxedTestCase
   end
 
   def test_each_name
-    tag_names = Rugged::Tag.each_name(@repo).sort
+    tag_names = @repo.tags.each_name.sort
 
     assert_equal tag_names.count, 7
     assert_equal tag_names[0], "annotated_tag_to_blob"
@@ -110,7 +110,7 @@ class AnnotatedTagTest < Rugged::SandboxedTestCase
   def setup
     super
     @repo = sandbox_init("testrepo.git")
-    @tag = Rugged::Tag.create(@repo, 'annotated_tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
+    @tag = @repo.tags.create('annotated_tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
       :message => "test tag message\n",
       :tagger  => { :name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
     })
@@ -147,7 +147,7 @@ class LightweightTagTest < Rugged::SandboxedTestCase
   def setup
     super
     @repo = sandbox_init("testrepo.git")
-    @tag = Rugged::Tag.create(@repo, 'lightweight_tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644")
+    @tag = @repo.tags.create('lightweight_tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644")
   end
 
   def teardown
@@ -175,7 +175,7 @@ class TagWriteTest < Rugged::TestCase
   include Rugged::TempRepositoryAccess
 
   def test_writing_a_tag
-    tag = Rugged::Tag.create(@repo, 'tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
+    tag = @repo.tags.create('tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
       :message => "test tag message\n",
       :tagger  => { :name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
     })
@@ -194,7 +194,7 @@ class TagWriteTest < Rugged::TestCase
     @repo.config['user.name'] = name
     @repo.config['user.email'] = email
 
-    tag = Rugged::Tag.create(@repo, 'tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
+    tag = @repo.tags.create('tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
       :message => "test tag message\n"
     })
 
@@ -204,7 +204,7 @@ class TagWriteTest < Rugged::TestCase
 
   def test_tag_invalid_message_type
     assert_raises TypeError do
-      Rugged::Tag.create(@repo, 'tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
+      @repo.tags.create('tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
         :message => :invalid_message,
         :tagger  => {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
       })
@@ -212,7 +212,7 @@ class TagWriteTest < Rugged::TestCase
   end
 
   def test_writing_light_tags
-    tag = Rugged::Tag.create(@repo, 'tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644")
+    tag = @repo.tags.create('tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644")
     assert_equal @repo.lookup("5b5b025afb0b4c913b4c338a42934a3863bf3644"), tag.target
   end
 end
