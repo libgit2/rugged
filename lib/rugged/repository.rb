@@ -124,11 +124,11 @@ module Rugged
     #
     # Returns a Rugged::Reference.
     def ref(ref_name)
-      Rugged::Reference.lookup(self, ref_name)
+      references[ref_name]
     end
 
     def refs(glob = nil)
-      Rugged::Reference.each(self, glob)
+      references.each(glob)
     end
 
     def references
