@@ -35,6 +35,7 @@ static inline VALUE rugged_branch_new(VALUE owner, git_reference *ref)
 	return rugged_ref_new(rb_cRuggedBranch, owner, ref);
 }
 
+// Helper method to normalize branch lookups.
 static inline int rugged_branch_lookup(git_reference **branch, git_repository *repo, VALUE rb_name_or_branch)
 {
 	if (rb_obj_is_kind_of(rb_name_or_branch, rb_cRuggedBranch)) {
@@ -77,6 +78,8 @@ static inline int rugged_branch_lookup(git_reference **branch, git_repository *r
 /*
  *  call-seq:
  *    BranchCollection.new(repo) -> refs
+ *
+ *  Creates and returns a new collection of branches for the given +repo+.
  */
 static VALUE rb_git_branch_collection_initialize(VALUE self, VALUE repo)
 {
@@ -103,19 +106,18 @@ static git_branch_t parse_branch_type(VALUE rb_filter)
 
 /*
  *  call-seq:
- *    Branch.create(repository, name, target, force = false) -> branch
+ *    branches.create(name, target, force = false) -> branch
  *
- *  Create a new branch in +repository+, with the given +name+, and pointing
- *  to the +target+.
+ *  Create a new branch with the given +name+, pointing to the +target+.
  *
  *  +name+ needs to be a branch name, not an absolute reference path
  *  (e.g. +development+ instead of +refs/heads/development+).
  *
- *  +target+ needs to be an existing commit in the given +repository+.
+ *  +target+ needs to be an existing commit in the given repository.
  *
  *  If +force+ is +true+, any existing branches will be overwritten.
  *
- *  Returns a Rugged::Branch object with the newly created branch.
+ *  Returns a Rugged::Branch for the newly created branch.
  */
 static VALUE rb_git_branch_collection_create(int argc, VALUE *argv, VALUE self)
 {
@@ -148,12 +150,18 @@ static VALUE rb_git_branch_collection_create(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *    Branch.lookup(repository, name) -> branch
+ *    branches[name] -> branch
  *
- *  Lookup a branch in +repository+, with the given +name+.
+ *  Return the branch with the given +name+.
  *
- *  +name+ needs to be a branch name, not an absolute reference path
- *  (e.g. +development+ instead of +/refs/heads/development+).
+ *  Branches can be looked up by their relative (+development+) or absolute
+ *  (+refs/heads/development+) branch name.
+ *
+ *  If a local branch and a remote branch both share the same short name
+ *  (e.g. +refs/heads/origin/master+ and +refs/remotes/origin/master+),
+ *  passing +origin/master+ as the +name+ will return the local branch.
+ *  You can explicitly request the local branch by passing
+ *  +heads/origin/master+, or the remote branch through +remotes/origin/master+.
  *
  *  Returns the looked up branch, or +nil+ if the branch doesn't exist.
  */
@@ -226,10 +234,10 @@ static VALUE each_branch(int argc, VALUE *argv, VALUE self, int branch_names_onl
 
 /*
  *  call-seq:
- *    branches.each(repository, filter = nil) { |branch| block }
- *    branches.each(repository, filter = nil) -> enumerator
+ *    branches.each([filter]) { |branch| block }
+ *    branches.each([filter]) -> enumerator
  *
- *  Iterate through the branches in +repository+. Iteration can be
+ *  Iterate through the branches in the collection. Iteration can be
  *  optionally filtered to yield only +:local+ or +:remote+ branches.
  *
  *  The given block will be called once with a +Rugged::Branch+ object
@@ -243,10 +251,10 @@ static VALUE rb_git_branch_collection_each(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *    branches.each_name(repository, filter = nil) { |branch_name| block }
- *    branches.each_name(repository, filter = nil) -> enumerator
+ *    branches.each_name([filter]) { |branch_name| block }
+ *    branches.each_name([filter]) -> enumerator
  *
- *  Iterate through the names of the branches in +repository+. Iteration can be
+ *  Iterate through the names of the branches in the collection. Iteration can be
  *  optionally filtered to yield only +:local+ or +:remote+ branches.
  *
  *  The given block will be called once with the name of each branch as a +String+.
@@ -262,8 +270,10 @@ static VALUE rb_git_branch_collection_each_name(int argc, VALUE *argv, VALUE sel
  *    branches.delete(branch) -> nil
  *    branches.delete(name) -> nil
  *
- *  Remove a branch from the repository. The branch object will become invalidated
- *  and won't be able to be used for any other operations.
+ *  Delete the specified branch.
+ *
+ *  If a Rugged::Branch object was passed, the object will become 
+ *  invalidated and won't be able to be used for any other operations.
  */
 static VALUE rb_git_branch_collection_delete(VALUE self, VALUE rb_name_or_branch)
 {
@@ -334,7 +344,7 @@ static VALUE rb_git_branch_collection_move(int argc, VALUE *argv, VALUE self)
  *    branches.exist?(name) -> true or false
  *    branches.exists?(name) -> true or false
  *
- *  Check if a given reference exists in the collection's +repository+.
+ *  Check if a branch exists with the given +name+.
  */
 static VALUE rb_git_branch_collection_exist_p(VALUE self, VALUE rb_name)
 {
@@ -375,6 +385,5 @@ void Init_rugged_branch_collection(void)
 
 	rb_define_method(rb_cRuggedBranchCollection, "move",       rb_git_branch_collection_move, -1);
 	rb_define_method(rb_cRuggedBranchCollection, "rename",     rb_git_branch_collection_move, -1);
-	// rb_define_method(rb_cRuggedBranchCollection, "update",     rb_git_branch_collection_update, -1);
 	rb_define_method(rb_cRuggedBranchCollection, "delete",     rb_git_branch_collection_delete, 1);
 }
