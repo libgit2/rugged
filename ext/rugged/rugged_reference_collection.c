@@ -33,6 +33,8 @@ VALUE rb_cRuggedReferenceCollection;
 /*
  *  call-seq:
  *    ReferenceCollection.new(repo) -> refs
+ *
+ *  Creates and returns a new collection of references for the given +repo+.
  */
 static VALUE rb_git_reference_collection_initialize(VALUE self, VALUE repo)
 {
@@ -42,16 +44,13 @@ static VALUE rb_git_reference_collection_initialize(VALUE self, VALUE repo)
 
 /*
  *  call-seq:
- *    references.create(name, oid, force = false) -> new_ref
- *    references.create(name, target, force = false) -> new_ref
+ *    references.create(name, oid, options = {}) -> new_ref
+ *    references.create(name, target, options = {}) -> new_ref
  *
  *  Create a symbolic or direct reference on the collection's +repository+ with the given +name+.
  *
  *  If the second argument is a valid OID, the reference will be created as direct.
  *  Otherwise, it will be assumed the target is the name of another reference.
- *
- *  If a reference with the given +name+ already exists and +:force+ is not +true+,
- *  an exception will be raised.
  *
  *  The following options can be passed in the +options+ Hash:
  *
@@ -64,6 +63,9 @@ static VALUE rb_git_reference_collection_initialize(VALUE self, VALUE repo)
  *
  *  :signature ::
  *    The signature to be used for populating the reflog entry.
+ *
+ *  If a reference with the given +name+ already exists and +:force+ is not +true+,
+ *  an exception will be raised.
  *
  *  The +:message+ and +:signature+ options are ignored if the reference does not
  *  belong to the standard set (+HEAD+, +refs/heads/*+, +refs/remotes/*+ or +refs/notes/*+)
@@ -230,10 +232,10 @@ static VALUE rb_git_reference_collection_each_name(int argc, VALUE *argv, VALUE 
 
 /*
  *  call-seq:
- *    references.exist?(repository, ref_name) -> true or false
- *    references.exists?(repository, ref_name) -> true or false
+ *    references.exist?(name) -> true or false
+ *    references.exists?(name) -> true or false
  *
- *  Check if a given reference exists in the collection's +repository+.
+ *  Check if a given reference exists with the given +name+.
  */
 static VALUE rb_git_reference_collection_exist_p(VALUE self, VALUE rb_name_or_ref)
 {
@@ -397,7 +399,10 @@ cleanup:
  *    references.delete(ref) -> nil
  *    references.delete(name) -> nil
  *
- *  Delete +ref+ or the reference with the given +name+ from disk.
+ *  Delete specified reference.
+ *
+ *  If a Rugged::Reference object was passed, the object will become
+ *  invalidated and won't be able to be used for any other operations.
  *
  *    repo.references.delete("HEAD")
  *    # Reference no longer exists on disk
