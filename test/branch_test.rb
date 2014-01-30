@@ -13,6 +13,18 @@ class BranchTest < Rugged::TestCase
     ], @repo.branches.each_name.sort
   end
 
+  def test_lookup_with_ambiguous_names
+    @repo.branches.create("origin/master", "41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9")
+
+    assert_equal "41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9", @repo.branches["origin/master"].target
+
+    assert_equal "41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9", @repo.branches["heads/origin/master"].target
+    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", @repo.branches["remotes/origin/master"].target
+
+    assert_equal "41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9", @repo.branches["refs/heads/origin/master"].target
+    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", @repo.branches["refs/remotes/origin/master"].target
+  end
+
   def test_list_only_local_branches
     assert_equal ["master"], @repo.branches.each_name(:local).sort
   end
