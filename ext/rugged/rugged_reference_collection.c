@@ -118,9 +118,10 @@ static VALUE rb_git_reference_collection_create(int argc, VALUE *argv, VALUE sel
 
 /*
  *  call-seq:
- *    references[ref_name] -> new_ref
+ *    references[name] -> new_ref
  *
- *  Lookup a reference from the collection's repository.
+ *  Lookup a reference in the collection with the given +name+.
+ *
  *  Returns a new Rugged::Reference object.
  */
 static VALUE rb_git_reference_collection_aref(VALUE self, VALUE rb_name) {

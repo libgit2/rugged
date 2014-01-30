@@ -84,7 +84,7 @@ static VALUE rb_git_tag_collection_aref(VALUE self, VALUE rb_name)
  *  call-seq:
  *    tags.delete(name) -> nil
  *
- *  Delete the tag reference identified by +name+ from +repo+.
+ *  Delete the tag reference identified by +name+.
  */
 static VALUE rb_git_tag_collection_delete(VALUE self, VALUE rb_name)
 {
