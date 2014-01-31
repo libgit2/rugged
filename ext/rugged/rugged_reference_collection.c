@@ -266,8 +266,8 @@ static VALUE rb_git_reference_collection_exist_p(VALUE self, VALUE rb_name_or_re
 
 /*
  *  call-seq:
- *    references.rename(old_name, new_name, force = false) -> new_ref
- *    references.rename(ref, new_name, force = false) -> new_ref
+ *    references.rename(old_name, new_name, options = {}) -> new_ref
+ *    references.rename(ref, new_name, options = {}) -> new_ref
  *
  *  Change the name of a reference. If +force+ is +true+, any previously
  *  existing references will be overwritten when renaming.
@@ -277,20 +277,38 @@ static VALUE rb_git_reference_collection_exist_p(VALUE self, VALUE rb_name_or_re
  *    reference.name #=> 'refs/heads/master'
  *    new_ref = references.rename(ref, 'refs/heads/development') #=> <Reference>
  *    new_ref.name #=> 'refs/heads/development'
+ *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :force ::
+ *    Overwrites the reference with the given +name+, if it already exists,
+ *    instead of raising an exception.
+ *
+ *  :message ::
+ *    A single line log message to be appended to the reflog.
+ *
+ *  :signature ::
+ *    The signature to be used for populating the reflog entry.
+ *
+ *  If a reference with the given +new_name+ already exists and +:force+ is not +true+,
+ *  an exception will be raised.
+ *
+ *  The +:message+ and +:signature+ options are ignored if the reference does not
+ *  belong to the standard set (+HEAD+, +refs/heads/*+, +refs/remotes/*+ or +refs/notes/*+)
+ *  and it does not have a reflog.
  */
 static VALUE rb_git_reference_collection_rename(int argc, VALUE *argv, VALUE self)
 {
-	VALUE rb_new_name, rb_name_or_ref, rb_force;
+	VALUE rb_new_name, rb_name_or_ref, rb_options;
 	VALUE rb_repo = rugged_owner(self);
 	git_reference *ref, *out;
 	git_repository *repo;
+	git_signature *signature = NULL;
+	char *log_message = NULL;
 	int error, force = 0;
 
-	rb_scan_args(argc, argv, "21", &rb_name_or_ref, &rb_new_name, &rb_force);
+	rb_scan_args(argc, argv, "20:", &rb_name_or_ref, &rb_new_name, &rb_options);
 	Check_Type(rb_new_name, T_STRING);
-
-	if (!NIL_P(rb_force))
-		force = rugged_parse_bool(rb_force);
 
 	if (rb_obj_is_kind_of(rb_name_or_ref, rb_cRuggedReference))
 		rb_name_or_ref = rb_funcall(rb_name_or_ref, rb_intern("canonical_name"), 0);
@@ -301,11 +319,26 @@ static VALUE rb_git_reference_collection_rename(int argc, VALUE *argv, VALUE sel
 	rugged_check_repo(rb_repo);
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
-	error = git_reference_lookup(&ref, repo, StringValueCStr(rb_name_or_ref));
-	rugged_exception_check(error);
+	if (!NIL_P(rb_options)) {
+		VALUE rb_val;
 
-	error = git_reference_rename(&out, ref, StringValueCStr(rb_new_name), force);
+		force = RTEST(rb_hash_aref(rb_options, CSTR2SYM("force")));
+
+		rb_val = rb_hash_aref(rb_options, CSTR2SYM("signature"));
+		if (!NIL_P(rb_val))
+			signature = rugged_signature_get(rb_val, repo);
+
+		rb_val = rb_hash_aref(rb_options, CSTR2SYM("message"));
+		if (!NIL_P(rb_val))
+			log_message = StringValueCStr(rb_val);
+	}
+
+	if ((error = git_reference_lookup(&ref, repo, StringValueCStr(rb_name_or_ref))) == GIT_OK);
+		error = git_reference_rename(&out, ref, StringValueCStr(rb_new_name), force, signature, log_message);
+
 	git_reference_free(ref);
+	git_signature_free(signature);
+
 	rugged_exception_check(error);
 
 	return rugged_ref_new(rb_cRuggedReference, rugged_owner(self), out);

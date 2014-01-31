@@ -106,7 +106,7 @@ static git_branch_t parse_branch_type(VALUE rb_filter)
 
 /*
  *  call-seq:
- *    branches.create(name, target, force = false) -> branch
+ *    branches.create(name, target, options = {}) -> branch
  *
  *  Create a new branch with the given +name+, pointing to the +target+.
  *
@@ -115,19 +115,34 @@ static git_branch_t parse_branch_type(VALUE rb_filter)
  *
  *  +target+ needs to be an existing commit in the given repository.
  *
- *  If +force+ is +true+, any existing branches will be overwritten.
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :force ::
+ *    Overwrites the branch with the given +name+, if it already exists,
+ *    instead of raising an exception.
+ *
+ *  :message ::
+ *    A single line log message to be appended to the reflog.
+ *
+ *  :signature ::
+ *    The signature to be used for populating the reflog entry.
+ *
+ *  If a branch with the given +name+ already exists and +:force+ is not +true+,
+ *  an exception will be raised.
  *
  *  Returns a Rugged::Branch for the newly created branch.
  */
 static VALUE rb_git_branch_collection_create(int argc, VALUE *argv, VALUE self)
 {
-	VALUE rb_repo = rugged_owner(self), rb_name, rb_target, rb_force;
+	VALUE rb_repo = rugged_owner(self), rb_name, rb_target, rb_options;
 	git_repository *repo;
 	git_reference *branch;
 	git_commit *target;
+	git_signature *signature = NULL;
+	char *log_message = NULL;
 	int error, force = 0;
 
-	rb_scan_args(argc, argv, "21", &rb_name, &rb_target, &rb_force);
+	rb_scan_args(argc, argv, "20:", &rb_name, &rb_target, &rb_options);
 
 	rugged_check_repo(rb_repo);
 	Data_Get_Struct(rb_repo, git_repository, repo);
@@ -135,13 +150,26 @@ static VALUE rb_git_branch_collection_create(int argc, VALUE *argv, VALUE self)
 	Check_Type(rb_name, T_STRING);
 	Check_Type(rb_target, T_STRING);
 
-	if (!NIL_P(rb_force))
-		force = rugged_parse_bool(rb_force);
+	if (!NIL_P(rb_options)) {
+		VALUE rb_val;
+
+		force = RTEST(rb_hash_aref(rb_options, CSTR2SYM("force")));
+
+		rb_val = rb_hash_aref(rb_options, CSTR2SYM("signature"));
+		if (!NIL_P(rb_val))
+			signature = rugged_signature_get(rb_val, repo);
+
+		rb_val = rb_hash_aref(rb_options, CSTR2SYM("message"));
+		if (!NIL_P(rb_val))
+			log_message = StringValueCStr(rb_val);
+	}
 
 	target = (git_commit *)rugged_object_get(repo, rb_target, GIT_OBJ_COMMIT);
 
-	error = git_branch_create(&branch, repo, StringValueCStr(rb_name), target, force);
+	error = git_branch_create(&branch, repo, StringValueCStr(rb_name), target, force, signature, log_message);
+
 	git_commit_free(target);
+	git_signature_free(signature);
 
 	rugged_exception_check(error);
 
@@ -298,29 +326,44 @@ static VALUE rb_git_branch_collection_delete(VALUE self, VALUE rb_name_or_branch
 
 /*
  *  call-seq:
- *    branch.move(old_name, new_name, force = false) -> new_branch
- *    branch.move(branch, new_name, force = false) -> new_branch
- *    branch.rename(old_name, new_name, force = false) -> new_branch
- *    branch.rename(branch, new_name, force = false) -> new_branch
+ *    branch.move(old_name, new_name, options = {}) -> new_branch
+ *    branch.move(branch, new_name, options = {}) -> new_branch
+ *    branch.rename(old_name, new_name, options = {}) -> new_branch
+ *    branch.rename(branch, new_name, options = {}) -> new_branch
  *
  *  Rename a branch to +new_name+.
  *
  *  +new_name+ needs to be a branch name, not an absolute reference path
  *  (e.g. +development+ instead of +refs/heads/development+).
  *
- *  If +force+ is +true+, the branch will be renamed even if a branch
- *  with +new_name+ already exists.
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :force ::
+ *    Overwrites the branch with the given +name+, if it already exists,
+ *    instead of raising an exception.
+ *
+ *  :message ::
+ *    A single line log message to be appended to the reflog.
+ *
+ *  :signature ::
+ *    The signature to be used for populating the reflog entry.
+ *
+ *  If a branch with the given +new_name+ already exists and +:force+ is not +true+,
+ *  an exception will be raised.
  *
  *  A new Rugged::Branch object for the renamed branch will be returned.
+ *
  */
 static VALUE rb_git_branch_collection_move(int argc, VALUE *argv, VALUE self)
 {
-	VALUE rb_repo = rugged_owner(self), rb_name_or_branch, rb_new_branch_name, rb_force;
+	VALUE rb_repo = rugged_owner(self), rb_name_or_branch, rb_new_branch_name, rb_options;
 	git_reference *old_branch = NULL, *new_branch = NULL;
 	git_repository *repo;
+	git_signature *signature = NULL;
+	char *log_message = NULL;
 	int error, force = 0;
 
-	rb_scan_args(argc, argv, "21", &rb_name_or_branch, &rb_new_branch_name, &rb_force);
+	rb_scan_args(argc, argv, "20:", &rb_name_or_branch, &rb_new_branch_name, &rb_options);
 	Check_Type(rb_new_branch_name, T_STRING);
 
 	rugged_check_repo(rb_repo);
@@ -329,11 +372,25 @@ static VALUE rb_git_branch_collection_move(int argc, VALUE *argv, VALUE self)
 	error = rugged_branch_lookup(&old_branch, repo, rb_name_or_branch);
 	rugged_exception_check(error);
 
-	if (!NIL_P(rb_force))
-		force = rugged_parse_bool(rb_force);
+	if (!NIL_P(rb_options)) {
+		VALUE rb_val;
 
-	error = git_branch_move(&new_branch, old_branch, StringValueCStr(rb_new_branch_name), force);
+		force = RTEST(rb_hash_aref(rb_options, CSTR2SYM("force")));
+
+		rb_val = rb_hash_aref(rb_options, CSTR2SYM("signature"));
+		if (!NIL_P(rb_val))
+			signature = rugged_signature_get(rb_val, repo);
+
+		rb_val = rb_hash_aref(rb_options, CSTR2SYM("message"));
+		if (!NIL_P(rb_val))
+			log_message = StringValueCStr(rb_val);
+	}
+
+	error = git_branch_move(&new_branch, old_branch, StringValueCStr(rb_new_branch_name), force, signature, log_message);
+
+	git_signature_free(signature);
 	git_reference_free(old_branch);
+
 	rugged_exception_check(error);
 
 	return rugged_branch_new(rugged_owner(self), new_branch);
