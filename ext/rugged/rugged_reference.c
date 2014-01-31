@@ -191,29 +191,6 @@ static VALUE rb_git_ref_resolve(VALUE self)
 	return rugged_ref_new(rb_cRuggedReference, rugged_owner(self), resolved);
 }
 
-/*
- *  call-seq:
- *    reference.delete! -> nil
- *
- *  Delete this reference from disk.
- *
- *    reference.name #=> 'HEAD'
- *    reference.delete!
- *    # Reference no longer exists on disk
- */
-static VALUE rb_git_ref_delete(VALUE self)
-{
-	git_reference *ref;
-	int error;
-
-	Data_Get_Struct(self, git_reference, ref);
-
-	error = git_reference_delete(ref);
-	rugged_exception_check(error);
-
-	return Qnil;
-}
-
 static VALUE reflog_entry_new(const git_reflog_entry *entry)
 {
 	VALUE rb_entry = rb_hash_new();
