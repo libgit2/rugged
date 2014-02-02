@@ -130,6 +130,43 @@ class ReferenceTest < Rugged::SandboxedTestCase
     @repo.references.delete(branch)
     refute @repo.references.exists?("refs/heads/master")
   end
+
+  def test_reference_is_branch
+    repo = sandbox_init("testrepo.git")
+
+    begin
+      assert repo.references["refs/heads/master"].branch?
+
+      refute repo.references["refs/remotes/test/master"].branch?
+      refute repo.references["refs/tags/test"].branch?
+    ensure
+      repo.close
+    end
+  end
+
+  def test_reference_is_remote
+    repo = sandbox_init("testrepo.git")
+    begin
+      assert repo.references["refs/remotes/test/master"].remote?
+
+      refute repo.references["refs/heads/master"].remote?
+      refute repo.references["refs/tags/test"].remote?
+    ensure
+      repo.close
+    end
+  end
+
+  def test_reference_is_tag
+    repo = sandbox_init("testrepo.git")
+    begin
+      assert repo.references["refs/tags/test"].tag?
+
+      refute repo.references["refs/heads/master"].tag?
+      refute repo.references["refs/remotes/test/master"].tag?
+    ensure
+      repo.close
+    end
+  end
 end
 
 class ReferenceWriteTest < Rugged::TestCase

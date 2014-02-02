@@ -335,7 +335,7 @@ static VALUE rb_git_has_reflog(VALUE self)
  *  call-seq:
  *    reference.branch? -> true or false
  *
- *  Return whether a given reference is a branch
+ *  Returns +true+ if +reference+ is a local branch, false otherwise.
  */
 static VALUE rb_git_ref_is_branch(VALUE self)
 {
@@ -348,13 +348,26 @@ static VALUE rb_git_ref_is_branch(VALUE self)
  *  call-seq:
  *    reference.remote? -> true or false
  *
- *  Return whether a given reference is a remote
+ *  Returns +true+ if +reference+ is a remote branch, false otherwise.
  */
 static VALUE rb_git_ref_is_remote(VALUE self)
 {
 	git_reference *ref;
 	Data_Get_Struct(self, git_reference, ref);
 	return git_reference_is_remote(ref) ? Qtrue : Qfalse;
+}
+
+/*
+ *  call-seq:
+ *    reference.tag? -> true or false
+ *
+ *  Returns +true+ if +reference+ is a tag, false otherwise.
+ */
+static VALUE rb_git_ref_is_tag(VALUE self)
+{
+	git_reference *ref;
+	Data_Get_Struct(self, git_reference, ref);
+	return git_reference_is_tag(ref) ? Qtrue : Qfalse;
 }
 
 void Init_rugged_reference(void)
@@ -376,6 +389,7 @@ void Init_rugged_reference(void)
 
 	rb_define_method(rb_cRuggedReference, "branch?", rb_git_ref_is_branch, 0);
 	rb_define_method(rb_cRuggedReference, "remote?", rb_git_ref_is_remote, 0);
+	rb_define_method(rb_cRuggedReference, "tag?", rb_git_ref_is_tag, 0);
 
 	rb_define_method(rb_cRuggedReference, "log", rb_git_reflog, 0);
 	rb_define_method(rb_cRuggedReference, "log?", rb_git_has_reflog, 0);
