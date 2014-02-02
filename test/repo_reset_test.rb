@@ -9,7 +9,7 @@ class RepositoryResetTest < Rugged::TestCase
   def test_reset_with_rugged_tag
     tag = @repo.lookup('0c37a5391bbff43c37f0d0371823a5509eed5b1d')
     @repo.reset(tag, :soft)
-    assert_equal tag.target.oid , @repo.head.target
+    assert_equal tag.target_id , @repo.head.target_id
   end
 
   def test_reset_with_invalid_mode
@@ -22,7 +22,7 @@ class RepositoryResetTest < Rugged::TestCase
     original_content = File.open(file_path) { |f| f.read }
 
     @repo.reset('441034f860c1d5d90e4188d11ae0d325176869a8', :soft)
-    assert_equal '441034f860c1d5d90e4188d11ae0d325176869a8', @repo.head.target
+    assert_equal '441034f860c1d5d90e4188d11ae0d325176869a8', @repo.head.target_id
     assert_equal [:index_modified], @repo.status(repo_file_path)
 
     new_content = File.open(file_path) { |f| f.read }

@@ -62,7 +62,7 @@ class ReferenceTest < Rugged::SandboxedTestCase
 
   def test_can_open_reference
     ref = @repo.references["refs/heads/master"]
-    assert_equal "099fabac3a9ea935598528c27f866e34089c2eff", ref.target
+    assert_equal "099fabac3a9ea935598528c27f866e34089c2eff", ref.target_id
     assert_equal :direct, ref.type
     assert_equal "refs/heads/master", ref.name
     assert_equal "refs/heads/master", ref.canonical_name
@@ -71,13 +71,13 @@ class ReferenceTest < Rugged::SandboxedTestCase
 
   def test_can_open_a_symbolic_reference
     ref = @repo.references["HEAD"]
-    assert_equal "refs/heads/master", ref.target
+    assert_equal "refs/heads/master", ref.target_id
     assert_equal :symbolic, ref.type
 
     resolved = ref.resolve
     assert_equal :direct, resolved.type
-    assert_equal "099fabac3a9ea935598528c27f866e34089c2eff", resolved.target
-    assert_equal resolved.target, ref.peel
+    assert_equal "099fabac3a9ea935598528c27f866e34089c2eff", resolved.target_id
+    assert_equal resolved.target_id, ref.peel
   end
 
   def test_looking_up_missing_ref_returns_nil
@@ -95,25 +95,25 @@ class ReferenceTest < Rugged::SandboxedTestCase
 
   def test_load_packed_ref
     ref = @repo.references["refs/heads/packed"]
-    assert_equal "41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9", ref.target
+    assert_equal "41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9", ref.target_id
     assert_equal :direct, ref.type
     assert_equal "refs/heads/packed", ref.name
   end
 
   def test_resolve_head
     ref = @repo.references["HEAD"]
-    assert_equal "refs/heads/master", ref.target
+    assert_equal "refs/heads/master", ref.target_id
     assert_equal :symbolic, ref.type
 
     head = ref.resolve
-    assert_equal "099fabac3a9ea935598528c27f866e34089c2eff", head.target
+    assert_equal "099fabac3a9ea935598528c27f866e34089c2eff", head.target_id
     assert_equal :direct, head.type
   end
 
   def test_reference_to_tag
     ref = @repo.references["refs/tags/test"]
 
-    assert_equal "b25fa35b38051e4ae45d4222e795f9df2e43f1d1", ref.target
+    assert_equal "b25fa35b38051e4ae45d4222e795f9df2e43f1d1", ref.target_id
     assert_equal "e90810b8df3e80c413d903f631643c716887138d", ref.peel
   end
 
@@ -156,7 +156,7 @@ class ReferenceWriteTest < Rugged::TestCase
 
   def test_create_symbolic_ref
     ref = @repo.references.create("refs/heads/unit_test", "refs/heads/master")
-    assert_equal "refs/heads/master", ref.target
+    assert_equal "refs/heads/master", ref.target_id
     assert_equal :symbolic, ref.type
     assert_equal "refs/heads/unit_test", ref.name
     @repo.references.delete(ref)
@@ -167,7 +167,7 @@ class ReferenceWriteTest < Rugged::TestCase
       "refs/heads/unit_test",
       "36060c58702ed4c2a40832c51758d5344201d89a")
 
-    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", ref.target
+    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", ref.target_id
     assert_equal :direct, ref.type
     assert_equal "refs/heads/unit_test", ref.name
     @repo.references.delete(ref)
@@ -177,7 +177,7 @@ class ReferenceWriteTest < Rugged::TestCase
     ref = @repo.references.create("refs/heads/unit_test",
       "36060c58702ed4c2a40832c51758d5344201d89a")
 
-    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", ref.target
+    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", ref.target_id
     assert_equal :direct, ref.type
     assert_equal "refs/heads/unit_test", ref.name
 
@@ -190,12 +190,12 @@ class ReferenceWriteTest < Rugged::TestCase
     ref = @repo.references.create("refs/heads/unit_test",
       "36060c58702ed4c2a40832c51758d5344201d89a")
 
-    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", ref.target
+    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", ref.target_id
     assert_equal :direct, ref.type
     assert_equal "refs/heads/unit_test", ref.name
 
     new_ref = @repo.references.update(ref, "5b5b025afb0b4c913b4c338a42934a3863bf3644")
-    assert_equal "5b5b025afb0b4c913b4c338a42934a3863bf3644", new_ref.target
+    assert_equal "5b5b025afb0b4c913b4c338a42934a3863bf3644", new_ref.target_id
     @repo.references.delete(new_ref)
   end
 
@@ -204,7 +204,7 @@ class ReferenceWriteTest < Rugged::TestCase
     ref2 = @repo.references.create("refs/heads/foobar", "refs/heads/Ångström")
 
     assert_equal "refs/heads/Ångström", ref1.name
-    assert_equal "refs/heads/Ångström", ref2.target
+    assert_equal "refs/heads/Ångström", ref2.target_id
   end
 end
 

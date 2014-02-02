@@ -34,11 +34,6 @@ module Rugged
       @owner.branches.move(self, new_name, force)
     end
 
-    # The object pointed at by the tip of this branch
-    def tip
-      @owner.lookup(self.resolve.target)
-    end
-
     def ==(other)
       other.instance_of?(Rugged::Branch) &&
         other.canonical_name == self.canonical_name

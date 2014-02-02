@@ -99,19 +99,65 @@ static VALUE rb_git_ref_peel(VALUE self)
 
 /*
  *  call-seq:
- *    reference.target -> oid
- *    reference.target -> ref_name
+ *    reference.target_id -> id
+ *    reference.target_id -> ref_name
  *
- *  Return the target of the reference, which is an OID for +:direct+
- *  references, and the name of another reference for +:symbolic+ ones.
+ *  Return the target of +reference+.
  *
- *    r1.type #=> :symbolic
- *    r1.target #=> "refs/heads/master"
+ *  If +reference+ is a symbolic reference, it returns the target
+ *  reference object.
  *
- *    r2.type #=> :direct
- *    r2.target #=> "de5ba987198bcf2518885f0fc1350e5172cded78"
+ *  If +reference+ is a direct reference, it returns the target object.
+ *
+ *    ref1.type #=> :symbolic
+ *    ref1.target #=> #<Rugged::Reference ...>
+ *
+ *    ref2.type #=> :direct
+ *    ref2.target #=> #<Rugged::Commit ...>
  */
 static VALUE rb_git_ref_target(VALUE self)
+{
+	git_reference *ref;
+
+	Data_Get_Struct(self, git_reference, ref);
+
+	if (git_reference_type(ref) == GIT_REF_OID) {
+		git_object *target;
+
+		rugged_exception_check(
+			git_object_lookup(&target, git_reference_owner(ref), git_reference_target(ref), GIT_OBJ_ANY)
+		);
+		return rugged_object_new(rugged_owner(self), target);
+	} else {
+		git_reference *target;
+
+		rugged_exception_check(
+			git_reference_lookup(&target, git_reference_owner(ref), git_reference_symbolic_target(ref))
+		);
+
+		return rugged_ref_new(rb_cRuggedReference, rugged_owner(self), target);
+	}
+}
+
+/*
+ *  call-seq:
+ *    reference.target_id -> id
+ *    reference.target_id -> ref_name
+ *
+ *  Return the target identifier of +reference+.
+ *
+ *  If +reference+ is a symbolic reference, it returns the canonical
+ *  name of the target reference.
+ *
+ *  If +reference+ is a direct reference, it returns the sha id of the target.
+ *
+ *    ref1.type #=> :symbolic
+ *    ref1.target_id #=> "refs/heads/master"
+ *
+ *    ref2.type #=> :direct
+ *    ref2.target_id #=> "de5ba987198bcf2518885f0fc1350e5172cded78"
+ */
+static VALUE rb_git_ref_target_id(VALUE self)
 {
 	git_reference *ref;
 	Data_Get_Struct(self, git_reference, ref);
@@ -318,6 +364,7 @@ void Init_rugged_reference(void)
 	rb_define_singleton_method(rb_cRuggedReference, "valid_name?", rb_git_ref_valid_name, 1);
 
 	rb_define_method(rb_cRuggedReference, "target", rb_git_ref_target, 0);
+	rb_define_method(rb_cRuggedReference, "target_id", rb_git_ref_target_id, 0);
 	rb_define_method(rb_cRuggedReference, "peel", rb_git_ref_peel, 0);
 
 	rb_define_method(rb_cRuggedReference, "type", rb_git_ref_type, 0);

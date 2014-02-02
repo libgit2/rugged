@@ -14,7 +14,7 @@ module Rugged
     #
     # Returns a Rugged::Commit object.
     def last_commit
-      self.lookup self.head.target
+      self.head.target
     end
 
     # Checkout the specified branch, reference or commit.
@@ -34,10 +34,10 @@ module Rugged
       end
 
       if branch
-        self.checkout_tree(branch.tip, options)
+        self.checkout_tree(branch.target, options)
 
         if branch.remote?
-          references.create("HEAD", branch.tip.oid, force: true)
+          references.create("HEAD", branch.target_id, force: true)
         else
           references.create("HEAD", branch.canonical_name, force: true)
         end
