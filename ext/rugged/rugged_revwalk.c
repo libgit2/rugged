@@ -175,7 +175,7 @@ static VALUE rb_git_walker_hide(VALUE self, VALUE rb_commit)
 
 /*
  *  call-seq:
- *    walker.sorting = sort_mode
+ *    walker.sorting(sort_mode) -> nil
  *
  *  Change the sorting mode for the revision walk.
  *
