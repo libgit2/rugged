@@ -1353,7 +1353,7 @@ static int parse_reset_type(VALUE rb_reset_type)
 
 /*
  *  call-seq:
- *    repo.reset(target, reset_type) -> nil
+ *    repo.reset(target, reset_type, options = {}) -> nil
  *
  *  Sets the current head to the specified commit oid and optionally
  *  resets the index and working tree to match.
@@ -1370,25 +1370,52 @@ static int parse_reset_type(VALUE rb_reset_type)
  *    replaced with the content of the index. (Untracked and ignored files
  *    will be left alone)
  *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :message ::
+ *    A single line log message to be appended to the reflog.
+ *
+ *  :signature ::
+ *    The signature to be used for populating the reflog entry.
+ *
  *  Examples:
  *
  *    repo.reset('origin/master', :hard) #=> nil
  */
-static VALUE rb_git_repo_reset(VALUE self, VALUE rb_target, VALUE rb_reset_type)
+static VALUE rb_git_repo_reset(int argc, VALUE *argv, VALUE self)
 {
+	VALUE rb_target, rb_reset_type, rb_options;
 	git_repository *repo;
 	int reset_type;
 	git_object *target = NULL;
+	char *log_message = NULL;
+	git_signature *signature = NULL;
 	int error;
+
+	rb_scan_args(argc, argv, "20:", &rb_target, &rb_reset_type, &rb_options);
 
 	Data_Get_Struct(self, git_repository, repo);
 
 	reset_type = parse_reset_type(rb_reset_type);
 	target = rugged_object_get(repo, rb_target, GIT_OBJ_ANY);
 
-	error = git_reset(repo, target, reset_type, NULL, NULL);
+	if (!NIL_P(rb_options)) {
+		VALUE rb_val;
+
+		rb_val = rb_hash_aref(rb_options, CSTR2SYM("signature"));
+		if (!NIL_P(rb_val))
+			signature = rugged_signature_get(rb_val, repo);
+
+		rb_val = rb_hash_aref(rb_options, CSTR2SYM("message"));
+		if (!NIL_P(rb_val))
+			log_message = StringValueCStr(rb_val);
+	}
+
+	error = git_reset(repo, target, reset_type, signature, log_message);
 
 	git_object_free(target);
+	git_signature_free(signature);
+
 	rugged_exception_check(error);
 
 	return Qnil;
@@ -2135,7 +2162,7 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "merge_base", rb_git_repo_merge_base, -2);
 	rb_define_method(rb_cRuggedRepo, "merge_commits", rb_git_repo_merge_commits, -1);
 
-	rb_define_method(rb_cRuggedRepo, "reset", rb_git_repo_reset, 2);
+	rb_define_method(rb_cRuggedRepo, "reset", rb_git_repo_reset, -1);
 	rb_define_method(rb_cRuggedRepo, "reset_path", rb_git_repo_reset_path, -1);
 
 	rb_define_method(rb_cRuggedRepo, "namespace=", rb_git_repo_set_namespace, 1);
