@@ -86,3 +86,16 @@ class WalkerTest < Rugged::TestCase
     assert_equal is_toposorted(sort_list), true
   end
 end
+
+# testrepo (the non-bare repo) is the one with non-linear history,
+# which we need in order to make sure that we are activating the
+# first-parent simplification
+class WalkerTest2 < Rugged::SandboxedTestCase
+  def test_simplify_first_parent
+    repo = sandbox_init("testrepo")
+    walker = Rugged::Walker.new(repo)
+    walker.push("099fabac3a9ea935598528c27f866e34089c2eff")
+    walker.simplify_first_parent
+    assert_equal 7, walker.each.to_a.length
+  end
+end
