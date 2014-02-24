@@ -110,7 +110,7 @@ class TestCommit < Rugged::TestCase
 
     amended_commit = @repo.lookup(new_commit_oid)
     assert_equal commit_params[:message], amended_commit.message
-    binding.pry
+    assert_equal tree_oid, amended_commit.tree.oid
   end
 end
 

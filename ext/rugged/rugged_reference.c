@@ -506,7 +506,7 @@ static VALUE rb_git_ref_rename(int argc, VALUE *argv, VALUE self)
 	if (!NIL_P(rb_force))
 		force = rugged_parse_bool(rb_force);
 
-	error = git_reference_rename(&out, ref, StringValueCStr(rb_name), force);
+	error = git_reference_rename(&out, ref, StringValueCStr(rb_name), force, NULL, NULL);
 	rugged_exception_check(error);
 
 	return rugged_ref_new(rb_cRuggedReference, rugged_owner(self), out);
@@ -516,7 +516,7 @@ static VALUE rb_git_ref_rename(int argc, VALUE *argv, VALUE self)
  *  call-seq:
  *    reference.delete! -> nil
  *
- *  Delete this reference from disk. 
+ *  Delete this reference from disk.
  *
  *    reference.name #=> 'HEAD'
  *    reference.delete!

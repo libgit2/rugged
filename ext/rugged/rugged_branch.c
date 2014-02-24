@@ -90,7 +90,7 @@ static VALUE rb_git_branch_create(int argc, VALUE *argv, VALUE self)
 		force = rugged_parse_bool(rb_force);
 	}
 
-	error = git_branch_create(&branch, repo, StringValueCStr(rb_name), target, force);
+	error = git_branch_create(&branch, repo, StringValueCStr(rb_name), target, force, NULL, NULL);
 	git_commit_free(target);
 
 	rugged_exception_check(error);
@@ -269,7 +269,7 @@ static VALUE rb_git_branch_move(int argc, VALUE *argv, VALUE self)
 	if (!NIL_P(rb_force))
 		force = rugged_parse_bool(rb_force);
 
-	error = git_branch_move(&new_branch, old_branch, StringValueCStr(rb_new_branch_name), force);
+	error = git_branch_move(&new_branch, old_branch, StringValueCStr(rb_new_branch_name), force, NULL, NULL);
 	rugged_exception_check(error);
 
 	return rugged_branch_new(rugged_owner(self), new_branch);

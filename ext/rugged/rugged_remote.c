@@ -557,7 +557,7 @@ static VALUE rb_git_remote_update_tips(VALUE self)
 			git_remote_set_callbacks(remote, &callbacks)
 		);
 
-		error = git_remote_update_tips(remote);
+		error = git_remote_update_tips(remote, NULL, NULL);
 
 		callbacks.update_tips = NULL;
 		// Don't overwrite the first error we've seen
@@ -570,7 +570,7 @@ static VALUE rb_git_remote_update_tips(VALUE self)
 		rugged_exception_check(error);
 	} else {
 		rugged_exception_check(
-			git_remote_update_tips(remote)
+			git_remote_update_tips(remote, NULL, NULL)
 		);
 	}
 
