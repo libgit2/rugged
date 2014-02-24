@@ -175,7 +175,7 @@ static VALUE rb_git_walker_hide(VALUE self, VALUE rb_commit)
 
 /*
  *  call-seq:
- *    walker.sorting = sort_mode
+ *    walker.sorting(sort_mode) -> nil
  *
  *  Change the sorting mode for the revision walk.
  *
@@ -186,6 +186,20 @@ static VALUE rb_git_walker_sorting(VALUE self, VALUE ruby_sort_mode)
 	git_revwalk *walk;
 	Data_Get_Struct(self, git_revwalk, walk);
 	git_revwalk_sorting(walk, FIX2INT(ruby_sort_mode));
+	return Qnil;
+}
+
+/*
+ *  call-seq:
+ *    walker.simplify_first_parent() -> nil
+ *
+ *  Simplify the walk to the first parent of each commit.
+ */
+static VALUE rb_git_walker_simplify_first_parent(VALUE self)
+{
+	git_revwalk *walk;
+	Data_Get_Struct(self, git_revwalk, walk);
+	git_revwalk_simplify_first_parent(walk);
 	return Qnil;
 }
 
@@ -215,4 +229,5 @@ void Init_rugged_revwalk(void)
 	rb_define_method(rb_cRuggedWalker, "hide", rb_git_walker_hide, 1);
 	rb_define_method(rb_cRuggedWalker, "reset", rb_git_walker_reset, 0);
 	rb_define_method(rb_cRuggedWalker, "sorting", rb_git_walker_sorting, 1);
+	rb_define_method(rb_cRuggedWalker, "simplify_first_parent", rb_git_walker_simplify_first_parent, 0);
 }
