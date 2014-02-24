@@ -83,6 +83,94 @@ class TestCommit < Rugged::TestCase
 
     assert_equal obj.tree_oid, "181037049a54a1eb5fab404658a3a250b44335d7"
   end
+
+  def test_amend_commit
+    oid = "8496071c1b46c854b31185ea97743be6a8774479"
+    obj = @repo.lookup(oid)
+
+    entry = {:type => :blob,
+             :name => "README.txt",
+             :oid  => "1385f264afb75a56a5bec74243be9b367ba4ca08",
+             :filemode => 33188}
+
+    builder = Rugged::Tree::Builder.new
+    builder << entry
+    tree_oid = builder.write(@repo)
+
+    person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
+
+    commit_params = {
+      :message => "This is the amended commit message\n\nThis commit is created from Rugged",
+      :committer => person,
+      :author => person,
+      :tree => tree_oid
+    }
+
+    new_commit_oid = obj.amend(commit_params)
+
+    amended_commit = @repo.lookup(new_commit_oid)
+    assert_equal commit_params[:message], amended_commit.message
+    assert_equal tree_oid, amended_commit.tree.oid
+  end
+
+  def test_amend_commit_blank_tree
+    oid = "8496071c1b46c854b31185ea97743be6a8774479"
+    obj = @repo.lookup(oid)
+
+    person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
+
+    commit_params = {
+      :message => "This is the amended commit message\n\nThis commit is created from Rugged",
+      :committer => person,
+      :author => person
+    }
+
+    new_commit_oid = obj.amend(commit_params)
+
+    amended_commit = @repo.lookup(new_commit_oid)
+    assert_equal commit_params[:message], amended_commit.message
+  end
+
+  def test_amend_commit_blank_author_and_committer
+    oid = "8496071c1b46c854b31185ea97743be6a8774479"
+    obj = @repo.lookup(oid)
+
+    commit_params = {
+      :message => "This is the amended commit message\n\nThis commit is created from Rugged"
+    }
+
+    new_commit_oid = obj.amend(commit_params)
+
+    amended_commit = @repo.lookup(new_commit_oid)
+    assert_equal commit_params[:message], amended_commit.message
+  end
+
+  def test_amend_commit_blank_message
+    oid = "8496071c1b46c854b31185ea97743be6a8774479"
+    obj = @repo.lookup(oid)
+
+    entry = {:type => :blob,
+             :name => "README.txt",
+             :oid  => "1385f264afb75a56a5bec74243be9b367ba4ca08",
+             :filemode => 33188}
+
+    builder = Rugged::Tree::Builder.new
+    builder << entry
+    tree_oid = builder.write(@repo)
+
+    person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
+
+    commit_params = {
+      :committer => person,
+      :author => person,
+      :tree => tree_oid
+    }
+
+    new_commit_oid = obj.amend(commit_params)
+
+    amended_commit = @repo.lookup(new_commit_oid)
+    assert_equal tree_oid, amended_commit.tree.oid
+  end
 end
 
 class CommitWriteTest < Rugged::TestCase
