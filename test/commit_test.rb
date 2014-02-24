@@ -112,6 +112,24 @@ class TestCommit < Rugged::TestCase
     assert_equal commit_params[:message], amended_commit.message
     assert_equal tree_oid, amended_commit.tree.oid
   end
+
+  def test_amend_commit_blank_tree
+    oid = "8496071c1b46c854b31185ea97743be6a8774479"
+    obj = @repo.lookup(oid)
+
+    person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
+
+    commit_params = {
+      :message => "This is the amended commit message\n\nThis commit is created from Rugged",
+      :committer => person,
+      :author => person
+    }
+
+    new_commit_oid = obj.amend(commit_params)
+
+    amended_commit = @repo.lookup(new_commit_oid)
+    assert_equal commit_params[:message], amended_commit.message
+  end
 end
 
 class CommitWriteTest < Rugged::TestCase

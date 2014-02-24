@@ -273,7 +273,6 @@ static VALUE rb_git_commit_parent_ids_GET(VALUE self)
 static VALUE rb_git_commit_amend(VALUE self, VALUE rb_data)
 {
 	VALUE rb_message, rb_tree, rb_ref, owner;
-	VALUE rb_err_obj = Qnil;
 	int error = 0;
 	git_commit *commit_to_amend;
 	git_tree *tree;
@@ -307,7 +306,11 @@ static VALUE rb_git_commit_amend(VALUE self, VALUE rb_data)
 	);
 
 	rb_tree = rb_hash_aref(rb_data, CSTR2SYM("tree"));
-	tree = (git_tree *)rugged_object_get(repo, rb_tree, GIT_OBJ_TREE);
+	if (!NIL_P(rb_tree)) {
+		tree = (git_tree *)rugged_object_get(repo, rb_tree, GIT_OBJ_TREE);
+	} else {
+		tree = NULL;
+	}
 
 	error = git_commit_amend(
 		&commit_oid,
@@ -324,9 +327,6 @@ cleanup:
 	git_signature_free(committer);
 
 	git_object_free((git_object *)tree);
-
-	if (!NIL_P(rb_err_obj))
-		rb_exc_raise(rb_err_obj);
 
 	rugged_exception_check(error);
 
