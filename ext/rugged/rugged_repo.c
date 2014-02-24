@@ -565,7 +565,7 @@ static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
 	parse_clone_options(&options, rb_options_hash, &remote_payload);
 
 	error = git_clone(&repo, StringValueCStr(url), StringValueCStr(local_path), &options);
-	
+
 	if (RTEST(remote_payload.exception))
 		rb_jump_tag(remote_payload.exception);
 	rugged_exception_check(error);
@@ -1037,7 +1037,7 @@ static VALUE rb_git_repo_set_head(VALUE self, VALUE rb_head)
 	Data_Get_Struct(self, git_repository, repo);
 
 	Check_Type(rb_head, T_STRING);
-	error = git_repository_set_head(repo, StringValueCStr(rb_head));
+	error = git_repository_set_head(repo, StringValueCStr(rb_head), NULL, NULL);
 	rugged_exception_check(error);
 
 	return Qnil;
@@ -1386,7 +1386,7 @@ static VALUE rb_git_repo_reset(VALUE self, VALUE rb_target, VALUE rb_reset_type)
 	reset_type = parse_reset_type(rb_reset_type);
 	target = rugged_object_get(repo, rb_target, GIT_OBJ_ANY);
 
-	error = git_reset(repo, target, reset_type);
+	error = git_reset(repo, target, reset_type, NULL, NULL);
 
 	git_object_free(target);
 	rugged_exception_check(error);
@@ -1516,7 +1516,7 @@ static VALUE rb_git_repo_push(VALUE self, VALUE rb_remote, VALUE rb_refspecs)
 	error = git_push_status_foreach(push, &rugged__push_status_cb, (void *)rb_result);
 	if (error) goto cleanup;
 
-	error = git_push_update_tips(push);
+	error = git_push_update_tips(push, NULL, NULL);
 
 cleanup:
 	git_push_free(push);

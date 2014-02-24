@@ -292,7 +292,7 @@ void rugged_exception_raise(void)
 		err_message = error->message;
 	} else {
 		err_klass = rb_eRuggedErrors[2]; /* InvalidError */
-		err_message = "Unknown Error";
+		err_message = error->message || "Unknown Error (no message)";
 	}
 
 	err_obj = rb_exc_new2(err_klass, err_message);
