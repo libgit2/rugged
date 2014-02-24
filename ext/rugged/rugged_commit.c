@@ -244,6 +244,97 @@ static VALUE rb_git_commit_parent_ids_GET(VALUE self)
 
 /*
  *  call-seq:
+ *    commit.amend(data = {}) -> oid
+ *
+ *  Amend a commit object, with the given +data+
+ *  arguments, passed as a +Hash+:
+ *
+ *  - +:message+: a string with the full text for the commit's message
+ *  - +:committer+ (optional): a hash with the signature for the committer,
+ *    defaults to the signature from the configuration
+ *  - +:author+ (optional): a hash with the signature for the author,
+ *    defaults to the signature from the configuration
+ *  - +:tree+: the tree for this amended commit, represented as a <tt>Rugged::Tree</tt>
+ *    instance or an OID +String+.
+ *  - +:update_ref+ (optional): a +String+ with the name of a reference in the
+ *  repository which should be updated to point to this amended commit (e.g. "HEAD")
+ *
+ *  When the amended commit is successfully written to disk, its +oid+ will be
+ *  returned as a hex +String+.
+ *
+ *    author = {:email=>"tanoku@gmail.com", :time=>Time.now, :name=>"Vicent Mart\303\255"}
+ *
+ *    commit.amend(
+ *      :author => author,
+ *      :message => "Updated Hello world\n\n",
+ *      :committer => author,
+ *      :tree => some_tree) #=> "f148106ca58764adc93ad4e2d6b1d168422b9796"
+ */
+static VALUE rb_git_commit_amend(VALUE self, VALUE rb_data)
+{
+	VALUE rb_message, rb_tree, rb_ref, owner;
+	VALUE rb_err_obj = Qnil;
+	int error = 0;
+	git_commit *commit_to_amend;
+	git_tree *tree;
+	git_signature *author, *committer;
+	git_oid commit_oid;
+	git_repository *repo;
+	const char *update_ref = NULL;
+
+	Check_Type(rb_data, T_HASH);
+
+	Data_Get_Struct(self, git_commit, commit_to_amend);
+
+	owner = rugged_owner(self);
+	Data_Get_Struct(owner, git_repository, repo);
+
+	rb_ref = rb_hash_aref(rb_data, CSTR2SYM("update_ref"));
+	if (!NIL_P(rb_ref)) {
+		Check_Type(rb_ref, T_STRING);
+		update_ref = StringValueCStr(rb_ref);
+	}
+
+	rb_message = rb_hash_aref(rb_data, CSTR2SYM("message"));
+	Check_Type(rb_message, T_STRING);
+
+	committer = rugged_signature_get(
+		rb_hash_aref(rb_data, CSTR2SYM("committer")), repo
+	);
+
+	author = rugged_signature_get(
+		rb_hash_aref(rb_data, CSTR2SYM("author")), repo
+	);
+
+	rb_tree = rb_hash_aref(rb_data, CSTR2SYM("tree"));
+	tree = (git_tree *)rugged_object_get(repo, rb_tree, GIT_OBJ_TREE);
+
+	error = git_commit_amend(
+		&commit_oid,
+		commit_to_amend,
+		update_ref,
+		author,
+		committer,
+		NULL,
+		StringValueCStr(rb_message),
+		tree);
+
+cleanup:
+	git_signature_free(author);
+	git_signature_free(committer);
+
+	git_object_free((git_object *)tree);
+
+	if (!NIL_P(rb_err_obj))
+		rb_exc_raise(rb_err_obj);
+
+	rugged_exception_check(error);
+
+	return rugged_create_oid(&commit_oid);
+}
+
+/*
+ *  call-seq:
  *    Commit.create(repository, data = {}) -> oid
  *
  *  Write a new +Commit+ object to +repository+, with the given +data+
@@ -398,5 +489,7 @@ void Init_rugged_commit(void)
 	rb_define_method(rb_cRuggedCommit, "parents", rb_git_commit_parents_GET, 0);
 	rb_define_method(rb_cRuggedCommit, "parent_ids", rb_git_commit_parent_ids_GET, 0);
 	rb_define_method(rb_cRuggedCommit, "parent_oids", rb_git_commit_parent_ids_GET, 0);
+
+	rb_define_method(rb_cRuggedCommit, "amend", rb_git_commit_amend, 1);
 }
 
