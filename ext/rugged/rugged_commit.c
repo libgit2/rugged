@@ -275,8 +275,9 @@ static VALUE rb_git_commit_amend(VALUE self, VALUE rb_data)
 	VALUE rb_message, rb_tree, rb_ref, owner;
 	int error = 0;
 	git_commit *commit_to_amend;
+	char *message = NULL;
 	git_tree *tree = NULL;
-	git_signature *author, *committer;
+	git_signature *author = NULL, *committer = NULL;
 	git_oid commit_oid;
 	git_repository *repo;
 	const char *update_ref = NULL;
@@ -295,15 +296,22 @@ static VALUE rb_git_commit_amend(VALUE self, VALUE rb_data)
 	}
 
 	rb_message = rb_hash_aref(rb_data, CSTR2SYM("message"));
-	Check_Type(rb_message, T_STRING);
+	if (!NIL_P(rb_message)) {
+		Check_Type(rb_message, T_STRING);
+		message = StringValueCStr(rb_message);
+	}
 
-	committer = rugged_signature_get(
-		rb_hash_aref(rb_data, CSTR2SYM("committer")), repo
-	);
+	if (!NIL_P(rb_hash_aref(rb_data, CSTR2SYM("committer")))) {
+		committer = rugged_signature_get(
+			rb_hash_aref(rb_data, CSTR2SYM("committer")), repo
+		);
+	}
 
-	author = rugged_signature_get(
-		rb_hash_aref(rb_data, CSTR2SYM("author")), repo
-	);
+	if (!NIL_P(rb_hash_aref(rb_data, CSTR2SYM("author")))) {
+		author = rugged_signature_get(
+			rb_hash_aref(rb_data, CSTR2SYM("author")), repo
+		);
+	}
 
 	rb_tree = rb_hash_aref(rb_data, CSTR2SYM("tree"));
 	if (!NIL_P(rb_tree))
@@ -316,10 +324,9 @@ static VALUE rb_git_commit_amend(VALUE self, VALUE rb_data)
 		author,
 		committer,
 		NULL,
-		StringValueCStr(rb_message),
+		message,
 		tree);
 
-cleanup:
 	git_signature_free(author);
 	git_signature_free(committer);
 
