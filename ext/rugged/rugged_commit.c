@@ -301,6 +301,10 @@ static VALUE rb_git_commit_amend(VALUE self, VALUE rb_data)
 		message = StringValueCStr(rb_message);
 	}
 
+	rb_tree = rb_hash_aref(rb_data, CSTR2SYM("tree"));
+	if (!NIL_P(rb_tree))
+		tree = (git_tree *)rugged_object_get(repo, rb_tree, GIT_OBJ_TREE);
+
 	if (!NIL_P(rb_hash_aref(rb_data, CSTR2SYM("committer")))) {
 		committer = rugged_signature_get(
 			rb_hash_aref(rb_data, CSTR2SYM("committer")), repo
@@ -312,10 +316,6 @@ static VALUE rb_git_commit_amend(VALUE self, VALUE rb_data)
 			rb_hash_aref(rb_data, CSTR2SYM("author")), repo
 		);
 	}
-
-	rb_tree = rb_hash_aref(rb_data, CSTR2SYM("tree"));
-	if (!NIL_P(rb_tree))
-		tree = (git_tree *)rugged_object_get(repo, rb_tree, GIT_OBJ_TREE);
 
 	error = git_commit_amend(
 		&commit_oid,
