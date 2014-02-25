@@ -948,6 +948,159 @@ static VALUE rb_git_conflict_get(VALUE self, VALUE rb_path)
 	return rb_result;
 }
 
+void rugged_parse_merge_file_options(git_merge_file_options *opts, VALUE rb_options)
+{
+	if (!NIL_P(rb_options)) {
+		VALUE rb_value;
+		Check_Type(rb_options, T_HASH);
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("ancestor_label"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_FIXNUM);
+			opts->ancestor_label = StringValueCStr(rb_value);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("our_label"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_FIXNUM);
+			opts->our_label = StringValueCStr(rb_value);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("their_label"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_FIXNUM);
+			opts->their_label = StringValueCStr(rb_value);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("favor"));
+		if (!NIL_P(rb_value)) {
+			ID id_favor;
+
+			Check_Type(rb_value, T_SYMBOL);
+			id_favor = SYM2ID(rb_value);
+
+			if (id_favor == rb_intern("normal")) {
+				opts->favor = GIT_MERGE_FILE_FAVOR_NORMAL;
+			} else if (id_favor == rb_intern("ours")) {
+				opts->favor = GIT_MERGE_FILE_FAVOR_OURS;
+			} else if (id_favor == rb_intern("theirs")) {
+				opts->favor = GIT_MERGE_FILE_FAVOR_THEIRS;
+			} else if (id_favor == rb_intern("union")) {
+				opts->favor = GIT_MERGE_FILE_FAVOR_UNION;
+			} else {
+				rb_raise(rb_eTypeError,
+					"Invalid favor mode. Expected `:normal`, `:ours`, `:theirs` or `:union`");
+			}
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("style"));
+		if (!NIL_P(rb_value)) {
+			ID id_style;
+
+			Check_Type(rb_value, T_SYMBOL);
+			id_style = SYM2ID(rb_value);
+
+			if (id_style == rb_intern("standard")) {
+				opts->flags |= GIT_MERGE_FILE_STYLE_MERGE;
+			} else if (id_style == rb_intern("diff3")) {
+				opts->flags |= GIT_MERGE_FILE_STYLE_DIFF3;
+			} else {
+				rb_raise(rb_eTypeError,
+					"Invalid style mode. Expected `:standard`, or `:diff3`");
+			}
+		} else {
+			opts->flags |= GIT_MERGE_FILE_STYLE_MERGE;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("simplify")))) {
+			opts->flags |= GIT_MERGE_FILE_SIMPLIFY_ALNUM;
+		}
+	}
+}
+
+/*
+ *  call-seq:
+ *    index.merge_file(path[, options]) -> merge_file or nil
+ *    index.merge_file(path) -> merge_file or nil
+ *
+ *  Return merge_file (in memory) from the ancestor, our side and their side of
+ *  the conflict at +path+.
+ *
+ *  If +:ancestor+, +:ours+ or +:theirs+ is +nil+, that indicates that +path+
+ *  did not exist in the respective tree.
+ *
+ *  Returns nil if no conflict is present at +path+.
+
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :ancestor_label ::
+ *    The name of the ancestor branch used to decorate conflict markers.
+ *
+ *  :our_label ::
+ *    The name of our branch used to decorate conflict markers.
+ *
+ *  :their_label ::
+ *    The name of their branch used to decorate conflict markers.
+ *
+ *  :favor ::
+ *    Specifies how and if conflicts are auto-resolved by favoring a specific
+ *    file output. Can be one of `:normal`, `:ours`, `:theirs` or `:union`.
+ *    Defaults to `:normal`.
+ *
+ *  :style ::
+ *    Specifies the type of merge file to produce. Can be one of `:standard`, `:diff3`. Defaults to `:standard`
+ *
+ *  :simplify ::
+ *    If true, the merge file is simplified by condensing non-alphanumeric regions.
+ *
+ */
+
+static VALUE rb_git_merge_file(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_path, rb_options;
+	VALUE rb_result = rb_hash_new();
+	VALUE rb_repo = rugged_owner(self);
+
+	git_repository *repo;
+	git_index *index;
+	const git_index_entry *ancestor, *ours, *theirs;
+	git_merge_file_result merge_file_result = {0};
+	git_merge_file_options opts = GIT_MERGE_FILE_OPTIONS_INIT;
+	int error;
+
+	rb_scan_args(argc, argv, "11", &rb_path, &rb_options);
+
+	if (!NIL_P(rb_options)) {
+		Check_Type(rb_options, T_HASH);
+		rugged_parse_merge_file_options(&opts, rb_options);
+	}
+
+	Check_Type(rb_path, T_STRING);
+
+	Data_Get_Struct(self, git_index, index);
+
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	error = git_index_conflict_get(&ancestor, &ours, &theirs, index, StringValueCStr(rb_path));
+	if (error == GIT_ENOTFOUND)
+		return Qnil;
+	else
+		rugged_exception_check(error);
+
+	error = git_merge_file_from_index(&merge_file_result, repo, ancestor, ours, theirs, &opts);
+	rugged_exception_check(error);
+
+	rb_hash_aset(rb_result, CSTR2SYM("automergeable"), merge_file_result.automergeable ? Qtrue : Qfalse);
+	rb_hash_aset(rb_result, CSTR2SYM("path"),         rb_path);
+	rb_hash_aset(rb_result, CSTR2SYM("filemode"),     INT2FIX(merge_file_result.mode));
+	rb_hash_aset(rb_result, CSTR2SYM("data"),         rb_external_str_new(merge_file_result.ptr, merge_file_result.len));
+
+	git_merge_file_result_free(&merge_file_result);
+
+	return rb_result;
+}
+
 /*
  *  call-seq:
  *    index.conflict_cleanup -> nil
@@ -1075,6 +1228,8 @@ void Init_rugged_index(void)
 	rb_define_method(rb_cRuggedIndex, "conflict_add", rb_git_conflict_add, 1);
 	rb_define_method(rb_cRuggedIndex, "conflict_remove", rb_git_conflict_remove, 1);
 	rb_define_method(rb_cRuggedIndex, "conflict_cleanup", rb_git_conflict_cleanup, 0);
+
+	rb_define_method(rb_cRuggedIndex, "merge_file", rb_git_merge_file, -1);
 
 	rb_define_method(rb_cRuggedIndex, "add", rb_git_index_add, 1);
 	rb_define_method(rb_cRuggedIndex, "update", rb_git_index_add, 1);
