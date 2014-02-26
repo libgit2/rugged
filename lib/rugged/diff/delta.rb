@@ -8,6 +8,7 @@ module Rugged
       attr_reader :new_file
       attr_reader :similarity
       attr_reader :status
+      attr_reader :status_char
       attr_reader :binary
 
       alias binary? binary
