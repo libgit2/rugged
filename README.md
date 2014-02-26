@@ -317,29 +317,28 @@ index.add(path)
 
 ### Refs
 
-The `Rugged::Reference` class allows you to list, create and delete packed and loose refs.
+You can access references through the `Rugged::ReferenceCollection` object returned by `Repository#references`.
 
 ```ruby
-ref = repo.head # or...
-ref = Rugged::Reference.lookup(repo, "refs/heads/master")
+ref = repo.references["refs/heads/master"]
 
-sha = ref.target
+sha = ref.target_id
 str = ref.type   # :direct
 str = ref.name   # "refs/heads/master"
 ```
 
-You can also easily get an array of references:
+You can also easily iterate over all references:
 
 ```ruby
-repo.refs.each do |ref|
+repo.references.each do |ref|
   puts ref.name
 end
 ```
 
-Or use a pattern (regex):
+Or only over references that match the given pattern (glob):
 
 ```ruby
-repo.refs(/tags/).each do |ref|
+repo.references.each("refs/tags/*") do |ref|
   puts ref.name
 end
 ```
@@ -347,19 +346,22 @@ end
 It is also easy to create, update, rename or delete a reference:
 
 ```ruby
-ref = Rugged::Reference.create(repo, "refs/heads/unit_test", some_commit_sha)
+ref = repo.references.create("refs/heads/unit_test", some_commit_sha)
 
-ref.set_target(new_sha)
+repo.references.update(ref, new_sha) # or...
+repo.references.update("refs/heads/unit_test", new_sha)
 
-ref.rename("refs/heads/blead")
+repo.references.rename(ref, "refs/heads/blead") # or...
+repo.references.rename("refs/heads/unit_test", "refs/heads/blead")
 
-ref.delete!
+repo.references.delete(ref) # or...
+repo.references.delete("refs/heads/unit_test") # or...
 ```
 
 Finally, you can access the reflog for any branch:
 
 ```ruby
-ref = Rugged::Reference.lookup(repo, "refs/heads/master")
+ref = repo.references["refs/heads/master"]
 entry = ref.log.first
 sha   = entry[:id_old]
 sha   = entry[:id_new]
@@ -371,42 +373,49 @@ prsn  = entry[:committer]
 
 ### Branches
 
-`Rugged::Branch` will help you with all of your branch-related needs.
+The `Rugged::BranchCollection` object returned by `Repository#branches` will help
+you with all of your branch-related needs.
 
 Iterate over all branches:
 
 ```ruby
-Rugged::Branch.each_name(repo).sort
+repo.branches.each_name().sort
 # => ["master", "origin/HEAD", "origin/master", "origin/packed"]
 
-Rugged::Branch.each_name(repo, :local).sort
+repo.branches.each_name(:local).sort
 # => ["master"]
 
-Rugged::Branch.each_name(repo, :remote).sort
+Rugged::Branch.each_name(:remote).sort
 # => ["origin/HEAD", "origin/master", "origin/packed"]
 ```
 
 Look up branches and get attributes:
 
 ```ruby
-branch = Rugged::Branch.lookup(repo, "master")
+branch = repo.branches["master"]
 branch.name # => 'master'
 branch.canonical_name # => 'refs/heads/master'
 ```
 
-Look up the oid for the tip of a branch:
+Look up the id for the target of a branch:
 
 ```ruby
-Rugged::Branch.lookup(repo, "master").tip.oid
+repo.branches["master"].target_id
 # => "36060c58702ed4c2a40832c51758d5344201d89a"
 ```
 
 Creation and deletion:
 
 ```ruby
-branch = repo.create_branch("test_branch")
-branch.move("new_branch")
-branch.delete!
+branch = repo.branches.create("test_branch", "HEAD")
+
+repo.branches.rename("test_branch", "new_branch") # or...
+repo.branches.rename("refs/heads/test_branch", "new_branch") # or...
+repo.branches.rename(ref, "new_branch") # or...
+
+repo.branches.delete("test_branch") # or...
+repo.branches.delete("refs/heads/test_branch") # or...
+repo.branches.delete(ref) # or...
 ```
 
 ---
