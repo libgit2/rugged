@@ -49,14 +49,17 @@
  */
 void Init_rugged_object(void);
 void Init_rugged_branch(void);
+void Init_rugged_branch_collection(void);
 void Init_rugged_commit(void);
 void Init_rugged_tree(void);
 void Init_rugged_tag(void);
+void Init_rugged_tag_collection(void);
 void Init_rugged_blob(void);
 void Init_rugged_index(void);
 void Init_rugged_repo(void);
 void Init_rugged_revwalk(void);
 void Init_rugged_reference(void);
+void Init_rugged_reference_collection(void);
 void Init_rugged_config(void);
 void Init_rugged_remote(void);
 void Init_rugged_notes(void);

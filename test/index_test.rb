@@ -287,7 +287,7 @@ class IndexRepositoryTest < Rugged::TestCase
   include Rugged::TempRepositoryAccess
 
   def test_idempotent_read_write
-    head_sha = Rugged::Reference.lookup(@repo,'HEAD').resolve.target
+    head_sha = @repo.references['HEAD'].resolve.target_id
     tree = @repo.lookup(head_sha).tree
     index = @repo.index
     index.read_tree(tree)
@@ -298,7 +298,7 @@ class IndexRepositoryTest < Rugged::TestCase
   end
 
   def test_build_tree_from_index
-    head_sha = Rugged::Reference.lookup(@repo,'refs/remotes/origin/packed').resolve.target
+    head_sha = @repo.references['refs/remotes/origin/packed'].resolve.target_id
     tree = @repo.lookup(head_sha).tree
 
     index = @repo.index

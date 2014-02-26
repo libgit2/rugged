@@ -157,8 +157,7 @@ class RemotePushTest < Rugged::SandboxedTestCase
     @remote_repo.config['core.bare'] = 'true'
 
     @repo = sandbox_clone("testrepo.git", "testrepo")
-    Rugged::Reference.create(@repo,
-      "refs/heads/unit_test",
+    @repo.references.create("refs/heads/unit_test",
       "8496071c1b46c854b31185ea97743be6a8774479")
 
     @remote = Rugged::Remote.lookup(@repo, 'origin')
@@ -175,8 +174,8 @@ class RemotePushTest < Rugged::SandboxedTestCase
     result = @remote.push(["refs/heads/master", "refs/heads/master:refs/heads/foobar", "refs/heads/unit_test"])
     assert_equal({}, result)
 
-    assert_equal "a65fedf39aefe402d3bb6e24df4d4f5fe4547750", @remote_repo.ref("refs/heads/foobar").target
-    assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @remote_repo.ref("refs/heads/unit_test").target
+    assert_equal "a65fedf39aefe402d3bb6e24df4d4f5fe4547750", @remote_repo.ref("refs/heads/foobar").target_id
+    assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @remote_repo.ref("refs/heads/unit_test").target_id
   end
 
   def test_push_to_non_bare_raise_error
@@ -192,14 +191,14 @@ class RemotePushTest < Rugged::SandboxedTestCase
       @remote.push(["refs/heads/unit_test:refs/heads/master"])
     end
 
-    assert_equal "a65fedf39aefe402d3bb6e24df4d4f5fe4547750", @remote_repo.ref("refs/heads/master").target
+    assert_equal "a65fedf39aefe402d3bb6e24df4d4f5fe4547750", @remote_repo.ref("refs/heads/master").target_id
   end
 
   def test_push_non_forward_forced_raise_no_error
     result = @remote.push(["+refs/heads/unit_test:refs/heads/master"])
     assert_equal({}, result)
 
-    assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @remote_repo.ref("refs/heads/master").target
+    assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @remote_repo.ref("refs/heads/master").target_id
   end
 end
 
@@ -296,7 +295,7 @@ class RemoteTransportTest < Rugged::TestCase
     @remote.connect(:fetch) do |r|
       r.download
       r.update_tips! do |ref, source, destination|
-        assert Rugged::Reference.lookup(@repo, ref)
+        assert @repo.references[ref]
         assert_nil source
         assert destination
       end

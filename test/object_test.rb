@@ -12,7 +12,7 @@ class ObjectTest < Rugged::TestCase
     assert_instance_of Rugged::Commit, commit
 
     tag = Rugged::Object.lookup(@repo, "0c37a5391bbff43c37f0d0371823a5509eed5b1d")
-    assert_instance_of Rugged::Tag, tag
+    assert_instance_of Rugged::Tag::Annotation, tag
 
     tree = Rugged::Object.lookup(@repo, "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
     assert_instance_of Rugged::Tree, tree
@@ -26,7 +26,7 @@ class ObjectTest < Rugged::TestCase
     assert_instance_of Rugged::Commit, commit
 
     tag = subclass.lookup(@repo, "0c37a5391bbff43c37f0d0371823a5509eed5b1d")
-    assert_instance_of Rugged::Tag, tag
+    assert_instance_of Rugged::Tag::Annotation, tag
 
     tree = subclass.lookup(@repo, "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
     assert_instance_of Rugged::Tree, tree

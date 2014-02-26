@@ -104,8 +104,8 @@ class RepositoryTest < Rugged::SandboxedTestCase
   end
 
   def test_return_matching_tags
-    assert_equal 1, @repo.tags('e90810b').count
-    assert_equal 4, @repo.tags('*tag*').count
+    assert_equal 1, @repo.tags.each('e90810b').count
+    assert_equal 4, @repo.tags.each('*tag*').count
   end
 
   def test_return_all_remotes
@@ -116,7 +116,7 @@ class RepositoryTest < Rugged::SandboxedTestCase
   def test_lookup_head
     head = @repo.head
     assert_equal "refs/heads/master", head.name
-    assert_equal "a65fedf39aefe402d3bb6e24df4d4f5fe4547750", head.target
+    assert_equal "a65fedf39aefe402d3bb6e24df4d4f5fe4547750", head.target_id
     assert_equal :direct, head.type
   end
 
@@ -230,8 +230,8 @@ class MergeCommitsRepositoryTest < Rugged::SandboxedTestCase
   end
 
   def test_merge_commits
-    our_commit = Rugged::Branch.lookup(@repo, "master").tip
-    their_commit = Rugged::Branch.lookup(@repo, "branch").tip
+    our_commit = @repo.branches["master"].target_id
+    their_commit = @repo.branches["branch"].target_id
 
     index = @repo.merge_commits(our_commit, their_commit)
 
@@ -413,10 +413,10 @@ class RepositoryCloneTest < Rugged::TestCase
     repo = Rugged::Repository.clone_at(@source_path, @tmppath)
     begin
       assert_equal "hey", File.read(File.join(@tmppath, "README")).chomp
-      assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", repo.head.target
-      assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", repo.ref("refs/heads/master").target
-      assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", repo.ref("refs/remotes/origin/master").target
-      assert_equal "41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9", repo.ref("refs/remotes/origin/packed").target
+      assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", repo.head.target_id
+      assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", repo.ref("refs/heads/master").target_id
+      assert_equal "36060c58702ed4c2a40832c51758d5344201d89a", repo.ref("refs/remotes/origin/master").target_id
+      assert_equal "41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9", repo.ref("refs/remotes/origin/packed").target_id
     ensure
       repo.close
     end
@@ -520,8 +520,7 @@ class RepositoryPushTest < Rugged::SandboxedTestCase
     @remote_repo.config['core.bare'] = 'true'
 
     @repo = sandbox_clone("testrepo.git", "testrepo")
-    Rugged::Reference.create(@repo,
-      "refs/heads/unit_test",
+    @repo.references.create("refs/heads/unit_test",
       "8496071c1b46c854b31185ea97743be6a8774479")
   end
 
@@ -536,8 +535,8 @@ class RepositoryPushTest < Rugged::SandboxedTestCase
     result = @repo.push("origin", ["refs/heads/master", "refs/heads/master:refs/heads/foobar", "refs/heads/unit_test"])
     assert_equal({}, result)
 
-    assert_equal "a65fedf39aefe402d3bb6e24df4d4f5fe4547750", @remote_repo.ref("refs/heads/foobar").target
-    assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @remote_repo.ref("refs/heads/unit_test").target
+    assert_equal "a65fedf39aefe402d3bb6e24df4d4f5fe4547750", @remote_repo.ref("refs/heads/foobar").target_id
+    assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @remote_repo.ref("refs/heads/unit_test").target_id
   end
 
   def test_push_to_remote_instance
@@ -559,14 +558,14 @@ class RepositoryPushTest < Rugged::SandboxedTestCase
       @repo.push("origin", ["refs/heads/unit_test:refs/heads/master"])
     end
 
-    assert_equal "a65fedf39aefe402d3bb6e24df4d4f5fe4547750", @remote_repo.ref("refs/heads/master").target
+    assert_equal "a65fedf39aefe402d3bb6e24df4d4f5fe4547750", @remote_repo.ref("refs/heads/master").target_id
   end
 
   def test_push_non_forward_forced_raise_no_error
     result = @repo.push("origin", ["+refs/heads/unit_test:refs/heads/master"])
     assert_equal({}, result)
 
-    assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @remote_repo.ref("refs/heads/master").target
+    assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @remote_repo.ref("refs/heads/master").target_id
   end
 end
 
@@ -700,13 +699,13 @@ class RepositoryCheckoutTest < Rugged::SandboxedTestCase
     @repo.checkout(@repo.rev_parse_oid("refs/heads/dir"), :strategy => :force)
 
     assert @repo.head_detached?
-    assert_equal @repo.rev_parse_oid("refs/heads/dir"), @repo.head.target
+    assert_equal @repo.rev_parse_oid("refs/heads/dir"), @repo.head.target_id
   end
 
   def test_checkout_with_remote_branch_detaches_HEAD
     @clone.checkout("origin/dir", :strategy => :force)
 
     assert @clone.head_detached?
-    assert_equal @clone.rev_parse_oid("refs/remotes/origin/dir"), @clone.head.target
+    assert_equal @clone.rev_parse_oid("refs/remotes/origin/dir"), @clone.head.target_id
   end
 end

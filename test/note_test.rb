@@ -92,9 +92,7 @@ class NoteWriteTest < Rugged::TestCase
       :ref => 'refs/notes/test'
     )
     assert_equal '38c3a690c474d8dcdb13088205a464a60312eec4', note_oid
-    note_commit = @repo.lookup(
-      Rugged::Reference.lookup(@repo, 'refs/notes/test').target
-    )
+    note_commit = @repo.references['refs/notes/test'].target
     assert_equal name, note_commit.committer[:name]
     assert_equal email, note_commit.committer[:email]
     assert_equal name, note_commit.author[:name]

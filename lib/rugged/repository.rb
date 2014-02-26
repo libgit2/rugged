@@ -14,7 +14,7 @@ module Rugged
     #
     # Returns a Rugged::Commit object.
     def last_commit
-      self.lookup self.head.target
+      self.head.target
     end
 
     # Checkout the specified branch, reference or commit.
@@ -30,21 +30,20 @@ module Rugged
       if target.kind_of?(Rugged::Branch)
         branch = target
       else
-        branch = Branch.lookup(self, target, :local)
-        branch ||= Branch.lookup(self, target, :remote)
+        branch = branches[target]
       end
 
       if branch
-        self.checkout_tree(branch.tip, options)
+        self.checkout_tree(branch.target, options)
 
         if branch.remote?
-          Reference.create(self, "HEAD", branch.tip.oid, force: true)
+          references.create("HEAD", branch.target_id, force: true)
         else
-          Reference.create(self, "HEAD", branch.canonical_name, force: true)
+          references.create("HEAD", branch.canonical_name, force: true)
         end
       else
         commit = Commit.lookup(self, self.rev_parse_oid(target))
-        Reference.create(self, "HEAD", commit.oid, force: true)
+        references.create("HEAD", commit.oid, force: true)
         self.checkout_tree(commit, options)
       end
     end
@@ -124,22 +123,26 @@ module Rugged
     #
     # Returns a Rugged::Reference.
     def ref(ref_name)
-      Rugged::Reference.lookup(self, ref_name)
+      references[ref_name]
     end
 
     def refs(glob = nil)
-      Rugged::Reference.each(self, glob)
+      references.each(glob)
+    end
+
+    def references
+      @references ||= ReferenceCollection.new(self)
     end
 
     def ref_names(glob = nil)
-      Rugged::Reference.each_name(self, glob)
+      references.each_name(glob)
     end
 
     # All the tags in the repository.
     #
-    # Returns an Enumerable::Enumerator containing all the String tag names.
-    def tags(pattern="")
-      Rugged::Tag.each(self, pattern)
+    # Returns an TagCollection containing all the tags.
+    def tags
+      @tags ||= TagCollection.new(self)
     end
 
     # All the remotes in the repository.
@@ -152,9 +155,9 @@ module Rugged
 
     # All the branches in the repository
     #
-    # Returns an Enumerable::Enumerator containing Rugged::Branch objects
+    # Returns an BranchCollection containing Rugged::Branch objects
     def branches
-      Rugged::Branch.each(self)
+      @branches ||= BranchCollection.new(self)
     end
 
     # Create a new branch in the repository
@@ -172,7 +175,7 @@ module Rugged
         target = rev_parse_oid(sha_or_ref)
       end
 
-      Branch.create(self, name, target)
+      branches.create(name, target)
     end
 
     # Get the blob at a path for a specific revision.
