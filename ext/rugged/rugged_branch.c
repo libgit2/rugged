@@ -63,7 +63,8 @@ static VALUE rb_git_branch_name(VALUE self)
 	const char *branch_name;
 	Data_Get_Struct(self, git_reference, branch);
 
-	git_branch_name(&branch_name, branch);
+	rugged_exception_check(git_branch_name(&branch_name, branch));
+
 	return rb_str_new_utf8(branch_name);
 }
 
