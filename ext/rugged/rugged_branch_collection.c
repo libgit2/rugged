@@ -50,8 +50,7 @@ static inline int rugged_branch_lookup(git_reference **branch, git_repository *r
 		int error;
 
 		if (strncmp(branch_name, "refs/heads/", strlen("refs/heads/")) == 0 ||
-		    strncmp(branch_name, "refs/remotes/", strlen("refs/remotes/")) == 0 ||
-		    strcmp(branch_name, "HEAD") == 0)
+		    strncmp(branch_name, "refs/remotes/", strlen("refs/remotes/")) == 0)
 			return git_reference_lookup(branch, repo, branch_name);			
 
 		if ((error = git_branch_lookup(branch, repo, branch_name, GIT_BRANCH_LOCAL)) == GIT_OK ||
