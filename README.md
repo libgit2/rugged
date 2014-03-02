@@ -474,6 +474,7 @@ Simply clone and install:
 
 * Vicent Marti <tanoku@gmail.com>
 * Scott Chacon <schacon@gmail.com>
+* Arthur Schreiber <schreiber.arthur@gmail.com>
 
 
 ## License
