@@ -44,6 +44,10 @@
 #define rb_str_new_utf8(str) rb_enc_str_new(str, strlen(str), rb_utf8_encoding())
 #define CSTR2SYM(s) (ID2SYM(rb_intern((s))))
 
+#ifndef HAVE_RB_FSTRING
+VALUE rb_fstring(VALUE str);
+#endif
+
 /*
  * Initialization functions
  */
@@ -87,7 +91,7 @@ VALUE rugged_diff_new(VALUE klass, VALUE owner, git_diff *diff);
 VALUE rugged_patch_new(VALUE owner, git_patch *patch);
 VALUE rugged_diff_delta_new(VALUE owner, const git_diff_delta *delta);
 VALUE rugged_diff_hunk_new(VALUE owner, size_t hunk_idx, const git_diff_hunk *hunk, size_t lines_in_hunk);
-VALUE rugged_diff_line_new(VALUE owner, const git_diff_line *line);
+VALUE rugged_diff_line_new(const git_diff_line *line);
 VALUE rb_git_delta_file_fromC(const git_diff_file *file);
 
 void rugged_parse_diff_options(git_diff_options *opts, VALUE rb_options);

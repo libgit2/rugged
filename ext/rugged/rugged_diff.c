@@ -43,78 +43,28 @@ void rugged_parse_diff_options(git_diff_options *opts, VALUE rb_options)
 		VALUE rb_value;
 		Check_Type(rb_options, T_HASH);
 
-		rb_value = rb_hash_aref(rb_options, CSTR2SYM("max_size"));
-		if (!NIL_P(rb_value)) {
-			Check_Type(rb_value, T_FIXNUM);
-			opts->max_size = FIX2INT(rb_value);
-		}
-
-		rb_value = rb_hash_aref(rb_options, CSTR2SYM("context_lines"));
-		if (!NIL_P(rb_value)) {
-			Check_Type(rb_value, T_FIXNUM);
-			opts->context_lines = FIX2INT(rb_value);
-		}
-
-		rb_value = rb_hash_aref(rb_options, CSTR2SYM("interhunk_lines"));
-		if (!NIL_P(rb_value)) {
-			Check_Type(rb_value, T_FIXNUM);
-			opts->interhunk_lines = FIX2INT(rb_value);
-		}
-
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("reverse")))) {
 			opts->flags |= GIT_DIFF_REVERSE;
-		}
-
-		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("force_text")))) {
-			opts->flags |= GIT_DIFF_FORCE_TEXT;
-		}
-
-		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("ignore_whitespace")))) {
-			opts->flags |= GIT_DIFF_IGNORE_WHITESPACE;
-		}
-
-		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("ignore_whitespace_change")))) {
-			opts->flags |= GIT_DIFF_IGNORE_WHITESPACE_CHANGE;
-		}
-
-		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("ignore_whitespace_eol")))) {
-			opts->flags |= GIT_DIFF_IGNORE_WHITESPACE_EOL;
-		}
-
-		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("ignore_submodules")))) {
-			opts->flags |= GIT_DIFF_IGNORE_SUBMODULES;
-		}
-
-		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("patience")))) {
-			opts->flags |= GIT_DIFF_PATIENCE;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("include_ignored")))) {
 			opts->flags |= GIT_DIFF_INCLUDE_IGNORED;
 		}
 
-		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("include_untracked")))) {
-			opts->flags |= GIT_DIFF_INCLUDE_UNTRACKED;
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("recurse_ignored_dirs")))) {
+			opts->flags |= GIT_DIFF_RECURSE_IGNORED_DIRS;
 		}
 
-		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("include_unmodified")))) {
-			opts->flags |= GIT_DIFF_INCLUDE_UNMODIFIED;
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("include_untracked")))) {
+			opts->flags |= GIT_DIFF_INCLUDE_UNTRACKED;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("recurse_untracked_dirs")))) {
 			opts->flags |= GIT_DIFF_RECURSE_UNTRACKED_DIRS;
 		}
 
-		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("disable_pathspec_match")))) {
-			opts->flags |= GIT_DIFF_DISABLE_PATHSPEC_MATCH;
-		}
-
-		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("show_untracked_content")))) {
-			opts->flags |= GIT_DIFF_SHOW_UNTRACKED_CONTENT ;
-		}
-
-		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("skip_binary_check")))) {
-			opts->flags |= GIT_DIFF_SKIP_BINARY_CHECK;
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("include_unmodified")))) {
+			opts->flags |= GIT_DIFF_INCLUDE_UNMODIFIED;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("include_typechange")))) {
@@ -129,8 +79,60 @@ void rugged_parse_diff_options(git_diff_options *opts, VALUE rb_options)
 			opts->flags |= GIT_DIFF_IGNORE_FILEMODE;
 		}
 
-		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("recurse_ignored_dirs")))) {
-			opts->flags |= GIT_DIFF_RECURSE_IGNORED_DIRS;
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("ignore_submodules")))) {
+			opts->flags |= GIT_DIFF_IGNORE_SUBMODULES;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("ignore_case")))) {
+			opts->flags |= GIT_DIFF_IGNORE_CASE;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("disable_pathspec_match")))) {
+			opts->flags |= GIT_DIFF_DISABLE_PATHSPEC_MATCH;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("skip_binary_check")))) {
+			opts->flags |= GIT_DIFF_SKIP_BINARY_CHECK;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("fast_untracked_dirs")))) {
+			opts->flags |= GIT_DIFF_ENABLE_FAST_UNTRACKED_DIRS;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("force_text")))) {
+			opts->flags |= GIT_DIFF_FORCE_TEXT;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("force_binary")))) {
+			opts->flags |= GIT_DIFF_FORCE_BINARY;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("ignore_whitespace")))) {
+			opts->flags |= GIT_DIFF_IGNORE_WHITESPACE;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("ignore_whitespace_change")))) {
+			opts->flags |= GIT_DIFF_IGNORE_WHITESPACE_CHANGE;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("ignore_whitespace_eol")))) {
+			opts->flags |= GIT_DIFF_IGNORE_WHITESPACE_EOL;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("show_untracked_content")))) {
+			opts->flags |= GIT_DIFF_SHOW_UNTRACKED_CONTENT ;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("show_unmodified")))) {
+			opts->flags |= GIT_DIFF_SHOW_UNTRACKED_CONTENT ;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("patience")))) {
+			opts->flags |= GIT_DIFF_PATIENCE;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("minimal")))) {
+			opts->flags |= GIT_DIFF_MINIMAL;
 		}
 
 		rb_value = rb_hash_aref(rb_options, CSTR2SYM("paths"));
@@ -148,6 +150,42 @@ void rugged_parse_diff_options(git_diff_options *opts, VALUE rb_options)
 				VALUE rb_path = rb_ary_entry(rb_value, i);
 				opts->pathspec.strings[i] = StringValueCStr(rb_path);
 			}
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("context_lines"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_FIXNUM);
+			opts->context_lines = FIX2INT(rb_value);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("interhunk_lines"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_FIXNUM);
+			opts->interhunk_lines = FIX2INT(rb_value);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("id_abbrev"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_FIXNUM);
+			opts->id_abbrev = FIX2INT(rb_value);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("max_size"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_FIXNUM);
+			opts->max_size = FIX2INT(rb_value);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("old_prefix"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_STRING);
+			opts->old_prefix = StringValueCStr(rb_value);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("new_prefix"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_STRING);
+			opts->new_prefix = StringValueCStr(rb_value);
 		}
 	}
 }
@@ -476,6 +514,64 @@ static VALUE rb_git_diff_each_delta(VALUE self)
 	return self;
 }
 
+static int each_line_cb(
+    const git_diff_delta *delta,
+    const git_diff_hunk *hunk,
+    const git_diff_line *line,
+    void *payload)
+{
+	int *exception = (int *)payload;
+	rb_protect(rb_yield, rugged_diff_line_new(line), exception);
+	return *exception ? GIT_ERROR : GIT_OK;
+}
+
+/*
+ *  call-seq:
+ *    diff.each_line([format = :patch]) { |line| } -> self
+ *    diff.each_line([format = :patch]) -> enumerator
+ */
+static VALUE rb_git_diff_each_line(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_format;
+	git_diff *diff;
+	git_diff_format_t format;
+	int exception = 0, error;
+
+	Data_Get_Struct(self, git_diff, diff);
+
+	if (rb_scan_args(argc, argv, "01", &rb_format) == 1) {
+		Check_Type(rb_format, T_SYMBOL);
+	} else {
+		rb_format = CSTR2SYM("patch");
+	}
+
+	if (!rb_block_given_p())
+		return rb_funcall(self, rb_intern("to_enum"), 2, CSTR2SYM("each_line"), rb_format);
+
+	if (SYM2ID(rb_format) == rb_intern("patch")) {
+		format = GIT_DIFF_FORMAT_PATCH;
+	} else if (SYM2ID(rb_format) == rb_intern("patch_header")) {
+		format = GIT_DIFF_FORMAT_PATCH_HEADER;
+	} else if (SYM2ID(rb_format) == rb_intern("raw")) {
+		format = GIT_DIFF_FORMAT_RAW;
+	} else if (SYM2ID(rb_format) == rb_intern("name_only")) {
+		format = GIT_DIFF_FORMAT_NAME_ONLY;
+	} else if (SYM2ID(rb_format) == rb_intern("name_status")) {
+		format = GIT_DIFF_FORMAT_NAME_STATUS;
+	} else {
+		rb_raise(rb_eArgError, "unknown :format");
+	}
+
+	error = git_diff_print(diff, format, each_line_cb, &exception);
+
+	if (exception)
+		rb_jump_tag(exception);
+	rugged_exception_check(error);
+
+	return self;
+}
+
+
 /*
  *  call-seq: diff.size -> int
  *
@@ -553,6 +649,17 @@ static VALUE rb_git_diff_stat(VALUE self)
 		3, INT2FIX(stats.files), INT2FIX(stats.adds), INT2FIX(stats.dels));
 }
 
+/*
+ *  call-seq: diff.sorted_icase?
+ *
+ *  Returns true when deltas are sorted case insensitively.
+ */
+static VALUE rb_git_diff_sorted_icase_p(VALUE self)
+{
+	git_diff *diff;
+	Data_Get_Struct(self, git_diff, diff);
+	return git_diff_is_sorted_icase(diff) ? Qtrue : Qfalse;
+}
 
 void Init_rugged_diff(void)
 {
@@ -567,6 +674,9 @@ void Init_rugged_diff(void)
 	rb_define_method(rb_cRuggedDiff, "size", rb_git_diff_size, 0);
 	rb_define_method(rb_cRuggedDiff, "stat", rb_git_diff_stat, 0);
 
+	rb_define_method(rb_cRuggedDiff, "sorted_icase?", rb_git_diff_sorted_icase_p, 0);
+
 	rb_define_method(rb_cRuggedDiff, "each_patch", rb_git_diff_each_patch, 0);
 	rb_define_method(rb_cRuggedDiff, "each_delta", rb_git_diff_each_delta, 0);
+	rb_define_method(rb_cRuggedDiff, "each_line", rb_git_diff_each_line, -1);
 }

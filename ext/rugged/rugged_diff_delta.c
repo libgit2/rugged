@@ -71,6 +71,12 @@ static VALUE rb_git_delta_status_fromC(git_delta_t status)
 	}
 }
 
+static VALUE rb_git_delta_status_char_fromC(git_delta_t status)
+{
+	char status_char = git_diff_status_char(status);
+	return rb_fstring(rb_str_new(&status_char, 1));
+}
+
 VALUE rugged_diff_delta_new(VALUE owner, const git_diff_delta *delta)
 {
 	VALUE rb_delta = rb_class_new_instance(0, NULL, rb_cRuggedDiffDelta);
@@ -80,6 +86,7 @@ VALUE rugged_diff_delta_new(VALUE owner, const git_diff_delta *delta)
 	rb_iv_set(rb_delta, "@new_file", rb_git_delta_file_fromC(&delta->new_file));
 	rb_iv_set(rb_delta, "@similarity", INT2FIX(delta->similarity));
 	rb_iv_set(rb_delta, "@status", rb_git_delta_status_fromC(delta->status));
+	rb_iv_set(rb_delta, "@status_char", rb_git_delta_status_char_fromC(delta->status));
 	rb_iv_set(rb_delta, "@binary",
 		(!(delta->flags & GIT_DIFF_FLAG_NOT_BINARY) &&
 		 (delta->flags & GIT_DIFF_FLAG_BINARY)) ? Qtrue : Qfalse

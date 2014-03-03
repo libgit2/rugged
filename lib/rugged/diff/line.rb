@@ -17,8 +17,28 @@ module Rugged
         @line_origin == :deletion
       end
 
-      def eof_newline?
-        @line_origin == :eof_newline
+      def eof_no_newline?
+        @line_origin == :eof_no_newline
+      end
+
+      def eof_newline_added?
+        @line_origin == :eof_newline_added
+      end
+
+      def eof_newline_removed?
+        @line_origin == :eof_newline_removed
+      end
+
+      def file_header?
+        @line_origin == :file_header
+      end
+
+      def hunk_header?
+        @line_origin == :hunk_header
+      end
+
+      def binary?
+        @line_origin == :binary
       end
 
       def inspect

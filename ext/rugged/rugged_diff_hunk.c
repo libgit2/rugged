@@ -73,7 +73,7 @@ static VALUE rb_git_diff_hunk_each_line(VALUE self)
 		error = git_patch_get_line_in_hunk(&line, patch, hunk_idx, l);
 		if (error) break;
 
-		rb_yield(rugged_diff_line_new(self, line));
+		rb_yield(rugged_diff_line_new(line));
 	}
 	rugged_exception_check(error);
 
