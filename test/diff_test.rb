@@ -32,11 +32,11 @@ class RepoDiffTest < Rugged::SandboxedTestCase
 
     deltas = diff.deltas
 
-    assert_equal "D", deltas[0].status_char 
-    assert_equal "A", deltas[1].status_char 
-    assert_equal "A", deltas[2].status_char 
-    assert_equal "M", deltas[3].status_char 
-    assert_equal "M", deltas[4].status_char 
+    assert_equal :D, deltas[0].status_char 
+    assert_equal :A, deltas[1].status_char 
+    assert_equal :A, deltas[2].status_char 
+    assert_equal :M, deltas[3].status_char 
+    assert_equal :M, deltas[4].status_char 
   end
 
   def test_with_nil_on_left_side
