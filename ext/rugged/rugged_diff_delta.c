@@ -73,8 +73,12 @@ static VALUE rb_git_delta_status_fromC(git_delta_t status)
 
 static VALUE rb_git_delta_status_char_fromC(git_delta_t status)
 {
-	char status_char = git_diff_status_char(status);
-	return rb_fstring(rb_str_new(&status_char, 1));
+	char status_char[2];
+	
+	status_char[0] = git_diff_status_char(status);
+	status_char[1] = '\0';
+
+	return CSTR2SYM(status_char);
 }
 
 VALUE rugged_diff_delta_new(VALUE owner, const git_diff_delta *delta)
