@@ -28,9 +28,9 @@ class RuggedTest < Rugged::TestCase
     assert_raises(TypeError) { Rugged::Settings['mwindow_size'] = nil }
   end
 
-  def test_capabilities
-    capabilities = Rugged.capabilities
-    assert capabilities.is_a? Array
+  def test_features
+    features = Rugged.features
+    assert features.is_a? Array
   end
 
   def test_hex_to_raw_oid

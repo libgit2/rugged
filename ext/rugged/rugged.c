@@ -84,28 +84,27 @@ static VALUE rb_git_libgit2_version(VALUE self)
 
 /*
  *  call-seq:
- *     Rugged.capabilities -> capabilities
+ *     Rugged.features -> [feature, ...]
  *
- *  Returns an array representing the 'capabilities' that libgit2 was compiled
- *  with — this includes GIT_CAP_THREADS (thread support) and GIT_CAP_HTTPS (https).
- *  This is implemented in libgit2 with simple bitwise ops; we offer Rubyland an array
- *  of symbols representing the capabilities.
+ *  Returns an array representing the features that libgit2 was compiled
+ *  with — this includes `:threads` (thread support), `:https` and `:ssh`.
  *
- *  The possible capabilities are "threads" and "https".
- *
- *    Rugged.capabilities #=> [:threads, :https]
+ *    Rugged.features #=> [:threads, :https]
  */
-static VALUE rb_git_capabilities(VALUE self)
+static VALUE rb_git_features(VALUE self)
 {
 	VALUE ret_arr = rb_ary_new();
 
-	int caps = git_libgit2_capabilities();
+	int caps = git_libgit2_features();
 
-	if (caps & GIT_CAP_THREADS)
+	if (caps & GIT_HAS_THREADS)
 		rb_ary_push(ret_arr, CSTR2SYM("threads"));
 
-	if (caps & GIT_CAP_HTTPS)
+	if (caps & GIT_HAS_HTTPS)
 		rb_ary_push(ret_arr, CSTR2SYM("https"));
+
+	if (caps & GIT_HAS_SSH)
+		rb_ary_push(ret_arr, CSTR2SYM("ssh"));
 
 	return ret_arr;
 }
@@ -377,7 +376,7 @@ void Init_rugged(void)
 	}
 
 	rb_define_module_function(rb_mRugged, "libgit2_version", rb_git_libgit2_version, 0);
-	rb_define_module_function(rb_mRugged, "capabilities", rb_git_capabilities, 0);
+	rb_define_module_function(rb_mRugged, "features", rb_git_features, 0);
 	rb_define_module_function(rb_mRugged, "hex_to_raw", rb_git_hex_to_raw, 1);
 	rb_define_module_function(rb_mRugged, "raw_to_hex", rb_git_raw_to_hex, 1);
 	rb_define_module_function(rb_mRugged, "minimize_oid", rb_git_minimize_oid, -1);
