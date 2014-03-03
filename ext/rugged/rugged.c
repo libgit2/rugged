@@ -97,13 +97,13 @@ static VALUE rb_git_features(VALUE self)
 
 	int caps = git_libgit2_features();
 
-	if (caps & GIT_HAS_THREADS)
+	if (caps & GIT_FEATURE_THREADS)
 		rb_ary_push(ret_arr, CSTR2SYM("threads"));
 
-	if (caps & GIT_HAS_HTTPS)
+	if (caps & GIT_FEATURE_HTTPS)
 		rb_ary_push(ret_arr, CSTR2SYM("https"));
 
-	if (caps & GIT_HAS_SSH)
+	if (caps & GIT_FEATURE_SSH)
 		rb_ary_push(ret_arr, CSTR2SYM("ssh"));
 
 	return ret_arr;
