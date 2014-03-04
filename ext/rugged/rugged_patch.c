@@ -28,6 +28,64 @@ extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedDiffDelta;
 VALUE rb_cRuggedPatch;
 
+/*
+ *  call-seq:
+ *    Patch.from_strings(old_content = nil, new_content = nil, options = {}) -> patch
+ *
+ *  Directly generate a Rugged::Patch from the difference between the content of
+ *  the two strings `old_content` and `new_content`.
+ *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :old_path ::
+ *    An optional string to treat +blob+ as if it had this filename.
+ *
+ *  :new_path ::
+ *    An optional string to treat +other+ as if it had this filename.
+ *
+ *  Additionally, `options` can also contain all other valid diff options
+ *  (see Rugged::Tree#diff for a complete list).
+ */
+VALUE rb_git_patch_from_strings(int argc, VALUE *argv, VALUE self)
+{
+	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
+	git_patch *patch;
+	char * old_path = NULL, * new_path = NULL;
+	VALUE rb_old_buffer, rb_new_buffer, rb_options;
+
+	rb_scan_args(argc, argv, "02:", &rb_old_buffer, &rb_new_buffer, &rb_options);
+
+	if (!NIL_P(rb_options)) {
+		VALUE rb_value;
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("old_path"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_STRING);
+			old_path = StringValueCStr(rb_value);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("new_path"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_STRING);
+			new_path = StringValueCStr(rb_value);
+		}
+
+		rugged_parse_diff_options(&opts, rb_options);
+	}
+
+	rugged_exception_check(git_patch_from_buffers(&patch,
+		NIL_P(rb_old_buffer) ? NULL : StringValuePtr(rb_old_buffer),
+		NIL_P(rb_old_buffer) ? 0 : RSTRING_LEN(rb_old_buffer),
+		old_path,
+		NIL_P(rb_new_buffer) ? NULL : StringValuePtr(rb_new_buffer),
+		NIL_P(rb_new_buffer) ? 0 : RSTRING_LEN(rb_new_buffer),
+		new_path,
+		&opts
+	));
+
+	return rugged_patch_new(self, patch);
+}
+
 VALUE rugged_patch_new(VALUE owner, git_patch *patch)
 {
 	VALUE rb_patch = Data_Wrap_Struct(rb_cRuggedPatch, NULL, &git_patch_free, patch);
@@ -172,6 +230,8 @@ static VALUE rb_git_diff_patch_to_s(VALUE self)
 void Init_rugged_patch(void)
 {
 	rb_cRuggedPatch = rb_define_class_under(rb_mRugged, "Patch", rb_cObject);
+
+	rb_define_singleton_method(rb_cRuggedPatch, "from_strings", rb_git_patch_from_strings, -1);
 
 	rb_define_method(rb_cRuggedPatch, "stat", rb_git_diff_patch_stat, 0);
 	rb_define_method(rb_cRuggedPatch, "lines", rb_git_diff_patch_lines, 0);
