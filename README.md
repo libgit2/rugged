@@ -385,7 +385,7 @@ repo.branches.each_name().sort
 repo.branches.each_name(:local).sort
 # => ["master"]
 
-Rugged::Branch.each_name(:remote).sort
+repo.branches.each_name(:remote).sort
 # => ["origin/HEAD", "origin/master", "origin/packed"]
 ```
 
