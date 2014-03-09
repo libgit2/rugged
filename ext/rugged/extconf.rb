@@ -19,7 +19,7 @@ if !find_executable('cmake')
   abort "ERROR: CMake is required to build Rugged."
 end
 
-if !(MAKE = find_executable('make') || find_executable('gmake'))
+if !(MAKE = find_executable('gmake') || find_executable('make'))
   abort "ERROR: GNU make is required to build Rugged."
 end
 
