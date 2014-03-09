@@ -19,6 +19,10 @@ if !find_executable('cmake')
   abort "ERROR: CMake is required to build Rugged."
 end
 
+if !(MAKE = find_executable('make') || find_executable('gmake'))
+  abort "ERROR: GNU make is required to build Rugged."
+end
+
 if !find_executable('pkg-config')
   abort "ERROR: pkg-config is required to build Rugged."
 end
@@ -31,7 +35,7 @@ Dir.chdir(LIBGIT2_DIR) do
 
   Dir.chdir("build") do
     sys("cmake .. -DBUILD_CLAR=OFF -DTHREADSAFE=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS=-fPIC")
-    sys("cmake --build .")
+    sys(MAKE)
 
     pcfile = File.join(LIBGIT2_DIR, "build", "libgit2.pc")
     $LDFLAGS << " " + `pkg-config --libs --static #{pcfile}`.strip
