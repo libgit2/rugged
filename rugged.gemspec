@@ -1,9 +1,15 @@
 $:.push File.expand_path("../lib", __FILE__)
-require 'rugged/version'
+
+if ENV['DEVELOPMENT']
+  VERSION = `git describe --tags`.strip.gsub('-', '.')[1..-1]
+else
+  require 'rugged/version'
+  VERSION = Rugged::Version
+end
 
 Gem::Specification.new do |s|
   s.name                  = "rugged"
-  s.version               = Rugged::Version
+  s.version               = VERSION
   s.date                  = Time.now.strftime('%Y-%m-%d')
   s.summary               = "Rugged is a Ruby binding to the libgit2 linkable library"
   s.homepage              = "https://github.com/libgit2/rugged"
