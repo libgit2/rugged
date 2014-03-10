@@ -170,7 +170,7 @@ static VALUE rb_git_remote_disconnect(VALUE self)
  *    remote.connect(direction) { |connected_remote| block }
  *
  *  Open a connection to a remote:
- *  - +direction+: +:fetch+ or +:pull+
+ *  - +direction+: +:fetch+ or +:push+
  *
  *  If a block is given it will be passed the connected remote as argument
  *  and the remote will be disconnected when the block terminates.
