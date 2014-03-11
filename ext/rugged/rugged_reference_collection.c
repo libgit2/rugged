@@ -301,7 +301,7 @@ static VALUE rb_git_reference_collection_rename(int argc, VALUE *argv, VALUE sel
 {
 	VALUE rb_new_name, rb_name_or_ref, rb_options;
 	VALUE rb_repo = rugged_owner(self);
-	git_reference *ref, *out;
+	git_reference *ref, *out = NULL;
 	git_repository *repo;
 	git_signature *signature = NULL;
 	char *log_message = NULL;
