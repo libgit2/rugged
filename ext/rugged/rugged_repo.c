@@ -1756,9 +1756,9 @@ static int rugged__checkout_notify_cb(
 }
 
 /**
- * The caller has to free the returned git_checkout_opts paths strings array.
+ * The caller has to free the returned git_checkout_options paths strings array.
  */
-static void rugged_parse_checkout_options(git_checkout_opts *opts, VALUE rb_options)
+static void rugged_parse_checkout_options(git_checkout_options *opts, VALUE rb_options)
 {
 	VALUE rb_value;
 
@@ -2029,7 +2029,7 @@ static VALUE rb_git_checkout_tree(int argc, VALUE *argv, VALUE self)
 	VALUE rb_treeish, rb_options;
 	git_repository *repo;
 	git_object *treeish;
-	git_checkout_opts opts = GIT_CHECKOUT_OPTS_INIT;
+	git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
 	struct rugged_cb_payload *payload;
 	int error, exception = 0;
 
@@ -2083,7 +2083,7 @@ static VALUE rb_git_checkout_head(int argc, VALUE *argv, VALUE self)
 {
 	VALUE rb_options;
 	git_repository *repo;
-	git_checkout_opts opts = GIT_CHECKOUT_OPTS_INIT;
+	git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
 	struct rugged_cb_payload *payload;
 	int error, exception = 0;
 
