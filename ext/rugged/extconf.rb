@@ -5,7 +5,7 @@ RbConfig::MAKEFILE_CONFIG['CC'] = ENV['CC'] if ENV['CC']
 $CFLAGS << " #{ENV["CFLAGS"]}"
 $CFLAGS << " -g"
 $CFLAGS << " -O3" unless $CFLAGS[/-O\d/]
-$CFLAGS << " -Wall"
+$CFLAGS << " -Wall -Wno-comment"
 
 def sys(cmd)
   puts " -- #{cmd}"
