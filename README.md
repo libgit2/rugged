@@ -469,6 +469,11 @@ Simply clone and install:
     $ rake compile
     $ rake test
 
+## Support
+
+We encourage you to use StackOverflow for any questions or concerns regarding Rugged. Please tag your questions with the [rugged](http://stackoverflow.com/questions/tagged/rugged) keyword.
+
+For bug reports, please open a ticket on the GitHub [issue tracker](https://github.com/libgit2/rugged/issues).
 
 ## Authors
 
