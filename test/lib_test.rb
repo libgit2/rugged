@@ -28,6 +28,17 @@ class RuggedTest < Rugged::TestCase
     assert_raises(TypeError) { Rugged::Settings['mwindow_size'] = nil }
   end
 
+  def test_search_path
+    paths = [['search_path_global', '/tmp/global'],
+             ['search_path_xdg', '/tmp/xdg'],
+             ['search_path_system', '/tmp/system']]
+
+    paths.each do |opt, path|
+      Rugged::Settings[opt] = path
+      assert_equal(path, Rugged::Settings[opt])
+    end
+  end
+
   def test_features
     features = Rugged.features
     assert features.is_a? Array
