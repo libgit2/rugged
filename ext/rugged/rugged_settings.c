@@ -36,6 +36,41 @@
 
 extern VALUE rb_mRugged;
 
+static void set_search_path(int level, VALUE value)
+{
+	const char *path;
+
+	Check_Type(value, T_STRING);
+	path = StringValueCStr(value);
+
+	rugged_exception_check(git_libgit2_opts(GIT_OPT_SET_SEARCH_PATH, level, path));
+}
+
+static VALUE get_search_path(int level)
+{
+	char *buf = NULL;
+	size_t len = 64;
+	int error;
+	VALUE ret;
+
+	do {
+		len *= 2;
+		buf = xrealloc(buf, len);
+
+		error = git_libgit2_opts(GIT_OPT_GET_SEARCH_PATH, level, buf, len);
+	} while (error == GIT_EBUFS);
+
+	if (error < 0) {
+		xfree(buf);
+		rugged_exception_raise();
+	}
+
+	ret = rb_str_new_utf8(buf);
+	xfree(buf);
+
+	return ret;
+}
+
 /*
  *  call-seq:
  *    Settings[option] = value
@@ -61,6 +96,18 @@ static VALUE rb_git_set_option(VALUE self, VALUE option, VALUE value)
 		Check_Type(value, T_FIXNUM);
 		val = NUM2SIZET(value);
 		git_libgit2_opts(GIT_OPT_SET_MWINDOW_MAPPED_LIMIT, val);
+	}
+
+	else if (strcmp(opt, "search_path_global") == 0) {
+		set_search_path(GIT_CONFIG_LEVEL_GLOBAL, value);
+	}
+
+	else if (strcmp(opt, "search_path_xdg") == 0) {
+		set_search_path(GIT_CONFIG_LEVEL_XDG, value);
+	}
+
+	else if (strcmp(opt, "search_path_system") == 0) {
+		set_search_path(GIT_CONFIG_LEVEL_SYSTEM, value);
 	}
 
 	else {
@@ -95,6 +142,18 @@ static VALUE rb_git_get_option(VALUE self, VALUE option)
 		return SIZET2NUM(val);
 	}
 	
+	else if (strcmp(opt, "search_path_global") == 0) {
+		return get_search_path(GIT_CONFIG_LEVEL_GLOBAL);
+	}
+
+	else if (strcmp(opt, "search_path_xdg") == 0) {
+		return get_search_path(GIT_CONFIG_LEVEL_XDG);
+	}
+
+	else if (strcmp(opt, "search_path_system") == 0) {
+		return get_search_path(GIT_CONFIG_LEVEL_SYSTEM);
+	}
+
 	else {
 		rb_raise(rb_eArgError, "Unknown option specified");
 	}
