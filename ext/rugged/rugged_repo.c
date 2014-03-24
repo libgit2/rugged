@@ -462,8 +462,10 @@ static void parse_clone_options(git_clone_options *ret, VALUE rb_options_hash, s
 		ret->bare = 1;
 
 	val = rb_hash_aref(rb_options_hash, CSTR2SYM("checkout_branch"));
-	if (RTEST(val) && (TYPE(val) == T_STRING))
+	if (!NIL_P(val)) {
+		Check_Type(val, T_STRING);
 		ret->checkout_branch = StringValuePtr(val);
+	}
 
 	val = rb_hash_aref(rb_options_hash, CSTR2SYM("credentials"));
 	if (RTEST(val)) {
