@@ -14,7 +14,7 @@ class OnlineCloneTest < Rugged::TestCase
       username:   ENV["GITTEST_REMOTE_SSH_USER"],
       publickey:  ENV["GITTEST_REMOTE_SSH_PUBKEY"],
       privatekey: ENV["GITTEST_REMOTE_SSH_KEY"],
-      passphrase: ENV["GITTEST_REMOTE_SSH_PASSPHASE"],
+      passphrase: ENV["GITTEST_REMOTE_SSH_PASSPHRASE"],
     })
   end
 
@@ -38,6 +38,20 @@ class OnlineCloneTest < Rugged::TestCase
         })
 
         assert_instance_of Rugged::Repository, repo
+      end
+    end
+
+    def test_clone_over_ssh_with_credentials_and_branch
+      skip unless ssh_creds?
+
+      Dir.mktmpdir do |dir|
+        repo = Rugged::Repository.clone_at("git@github.com:libgit2/TestGitRepository.git", dir, {
+          credentials: ssh_key_credential,
+          checkout_branch: "no-parent"
+        })
+
+        assert_instance_of Rugged::Repository, repo
+        assert_equal "42e4e7c5e507e113ebbb7801b16b52cf867b7ce1", repo.head.target_id
       end
     end
 

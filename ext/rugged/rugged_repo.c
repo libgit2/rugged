@@ -461,6 +461,10 @@ static void parse_clone_options(git_clone_options *ret, VALUE rb_options_hash, s
 	if (RTEST(val))
 		ret->bare = 1;
 
+	val = rb_hash_aref(rb_options_hash, CSTR2SYM("checkout_branch"));
+	if (RTEST(val) && (TYPE(val) == T_STRING))
+		ret->checkout_branch = StringValuePtr(val);
+
 	val = rb_hash_aref(rb_options_hash, CSTR2SYM("credentials"));
 	if (RTEST(val)) {
 		if (rb_obj_is_kind_of(val, rb_cRuggedCredPlaintext) ||
@@ -509,7 +513,7 @@ static void parse_clone_options(git_clone_options *ret, VALUE rb_options_hash, s
  *    If +true+, the clone will be created as a bare repository.
  *    Defaults to +false+.
  *
- *  :branch ::
+ *  :checkout_branch ::
  *    The name of a branch to checkout. Defaults to the remote's +HEAD+.
  *
  *  :remote ::
