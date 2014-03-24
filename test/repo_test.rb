@@ -455,6 +455,7 @@ class RepositoryCloneTest < Rugged::TestCase
     begin
       assert_equal "what file?\n", File.read(File.join(@tmppath, "second.txt"))
       assert_equal repo.head.target_id, repo.ref("refs/heads/packed").target_id
+      assert_equal "refs/heads/packed", repo.references["HEAD"].target_id
     ensure
       repo.close
     end
