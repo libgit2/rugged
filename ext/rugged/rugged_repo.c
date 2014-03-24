@@ -452,7 +452,7 @@ static int rugged__default_remote_credentials_cb(
 static void parse_clone_options(git_clone_options *ret, VALUE rb_options_hash, struct rugged_remote_cb_payload *remote_payload)
 {
 	git_remote_callbacks remote_callbacks = GIT_REMOTE_CALLBACKS_INIT;
-	VALUE val;
+	VALUE val, checkout_branch_val;
 
 	if (NIL_P(rb_options_hash))
 		return;
@@ -460,6 +460,10 @@ static void parse_clone_options(git_clone_options *ret, VALUE rb_options_hash, s
 	val = rb_hash_aref(rb_options_hash, CSTR2SYM("bare"));
 	if (RTEST(val))
 		ret->bare = 1;
+
+	checkout_branch_val = rb_hash_aref(rb_options_hash, CSTR2SYM("checkout_branch"));
+	if (RTEST(checkout_branch_val) && (TYPE(checkout_branch_val) == T_STRING))
+		ret->checkout_branch = StringValuePtr(checkout_branch_val);
 
 	val = rb_hash_aref(rb_options_hash, CSTR2SYM("credentials"));
 	if (RTEST(val)) {
@@ -509,7 +513,7 @@ static void parse_clone_options(git_clone_options *ret, VALUE rb_options_hash, s
  *    If +true+, the clone will be created as a bare repository.
  *    Defaults to +false+.
  *
- *  :branch ::
+ *  :checkout_branch ::
  *    The name of a branch to checkout. Defaults to the remote's +HEAD+.
  *
  *  :remote ::
