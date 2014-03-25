@@ -6,6 +6,10 @@ class TrivialMergeTest < Rugged::SandboxedTestCase
 
     ours = repo.rev_parse("trivial-2alt")
     theirs = repo.rev_parse("trivial-2alt-branch")
+
+    analysis = repo.merge_analysis(theirs)
+    assert_equal [:normal], analysis
+
     base = repo.rev_parse(repo.merge_base(ours, theirs))
 
     index = ours.tree.merge(theirs.tree, base.tree)
@@ -27,4 +31,22 @@ class TrivialMergeTest < Rugged::SandboxedTestCase
     assert index["new-and-different.txt", 2]
     assert index["new-and-different.txt", 3]
   end
+
+  def test_analysis
+    repo = sandbox_init("merge-resolve")
+
+    analysis = repo.merge_analysis("HEAD")
+    assert_equal [:up_to_date], analysis
+
+    analysis = repo.merge_analysis(repo.rev_parse("HEAD~"))
+    assert_equal [:up_to_date], analysis
+
+    analysis = repo.merge_analysis("ff_branch")
+    assert_equal [:normal, :fastforward], analysis
+
+    analysis = repo.merge_analysis("branch")
+    assert_equal [:normal], analysis
+
+  end
+
 end

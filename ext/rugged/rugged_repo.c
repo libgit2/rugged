@@ -714,6 +714,58 @@ static VALUE rb_git_repo_merge_base(VALUE self, VALUE rb_args)
 
 /*
  *  call-seq:
+ *    repo.merge_analysis(their_commit) -> Array
+ *
+ *  Analyzes the given commit and determines the opportunities for merging
+ *  it into the repository's HEAD. Returns an Array of symbols with the options.
+ */
+static VALUE rb_git_repo_merge_analysis(int argc, VALUE *argv, VALUE self)
+{
+	int error;
+	git_repository *repo;
+	git_commit *their_commit;
+	git_merge_head *merge_head;
+	git_merge_analysis_t analysis;
+	VALUE rb_their_commit, result;
+
+	rb_scan_args(argc, argv, "10", &rb_their_commit);
+
+	Data_Get_Struct(self, git_repository, repo);
+
+	if (TYPE(rb_their_commit) == T_STRING) {
+		rb_their_commit = rugged_object_rev_parse(self, rb_their_commit, 1);
+	}
+
+	if (!rb_obj_is_kind_of(rb_their_commit, rb_cRuggedCommit)) {
+		rb_raise(rb_eArgError, "Expected a Rugged::Commit.");
+	}
+
+	Data_Get_Struct(rb_their_commit, git_commit, their_commit);
+
+	error = git_merge_head_from_id(&merge_head, repo, git_commit_id(their_commit));
+	rugged_exception_check(error);
+
+	error = git_merge_analysis(&analysis, repo,
+				   /* hack as we currently only do one commit */
+				   (const git_merge_head **) &merge_head, 1);
+	git_merge_head_free(merge_head);
+	rugged_exception_check(error);
+
+	result = rb_ary_new();
+	if (analysis & GIT_MERGE_ANALYSIS_NORMAL)
+		rb_ary_push(result, CSTR2SYM("normal"));
+	if (analysis & GIT_MERGE_ANALYSIS_UP_TO_DATE)
+		rb_ary_push(result, CSTR2SYM("up_to_date"));
+	if (analysis & GIT_MERGE_ANALYSIS_FASTFORWARD)
+		rb_ary_push(result, CSTR2SYM("fastforward"));
+	if (analysis & GIT_MERGE_ANALYSIS_UNBORN)
+		rb_ary_push(result, CSTR2SYM("unborn"));
+
+	return result;
+}
+
+/*
+ *  call-seq:
  *    repo.merge_commits(our_commit, their_commit, options = {}) -> index
  *
  *  Merges the two given commits, returning a Rugged::Index that reflects
@@ -2167,6 +2219,7 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "head", rb_git_repo_get_head, 0);
 
 	rb_define_method(rb_cRuggedRepo, "merge_base", rb_git_repo_merge_base, -2);
+	rb_define_method(rb_cRuggedRepo, "merge_analysis", rb_git_repo_merge_analysis, -1);
 	rb_define_method(rb_cRuggedRepo, "merge_commits", rb_git_repo_merge_commits, -1);
 
 	rb_define_method(rb_cRuggedRepo, "reset", rb_git_repo_reset, -1);
