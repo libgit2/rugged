@@ -728,7 +728,7 @@ static VALUE rb_git_repo_merge_commits(int argc, VALUE *argv, VALUE self)
 	git_commit *our_commit, *their_commit;
 	git_index *index;
 	git_repository *repo;
-	git_merge_tree_opts opts = GIT_MERGE_TREE_OPTS_INIT;
+	git_merge_options opts = GIT_MERGE_OPTIONS_INIT;
 
 	rb_scan_args(argc, argv, "20:", &rb_our_commit, &rb_their_commit, &rb_options);
 
