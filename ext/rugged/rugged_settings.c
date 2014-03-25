@@ -48,25 +48,13 @@ static void set_search_path(int level, VALUE value)
 
 static VALUE get_search_path(int level)
 {
-	char *buf = NULL;
-	size_t len = 64;
-	int error;
+	git_buf buf = {NULL};
 	VALUE ret;
 
-	do {
-		len *= 2;
-		buf = xrealloc(buf, len);
+	rugged_exception_check(git_libgit2_opts(GIT_OPT_GET_SEARCH_PATH, level, &buf));
 
-		error = git_libgit2_opts(GIT_OPT_GET_SEARCH_PATH, level, buf, len);
-	} while (error == GIT_EBUFS);
-
-	if (error < 0) {
-		xfree(buf);
-		rugged_exception_raise();
-	}
-
-	ret = rb_str_new_utf8(buf);
-	xfree(buf);
+	ret = rb_str_new_utf8(buf.ptr);
+	git_buf_free(&buf);
 
 	return ret;
 }

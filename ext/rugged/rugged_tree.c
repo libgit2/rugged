@@ -481,7 +481,7 @@ static VALUE rb_git_tree_diff_workdir(int argc, VALUE *argv, VALUE self)
 	return rugged_diff_new(rb_cRuggedDiff, self, diff);
 }
 
-void rugged_parse_merge_options(git_merge_tree_opts *opts, VALUE rb_options)
+void rugged_parse_merge_options(git_merge_options *opts, VALUE rb_options)
 {
 	if (!NIL_P(rb_options)) {
 		VALUE rb_value;
@@ -559,7 +559,7 @@ static VALUE rb_git_tree_merge(int argc, VALUE *argv, VALUE self)
 	git_tree *tree, *other_tree, *ancestor_tree;
 	git_repository *repo;
 	git_index *index;
-	git_merge_tree_opts opts = GIT_MERGE_TREE_OPTS_INIT;
+	git_merge_options opts = GIT_MERGE_OPTIONS_INIT;
 	int error;
 
 	if (rb_scan_args(argc, argv, "12", &rb_other_tree, &rb_ancestor_tree, &rb_options) == 2) {
