@@ -450,6 +450,17 @@ class RepositoryCloneTest < Rugged::TestCase
     assert_equal 1563, received_bytes
   end
 
+  def test_clone_with_branch
+    repo = Rugged::Repository.clone_at(@source_path, @tmppath, {checkout_branch: "packed"})
+    begin
+      assert_equal "what file?\n", File.read(File.join(@tmppath, "second.txt"))
+      assert_equal repo.head.target_id, repo.ref("refs/heads/packed").target_id
+      assert_equal "refs/heads/packed", repo.references["HEAD"].target_id
+    ensure
+      repo.close
+    end
+  end
+
   def test_clone_quits_on_error
     begin
       Rugged::Repository.clone_at(@source_path, @tmppath, :callbacks => {
