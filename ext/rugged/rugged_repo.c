@@ -717,7 +717,26 @@ static VALUE rb_git_repo_merge_base(VALUE self, VALUE rb_args)
  *    repo.merge_analysis(their_commit) -> Array
  *
  *  Analyzes the given commit and determines the opportunities for merging
- *  it into the repository's HEAD. Returns an Array of symbols with the options.
+ *  it into the repository's HEAD. Returns an Array containing a combination
+ *  of the following symbols:
+ *
+ *  :normal ::
+ *    A "normal" merge is possible, both HEAD and the given commit have
+ *    diverged from their common ancestor. The divergent commits must be
+ *    merged.
+ *
+ *  :up_to_date ::
+ *    The given commit is reachable from HEAD, meaning HEAD is up-to-date
+ *    and no merge needs to be performed.
+ *
+ *  :fastforward ::
+ *    The given commit is a fast-forward from HEAD and no merge needs to be
+ *    performed. HEAD can simply be set to the given commit.
+ *    
+ *  :unborn ::
+ *    The HEAD of the current repository is "unborn" and does not point to
+ *    a valid commit. No merge can be performed, but the caller may wish
+ *    to simply set HEAD to the given commit.
  */
 static VALUE rb_git_repo_merge_analysis(int argc, VALUE *argv, VALUE self)
 {
