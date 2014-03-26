@@ -2,7 +2,6 @@ require "test_helper"
 require 'base64'
 require 'tempfile'
 require 'fileutils'
-require 'pry'
 
 class IndexTest < Rugged::TestCase
   def self.new_index_entry

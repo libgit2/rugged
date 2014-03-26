@@ -1068,7 +1068,7 @@ static VALUE rb_git_merge_file(int argc, VALUE *argv, VALUE self)
 	git_merge_file_options opts = GIT_MERGE_FILE_OPTIONS_INIT;
 	int error;
 
-	rb_scan_args(argc, argv, "11", &rb_path, &rb_options);
+	rb_scan_args(argc, argv, "1:", &rb_path, &rb_options);
 
 	if (!NIL_P(rb_options)) {
 		Check_Type(rb_options, T_HASH);
