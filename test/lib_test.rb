@@ -115,13 +115,13 @@ class RuggedTest < Rugged::TestCase
 
   def test_prettify_commit_messages
     message = <<-MESSAGE
-Testing this whole prettify business    
+Testing this whole prettify business
 
-with newlines and stuff  
+with newlines and stuff
 # take out this line haha
 # and this one
 
-not this one    
+not this one
 MESSAGE
 
     clean_message = <<-MESSAGE

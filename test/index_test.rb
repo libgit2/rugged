@@ -283,6 +283,29 @@ class IndexConflictsTest < Rugged::SandboxedTestCase
   end
 end
 
+class IndexMergeFileTest < Rugged::SandboxedTestCase
+  def setup
+    super
+
+    @repo = sandbox_init("mergedrepo")
+  end
+
+  def teardown
+    @repo.close
+
+    super
+  end
+
+  def test_merge_file
+    merge_file_result = @repo.index.merge_file("conflicts-one.txt")
+
+    assert !merge_file_result[:automergeable]
+    assert_equal merge_file_result[:path], "conflicts-one.txt"
+    assert_equal merge_file_result[:data], "<<<<<<< conflicts-one.txt\nThis is most certainly a conflict!\n=======\nThis is a conflict!!!\n>>>>>>> conflicts-one.txt\n"
+  end
+
+end
+
 class IndexRepositoryTest < Rugged::TestCase
   include Rugged::TempRepositoryAccess
 
