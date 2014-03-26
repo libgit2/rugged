@@ -1094,7 +1094,7 @@ static VALUE rb_git_merge_file(int argc, VALUE *argv, VALUE self)
 	rb_hash_aset(rb_result, CSTR2SYM("automergeable"), merge_file_result.automergeable ? Qtrue : Qfalse);
 	rb_hash_aset(rb_result, CSTR2SYM("path"),         rb_path);
 	rb_hash_aset(rb_result, CSTR2SYM("filemode"),     INT2FIX(merge_file_result.mode));
-	rb_hash_aset(rb_result, CSTR2SYM("data"),         rb_external_str_new(merge_file_result.ptr, merge_file_result.len));
+	rb_hash_aset(rb_result, CSTR2SYM("data"),         rb_str_new(merge_file_result.ptr, merge_file_result.len));
 
 	git_merge_file_result_free(&merge_file_result);
 
