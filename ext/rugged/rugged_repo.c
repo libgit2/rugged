@@ -2205,7 +2205,7 @@ static VALUE rb_git_repo_is_path_ignored(VALUE self, VALUE rb_path) {
 	int ignored;
 
 	Data_Get_Struct(self, git_repository, repo);
-	path = RSTRING_PTR(rb_path);
+	path = StringValueCStr(rb_path);
 	error = git_ignore_path_is_ignored(&ignored, repo, path);
 	rugged_exception_check(error);
 	return ignored ? Qtrue : Qfalse;
