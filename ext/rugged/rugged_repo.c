@@ -2192,6 +2192,25 @@ static VALUE rb_git_checkout_head(int argc, VALUE *argv, VALUE self)
 	return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    repo.path_ignored?(path) -> true or false
+ *
+ *  Return whether a path is ignored or not.
+ */
+static VALUE rb_git_repo_is_path_ignored(VALUE self, VALUE rb_path) {
+	git_repository *repo;
+	const char *path;
+	int error;
+	int ignored;
+
+	Data_Get_Struct(self, git_repository, repo);
+	path = StringValueCStr(rb_path);
+	error = git_ignore_path_is_ignored(&ignored, repo, path);
+	rugged_exception_check(error);
+	return ignored ? Qtrue : Qfalse;
+}
+
 void Init_rugged_repo(void)
 {
 	id_call = rb_intern("call");
@@ -2240,6 +2259,8 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "merge_base", rb_git_repo_merge_base, -2);
 	rb_define_method(rb_cRuggedRepo, "merge_analysis", rb_git_repo_merge_analysis, -1);
 	rb_define_method(rb_cRuggedRepo, "merge_commits", rb_git_repo_merge_commits, -1);
+
+	rb_define_method(rb_cRuggedRepo, "path_ignored?", rb_git_repo_is_path_ignored, 1);
 
 	rb_define_method(rb_cRuggedRepo, "reset", rb_git_repo_reset, -1);
 	rb_define_method(rb_cRuggedRepo, "reset_path", rb_git_repo_reset_path, -1);
