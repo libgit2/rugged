@@ -42,7 +42,8 @@ Dir.chdir(LIBGIT2_DIR) do
   end
 end
 
-dir_config('git2', "#{LIBGIT2_DIR}/include", "#{LIBGIT2_DIR}/build")
+$CPPFLAGS << "-I#{LIBGIT2_DIR}/include"
+$LIBPATH.unshift "#{LIBGIT2_DIR}/build"
 
 unless have_library 'git2' and have_header 'git2.h'
   abort "ERROR: Failed to build libgit2"
