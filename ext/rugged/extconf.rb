@@ -38,7 +38,7 @@ Dir.chdir(LIBGIT2_DIR) do
     sys(MAKE)
 
     pcfile = File.join(LIBGIT2_DIR, "build", "libgit2.pc")
-    $LDFLAGS << " " + `pkg-config --libs --static #{pcfile}`.strip
+    $libs << " " + `pkg-config --libs-only-l --static #{pcfile}`.strip
   end
 end
 
