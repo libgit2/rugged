@@ -319,4 +319,23 @@ class RemoteTransportTest < Rugged::TestCase
     refute @repo.tags["v0.9"]
     refute @repo.tags["v1.0"]
   end
+
+  def test_transfer_progress_callback
+    total_objects = indexed_objects = received_objects = local_objects = total_deltas = indexed_deltas = received_bytes = nil
+    callsback = 0
+
+    @remote.fetch transfer_progress: lambda { |*args|
+      total_objects, indexed_objects, received_objects, local_objects, total_deltas, indexed_deltas, received_bytes = args
+      callsback += 1
+    }
+
+    assert_equal 22, callsback
+    assert_equal 19, total_objects
+    assert_equal 19, indexed_objects
+    assert_equal 19, received_objects
+    assert_equal 0, local_objects
+    assert_equal 2, total_deltas
+    assert_equal 2, indexed_deltas
+    assert_equal 1563, received_bytes
+  end
 end

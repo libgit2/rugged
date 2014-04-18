@@ -42,6 +42,26 @@ static int progress_cb(const char *str, int len, void *data)
 	return payload->exception ? GIT_ERROR : GIT_OK;
 }
 
+static int transfer_progress_cb(const git_transfer_progress *stats, void *data)
+{
+	struct rugged_remote_cb_payload *payload = data;
+	VALUE args;
+
+	args = rb_ary_new2(5);
+	rb_ary_push(args, payload->transfer_progress);
+	rb_ary_push(args, UINT2NUM(stats->total_objects));
+	rb_ary_push(args, UINT2NUM(stats->indexed_objects));
+	rb_ary_push(args, UINT2NUM(stats->received_objects));
+	rb_ary_push(args, UINT2NUM(stats->local_objects));
+	rb_ary_push(args, UINT2NUM(stats->total_deltas));
+	rb_ary_push(args, UINT2NUM(stats->indexed_deltas));
+	rb_ary_push(args, INT2FIX(stats->received_bytes));
+
+	rb_protect(rugged__block_yield_splat, args, &payload->exception);
+
+	return payload->exception ? GIT_ERROR : GIT_OK;
+}
+
 static int update_tips_cb(const char *refname, const git_oid *src, const git_oid *dest, void *data)
 {
 	struct rugged_remote_cb_payload *payload = data;
@@ -76,6 +96,11 @@ static void init_callbacks_and_payload_from_options(
 		callbacks->progress = progress_cb;
 	}
 
+	rb_callback = rb_hash_aref(rb_options, CSTR2SYM("transfer_progress"));
+	if (!NIL_P(rb_callback)) {
+		payload->transfer_progress = rb_callback;
+		callbacks->transfer_progress = transfer_progress_cb;
+	}
 	callbacks->payload = payload;
 }
 
