@@ -351,25 +351,6 @@ static int rugged__remote_credentials_cb(
 	return remote_payload->exception ? GIT_ERROR : GIT_OK;
 }
 
-static int rugged__default_remote_credentials_cb(
-	git_cred **cred,
-	const char *url,
-	const char *username_from_url,
-	unsigned int allowed_types,
-	void *payload)
-{
-	struct rugged_remote_cb_payload *remote_payload = payload;
-	struct extract_cred_payload cred_payload;
-
-	cred_payload.cred = cred;
-	cred_payload.rb_cred = remote_payload->credentials;
-	cred_payload.allowed_types = allowed_types;
-
-	rb_protect(rugged__extract_cred, (VALUE)&cred_payload, &remote_payload->exception);
-
-	return remote_payload->exception ? GIT_ERROR : GIT_OK;
-}
-
 static void parse_clone_options(git_clone_options *ret, VALUE rb_options_hash, struct rugged_remote_cb_payload *remote_payload)
 {
 	git_remote_callbacks remote_callbacks = GIT_REMOTE_CALLBACKS_INIT;
@@ -389,20 +370,9 @@ static void parse_clone_options(git_clone_options *ret, VALUE rb_options_hash, s
 	}
 
 	val = rb_hash_aref(rb_options_hash, CSTR2SYM("credentials"));
-	if (RTEST(val)) {
-		if (rb_obj_is_kind_of(val, rb_cRuggedCredPlaintext) ||
-			rb_obj_is_kind_of(val, rb_cRuggedCredSshKey) ||
-			rb_obj_is_kind_of(val, rb_cRuggedCredDefault))
-		{
-			remote_callbacks.credentials = rugged__default_remote_credentials_cb;
-			remote_payload->credentials = val;
-		} else if (rb_respond_to(val, rb_intern("call"))) {
-			remote_callbacks.credentials = rugged__remote_credentials_cb;
-			remote_payload->credentials = val;
-		} else {
-			rb_raise(rb_eArgError,
-				"Expected a Rugged::Credentials type, a Proc or an object that responds to call (:credentials).");
-		}
+	if (!NIL_P(val)) {
+		remote_callbacks.credentials = rugged__remote_credentials_cb;
+		remote_payload->credentials = val;
 	}
 
 	val = rb_hash_aref(rb_options_hash, CSTR2SYM("callbacks"));
