@@ -123,7 +123,7 @@ static int credentials_cb(
 	return payload->exception ? GIT_ERROR : GIT_OK;
 }
 
-static void init_callbacks_and_payload_from_options(
+void rugged_remote_init_callbacks_and_payload_from_options(
 	VALUE rb_options,
 	git_remote_callbacks *callbacks,
 	struct rugged_remote_cb_payload *payload)
@@ -731,7 +731,7 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 		if (!NIL_P(rb_val))
 			log_message = StringValueCStr(rb_val);
 
-		init_callbacks_and_payload_from_options(rb_options, &callbacks, &payload);
+		rugged_remote_init_callbacks_and_payload_from_options(rb_options, &callbacks, &payload);
 	}
 
 	if ((error = git_remote_set_callbacks(remote, &callbacks)) == GIT_OK &&

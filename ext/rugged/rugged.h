@@ -151,6 +151,11 @@ struct rugged_remote_cb_payload
     int exception;
 };
 
+void rugged_remote_init_callbacks_and_payload_from_options(
+	VALUE rb_options,
+	git_remote_callbacks *callbacks,
+	struct rugged_remote_cb_payload *payload);
+
 static inline void rugged_check_repo(VALUE rb_repo)
 {
 	if (!rb_obj_is_kind_of(rb_repo, rb_cRuggedRepo))
