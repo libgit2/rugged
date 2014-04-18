@@ -28,6 +28,35 @@ extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedRepo;
 VALUE rb_cRuggedRemote;
 
+static int update_tips_cb(const char *refname, const git_oid *src, const git_oid *dest, void *data)
+{
+	struct rugged_remote_cb_payload *payload = data;
+
+	VALUE args = rb_ary_new2(4);
+	rb_ary_push(args, payload->update_tips);
+	rb_ary_push(args, rb_str_new_utf8(refname));
+	rb_ary_push(args, git_oid_iszero(src) ? Qnil : rugged_create_oid(src));
+	rb_ary_push(args, git_oid_iszero(dest) ? Qnil : rugged_create_oid(dest));
+
+	rb_protect(rugged__block_yield_splat, args, &payload->exception);
+
+	return payload->exception ? GIT_ERROR : GIT_OK;
+}
+
+static void init_callbacks_and_payload_from_options(
+	VALUE rb_options,
+	git_remote_callbacks *callbacks,
+	struct rugged_remote_cb_payload *payload)
+{
+	VALUE rb_callback = rb_hash_aref(rb_options, CSTR2SYM("update_tips"));
+	if (!NIL_P(rb_callback)) {
+		payload->update_tips = rb_callback;
+		callbacks->update_tips = update_tips_cb;
+	}
+
+	callbacks->payload = payload;
+}
+
 static void rb_git_remote__free(git_remote *remote)
 {
 	git_remote_free(remote);
@@ -559,6 +588,8 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 	git_remote *remote;
 	git_repository *repo;
 	git_signature *signature = NULL;
+	git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
+	struct rugged_remote_cb_payload payload = { Qnil, Qnil, Qnil, Qnil, Qnil, 0 };
 
 	char *log_message = NULL;
 	int error;
@@ -579,9 +610,12 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 		rb_val = rb_hash_aref(rb_options, CSTR2SYM("message"));
 		if (!NIL_P(rb_val))
 			log_message = StringValueCStr(rb_val);
+
+		init_callbacks_and_payload_from_options(rb_options, &callbacks, &payload);
 	}
 
-	if ((error = git_remote_fetch(remote, signature, log_message)) == GIT_OK) {
+	if ((error = git_remote_set_callbacks(remote, &callbacks)) == GIT_OK &&
+	    (error = git_remote_fetch(remote, signature, log_message)) == GIT_OK) {
 		const git_transfer_progress *stats = git_remote_stats(remote);
 
 		rb_result = rb_hash_new();
@@ -595,6 +629,10 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 	}
 
 	git_signature_free(signature);
+
+	if (payload.exception)
+		rb_jump_tag(payload.exception);
+
 	rugged_exception_check(error);
 
 	return rb_result;

@@ -133,8 +133,19 @@ extern VALUE rb_cRuggedRepo;
 
 VALUE rugged__block_yield_splat(VALUE args);
 
-struct rugged_cb_payload {
+struct rugged_cb_payload
+{
     VALUE rb_data;
+    int exception;
+};
+
+struct rugged_remote_cb_payload
+{
+	VALUE progress;
+	VALUE completion;
+	VALUE transfer_progress;
+	VALUE update_tips;
+	VALUE credentials;
     int exception;
 };
 

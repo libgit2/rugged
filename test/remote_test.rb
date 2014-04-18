@@ -287,7 +287,36 @@ class RemoteTransportTest < Rugged::TestCase
       received_bytes: 1563
     }, @remote.fetch)
 
-    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', @repo.rev_parse('origin/master').oid
-    assert @repo.lookup('36060c5')
+    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', @repo.branches['origin/master'].target_id
+    assert_equal '41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9', @repo.branches["origin/packed"].target_id
+    assert_equal '5b5b025afb0b4c913b4c338a42934a3863bf3644', @repo.tags["v0.9"].target_id
+    assert_equal '0c37a5391bbff43c37f0d0371823a5509eed5b1d', @repo.tags["v1.0"].target_id
+  end
+
+  def test_update_tips_callback
+    @remote.fetch update_tips: lambda { |ref, source, destination|
+      assert @repo.references[ref]
+      assert_nil source
+      assert destination
+    }
+
+    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', @repo.branches['origin/master'].target_id
+    assert_equal '41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9', @repo.branches["origin/packed"].target_id
+    assert_equal '5b5b025afb0b4c913b4c338a42934a3863bf3644', @repo.tags["v0.9"].target_id
+    assert_equal '0c37a5391bbff43c37f0d0371823a5509eed5b1d', @repo.tags["v1.0"].target_id
+  end
+
+  def test_update_tips_callback_error
+    assert_raises TestException do
+      @remote.fetch update_tips: lambda { |*args|
+        raise TestException
+      }
+    end
+
+    # In case of an error inside the callback, all further tip updates get cancelled
+    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', @repo.branches["origin/master"].target_id
+    refute @repo.branches["origin/packed"]
+    refute @repo.tags["v0.9"]
+    refute @repo.tags["v1.0"]
   end
 end
