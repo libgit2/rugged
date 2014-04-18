@@ -132,24 +132,40 @@ static void init_callbacks_and_payload_from_options(
 
 	rb_callback = rb_hash_aref(rb_options, CSTR2SYM("update_tips"));
 	if (!NIL_P(rb_callback)) {
+		if (!rb_respond_to(rb_callback, rb_intern("call"))) {
+			rb_raise(rb_eArgError, "Expected a Proc or an object that responds to #call (:update_tips).");
+		}
+
 		payload->update_tips = rb_callback;
 		callbacks->update_tips = update_tips_cb;
 	}
 
 	rb_callback = rb_hash_aref(rb_options, CSTR2SYM("progress"));
 	if (!NIL_P(rb_callback)) {
+		if (!rb_respond_to(rb_callback, rb_intern("call"))) {
+			rb_raise(rb_eArgError, "Expected a Proc or an object that responds to #call (:progress).");
+		}
+
 		payload->progress = rb_callback;
 		callbacks->progress = progress_cb;
 	}
 
 	rb_callback = rb_hash_aref(rb_options, CSTR2SYM("transfer_progress"));
 	if (!NIL_P(rb_callback)) {
+		if (!rb_respond_to(rb_callback, rb_intern("call"))) {
+			rb_raise(rb_eArgError, "Expected a Proc or an object that responds to #call (:transfer_progress).");
+		}
+
 		payload->transfer_progress = rb_callback;
 		callbacks->transfer_progress = transfer_progress_cb;
 	}
 
 	rb_callback = rb_hash_aref(rb_options, CSTR2SYM("credentials"));
 	if (!NIL_P(rb_callback)) {
+		if (!rb_respond_to(rb_callback, rb_intern("call"))) {
+			rb_raise(rb_eArgError, "Expected a Proc or an object that responds to #call (:credentials).");
+		}
+
 		payload->credentials = rb_callback;
 		callbacks->credentials = credentials_cb;
 	}
