@@ -131,6 +131,8 @@ static inline int rugged_parse_bool(VALUE boolean)
 
 extern VALUE rb_cRuggedRepo;
 
+VALUE rugged__block_yield_splat(VALUE args);
+
 struct rugged_cb_payload {
     VALUE rb_data;
     int exception;

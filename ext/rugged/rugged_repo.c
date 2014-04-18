@@ -289,25 +289,6 @@ static VALUE rb_git_repo_init_at(int argc, VALUE *argv, VALUE klass)
 	return rugged_repo_new(klass, repo);
 }
 
-static VALUE rugged__block_yield_splat(VALUE args) {
-	VALUE block = rb_ary_shift(args);
-	int n = RARRAY_LENINT(args);
-
-	if (n == 0) {
-		return rb_funcall(block, rb_intern("call"), 0);
-	} else {
-		int i;
-		VALUE *argv;
-		argv = ALLOCA_N(VALUE, n);
-
-		for (i=0; i < n; i++) {
-			argv[i] = rb_ary_entry(args, i);
-		}
-
-		return rb_funcall2(block, rb_intern("call"), n, argv);
-	}
-}
-
 struct rugged_remote_cb_payload
 {
 	VALUE progress;
