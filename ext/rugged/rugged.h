@@ -148,7 +148,7 @@ struct rugged_remote_cb_payload
 	VALUE transfer_progress;
 	VALUE update_tips;
 	VALUE credentials;
-    int exception;
+	int exception;
 };
 
 void rugged_remote_init_callbacks_and_payload_from_options(
