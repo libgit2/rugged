@@ -93,6 +93,8 @@ VALUE rb_git_delta_file_fromC(const git_diff_file *file);
 void rugged_parse_diff_options(git_diff_options *opts, VALUE rb_options);
 void rugged_parse_merge_options(git_merge_options *opts, VALUE rb_options);
 
+void rugged_cred_extract(git_cred **cred, int allowed_types, VALUE rb_credential);
+
 VALUE rugged_otype_new(git_otype t);
 git_otype rugged_otype_get(VALUE rb_type);
 
