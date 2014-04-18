@@ -75,6 +75,54 @@ static int update_tips_cb(const char *refname, const git_oid *src, const git_oid
 	return payload->exception ? GIT_ERROR : GIT_OK;
 }
 
+struct extract_cred_payload
+{
+	VALUE rb_cred;
+	git_cred **cred;
+	unsigned int allowed_types;
+};
+
+static VALUE extract_cred(VALUE payload) {
+	struct extract_cred_payload *cred_payload = (struct extract_cred_payload*)payload;
+	rugged_cred_extract(cred_payload->cred, cred_payload->allowed_types, cred_payload->rb_cred);
+	return Qnil;
+}
+
+static int credentials_cb(
+	git_cred **cred,
+	const char *url,
+	const char *username_from_url,
+	unsigned int allowed_types,
+	void *data)
+{
+	struct rugged_remote_cb_payload *payload = data;
+	struct extract_cred_payload cred_payload;
+	VALUE args = rb_ary_new2(4), rb_allowed_types = rb_ary_new();
+
+	if (allowed_types & GIT_CREDTYPE_USERPASS_PLAINTEXT)
+		rb_ary_push(rb_allowed_types, CSTR2SYM("plaintext"));
+
+	if (allowed_types & GIT_CREDTYPE_SSH_KEY)
+		rb_ary_push(rb_allowed_types, CSTR2SYM("ssh_key"));
+
+	if (allowed_types & GIT_CREDTYPE_DEFAULT)
+		rb_ary_push(rb_allowed_types, CSTR2SYM("default"));
+
+	rb_ary_push(args, payload->credentials);
+	rb_ary_push(args, url ? rb_str_new2(url) : Qnil);
+	rb_ary_push(args, username_from_url ? rb_str_new2(username_from_url) : Qnil);
+	rb_ary_push(args, rb_allowed_types);
+
+	cred_payload.cred = cred;
+	cred_payload.rb_cred = rb_protect(rugged__block_yield_splat, args, &payload->exception);
+	cred_payload.allowed_types = allowed_types;
+
+	if (!payload->exception)
+		rb_protect(extract_cred, (VALUE)&cred_payload, &payload->exception);
+
+	return payload->exception ? GIT_ERROR : GIT_OK;
+}
+
 static void init_callbacks_and_payload_from_options(
 	VALUE rb_options,
 	git_remote_callbacks *callbacks,
@@ -99,6 +147,13 @@ static void init_callbacks_and_payload_from_options(
 		payload->transfer_progress = rb_callback;
 		callbacks->transfer_progress = transfer_progress_cb;
 	}
+
+	rb_callback = rb_hash_aref(rb_options, CSTR2SYM("credentials"));
+	if (!NIL_P(rb_callback)) {
+		payload->credentials = rb_callback;
+		callbacks->credentials = credentials_cb;
+	}
+
 	callbacks->payload = payload;
 }
 
