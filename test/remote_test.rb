@@ -12,12 +12,7 @@ class RemoteNetworkTest < Rugged::TestCase
     end
 
     remote = Rugged::Remote.new(@repo, 'git://github.com/libgit2/libgit2.git')
-
-    remote.connect(:fetch) do |r|
-      assert r.connected?
-    end
-
-    assert !remote.connected?
+    assert remote.ls.any?
   end
 end
 
@@ -269,63 +264,15 @@ class RemoteTransportTest < Rugged::TestCase
     FileUtils.remove_entry_secure(@path)
   end
 
-  def test_remote_disconnect
-    @remote.connect(:fetch)
-    assert @remote.connected?
-
-    @remote.disconnect
-    refute @remote.connected?
-  end
-
   def test_remote_ls
-    @remote.connect(:fetch) do |r|
-      assert r.ls.kind_of? Enumerable
-      rheads = r.ls.to_a
+    assert @remote.ls.kind_of? Enumerable
+    rheads = @remote.ls.to_a
 
-      assert_equal 7, rheads.count
+    assert_equal 7, rheads.count
 
-      rhead = rheads.first
-      assert_equal false, rhead[:local?]
-      assert rhead[:oid]
-      assert_nil rhead[:loid]
-    end
-  end
-
-  def test_update_tips_callback
-    @remote.connect(:fetch) do |r|
-      r.download
-      r.update_tips! do |ref, source, destination|
-        assert @repo.references[ref]
-        assert_nil source
-        assert destination
-      end
-    end
-  end
-
-  # this is not as useless as it seems
-  # LocalJumpError is raised in the second call to
-  # update_tips! if libgit2 callback is not cleared
-  # Also the exception is explicitly raised after the
-  # callback is cleared
-  def test_update_tips_cleanup_callbacks
-    @remote.connect(:fetch) do |r|
-      r.download
-      assert_raises TestException do
-        r.update_tips! do
-          raise TestException
-        end
-      end
-      r.update_tips!
-    end
-  end
-
-  def test_remote_fetch
-    @remote.connect(:fetch) do |r|
-      r.download
-      r.update_tips!
-    end
-
-    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', @repo.rev_parse('origin/master').oid
-    assert @repo.lookup('36060c5')
+    rhead = rheads.first
+    assert_equal false, rhead[:local?]
+    assert rhead[:oid]
+    assert_nil rhead[:loid]
   end
 end
