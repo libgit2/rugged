@@ -289,16 +289,6 @@ static VALUE rb_git_repo_init_at(int argc, VALUE *argv, VALUE klass)
 	return rugged_repo_new(klass, repo);
 }
 
-struct rugged_remote_cb_payload
-{
-	VALUE progress;
-	VALUE completion;
-	VALUE transfer_progress;
-	VALUE update_tips;
-	VALUE credentials;
-    int exception;
-};
-
 static int rugged__remote_transfer_progress_cb(const git_transfer_progress *stats, void *payload)
 {
 	struct rugged_remote_cb_payload *remote_payload = payload;
