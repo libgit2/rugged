@@ -275,4 +275,19 @@ class RemoteTransportTest < Rugged::TestCase
     assert rhead[:oid]
     assert_nil rhead[:loid]
   end
+
+  def test_remote_fetch
+    assert_equal({
+      total_objects: 19,
+      indexed_objects: 19,
+      received_objects: 19,
+      local_objects: 0,
+      total_deltas: 2,
+      indexed_deltas: 2,
+      received_bytes: 1563
+    }, @remote.fetch)
+
+    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', @repo.rev_parse('origin/master').oid
+    assert @repo.lookup('36060c5')
+  end
 end
