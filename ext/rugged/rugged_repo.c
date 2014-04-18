@@ -312,57 +312,7 @@ struct extract_cred_payload
 
 static VALUE rugged__extract_cred(VALUE payload) {
 	struct extract_cred_payload *cred_payload = (struct extract_cred_payload*)payload;
-	git_cred **cred = cred_payload->cred;
-	VALUE rb_cred = cred_payload->rb_cred;
-
-	if (rb_obj_is_kind_of(rb_cred, rb_cRuggedCredPlaintext)) {
-		if (!(cred_payload->allowed_types & GIT_CREDTYPE_USERPASS_PLAINTEXT)) {
-			rb_raise(rb_eArgError, "Invalid credential type");
-		} else {
-			VALUE rb_username = rb_iv_get(rb_cred, "@username");
-			VALUE rb_password = rb_iv_get(rb_cred, "@password");
-
-			Check_Type(rb_username, T_STRING);
-			Check_Type(rb_password, T_STRING);
-
-
-			rugged_exception_check(
-				git_cred_userpass_plaintext_new(cred,
-					StringValueCStr(rb_username), StringValueCStr(rb_password)));
-		}
-	} else if (rb_obj_is_kind_of(rb_cred, rb_cRuggedCredSshKey)) {
-		if (!(cred_payload->allowed_types & GIT_CREDTYPE_SSH_KEY)) {
-			rb_raise(rb_eArgError, "Invalid credential type");
-		} else {
-			VALUE rb_username   = rb_iv_get(rb_cred, "@username");
-			VALUE rb_publickey  = rb_iv_get(rb_cred, "@publickey");
-			VALUE rb_privatekey = rb_iv_get(rb_cred, "@privatekey");
-			VALUE rb_passphrase = rb_iv_get(rb_cred, "@passphrase");
-
-			Check_Type(rb_privatekey, T_STRING);
-
-			if (!NIL_P(rb_username))
-				Check_Type(rb_username, T_STRING);
-			if (!NIL_P(rb_publickey))
-				Check_Type(rb_publickey, T_STRING);
-			if (!NIL_P(rb_passphrase))
-				Check_Type(rb_passphrase, T_STRING);
-
-			rugged_exception_check(
-				git_cred_ssh_key_new(cred,
-					NIL_P(rb_username) ? NULL : StringValueCStr(rb_username),
-					NIL_P(rb_publickey) ? NULL : StringValueCStr(rb_publickey),
-					StringValueCStr(rb_privatekey),
-					NIL_P(rb_passphrase) ? NULL : StringValueCStr(rb_passphrase)));
-		}
-	} else if (rb_obj_is_kind_of(rb_cred, rb_cRuggedCredDefault)) {
-		if (!(cred_payload->allowed_types & GIT_CREDTYPE_SSH_KEY)) {
-			rb_raise(rb_eArgError, "Invalid credential type");
-		} else {
-			rugged_exception_check(git_cred_default_new(cred));
-		}
-	}
-
+	rugged_cred_extract(cred_payload->cred, cred_payload->allowed_types, cred_payload->rb_cred);
 	return Qnil;
 }
 
