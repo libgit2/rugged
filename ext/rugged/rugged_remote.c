@@ -71,11 +71,11 @@ static VALUE rb_git_remote_new(VALUE klass, VALUE rb_repo, VALUE rb_url)
 
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
-	error = git_remote_create_inmemory(
+	error = git_remote_create_anonymous(
 			&remote,
 			repo,
-			NULL,
-			StringValueCStr(rb_url));
+			StringValueCStr(rb_url),
+			NULL);
 
 	rugged_exception_check(error);
 
