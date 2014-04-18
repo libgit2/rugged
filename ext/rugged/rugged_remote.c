@@ -213,17 +213,21 @@ static VALUE rugged_rhead_new(const git_remote_head *head)
  */
 static VALUE rb_git_remote_ls(VALUE self)
 {
-	int error, exception = 0;
 	git_remote *remote;
+	git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
 	const git_remote_head **heads;
+
+	int error, exception = 0;
 	size_t heads_len, i;
+
 	Data_Get_Struct(self, git_remote, remote);
 
 	if (!rb_block_given_p())
 		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("ls"));
 
-	if ((error = git_remote_connect(remote, GIT_DIRECTION_FETCH)) ||
-		(error = git_remote_ls(&heads, &heads_len, remote)))
+	if ((error = git_remote_set_callbacks(remote, &callbacks)) ||
+	    (error = git_remote_connect(remote, GIT_DIRECTION_FETCH)) ||
+	    (error = git_remote_ls(&heads, &heads_len, remote)))
 		goto cleanup;
 
 	for (i = 0; i < heads_len && !exception; i++)
