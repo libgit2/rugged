@@ -31,7 +31,6 @@ VALUE rb_cRuggedRemote;
 static int progress_cb(const char *str, int len, void *data)
 {
 	struct rugged_remote_cb_payload *payload = data;
-
 	VALUE args = rb_ary_new2(2);
 
 	rb_ary_push(args, payload->progress);
@@ -45,9 +44,8 @@ static int progress_cb(const char *str, int len, void *data)
 static int transfer_progress_cb(const git_transfer_progress *stats, void *data)
 {
 	struct rugged_remote_cb_payload *payload = data;
-	VALUE args;
+	VALUE args = rb_ary_new2(5);
 
-	args = rb_ary_new2(5);
 	rb_ary_push(args, payload->transfer_progress);
 	rb_ary_push(args, UINT2NUM(stats->total_objects));
 	rb_ary_push(args, UINT2NUM(stats->indexed_objects));
@@ -65,8 +63,8 @@ static int transfer_progress_cb(const git_transfer_progress *stats, void *data)
 static int update_tips_cb(const char *refname, const git_oid *src, const git_oid *dest, void *data)
 {
 	struct rugged_remote_cb_payload *payload = data;
-
 	VALUE args = rb_ary_new2(4);
+
 	rb_ary_push(args, payload->update_tips);
 	rb_ary_push(args, rb_str_new_utf8(refname));
 	rb_ary_push(args, git_oid_iszero(src) ? Qnil : rugged_create_oid(src));
