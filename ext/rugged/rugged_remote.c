@@ -28,6 +28,20 @@ extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedRepo;
 VALUE rb_cRuggedRemote;
 
+static int progress_cb(const char *str, int len, void *data)
+{
+	struct rugged_remote_cb_payload *payload = data;
+
+	VALUE args = rb_ary_new2(2);
+
+	rb_ary_push(args, payload->progress);
+	rb_ary_push(args, rb_str_new(str, len));
+
+	rb_protect(rugged__block_yield_splat, args, &payload->exception);
+
+	return payload->exception ? GIT_ERROR : GIT_OK;
+}
+
 static int update_tips_cb(const char *refname, const git_oid *src, const git_oid *dest, void *data)
 {
 	struct rugged_remote_cb_payload *payload = data;
@@ -48,10 +62,18 @@ static void init_callbacks_and_payload_from_options(
 	git_remote_callbacks *callbacks,
 	struct rugged_remote_cb_payload *payload)
 {
-	VALUE rb_callback = rb_hash_aref(rb_options, CSTR2SYM("update_tips"));
+	VALUE rb_callback;
+
+	rb_callback = rb_hash_aref(rb_options, CSTR2SYM("update_tips"));
 	if (!NIL_P(rb_callback)) {
 		payload->update_tips = rb_callback;
 		callbacks->update_tips = update_tips_cb;
+	}
+
+	rb_callback = rb_hash_aref(rb_options, CSTR2SYM("progress"));
+	if (!NIL_P(rb_callback)) {
+		payload->progress = rb_callback;
+		callbacks->progress = progress_cb;
 	}
 
 	callbacks->payload = payload;
