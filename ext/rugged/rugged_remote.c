@@ -538,6 +538,68 @@ static VALUE rb_git_remote_rename(VALUE self, VALUE rb_new_name)
 	return RARRAY_LEN(rb_refspec_ary) == 0 ? Qnil : rb_refspec_ary;
 }
 
+/*
+ *  call-seq:
+ *    remote.fetch(options = {}) -> hash
+ *
+ *  Downloads new data from the remote and updates tips.
+ *
+ *  Returns a hash containing statistics for the fetch operation.
+ *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :message ::
+ *    The message to insert into the reflogs. Defaults to "fetch".
+ *
+ *  :signature ::
+ *    The signature to be used for updating the reflogs.
+ */
+static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
+{
+	git_remote *remote;
+	git_repository *repo;
+	git_signature *signature = NULL;
+
+	char *log_message = NULL;
+	int error;
+
+	VALUE rb_options, rb_result = Qnil, rb_repo = rugged_owner(self);
+
+	rb_scan_args(argc, argv, "0:", &rb_options);
+
+	Data_Get_Struct(self, git_remote, remote);
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	if (!NIL_P(rb_options)) {
+		VALUE rb_val = rb_hash_aref(rb_options, CSTR2SYM("signature"));
+		if (!NIL_P(rb_val))
+			signature = rugged_signature_get(rb_val, repo);
+
+		rb_val = rb_hash_aref(rb_options, CSTR2SYM("message"));
+		if (!NIL_P(rb_val))
+			log_message = StringValueCStr(rb_val);
+	}
+
+	if ((error = git_remote_fetch(remote, signature, log_message)) == GIT_OK) {
+		const git_transfer_progress *stats = git_remote_stats(remote);
+
+		rb_result = rb_hash_new();
+		rb_hash_aset(rb_result, CSTR2SYM("total_objects"),    UINT2NUM(stats->total_objects));
+		rb_hash_aset(rb_result, CSTR2SYM("indexed_objects"),  UINT2NUM(stats->indexed_objects));
+		rb_hash_aset(rb_result, CSTR2SYM("received_objects"), UINT2NUM(stats->received_objects));
+		rb_hash_aset(rb_result, CSTR2SYM("local_objects"),    UINT2NUM(stats->local_objects));
+		rb_hash_aset(rb_result, CSTR2SYM("total_deltas"),     UINT2NUM(stats->total_deltas));
+		rb_hash_aset(rb_result, CSTR2SYM("indexed_deltas"),   UINT2NUM(stats->indexed_deltas));
+		rb_hash_aset(rb_result, CSTR2SYM("received_bytes"),   INT2FIX(stats->received_bytes));
+	}
+
+	git_signature_free(signature);
+	rugged_exception_check(error);
+
+	return rb_result;
+}
+
 void Init_rugged_remote(void)
 {
 	rb_cRuggedRemote = rb_define_class_under(rb_mRugged, "Remote", rb_cObject);
@@ -558,6 +620,7 @@ void Init_rugged_remote(void)
 	rb_define_method(rb_cRuggedRemote, "add_fetch", rb_git_remote_add_fetch, 1);
 	rb_define_method(rb_cRuggedRemote, "add_push", rb_git_remote_add_push, 1);
 	rb_define_method(rb_cRuggedRemote, "ls", rb_git_remote_ls, 0);
+	rb_define_method(rb_cRuggedRemote, "fetch", rb_git_remote_fetch, -1);
 	rb_define_method(rb_cRuggedRemote, "clear_refspecs", rb_git_remote_clear_refspecs, 0);
 	rb_define_method(rb_cRuggedRemote, "save", rb_git_remote_save, 0);
 	rb_define_method(rb_cRuggedRemote, "rename!", rb_git_remote_rename, 1);
