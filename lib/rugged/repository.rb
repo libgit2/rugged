@@ -202,5 +202,19 @@ module Rugged
 
       remote_or_url.fetch(*args)
     end
+
+    # Push a list of refspecs to the given remote.
+    #
+    # refspecs - A list of refspecs that should be pushed to the remote.
+    #
+    # Returns a hash containing the pushed refspecs as keys and
+    # any error messages or +nil+ as values.
+    def push(remote_or_url, *args)
+      unless remote_or_url.kind_of? Remote
+        remote_or_url = Remote.lookup(self, remote_or_url) || Remote.new(self, remote_or_url)
+      end
+
+      remote_or_url.push(*args)
+    end
   end
 end

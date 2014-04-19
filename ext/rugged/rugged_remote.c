@@ -26,6 +26,7 @@
 
 extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedRepo;
+extern VALUE rb_eRuggedError;
 VALUE rb_cRuggedRemote;
 
 static int progress_cb(const char *str, int len, void *data)
@@ -766,6 +767,121 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 	return rb_result;
 }
 
+static int push_status_cb(const char *ref, const char *msg, void *payload)
+{
+	VALUE rb_result_hash = (VALUE)payload;
+	if (msg != NULL)
+		rb_hash_aset(rb_result_hash, rb_str_new_utf8(ref), rb_str_new_utf8(msg));
+
+	return GIT_OK;
+}
+
+/*
+ *  call-seq:
+ *    remote.push(refspecs = nil, options = {}) -> hash
+ *
+ *  Pushes the given +refspecs+ to the given +remote+. Returns a hash that contains
+ *  key-value pairs that reflect pushed refs and error messages, if applicable.
+ *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :credentials ::
+ *    The credentials to use for the fetch operation. Can be either an instance of one
+ *    of the Rugged::Credentials types, or a proc returning one of the former.
+ *    The proc will be called with the +url+, the +username+ from the url (if applicable) and
+ *    a list of applicable credential types.
+ *
+ *  :message ::
+ *    A single line log message to be appended to the reflog of each local remote-tracking
+ *    branch that gets updated. Defaults to: "fetch".
+ *
+ *  :signature ::
+ *    The signature to be used for populating the reflog entries.
+ *
+ *  Example:
+ *
+ *    remote = Rugged::Remote.lookup(@repo, 'origin')
+ *    remote.push(["refs/heads/master", ":refs/heads/to_be_deleted"])
+ */
+static VALUE rb_git_remote_push(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_refspecs, rb_options, rb_val;
+	VALUE rb_repo = rugged_owner(self);
+	VALUE rb_exception = Qnil, rb_result = rb_hash_new();
+
+	git_repository *repo;
+	git_remote *remote, *tmp_remote;
+	git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
+	git_push *push = NULL;
+	git_signature *signature = NULL;
+
+	int error = 0, i = 0;
+	char *log_message = NULL;
+
+	struct rugged_remote_cb_payload payload = { Qnil, Qnil, Qnil, Qnil, 0 };
+
+	rb_scan_args(argc, argv, "01:", &rb_refspecs, &rb_options);
+
+	Check_Type(rb_refspecs, T_ARRAY);
+	for (i = 0; i < RARRAY_LEN(rb_refspecs); ++i) {
+		VALUE rb_refspec = rb_ary_entry(rb_refspecs, i);
+		Check_Type(rb_refspec, T_STRING);
+	}
+
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+	Data_Get_Struct(self, git_remote, remote);
+
+	if (!NIL_P(rb_options)) {
+		rugged_remote_init_callbacks_and_payload_from_options(rb_options, &callbacks, &payload);
+
+		rb_val = rb_hash_aref(rb_options, CSTR2SYM("message"));
+		if (!NIL_P(rb_val))
+			log_message = StringValueCStr(rb_val);
+
+		rb_val = rb_hash_aref(rb_options, CSTR2SYM("signature"));
+		if (!NIL_P(rb_val))
+			signature = rugged_signature_get(rb_val, repo);
+	}
+
+	// Create a temporary remote that we use for pushing
+	if ((error = git_remote_dup(&tmp_remote, remote)) ||
+	    (error = git_remote_set_callbacks(tmp_remote, &callbacks)) ||
+	    (error = git_push_new(&push, tmp_remote)))
+	    goto cleanup;
+
+	for (i = 0; !error && i < RARRAY_LEN(rb_refspecs); ++i) {
+		VALUE rb_refspec = rb_ary_entry(rb_refspecs, i);
+
+		if ((error = git_push_add_refspec(push, StringValueCStr(rb_refspec))))
+			goto cleanup;
+	}
+
+	if ((error = git_push_finish(push)))
+		goto cleanup;
+
+	if (!git_push_unpack_ok(push)) {
+		rb_exception = rb_exc_new2(rb_eRuggedError, "the remote side did not unpack successfully");
+		goto cleanup;
+	}
+
+	if ((error = git_push_status_foreach(push, &push_status_cb, (void *)rb_result)) ||
+	    (error = git_push_update_tips(push, signature, log_message)))
+	    goto cleanup;
+
+cleanup:
+	git_push_free(push);
+	git_remote_free(tmp_remote);
+	git_signature_free(signature);
+
+	if (!NIL_P(rb_exception))
+		rb_exc_raise(rb_exception);
+
+	rugged_exception_check(error);
+
+	return rb_result;
+}
+
 void Init_rugged_remote(void)
 {
 	rb_cRuggedRemote = rb_define_class_under(rb_mRugged, "Remote", rb_cObject);
@@ -787,6 +903,7 @@ void Init_rugged_remote(void)
 	rb_define_method(rb_cRuggedRemote, "add_push", rb_git_remote_add_push, 1);
 	rb_define_method(rb_cRuggedRemote, "ls", rb_git_remote_ls, 0);
 	rb_define_method(rb_cRuggedRemote, "fetch", rb_git_remote_fetch, -1);
+	rb_define_method(rb_cRuggedRemote, "push", rb_git_remote_push, -1);
 	rb_define_method(rb_cRuggedRemote, "clear_refspecs", rb_git_remote_clear_refspecs, 0);
 	rb_define_method(rb_cRuggedRemote, "save", rb_git_remote_save, 0);
 	rb_define_method(rb_cRuggedRemote, "rename!", rb_git_remote_rename, 1);
