@@ -810,7 +810,7 @@ static VALUE rb_git_remote_push(int argc, VALUE *argv, VALUE self)
 	VALUE rb_exception = Qnil, rb_result = rb_hash_new();
 
 	git_repository *repo;
-	git_remote *remote, *tmp_remote;
+	git_remote *remote, *tmp_remote = NULL;
 	git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
 	git_push *push = NULL;
 	git_signature *signature = NULL;
@@ -822,10 +822,12 @@ static VALUE rb_git_remote_push(int argc, VALUE *argv, VALUE self)
 
 	rb_scan_args(argc, argv, "01:", &rb_refspecs, &rb_options);
 
-	Check_Type(rb_refspecs, T_ARRAY);
-	for (i = 0; i < RARRAY_LEN(rb_refspecs); ++i) {
-		VALUE rb_refspec = rb_ary_entry(rb_refspecs, i);
-		Check_Type(rb_refspec, T_STRING);
+	if (!NIL_P(rb_refspecs)) {
+		Check_Type(rb_refspecs, T_ARRAY);
+		for (i = 0; i < RARRAY_LEN(rb_refspecs); ++i) {
+			VALUE rb_refspec = rb_ary_entry(rb_refspecs, i);
+			Check_Type(rb_refspec, T_STRING);
+		}
 	}
 
 	rugged_check_repo(rb_repo);
@@ -846,15 +848,42 @@ static VALUE rb_git_remote_push(int argc, VALUE *argv, VALUE self)
 
 	// Create a temporary remote that we use for pushing
 	if ((error = git_remote_dup(&tmp_remote, remote)) ||
-	    (error = git_remote_set_callbacks(tmp_remote, &callbacks)) ||
-	    (error = git_push_new(&push, tmp_remote)))
+	    (error = git_remote_set_callbacks(tmp_remote, &callbacks)))
 	    goto cleanup;
 
-	for (i = 0; !error && i < RARRAY_LEN(rb_refspecs); ++i) {
-		VALUE rb_refspec = rb_ary_entry(rb_refspecs, i);
+	if (!NIL_P(rb_refspecs)) {
+		git_remote_clear_refspecs(tmp_remote);
 
-		if ((error = git_push_add_refspec(push, StringValueCStr(rb_refspec))))
+		for (i = 0; !error && i < RARRAY_LEN(rb_refspecs); ++i) {
+			VALUE rb_refspec = rb_ary_entry(rb_refspecs, i);
+
+			if ((error = git_remote_add_push(tmp_remote, StringValueCStr(rb_refspec))))
+				goto cleanup;
+		}
+	}
+
+	if ((error = git_push_new(&push, tmp_remote)))
+		goto cleanup;
+
+	// TODO: Get rid of this once git_remote_push lands in libgit2.
+	{
+		git_strarray push_refspecs;
+		size_t i;
+
+		if ((error = git_remote_get_push_refspecs(&push_refspecs, tmp_remote)))
 			goto cleanup;
+
+		if (push_refspecs.count == 0) {
+			rb_exception = rb_exc_new2(rb_eRuggedError, "no pushspecs are configured for the given remote");
+			goto cleanup;
+		}
+
+		for (i = 0; !error && i < push_refspecs.count; ++i) {
+			error = git_push_add_refspec(push, push_refspecs.strings[i]);
+		}
+
+		git_strarray_free(&push_refspecs);
+		if (error) goto cleanup;
 	}
 
 	if ((error = git_push_finish(push)))
