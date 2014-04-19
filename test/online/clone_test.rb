@@ -1,43 +1,18 @@
 require 'test_helper'
 
-class OnlineCloneTest < Rugged::TestCase
-  def ssh_creds?
-    %w{URL USER KEY PUBKEY PASSPHRASE}.all? { |key| ENV["GITTEST_REMOTE_SSH_#{key}"] }
-  end
+class OnlineCloneTest < Rugged::OnlineTestCase
+  if git_creds?
+    def test_clone_over_git
+      Dir.mktmpdir do |dir|
+        repo = Rugged::Repository.clone_at(ENV['GITTEST_REMOTE_GIT_URL'], dir)
 
-  def git_creds?
-    ENV['GITTEST_REMOTE_GIT_URL']
-  end
-
-  def ssh_key_credential
-    Rugged::Credentials::SshKey.new({
-      username:   ENV["GITTEST_REMOTE_SSH_USER"],
-      publickey:  ENV["GITTEST_REMOTE_SSH_PUBKEY"],
-      privatekey: ENV["GITTEST_REMOTE_SSH_KEY"],
-      passphrase: ENV["GITTEST_REMOTE_SSH_PASSPHRASE"],
-    })
-  end
-
-  def ssh_key_credential_from_agent
-    Rugged::Credentials::SshKeyFromAgent.new({
-      username: ENV["GITTEST_REMOTE_SSH_USER"]
-    })
-  end
-
-  def test_clone_over_git
-    skip unless git_creds?
-
-    Dir.mktmpdir do |dir|
-      repo = Rugged::Repository.clone_at(ENV['GITTEST_REMOTE_GIT_URL'], dir)
-
-      assert_instance_of Rugged::Repository, repo
+        assert_instance_of Rugged::Repository, repo
+      end
     end
   end
 
-  if Rugged.features.include? :ssh
+  if Rugged.features.include?(:ssh) && ssh_creds?
     def test_clone_over_ssh_with_credentials
-      skip unless ssh_creds?
-
       Dir.mktmpdir do |dir|
         repo = Rugged::Repository.clone_at(ENV['GITTEST_REMOTE_SSH_URL'], dir, {
           credentials: ssh_key_credential
@@ -48,8 +23,6 @@ class OnlineCloneTest < Rugged::TestCase
     end
 
     def test_clone_over_ssh_with_credentials_from_agent
-      skip unless ssh_creds?
-
       Dir.mktmpdir do |dir|
         repo = Rugged::Repository.clone_at(ENV['GITTEST_REMOTE_SSH_URL'], dir, {
           credentials: ssh_key_credential_from_agent
@@ -60,8 +33,6 @@ class OnlineCloneTest < Rugged::TestCase
     end
 
     def test_clone_over_ssh_with_credentials_callback
-      skip unless ssh_creds?
-
       Dir.mktmpdir do |dir|
         repo = Rugged::Repository.clone_at(ENV['GITTEST_REMOTE_SSH_URL'], dir, {
           credentials: lambda { |url, username, allowed_types|
