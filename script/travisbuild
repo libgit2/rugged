@@ -18,6 +18,9 @@ export GITTEST_REMOTE_SSH_KEY="$HOME/.ssh/id_rsa"
 export GITTEST_REMOTE_SSH_PUBKEY="$HOME/.ssh/id_rsa.pub"
 export GITTEST_REMOTE_SSH_PASSPHRASE=""
 
+eval $(ssh-agent)
+ssh-add $GITTEST_REMOTE_SSH_KEY
+
 # We need the config so the tests don't fail
 git config --global user.name 'The rugged tests are fragile'
 bundle exec rake || exit $?

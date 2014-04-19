@@ -22,6 +22,16 @@ module Rugged
       end
     end
 
+    class SshKeyFromAgent
+      def initialize(options)
+        @username = options[:username]
+      end
+
+      def call(url, username_from_url, allowed_types)
+        self
+      end
+    end
+
     # A "default" credential usable for Negotiate mechanisms like NTLM or
     # Kerberos authentication
     class Default
