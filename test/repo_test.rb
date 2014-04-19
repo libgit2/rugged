@@ -560,16 +560,19 @@ class RepositoryPushTest < Rugged::SandboxedTestCase
   def test_push_to_non_bare_raise_error
     @remote_repo.config['core.bare'] = 'false'
 
-    assert_raises Rugged::InvalidError do
+    exception = assert_raises Rugged::InvalidError do
       @repo.push("origin", ["refs/heads/master"])
     end
+
+    assert_equal "Local push doesn't (yet) support pushing to non-bare repos.", exception.message
   end
 
   def test_push_non_forward_raise_error
-    assert_raises Rugged::Error do
+    exception = assert_raises Rugged::ReferenceError do
       @repo.push("origin", ["refs/heads/unit_test:refs/heads/master"])
     end
 
+    assert_equal "Cannot push non-fastforwardable reference", exception.message
     assert_equal "a65fedf39aefe402d3bb6e24df4d4f5fe4547750", @remote_repo.ref("refs/heads/master").target_id
   end
 

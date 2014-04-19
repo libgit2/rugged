@@ -1348,100 +1348,6 @@ static VALUE rb_git_repo_reset_path(int argc, VALUE *argv, VALUE self)
 	return Qnil;
 }
 
-
-static int rugged__push_status_cb(const char *ref, const char *msg, void *payload)
-{
-	VALUE rb_result_hash = (VALUE)payload;
-	if (msg != NULL)
-		rb_hash_aset(rb_result_hash, rb_str_new_utf8(ref), rb_str_new_utf8(msg));
-
-	return GIT_OK;
-}
-
-/*
- *  call-seq:
- *    repo.push(remote, refspecs) -> hash
- *
- *  Pushes the given +refspecs+ to the given +remote+. Returns a hash that contains
- *  key-value pairs that reflect pushed refs and error messages, if applicable.
- *
- *  Example:
- *
- *    repo.push("origin", ["refs/heads/master", ":refs/heads/to_be_deleted"])
- */
-static VALUE rb_git_repo_push(VALUE self, VALUE rb_remote, VALUE rb_refspecs)
-{
-	VALUE rb_refspec, rb_exception = Qnil, rb_result = rb_hash_new();
-	git_repository *repo;
-	git_remote *remote = NULL;
-	git_push *push = NULL;
-
-	int error = 0, i = 0;
-
-	Check_Type(rb_refspecs, T_ARRAY);
-	for (i = 0; i < RARRAY_LEN(rb_refspecs); ++i) {
-		rb_refspec = rb_ary_entry(rb_refspecs, i);
-		Check_Type(rb_refspec, T_STRING);
-	}
-
-	Data_Get_Struct(self, git_repository, repo);
-
-	if (rb_obj_is_kind_of(rb_remote, rb_cRuggedRemote)) {
-		Data_Get_Struct(rb_remote, git_remote, remote);
-	} else if (TYPE(rb_remote) == T_STRING) {
-		error = git_remote_load(&remote, repo, StringValueCStr(rb_remote));
-		if (error) goto cleanup;
-	} else {
-		rb_raise(rb_eTypeError, "Expecting a String or Rugged::Remote instance");
-	}
-
-	error = git_push_new(&push, remote);
-	if (error) goto cleanup;
-
-	for (i = 0; !error && i < RARRAY_LEN(rb_refspecs); ++i) {
-		rb_refspec = rb_ary_entry(rb_refspecs, i);
-		error = git_push_add_refspec(push, StringValueCStr(rb_refspec));
-	}
-	if (error) goto cleanup;
-
-	error = git_push_finish(push);
-
-	if (error) {
-		if (error == GIT_ENONFASTFORWARD) {
-			rb_exception = rb_exc_new2(rb_eRuggedError, "non-fast-forward update rejected");
-		} else if (error == -1) {
-			rb_exception = rb_exc_new2(rb_eRuggedError, "could not push to repo (check for non-bare repo)");
-		}
-
-		goto cleanup;
-	}
-
-	if (!git_push_unpack_ok(push)) {
-		rb_exception = rb_exc_new2(rb_eRuggedError, "the remote side did not unpack successfully");
-		goto cleanup;
-	}
-
-	error = git_push_status_foreach(push, &rugged__push_status_cb, (void *)rb_result);
-	if (error) goto cleanup;
-
-	error = git_push_update_tips(push, NULL, NULL);
-
-cleanup:
-	git_push_free(push);
-
-	// We can only free the remote if we have loaded it ourselves.
-	if (!rb_obj_is_kind_of(rb_remote, rb_cRuggedRemote)) {
-		git_remote_free(remote);
-	}
-
-	if (!NIL_P(rb_exception))
-		rb_exc_raise(rb_exception);
-
-	rugged_exception_check(error);
-
-	return rb_result;
-}
-
 /*
  *  call-seq:
  *    repo.close -> nil
@@ -2042,8 +1948,6 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "workdir",  rb_git_repo_workdir, 0);
 	rb_define_method(rb_cRuggedRepo, "workdir=",  rb_git_repo_set_workdir, 1);
 	rb_define_method(rb_cRuggedRepo, "status",  rb_git_repo_status,  -1);
-
-	rb_define_method(rb_cRuggedRepo, "push", rb_git_repo_push, 2);
 
 	rb_define_method(rb_cRuggedRepo, "index",  rb_git_repo_get_index,  0);
 	rb_define_method(rb_cRuggedRepo, "index=",  rb_git_repo_set_index,  1);
