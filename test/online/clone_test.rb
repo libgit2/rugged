@@ -18,6 +18,12 @@ class OnlineCloneTest < Rugged::TestCase
     })
   end
 
+  def ssh_key_credential_from_agent
+    Rugged::Credentials::SshKeyFromAgent.new({
+      username: ENV["GITTEST_REMOTE_SSH_USER"]
+    })
+  end
+
   def test_clone_over_git
     skip unless git_creds?
 
@@ -35,6 +41,18 @@ class OnlineCloneTest < Rugged::TestCase
       Dir.mktmpdir do |dir|
         repo = Rugged::Repository.clone_at(ENV['GITTEST_REMOTE_SSH_URL'], dir, {
           credentials: ssh_key_credential
+        })
+
+        assert_instance_of Rugged::Repository, repo
+      end
+    end
+
+    def test_clone_over_ssh_with_credentials_from_agent
+      skip unless ssh_creds?
+
+      Dir.mktmpdir do |dir|
+        repo = Rugged::Repository.clone_at(ENV['GITTEST_REMOTE_SSH_URL'], dir, {
+          credentials: ssh_key_credential_from_agent
         })
 
         assert_instance_of Rugged::Repository, repo
