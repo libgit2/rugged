@@ -318,8 +318,8 @@ static VALUE rugged_rhead_new(const git_remote_head *head)
 
 /*
  *  call-seq:
- *    remote.ls() -> an_enumerator
- *    remote.ls() { |remote_head_hash| block }
+ *    remote.ls(options = {}) -> an_enumerator
+ *    remote.ls(options = {}) { |remote_head_hash| block }
  *
  *  List references available in a connected +remote+ repository along
  *  with the associated commit IDs.
@@ -334,7 +334,13 @@ static VALUE rugged_rhead_new(const git_remote_head *head)
  *  [:oid] oid of the remote head
  *  [:name] name of the remote head
  *
+ *  The following options can be passed in the +options+ Hash:
  *
+ *  :credentials ::
+ *    The credentials to use for the ls operation. Can be either an instance of one
+ *    of the Rugged::Credentials types, or a proc returning one of the former.
+ *    The proc will be called with the +url+, the +username+ from the url (if applicable) and
+ *    a list of applicable credential types.
  */
 static VALUE rb_git_remote_ls(VALUE self)
 {
@@ -702,15 +708,46 @@ static VALUE rb_git_remote_rename(VALUE self, VALUE rb_new_name)
  *
  *  Downloads new data from the remote for the given +refspecs+ and updates tips.
  *
+ *  You can optionally pass in an alternative list of +refspecs+ to use instead of the fetch
+ *  refspecs already configured for +remote+.
+ *
  *  Returns a hash containing statistics for the fetch operation.
  *
  *  The following options can be passed in the +options+ Hash:
+ *
+ *  :credentials ::
+ *    The credentials to use for the fetch operation. Can be either an instance of one
+ *    of the Rugged::Credentials types, or a proc returning one of the former.
+ *    The proc will be called with the +url+, the +username+ from the url (if applicable) and
+ *    a list of applicable credential types.
+ *
+ *  :progress ::
+ *    A callback that will be executed with the textual progress received from the remote.
+ *    This is the text send over the progress side-band (ie. the "counting objects" output).
+ *
+ *  :transfer_progress ::
+ *    A callback that will be executed to report clone progress information. It will be passed
+ *    the amount of +total_objects+, +indexed_objects+, +received_objects+, +local_objects+,
+ *    +total_deltas+, +indexed_deltas+ and +received_bytes+.
+ *
+ *  :update_tips ::
+ *    A callback that will be executed each time a reference is updated locally. It will be
+ *    passed the +refname+, +old_oid+ and +new_oid+.
  *
  *  :message ::
  *    The message to insert into the reflogs. Defaults to "fetch".
  *
  *  :signature ::
  *    The signature to be used for updating the reflogs.
+ *
+ *  Example:
+ *
+ *    remote = Rugged::Remote.lookup(@repo, 'origin')
+ *    remote.fetch({
+ *      transfer_progress: lambda { |total_objects, indexed_objects, received_objects, local_objects, total_deltas, indexed_deltas, received_bytes|
+ *        # ...
+ *      }
+ *    })
  */
 static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 {
@@ -810,7 +847,7 @@ static int push_status_cb(const char *ref, const char *msg, void *payload)
  *  The following options can be passed in the +options+ Hash:
  *
  *  :credentials ::
- *    The credentials to use for the fetch operation. Can be either an instance of one
+ *    The credentials to use for the push operation. Can be either an instance of one
  *    of the Rugged::Credentials types, or a proc returning one of the former.
  *    The proc will be called with the +url+, the +username+ from the url (if applicable) and
  *    a list of applicable credential types.
