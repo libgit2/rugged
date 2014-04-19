@@ -174,7 +174,7 @@ tree1 = if options.treeish1
 end
 
 tree2 = if options.treeish2
-  obj = repo.rev_parse(options.treeish1)
+  obj = repo.rev_parse(options.treeish2)
 
   case obj
   when Rugged::Tree
