@@ -26,12 +26,12 @@
 
 extern VALUE rb_mRugged;
 VALUE rb_mRuggedCred;
-VALUE rb_cRuggedCredPlaintext;
+VALUE rb_cRuggedCredUserPassword;
 VALUE rb_cRuggedCredSshKey;
 VALUE rb_cRuggedCredSshKeyFromAgent;
 VALUE rb_cRuggedCredDefault;
 
-static void rugged_cred_extract_plaintext(git_cred **cred, VALUE rb_credential)
+static void rugged_cred_extract_userpass(git_cred **cred, VALUE rb_credential)
 {
 	VALUE rb_username = rb_iv_get(rb_credential, "@username");
 	VALUE rb_password = rb_iv_get(rb_credential, "@password");
@@ -90,11 +90,11 @@ static void rugged_cred_extract_default(git_cred **cred, VALUE rb_credential)
 
 void rugged_cred_extract(git_cred **cred, int allowed_types, VALUE rb_credential)
 {
-	if (rb_obj_is_kind_of(rb_credential, rb_cRuggedCredPlaintext)) {
+	if (rb_obj_is_kind_of(rb_credential, rb_cRuggedCredUserPassword)) {
 		if (!(allowed_types & GIT_CREDTYPE_USERPASS_PLAINTEXT))
 			rb_raise(rb_eArgError, "Invalid credential type");
 
-		rugged_cred_extract_plaintext(cred, rb_credential);
+		rugged_cred_extract_userpass(cred, rb_credential);
 	} else if (rb_obj_is_kind_of(rb_credential, rb_cRuggedCredSshKey)) {
 		if (!(allowed_types & GIT_CREDTYPE_SSH_KEY))
 			rb_raise(rb_eArgError, "Invalid credential type");
@@ -118,7 +118,7 @@ void Init_rugged_cred(void)
 {
 	rb_mRuggedCred                = rb_define_module_under(rb_mRugged, "Credentials");
 
-	rb_cRuggedCredPlaintext       = rb_define_class_under(rb_mRuggedCred, "Plaintext", rb_cObject);
+	rb_cRuggedCredUserPassword    = rb_define_class_under(rb_mRuggedCred, "UserPassword", rb_cObject);
 	rb_cRuggedCredSshKey          = rb_define_class_under(rb_mRuggedCred, "SshKey", rb_cObject);
 	rb_cRuggedCredSshKeyFromAgent = rb_define_class_under(rb_mRuggedCred, "SshKeyFromAgent", rb_cObject);
 	rb_cRuggedCredDefault         = rb_define_class_under(rb_mRuggedCred, "Default", rb_cObject);

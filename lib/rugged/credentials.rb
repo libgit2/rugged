@@ -1,7 +1,7 @@
 module Rugged
   module Credentials
     # A plain-text username and password credential object.
-    class Plaintext
+    class UserPassword
       def initialize(options)
         @username, @password = options[:username], options[:password]
       end
