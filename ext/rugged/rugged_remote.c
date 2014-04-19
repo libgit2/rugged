@@ -75,16 +75,42 @@ static int update_tips_cb(const char *refname, const git_oid *src, const git_oid
 	return payload->exception ? GIT_ERROR : GIT_OK;
 }
 
-struct extract_cred_payload
+struct extract_cred_args
 {
-	VALUE rb_cred;
+	VALUE rb_callback;
 	git_cred **cred;
+	const char *url;
+	const char *username_from_url;
 	unsigned int allowed_types;
 };
 
-static VALUE extract_cred(VALUE payload) {
-	struct extract_cred_payload *cred_payload = (struct extract_cred_payload*)payload;
-	rugged_cred_extract(cred_payload->cred, cred_payload->allowed_types, cred_payload->rb_cred);
+static VALUE allowed_types_to_rb_ary(int allowed_types) {
+	VALUE rb_allowed_types = rb_ary_new();
+
+	if (allowed_types & GIT_CREDTYPE_USERPASS_PLAINTEXT)
+		rb_ary_push(rb_allowed_types, CSTR2SYM("plaintext"));
+
+	if (allowed_types & GIT_CREDTYPE_SSH_KEY)
+		rb_ary_push(rb_allowed_types, CSTR2SYM("ssh_key"));
+
+	if (allowed_types & GIT_CREDTYPE_DEFAULT)
+		rb_ary_push(rb_allowed_types, CSTR2SYM("default"));
+
+	return rb_allowed_types;
+}
+
+static VALUE extract_cred(VALUE data) {
+	struct extract_cred_args *args = (struct extract_cred_args*)data;
+	VALUE rb_url, rb_username_from_url, rb_cred;
+
+	rb_url = args->url ? rb_str_new2(args->url) : Qnil;
+	rb_username_from_url = args->username_from_url ? rb_str_new2(args->username_from_url) : Qnil;
+
+	rb_cred = rb_funcall(args->rb_callback, rb_intern("call"), 3,
+		rb_url, rb_username_from_url, allowed_types_to_rb_ary(args->allowed_types));
+
+	rugged_cred_extract(args->cred, args->allowed_types, rb_cred);
+
 	return Qnil;
 }
 
@@ -96,29 +122,11 @@ static int credentials_cb(
 	void *data)
 {
 	struct rugged_remote_cb_payload *payload = data;
-	struct extract_cred_payload cred_payload;
-	VALUE args = rb_ary_new2(4), rb_allowed_types = rb_ary_new();
+	struct extract_cred_args args = {
+		payload->credentials, cred, url, username_from_url, allowed_types
+	};
 
-	if (allowed_types & GIT_CREDTYPE_USERPASS_PLAINTEXT)
-		rb_ary_push(rb_allowed_types, CSTR2SYM("plaintext"));
-
-	if (allowed_types & GIT_CREDTYPE_SSH_KEY)
-		rb_ary_push(rb_allowed_types, CSTR2SYM("ssh_key"));
-
-	if (allowed_types & GIT_CREDTYPE_DEFAULT)
-		rb_ary_push(rb_allowed_types, CSTR2SYM("default"));
-
-	rb_ary_push(args, payload->credentials);
-	rb_ary_push(args, url ? rb_str_new2(url) : Qnil);
-	rb_ary_push(args, username_from_url ? rb_str_new2(username_from_url) : Qnil);
-	rb_ary_push(args, rb_allowed_types);
-
-	cred_payload.cred = cred;
-	cred_payload.rb_cred = rb_protect(rugged__block_yield_splat, args, &payload->exception);
-	cred_payload.allowed_types = allowed_types;
-
-	if (!payload->exception)
-		rb_protect(extract_cred, (VALUE)&cred_payload, &payload->exception);
+	rb_protect(extract_cred, (VALUE)&args, &payload->exception);
 
 	return payload->exception ? GIT_ERROR : GIT_OK;
 }
