@@ -42,6 +42,18 @@ Dir.chdir(LIBGIT2_DIR) do
   end
 end
 
+# Prepend the vendored libgit2 build dir to the $DEFLIBPATH.
+#
+# By default, $DEFLIBPATH includes $(libpath), which usually points
+# to something like /usr/lib for system ruby versions (not those
+# installed through rbenv or rvm).
+#
+# This was causing system-wide libgit2 installations to be preferred
+# over of our vendored libgit2 version when building rugged.
+#
+# By putting the path to the vendored libgit2 library at the front of
+# $DEFLIBPATH, we can ensure that our bundled version is always used.
+$DEFLIBPATH.unshift("#{LIBGIT2_DIR}/build")
 dir_config('git2', "#{LIBGIT2_DIR}/include", "#{LIBGIT2_DIR}/build")
 
 unless have_library 'git2' and have_header 'git2.h'
