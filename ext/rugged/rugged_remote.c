@@ -342,34 +342,43 @@ static VALUE rugged_rhead_new(const git_remote_head *head)
  *    The proc will be called with the +url+, the +username+ from the url (if applicable) and
  *    a list of applicable credential types.
  */
-static VALUE rb_git_remote_ls(VALUE self)
+static VALUE rb_git_remote_ls(int argc, VALUE *argv, VALUE self)
 {
 	git_remote *remote;
 	git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
 	const git_remote_head **heads;
 
-	int error, exception = 0;
+	struct rugged_remote_cb_payload payload = { Qnil, Qnil, Qnil, Qnil, Qnil, 0 };
+
+	VALUE rb_options;
+
+	int error;
 	size_t heads_len, i;
 
 	Data_Get_Struct(self, git_remote, remote);
 
+	rb_scan_args(argc, argv, ":", &rb_options);
+
 	if (!rb_block_given_p())
-		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("ls"));
+		return rb_funcall(self, rb_intern("to_enum"), 2, CSTR2SYM("ls"), rb_options);
+
+	if (!NIL_P(rb_options))
+		rugged_remote_init_callbacks_and_payload_from_options(rb_options, &callbacks, &payload);
 
 	if ((error = git_remote_set_callbacks(remote, &callbacks)) ||
 	    (error = git_remote_connect(remote, GIT_DIRECTION_FETCH)) ||
 	    (error = git_remote_ls(&heads, &heads_len, remote)))
 		goto cleanup;
 
-	for (i = 0; i < heads_len && !exception; i++)
-		rb_protect(rb_yield, rugged_rhead_new(heads[i]), &exception);
+	for (i = 0; i < heads_len && !payload.exception; i++)
+		rb_protect(rb_yield, rugged_rhead_new(heads[i]), &payload.exception);
 
 	cleanup:
 
 	git_remote_disconnect(remote);
 
-	if (exception)
-		rb_jump_tag(exception);
+	if (payload.exception)
+		rb_jump_tag(payload.exception);
 
 	rugged_exception_check(error);
 
@@ -991,7 +1000,7 @@ void Init_rugged_remote(void)
 	rb_define_method(rb_cRuggedRemote, "push_refspecs", rb_git_remote_push_refspecs, 0);
 	rb_define_method(rb_cRuggedRemote, "add_fetch", rb_git_remote_add_fetch, 1);
 	rb_define_method(rb_cRuggedRemote, "add_push", rb_git_remote_add_push, 1);
-	rb_define_method(rb_cRuggedRemote, "ls", rb_git_remote_ls, 0);
+	rb_define_method(rb_cRuggedRemote, "ls", rb_git_remote_ls, -1);
 	rb_define_method(rb_cRuggedRemote, "fetch", rb_git_remote_fetch, -1);
 	rb_define_method(rb_cRuggedRemote, "push", rb_git_remote_push, -1);
 	rb_define_method(rb_cRuggedRemote, "clear_refspecs", rb_git_remote_clear_refspecs, 0);
