@@ -29,10 +29,15 @@ extern VALUE rb_cRuggedRepo;
 extern VALUE rb_eRuggedError;
 VALUE rb_cRuggedRemote;
 
+#define RUGGED_REMOTE_CALLBACKS_INIT {1, progress_cb, NULL, credentials_cb, transfer_progress_cb, update_tips_cb, NULL}
+
 static int progress_cb(const char *str, int len, void *data)
 {
 	struct rugged_remote_cb_payload *payload = data;
 	VALUE args = rb_ary_new2(2);
+
+	if (NIL_P(payload->progress))
+		return 0;
 
 	rb_ary_push(args, payload->progress);
 	rb_ary_push(args, rb_str_new(str, len));
@@ -46,6 +51,9 @@ static int transfer_progress_cb(const git_transfer_progress *stats, void *data)
 {
 	struct rugged_remote_cb_payload *payload = data;
 	VALUE args = rb_ary_new2(5);
+
+	if (NIL_P(payload->transfer_progress))
+		return 0;
 
 	rb_ary_push(args, payload->transfer_progress);
 	rb_ary_push(args, UINT2NUM(stats->total_objects));
@@ -65,6 +73,9 @@ static int update_tips_cb(const char *refname, const git_oid *src, const git_oid
 {
 	struct rugged_remote_cb_payload *payload = data;
 	VALUE args = rb_ary_new2(4);
+
+	if (NIL_P(payload->update_tips))
+		return 0;
 
 	rb_ary_push(args, payload->update_tips);
 	rb_ary_push(args, rb_str_new_utf8(refname));
@@ -127,6 +138,9 @@ static int credentials_cb(
 		payload->credentials, cred, url, username_from_url, allowed_types
 	};
 
+	if (NIL_P(payload->credentials))
+		return GIT_PASSTHROUGH;
+
 	rb_protect(extract_cred, (VALUE)&args, &payload->exception);
 
 	return payload->exception ? GIT_ERROR : GIT_OK;
@@ -138,6 +152,10 @@ void rugged_remote_init_callbacks_and_payload_from_options(
 	struct rugged_remote_cb_payload *payload)
 {
 	VALUE rb_callback;
+	git_remote_callbacks prefilled = RUGGED_REMOTE_CALLBACKS_INIT;
+
+	prefilled.payload = payload;
+	memcpy(callbacks, &prefilled, sizeof(git_remote_callbacks));
 
 	rb_callback = rb_hash_aref(rb_options, CSTR2SYM("update_tips"));
 	if (!NIL_P(rb_callback)) {
@@ -146,7 +164,6 @@ void rugged_remote_init_callbacks_and_payload_from_options(
 		}
 
 		payload->update_tips = rb_callback;
-		callbacks->update_tips = update_tips_cb;
 	}
 
 	rb_callback = rb_hash_aref(rb_options, CSTR2SYM("progress"));
@@ -156,7 +173,6 @@ void rugged_remote_init_callbacks_and_payload_from_options(
 		}
 
 		payload->progress = rb_callback;
-		callbacks->progress = progress_cb;
 	}
 
 	rb_callback = rb_hash_aref(rb_options, CSTR2SYM("transfer_progress"));
@@ -166,7 +182,6 @@ void rugged_remote_init_callbacks_and_payload_from_options(
 		}
 
 		payload->transfer_progress = rb_callback;
-		callbacks->transfer_progress = transfer_progress_cb;
 	}
 
 	rb_callback = rb_hash_aref(rb_options, CSTR2SYM("credentials"));
@@ -176,10 +191,7 @@ void rugged_remote_init_callbacks_and_payload_from_options(
 		}
 
 		payload->credentials = rb_callback;
-		callbacks->credentials = credentials_cb;
 	}
-
-	callbacks->payload = payload;
 }
 
 static void rb_git_remote__free(git_remote *remote)
