@@ -159,7 +159,6 @@ void rugged_remote_init_callbacks_and_payload_from_options(
 	git_remote_callbacks *callbacks,
 	struct rugged_remote_cb_payload *payload)
 {
-	VALUE rb_callback;
 	git_remote_callbacks prefilled = RUGGED_REMOTE_CALLBACKS_INIT;
 
 	prefilled.payload = payload;
