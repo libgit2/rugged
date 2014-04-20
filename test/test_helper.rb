@@ -57,6 +57,14 @@ module Rugged
   end
 
   class OnlineTestCase < SandboxedTestCase
+    def reset_remote_repo
+      remote_repo = Rugged::Repository.new(ENV['GITTEST_REMOTE_REPO_PATH'])
+      remote_repo.references.each do |ref|
+        remote_repo.references.delete(ref)
+      end
+      remote_repo.close
+    end
+
     def self.ssh_creds?
       %w{URL USER KEY PUBKEY PASSPHRASE}.all? { |key| ENV["GITTEST_REMOTE_SSH_#{key}"] }
     end

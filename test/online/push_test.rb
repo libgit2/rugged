@@ -6,11 +6,7 @@ class OnlineGitPushTest < Rugged::OnlineTestCase
 
     @repo = sandbox_init("push_src")
     @remote = Rugged::Remote.add(@repo, "test", ENV['GITTEST_REMOTE_GIT_URL'])
-
     @target_repo = Rugged::Repository.new(ENV['GITTEST_REMOTE_REPO_PATH'])
-    @target_repo.references.each do |ref|
-      @target_repo.references.delete(ref)
-    end
   end
 
   def teardown
@@ -45,11 +41,7 @@ if Rugged.features.include?(:ssh)
 
       @repo = sandbox_init("push_src")
       @remote = Rugged::Remote.add(@repo, "test", ENV['GITTEST_REMOTE_SSH_URL'])
-
       @target_repo = Rugged::Repository.new(ENV['GITTEST_REMOTE_REPO_PATH'])
-      @target_repo.references.each do |ref|
-        @target_repo.references.delete(ref)
-      end
     end
 
     def teardown
