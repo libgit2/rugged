@@ -146,6 +146,14 @@ static int credentials_cb(
 	return payload->exception ? GIT_ERROR : GIT_OK;
 }
 
+#define CALLABLE_OR_RAISE(ret, rb_options, name) \
+	do {							\
+		ret = rb_hash_aref(rb_options, CSTR2SYM(name)); \
+								\
+		if (!NIL_P(ret) && !rb_respond_to(ret, rb_intern("call"))) \
+			rb_raise(rb_eArgError, "Expected a Proc or an object that responds to #call (:" name " )."); \
+	} while (0);
+
 void rugged_remote_init_callbacks_and_payload_from_options(
 	VALUE rb_options,
 	git_remote_callbacks *callbacks,
@@ -157,41 +165,10 @@ void rugged_remote_init_callbacks_and_payload_from_options(
 	prefilled.payload = payload;
 	memcpy(callbacks, &prefilled, sizeof(git_remote_callbacks));
 
-	rb_callback = rb_hash_aref(rb_options, CSTR2SYM("update_tips"));
-	if (!NIL_P(rb_callback)) {
-		if (!rb_respond_to(rb_callback, rb_intern("call"))) {
-			rb_raise(rb_eArgError, "Expected a Proc or an object that responds to #call (:update_tips).");
-		}
-
-		payload->update_tips = rb_callback;
-	}
-
-	rb_callback = rb_hash_aref(rb_options, CSTR2SYM("progress"));
-	if (!NIL_P(rb_callback)) {
-		if (!rb_respond_to(rb_callback, rb_intern("call"))) {
-			rb_raise(rb_eArgError, "Expected a Proc or an object that responds to #call (:progress).");
-		}
-
-		payload->progress = rb_callback;
-	}
-
-	rb_callback = rb_hash_aref(rb_options, CSTR2SYM("transfer_progress"));
-	if (!NIL_P(rb_callback)) {
-		if (!rb_respond_to(rb_callback, rb_intern("call"))) {
-			rb_raise(rb_eArgError, "Expected a Proc or an object that responds to #call (:transfer_progress).");
-		}
-
-		payload->transfer_progress = rb_callback;
-	}
-
-	rb_callback = rb_hash_aref(rb_options, CSTR2SYM("credentials"));
-	if (!NIL_P(rb_callback)) {
-		if (!rb_respond_to(rb_callback, rb_intern("call"))) {
-			rb_raise(rb_eArgError, "Expected a Proc or an object that responds to #call (:credentials).");
-		}
-
-		payload->credentials = rb_callback;
-	}
+	CALLABLE_OR_RAISE(payload->update_tips, rb_options, "update_tips");
+	CALLABLE_OR_RAISE(payload->progress, rb_options, "progress");
+	CALLABLE_OR_RAISE(payload->transfer_progress, rb_options, "transfer_progress");
+	CALLABLE_OR_RAISE(payload->credentials, rb_options, "credentials");
 }
 
 static void rb_git_remote__free(git_remote *remote)
