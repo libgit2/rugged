@@ -1,17 +1,12 @@
 module Rugged
   class Diff
     class Hunk
-      include Enumerable
-      alias each each_line
-
-      attr_reader :line_count, :header, :range, :owner
-
-      alias size line_count
-      alias count line_count
-      alias delta owner
+      def delta
+        @owner
+      end
 
       def inspect
-        "#<#{self.class.name}:#{object_id} {header: #{header.inspect}, range: #{range.inspect}>"
+        "#<#{self.class.name}:#{object_id} {header: #{header.inspect}, count: #{count.inspect}}>"
       end
 
       # Returns an Array containing all lines of the hunk.

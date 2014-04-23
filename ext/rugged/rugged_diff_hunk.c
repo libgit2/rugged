@@ -84,5 +84,20 @@ void Init_rugged_diff_hunk(void)
 {
 	rb_cRuggedDiffHunk = rb_define_class_under(rb_cRuggedDiff, "Hunk", rb_cObject);
 
+	rb_include_module(rb_cRuggedDiffHunk, rb_mEnumerable);
+
+	rb_define_method(rb_cRuggedDiffHunk, "each", rb_git_diff_hunk_each_line, 0);
 	rb_define_method(rb_cRuggedDiffHunk, "each_line", rb_git_diff_hunk_each_line, 0);
+
+	rb_define_attr(rb_cRuggedDiffHunk, "header", 1, 0);
+	rb_define_attr(rb_cRuggedDiffHunk, "line_count", 1, 0);
+	rb_define_attr(rb_cRuggedDiffHunk, "hunk_index", 1, 0);
+
+	rb_define_attr(rb_cRuggedDiffHunk, "old_start", 1, 0);
+	rb_define_attr(rb_cRuggedDiffHunk, "old_lines", 1, 0);
+	rb_define_attr(rb_cRuggedDiffHunk, "new_start", 1, 0);
+	rb_define_attr(rb_cRuggedDiffHunk, "new_lines", 1, 0);
+
+	rb_define_alias(rb_cRuggedDiffHunk, "count", "line_count");
+	rb_define_alias(rb_cRuggedDiffHunk, "size", "line_count");
 }
