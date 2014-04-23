@@ -175,120 +175,13 @@ static void rb_git_remote__free(git_remote *remote)
 	git_remote_free(remote);
 }
 
-VALUE rugged_remote_new(VALUE klass, VALUE owner, git_remote *remote)
+VALUE rugged_remote_new(VALUE owner, git_remote *remote)
 {
 	VALUE rb_remote;
 
-	rb_remote = Data_Wrap_Struct(klass, NULL, &rb_git_remote__free, remote);
+	rb_remote = Data_Wrap_Struct(rb_cRuggedRemote, NULL, &rb_git_remote__free, remote);
 	rugged_set_owner(rb_remote, owner);
 	return rb_remote;
-}
-
-static inline void rugged_validate_remote_url(VALUE rb_url)
-{
-	Check_Type(rb_url, T_STRING);
-	if (!git_remote_valid_url(StringValueCStr(rb_url)))
-		rb_raise(rb_eArgError, "Invalid URL format");
-}
-
-/*
- *  call-seq:
- *    Remote.new(repository, url) -> remote
- *
- *  Return a new remote with +url+ in +repository+ , the remote is not persisted:
- *  - +url+: a valid remote url
- *
- *  Returns a new Rugged::Remote object
- *
- *    Rugged::Remote.new(@repo, 'git://github.com/libgit2/libgit2.git') #=> #<Rugged::Remote:0x00000001fbfa80>
- */
-static VALUE rb_git_remote_new(VALUE klass, VALUE rb_repo, VALUE rb_url)
-{
-	git_remote *remote;
-	git_repository *repo;
-	int error;
-
-	rugged_check_repo(rb_repo);
-	rugged_validate_remote_url(rb_url);
-
-	Data_Get_Struct(rb_repo, git_repository, repo);
-
-	error = git_remote_create_anonymous(
-			&remote,
-			repo,
-			StringValueCStr(rb_url),
-			NULL);
-
-	rugged_exception_check(error);
-
-	return rugged_remote_new(klass, rb_repo, remote);
-}
-
-/*
- *  call-seq:
- *     Remote.add(repository, name, url) -> remote
- *
- *  Add a new remote with +name+ and +url+ to +repository+
- *  - +url+: a valid remote url
- *  - +name+: a valid remote name
- *
- *  Returns a new Rugged::Remote object
- *
- *    Rugged::Remote.add(@repo, 'origin', 'git://github.com/libgit2/rugged.git') #=> #<Rugged::Remote:0x00000001fbfa80>
- */
-static VALUE rb_git_remote_add(VALUE klass, VALUE rb_repo,VALUE rb_name, VALUE rb_url)
-{
-	git_remote *remote;
-	git_repository *repo;
-	int error;
-
-	Check_Type(rb_name, T_STRING);
-	rugged_validate_remote_url(rb_url);
-	rugged_check_repo(rb_repo);
-
-	Data_Get_Struct(rb_repo, git_repository, repo);
-
-	error = git_remote_create(
-			&remote,
-			repo,
-			StringValueCStr(rb_name),
-			StringValueCStr(rb_url));
-
-	rugged_exception_check(error);
-
-	return rugged_remote_new(klass, rb_repo, remote);
-}
-
-/*
- *  call-seq:
- *    Remote.lookup(repository, name) -> remote or nil
- *
- *  Return an existing remote with +name+ in +repository+:
- *  - +name+: a valid remote name
- *
- *  Returns a new Rugged::Remote object or +nil+ if the
- *  remote doesn't exist
- *
- *    Rugged::Remote.lookup(@repo, 'origin') #=> #<Rugged::Remote:0x00000001fbfa80>
- */
-static VALUE rb_git_remote_lookup(VALUE klass, VALUE rb_repo, VALUE rb_name)
-{
-	git_remote *remote;
-	git_repository *repo;
-	int error;
-
-	Check_Type(rb_name, T_STRING);
-	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
-
-	error = git_remote_load(&remote, repo, StringValueCStr(rb_name));
-
-	if (error == GIT_ENOTFOUND)
-		return Qnil;
-
-	rugged_exception_check(error);
-
-	return rugged_remote_new(klass, rb_repo, remote);
 }
 
 static VALUE rugged_rhead_new(const git_remote_head *head)
@@ -566,72 +459,6 @@ static VALUE rb_git_remote_clear_refspecs(VALUE self)
 
 	git_remote_clear_refspecs(remote);
 
-	return Qnil;
-}
-
-/*
- *  call-seq:
- *    Remote.names(repository) -> array
- *
- *  Returns the names of all remotes in +repository+
- *
- *    Rugged::Remote.names(@repo) #=> ['origin', 'upstream']
- */
-
-static VALUE rb_git_remote_names(VALUE klass, VALUE rb_repo)
-{
-	git_repository *repo;
-	git_strarray remotes;
-	VALUE rb_remote_names;
-	int error;
-
-	rugged_check_repo(rb_repo);
-
-	Data_Get_Struct(rb_repo, git_repository, repo);
-
-	error = git_remote_list(&remotes, repo);
-	rugged_exception_check(error);
-
-	rb_remote_names = rugged_strarray_to_rb_ary(&remotes);
-	git_strarray_free(&remotes);
-	return rb_remote_names;
-}
-
-/* :nodoc: */
-static VALUE rb_git_remote_each(VALUE klass, VALUE rb_repo)
-{
-	git_repository *repo;
-	git_strarray remotes;
-	size_t i;
-	int error = 0;
-	int exception = 0;
-
-	if (!rb_block_given_p())
-		return rb_funcall(klass, rb_intern("to_enum"), 2, CSTR2SYM("each"), rb_repo);
-
-	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
-
-	error = git_remote_list(&remotes, repo);
-	rugged_exception_check(error);
-
-	for (i = 0; !exception && !error && i < remotes.count; ++i) {
-		git_remote *remote;
-		error = git_remote_load(&remote, repo, remotes.strings[i]);
-
-		if (!error) {
-			rb_protect(
-				rb_yield, rugged_remote_new(klass, rb_repo, remote),
-				&exception);
-		}
-	}
-
-	git_strarray_free(&remotes);
-
-	if (exception)
-		rb_jump_tag(exception);
-
-	rugged_exception_check(error);
 	return Qnil;
 }
 
@@ -973,11 +800,6 @@ void Init_rugged_remote(void)
 {
 	rb_cRuggedRemote = rb_define_class_under(rb_mRugged, "Remote", rb_cObject);
 
-	rb_define_singleton_method(rb_cRuggedRemote, "new", rb_git_remote_new, 2);
-	rb_define_singleton_method(rb_cRuggedRemote, "add", rb_git_remote_add, 3);
-	rb_define_singleton_method(rb_cRuggedRemote, "lookup", rb_git_remote_lookup, 2);
-	rb_define_singleton_method(rb_cRuggedRemote, "names", rb_git_remote_names, 1);
-	rb_define_singleton_method(rb_cRuggedRemote, "each", rb_git_remote_each, 1);
 
 	rb_define_method(rb_cRuggedRemote, "name", rb_git_remote_name, 0);
 	rb_define_method(rb_cRuggedRemote, "url", rb_git_remote_url, 0);
