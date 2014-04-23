@@ -1926,6 +1926,8 @@ void Init_rugged_repo(void)
 
 	rb_cRuggedRepo = rb_define_class_under(rb_mRugged, "Repository", rb_cObject);
 
+	rb_undef_alloc_func(rb_cRuggedRepo);
+
 	rb_define_singleton_method(rb_cRuggedRepo, "new", rb_git_repo_new, -1);
 	rb_define_singleton_method(rb_cRuggedRepo, "bare", rb_git_repo_open_bare, -1);
 	rb_define_singleton_method(rb_cRuggedRepo, "hash_data", rb_git_repo_hash,  2);

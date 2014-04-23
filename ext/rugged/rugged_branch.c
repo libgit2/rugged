@@ -187,6 +187,9 @@ void Init_rugged_branch(void)
 {
 	rb_cRuggedBranch = rb_define_class_under(rb_mRugged, "Branch", rb_cRuggedReference);
 
+	rb_undef_alloc_func(rb_cRuggedBranch);
+	rb_undef_method(CLASS_OF(rb_cRuggedBranch), "new");
+
 	rb_define_method(rb_cRuggedBranch, "head?", rb_git_branch_head_p, 0);
 	rb_define_method(rb_cRuggedBranch, "name", rb_git_branch_name, 0);
 	rb_define_method(rb_cRuggedBranch, "remote_name", rb_git_branch_remote_name, 0);

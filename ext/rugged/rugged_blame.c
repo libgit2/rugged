@@ -278,7 +278,10 @@ static VALUE rb_git_blame_each(VALUE self)
 void Init_rugged_blame(void)
 {
 	rb_cRuggedBlame = rb_define_class_under(rb_mRugged, "Blame", rb_cObject);
+
 	rb_include_module(rb_cRuggedBlame, rb_mEnumerable);
+
+	rb_undef_alloc_func(rb_cRuggedBlame);
 
 	rb_define_singleton_method(rb_cRuggedBlame, "new", rb_git_blame_new, -1);
 

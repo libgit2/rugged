@@ -308,6 +308,9 @@ void Init_rugged_config(void)
 	 * Config
 	 */
 	rb_cRuggedConfig = rb_define_class_under(rb_mRugged, "Config", rb_cObject);
+
+	rb_undef_alloc_func(rb_cRuggedConfig);
+
 	rb_define_singleton_method(rb_cRuggedConfig, "new", rb_git_config_new, 1);
 
 	rb_define_singleton_method(rb_cRuggedConfig, "global", rb_git_config_open_default, 0);

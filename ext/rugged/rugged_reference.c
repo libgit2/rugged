@@ -374,6 +374,9 @@ void Init_rugged_reference(void)
 {
 	rb_cRuggedReference = rb_define_class_under(rb_mRugged, "Reference", rb_cObject);
 
+	rb_undef_alloc_func(rb_cRuggedReference);
+	rb_undef_method(CLASS_OF(rb_cRuggedReference), "new");
+
 	rb_define_singleton_method(rb_cRuggedReference, "valid_name?", rb_git_ref_valid_name, 1);
 
 	rb_define_method(rb_cRuggedReference, "target", rb_git_ref_target, 0);

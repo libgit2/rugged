@@ -150,6 +150,10 @@ static VALUE rb_git_get_option(VALUE self, VALUE option)
 void Init_rugged_settings(void)
 {
 	VALUE rb_cRuggedSettings = rb_define_class_under(rb_mRugged, "Settings", rb_cObject);
+
+	rb_undef_alloc_func(rb_cRuggedSettings);
+	rb_undef_method(CLASS_OF(rb_cRuggedSettings), "new");
+
 	rb_define_module_function(rb_cRuggedSettings, "[]=", rb_git_set_option, 2);
 	rb_define_module_function(rb_cRuggedSettings, "[]", rb_git_get_option, 1);
 }
