@@ -47,7 +47,7 @@ module Rugged
     #
     def remote
       remote_name = self.remote_name
-      Rugged::Remote.lookup(@owner, remote_name) if remote_name
+      @owner.remotes[remote_name] if remote_name
     end
   end
 end
