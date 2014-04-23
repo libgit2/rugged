@@ -745,8 +745,25 @@ EOS
     assert_equal 3, hunks.size
 
     assert hunks[0].header.start_with? "@@ -1,5 +1,5 @@"
+    assert_equal 6, hunks[0].line_count
+    assert_equal 1, hunks[0].old_start
+    assert_equal 5, hunks[0].old_lines
+    assert_equal 1, hunks[0].new_start
+    assert_equal 5, hunks[0].new_lines
+
     assert hunks[1].header.start_with? "@@ -8,10 +8,6 @@" 
+    assert_equal 10, hunks[1].line_count
+    assert_equal 8, hunks[1].old_start
+    assert_equal 10, hunks[1].old_lines
+    assert_equal 8, hunks[1].new_start
+    assert_equal 6, hunks[1].new_lines
+
     assert hunks[2].header.start_with? "@@ -32,6 +28,10 @@"
+    assert_equal 10, hunks[2].line_count
+    assert_equal 32, hunks[2].old_start
+    assert_equal 6, hunks[2].old_lines
+    assert_equal 28, hunks[2].new_start
+    assert_equal 10, hunks[2].new_lines
 
     assert_equal "readme.txt", patches[1].delta.old_file[:path]
     assert_equal "readme.txt", patches[1].delta.new_file[:path]
