@@ -93,6 +93,8 @@ VALUE rb_git_delta_file_fromC(const git_diff_file *file);
 void rugged_parse_diff_options(git_diff_options *opts, VALUE rb_options);
 void rugged_parse_merge_options(git_merge_options *opts, VALUE rb_options);
 
+void rugged_cred_extract(git_cred **cred, int allowed_types, VALUE rb_credential);
+
 VALUE rugged_otype_new(git_otype t);
 git_otype rugged_otype_get(VALUE rb_type);
 
@@ -131,10 +133,28 @@ static inline int rugged_parse_bool(VALUE boolean)
 
 extern VALUE rb_cRuggedRepo;
 
-struct rugged_cb_payload {
+VALUE rugged__block_yield_splat(VALUE args);
+
+struct rugged_cb_payload
+{
     VALUE rb_data;
     int exception;
 };
+
+struct rugged_remote_cb_payload
+{
+	VALUE progress;
+	VALUE completion;
+	VALUE transfer_progress;
+	VALUE update_tips;
+	VALUE credentials;
+	int exception;
+};
+
+void rugged_remote_init_callbacks_and_payload_from_options(
+	VALUE rb_options,
+	git_remote_callbacks *callbacks,
+	struct rugged_remote_cb_payload *payload);
 
 static inline void rugged_check_repo(VALUE rb_repo)
 {

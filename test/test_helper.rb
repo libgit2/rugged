@@ -56,6 +56,39 @@ module Rugged
     end
   end
 
+  class OnlineTestCase < SandboxedTestCase
+    def reset_remote_repo
+      remote_repo = Rugged::Repository.new(ENV['GITTEST_REMOTE_REPO_PATH'])
+      remote_repo.references.each do |ref|
+        remote_repo.references.delete(ref)
+      end
+      remote_repo.close
+    end
+
+    def self.ssh_creds?
+      %w{URL USER KEY PUBKEY PASSPHRASE}.all? { |key| ENV["GITTEST_REMOTE_SSH_#{key}"] }
+    end
+
+    def self.git_creds?
+      ENV['GITTEST_REMOTE_GIT_URL']
+    end
+
+    def ssh_key_credential
+      Rugged::Credentials::SshKey.new({
+        username:   ENV["GITTEST_REMOTE_SSH_USER"],
+        publickey:  ENV["GITTEST_REMOTE_SSH_PUBKEY"],
+        privatekey: ENV["GITTEST_REMOTE_SSH_KEY"],
+        passphrase: ENV["GITTEST_REMOTE_SSH_PASSPHASE"],
+      })
+    end
+
+    def ssh_key_credential_from_agent
+      Rugged::Credentials::SshKeyFromAgent.new({
+        username: ENV["GITTEST_REMOTE_SSH_USER"]
+      })
+    end
+  end
+
   module RepositoryAccess
     def setup
       @path = File.dirname(__FILE__) + '/fixtures/testrepo.git/'

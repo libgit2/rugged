@@ -12,12 +12,7 @@ class RemoteNetworkTest < Rugged::TestCase
     end
 
     remote = Rugged::Remote.new(@repo, 'git://github.com/libgit2/libgit2.git')
-
-    remote.connect(:fetch) do |r|
-      assert r.connected?
-    end
-
-    assert !remote.connected?
+    assert remote.ls.any?
   end
 end
 
@@ -181,16 +176,19 @@ class RemotePushTest < Rugged::SandboxedTestCase
   def test_push_to_non_bare_raise_error
     @remote_repo.config['core.bare'] = 'false'
 
-    assert_raises Rugged::InvalidError do
+    exception = assert_raises Rugged::InvalidError do
       @remote.push(["refs/heads/master"])
     end
+
+    assert_equal "Local push doesn't (yet) support pushing to non-bare repos.", exception.message
   end
 
   def test_push_non_forward_raise_error
-    assert_raises Rugged::Error do
+    exception = assert_raises Rugged::ReferenceError do
       @remote.push(["refs/heads/unit_test:refs/heads/master"])
     end
 
+    assert_equal "Cannot push non-fastforwardable reference", exception.message
     assert_equal "a65fedf39aefe402d3bb6e24df4d4f5fe4547750", @remote_repo.ref("refs/heads/master").target_id
   end
 
@@ -269,63 +267,78 @@ class RemoteTransportTest < Rugged::TestCase
     FileUtils.remove_entry_secure(@path)
   end
 
-  def test_remote_disconnect
-    @remote.connect(:fetch)
-    assert @remote.connected?
-
-    @remote.disconnect
-    refute @remote.connected?
-  end
-
   def test_remote_ls
-    @remote.connect(:fetch) do |r|
-      assert r.ls.kind_of? Enumerable
-      rheads = r.ls.to_a
+    assert @remote.ls.kind_of? Enumerable
+    rheads = @remote.ls.to_a
 
-      assert_equal 7, rheads.count
+    assert_equal 7, rheads.count
 
-      rhead = rheads.first
-      assert_equal false, rhead[:local?]
-      assert rhead[:oid]
-      assert_nil rhead[:loid]
-    end
-  end
-
-  def test_update_tips_callback
-    @remote.connect(:fetch) do |r|
-      r.download
-      r.update_tips! do |ref, source, destination|
-        assert @repo.references[ref]
-        assert_nil source
-        assert destination
-      end
-    end
-  end
-
-  # this is not as useless as it seems
-  # LocalJumpError is raised in the second call to
-  # update_tips! if libgit2 callback is not cleared
-  # Also the exception is explicitly raised after the
-  # callback is cleared
-  def test_update_tips_cleanup_callbacks
-    @remote.connect(:fetch) do |r|
-      r.download
-      assert_raises TestException do
-        r.update_tips! do
-          raise TestException
-        end
-      end
-      r.update_tips!
-    end
+    rhead = rheads.first
+    assert_equal false, rhead[:local?]
+    assert rhead[:oid]
+    assert_nil rhead[:loid]
   end
 
   def test_remote_fetch
-    @remote.connect(:fetch) do |r|
-      r.download
-      r.update_tips!
+    assert_equal({
+      total_objects: 19,
+      indexed_objects: 19,
+      received_objects: 19,
+      local_objects: 0,
+      total_deltas: 2,
+      indexed_deltas: 2,
+      received_bytes: 1563
+    }, @remote.fetch)
+
+    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', @repo.branches['origin/master'].target_id
+    assert_equal '41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9', @repo.branches["origin/packed"].target_id
+    assert_equal '5b5b025afb0b4c913b4c338a42934a3863bf3644', @repo.tags["v0.9"].target_id
+    assert_equal '0c37a5391bbff43c37f0d0371823a5509eed5b1d', @repo.tags["v1.0"].target_id
+  end
+
+  def test_update_tips_callback
+    @remote.fetch update_tips: lambda { |ref, source, destination|
+      assert @repo.references[ref]
+      assert_nil source
+      assert destination
+    }
+
+    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', @repo.branches['origin/master'].target_id
+    assert_equal '41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9', @repo.branches["origin/packed"].target_id
+    assert_equal '5b5b025afb0b4c913b4c338a42934a3863bf3644', @repo.tags["v0.9"].target_id
+    assert_equal '0c37a5391bbff43c37f0d0371823a5509eed5b1d', @repo.tags["v1.0"].target_id
+  end
+
+  def test_update_tips_callback_error
+    assert_raises TestException do
+      @remote.fetch update_tips: lambda { |*args|
+        raise TestException
+      }
     end
 
-    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', @repo.rev_parse('origin/master').oid
-    assert @repo.lookup('36060c5')
+    # In case of an error inside the callback, all further tip updates get cancelled
+    assert_equal '36060c58702ed4c2a40832c51758d5344201d89a', @repo.branches["origin/master"].target_id
+    refute @repo.branches["origin/packed"]
+    refute @repo.tags["v0.9"]
+    refute @repo.tags["v1.0"]
+  end
+
+  def test_transfer_progress_callback
+    total_objects = indexed_objects = received_objects = local_objects = total_deltas = indexed_deltas = received_bytes = nil
+    callsback = 0
+
+    @remote.fetch transfer_progress: lambda { |*args|
+      total_objects, indexed_objects, received_objects, local_objects, total_deltas, indexed_deltas, received_bytes = args
+      callsback += 1
+    }
+
+    assert_equal 22, callsback
+    assert_equal 19, total_objects
+    assert_equal 19, indexed_objects
+    assert_equal 19, received_objects
+    assert_equal 0, local_objects
+    assert_equal 2, total_deltas
+    assert_equal 2, indexed_deltas
+    assert_equal 1563, received_bytes
   end
 end

@@ -431,15 +431,13 @@ class RepositoryCloneTest < Rugged::TestCase
     end
   end
 
-  def test_clone_with_progress
-    total_objects = indexed_objects = received_objects = received_bytes = nil
+  def test_clone_with_transfer_progress_callback
+    total_objects = indexed_objects = received_objects = local_objects = total_deltas = indexed_deltas = received_bytes = nil
     callsback = 0
-    repo = Rugged::Repository.clone_at(@source_path, @tmppath,{
-      :callbacks => {
-        :transfer_progress => lambda { |*args|
-          total_objects, indexed_objects, received_objects, received_bytes = args
-          callsback += 1
-        }
+    repo = Rugged::Repository.clone_at(@source_path, @tmppath, {
+      transfer_progress: lambda { |*args|
+        total_objects, indexed_objects, received_objects, local_objects, total_deltas, indexed_deltas, received_bytes = args
+        callsback += 1
       }
     })
     repo.close
@@ -447,7 +445,32 @@ class RepositoryCloneTest < Rugged::TestCase
     assert_equal 19,   total_objects
     assert_equal 19,   indexed_objects
     assert_equal 19,   received_objects
+    assert_equal 0,    local_objects
+    assert_equal 2,    total_deltas
+    assert_equal 2,    indexed_deltas
     assert_equal 1563, received_bytes
+  end
+
+
+  def test_clone_with_update_tips_callback
+    calls = 0
+    updated_tips = {}
+
+    repo = Rugged::Repository.clone_at(@source_path, @tmppath, {
+      update_tips: lambda { |refname, a, b|
+        calls += 1
+        updated_tips[refname] = [a, b]
+      }
+    })
+    repo.close
+
+    assert_equal 4, calls
+    assert_equal({
+      "refs/remotes/origin/master" => [nil, "36060c58702ed4c2a40832c51758d5344201d89a"],
+      "refs/remotes/origin/packed" => [nil, "41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9"],
+      "refs/tags/v0.9"             => [nil, "5b5b025afb0b4c913b4c338a42934a3863bf3644"],
+      "refs/tags/v1.0"             => [nil, "0c37a5391bbff43c37f0d0371823a5509eed5b1d"],
+    }, updated_tips)
   end
 
   def test_clone_with_branch
@@ -463,8 +486,8 @@ class RepositoryCloneTest < Rugged::TestCase
 
   def test_clone_quits_on_error
     begin
-      Rugged::Repository.clone_at(@source_path, @tmppath, :callbacks => {
-        :transfer_progress => lambda { |*_| raise 'boom' }
+      Rugged::Repository.clone_at(@source_path, @tmppath, {
+        transfer_progress: lambda { |*_| raise 'boom' }
       })
     rescue => e
       assert_equal 'boom', e.message
@@ -474,8 +497,8 @@ class RepositoryCloneTest < Rugged::TestCase
 
   def test_clone_with_bad_progress_callback
     assert_raises ArgumentError do
-      Rugged::Repository.clone_at(@source_path, @tmppath, :callbacks => {
-        :transfer_progress => Object.new
+      Rugged::Repository.clone_at(@source_path, @tmppath, {
+        transfer_progress: Object.new
       })
     end
     assert_no_dotgit_dir(@tmppath)
@@ -559,16 +582,19 @@ class RepositoryPushTest < Rugged::SandboxedTestCase
   def test_push_to_non_bare_raise_error
     @remote_repo.config['core.bare'] = 'false'
 
-    assert_raises Rugged::InvalidError do
+    exception = assert_raises Rugged::InvalidError do
       @repo.push("origin", ["refs/heads/master"])
     end
+
+    assert_equal "Local push doesn't (yet) support pushing to non-bare repos.", exception.message
   end
 
   def test_push_non_forward_raise_error
-    assert_raises Rugged::Error do
+    exception = assert_raises Rugged::ReferenceError do
       @repo.push("origin", ["refs/heads/unit_test:refs/heads/master"])
     end
 
+    assert_equal "Cannot push non-fastforwardable reference", exception.message
     assert_equal "a65fedf39aefe402d3bb6e24df4d4f5fe4547750", @remote_repo.ref("refs/heads/master").target_id
   end
 
