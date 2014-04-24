@@ -475,6 +475,88 @@ cleanup:
 	return rugged_create_oid(&commit_oid);
 }
 
+/*
+ *  call-seq:
+ *    commit.to_mbox(options = {}) -> str
+ *
+ *  Returns +commit+'s contents formatted to resemble UNIX mailbox format.
+ *
+ *  Does not (yet) support merge commits.
+ *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :patch_no ::
+ *    Number for this patch in the series. Defaults to +1+.
+ *
+ *  :total_patches ::
+ *    Total number of patches in the series. Defaults to +1+.
+ *
+ *  :exclude_subject_patch_marker ::
+ *    If set to true, no "[PATCH]" marker will be
+ *    added to the beginning of the subject line.
+ *
+ *  Additionally, you can also pass the same options as for Rugged::Tree#diff.
+ */
+static VALUE rb_git_commit_to_mbox(int argc, VALUE *argv, VALUE self)
+{
+	git_buf email_patch = { NULL };
+	git_repository *repo;
+	git_commit *commit;
+	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
+	git_diff_format_email_flags_t flags = GIT_DIFF_FORMAT_EMAIL_NONE;
+
+	VALUE rb_repo = rugged_owner(self), rb_email_patch = Qnil, rb_val, rb_options;
+
+	int error;
+	size_t patch_no = 1, total_patches = 1;
+
+	rb_scan_args(argc, argv, ":", &rb_options);
+
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	Data_Get_Struct(self, git_commit, commit);
+
+	if (!NIL_P(rb_options)) {
+		Check_Type(rb_options, T_HASH);
+
+		rb_val = rb_hash_aref(rb_options, CSTR2SYM("patch_no"));
+		if (!NIL_P(rb_val))
+			patch_no = NUM2INT(rb_val);
+
+		rb_val = rb_hash_aref(rb_options, CSTR2SYM("total_patches"));
+		if (!NIL_P(rb_val))
+			total_patches = NUM2INT(rb_val);
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("exclude_subject_patch_marker"))))
+			flags |= GIT_DIFF_FORMAT_EMAIL_EXCLUDE_SUBJECT_PATCH_MARKER;
+
+		rugged_parse_diff_options(&opts, rb_options);
+	}
+
+	error = git_diff_commit_as_email(
+		&email_patch,
+		repo,
+		commit,
+		patch_no,
+		total_patches,
+		flags,
+		&opts);
+
+	if (error) goto cleanup;
+
+	rb_email_patch = rb_enc_str_new(email_patch.ptr, email_patch.size, rb_utf8_encoding());
+
+	cleanup:
+
+	xfree(opts.pathspec.strings);
+	git_buf_free(&email_patch);
+	rugged_exception_check(error);
+
+	return rb_email_patch;
+}
+
+
 void Init_rugged_commit(void)
 {
 	rb_cRuggedCommit = rb_define_class_under(rb_mRugged, "Commit", rb_cRuggedObject);
@@ -495,5 +577,6 @@ void Init_rugged_commit(void)
 	rb_define_method(rb_cRuggedCommit, "parent_oids", rb_git_commit_parent_ids_GET, 0);
 
 	rb_define_method(rb_cRuggedCommit, "amend", rb_git_commit_amend, 1);
-}
 
+	rb_define_method(rb_cRuggedCommit, "to_mbox", rb_git_commit_to_mbox, -1);
+}
