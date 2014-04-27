@@ -49,9 +49,9 @@ static VALUE rb_git_remote_collection_initialize(VALUE self, VALUE repo)
  *  Return a new remote with +url+ in +repository+ , the remote is not persisted:
  *  - +url+: a valid remote url
  *
- *  Returns a new Rugged::Remote object
+ *  Returns a new Rugged::Remote object.
  *
- *    Rugged::Remote.new(@repo, 'git://github.com/libgit2/libgit2.git') #=> #<Rugged::Remote:0x00000001fbfa80>
+ *    @repo.remotes.create_anonymous('git://github.com/libgit2/libgit2.git') #=> #<Rugged::Remote:0x00000001fbfa80>
  */
 static VALUE rb_git_remote_collection_create_anonymous(VALUE self, VALUE rb_url)
 {
@@ -86,9 +86,9 @@ static VALUE rb_git_remote_collection_create_anonymous(VALUE self, VALUE rb_url)
  *  - +url+: a valid remote url
  *  - +name+: a valid remote name
  *
- *  Returns a new Rugged::Remote object
+ *  Returns a new Rugged::Remote object.
  *
- *    Rugged::Remote.add(@repo, 'origin', 'git://github.com/libgit2/rugged.git') #=> #<Rugged::Remote:0x00000001fbfa80>
+ *    @repo.remotes.create('origin', 'git://github.com/libgit2/rugged.git') #=> #<Rugged::Remote:0x00000001fbfa80>
  */
 static VALUE rb_git_remote_collection_create(VALUE self, VALUE rb_name, VALUE rb_url)
 {
@@ -121,11 +121,10 @@ static VALUE rb_git_remote_collection_create(VALUE self, VALUE rb_name, VALUE rb
  *  call-seq:
  *    remotes[name] -> remote or nil
  *
- *  Return an existing remote with +name+ in +repository+:
- *  - +name+: a valid remote name
+ *  Lookup a remote in the collection with the given +name+.
  *
  *  Returns a new Rugged::Remote object or +nil+ if the
- *  remote doesn't exist
+ *  remote doesn't exist.
  *
  *    @repo.remotes["origin"] #=> #<Rugged::Remote:0x00000001fbfa80>
  */
@@ -203,6 +202,13 @@ static VALUE rb_git_remote_collection__each(VALUE self, int only_names)
  *  call-seq:
  *    remotes.each { |remote| } -> nil
  *    remotes.each -> enumerator
+ *
+ *  Iterate through all the remotes in the collection's +repository+.
+ *
+ *  The given block will be called once with a Rugged::Remote
+ *  instance for each remote.
+ *
+ *  If no block is given, an enumerator will be returned.
  */
 static VALUE rb_git_remote_collection_each(VALUE self)
 {
@@ -213,6 +219,12 @@ static VALUE rb_git_remote_collection_each(VALUE self)
  *  call-seq:
  *    remotes.each_name { |str| } -> nil
  *    remotes.each_name -> enumerator
+ *
+ *  Iterate through all the remote names in the collection's +repository+.
+ *
+ *  The given block will be called once with the name of each remote.
+ *
+ *  If no block is given, an enumerator will be returned.
  */
 static VALUE rb_git_remote_collection_each_name(VALUE self)
 {

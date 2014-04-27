@@ -202,18 +202,26 @@ static VALUE rugged_rhead_new(const git_remote_head *head)
  *    remote.ls(options = {}) -> an_enumerator
  *    remote.ls(options = {}) { |remote_head_hash| block }
  *
- *  List references available in a connected +remote+ repository along
- *  with the associated commit IDs.
+ *  Connects +remote+ to list all references available along with their
+ *  associated commit ids.
  *
- *  Call the given block once for each remote head in the +remote+ as a
- *  +Hash+.
- *  If no block is given an Enumerator is returned.
+ *  The given block is called once for each remote head with a Hash containing the
+ *  following keys:
  *
- *    r.ls.to_a #=> [{:local?=>false, :oid=>"b3ee97a91b02e91c35394950bda6ea622044baad", :loid=> nil, :name=>"refs/heads/development"}]
+ *  :local? ::
+ *    +true+ if the remote head is available locally, +false+ otherwise.
  *
- *  remote head hash includes:
- *  [:oid] oid of the remote head
- *  [:name] name of the remote head
+ *  :oid ::
+ *    The id of the object the remote head is currently pointing to.
+ *
+ *  :loid ::
+ *    The id of the object the local copy of the remote head is currently
+ *    pointing to. Set to +nil+ if there is no local copy of the remote head.
+ *
+ *  :name ::
+ *    The fully qualified reference name of the remote head.
+ *
+ *  If no block is given, an enumerator will be returned.
  *
  *  The following options can be passed in the +options+ Hash:
  *
@@ -270,7 +278,8 @@ static VALUE rb_git_remote_ls(int argc, VALUE *argv, VALUE self)
  *  call-seq:
  *    remote.name() -> string
  *
- *	Returns the remote's name
+ *	Returns the remote's name.
+ *
  *	  remote.name #=> "origin"
  */
 static VALUE rb_git_remote_name(VALUE self)
@@ -289,6 +298,7 @@ static VALUE rb_git_remote_name(VALUE self)
  *    remote.url() -> string
  *
  *  Returns the remote's url
+ *
  *    remote.url #=> "git://github.com/libgit2/rugged.git"
  */
 static VALUE rb_git_remote_url(VALUE self)
@@ -305,6 +315,7 @@ static VALUE rb_git_remote_url(VALUE self)
  *
  *  Sets the remote's url without persisting it in the config.
  *  Existing connections will not be updated.
+ *
  *    remote.url = 'git://github.com/libgit2/rugged.git' #=> "git://github.com/libgit2/rugged.git"
  */
 static VALUE rb_git_remote_set_url(VALUE self, VALUE rb_url)
@@ -326,6 +337,7 @@ static VALUE rb_git_remote_set_url(VALUE self, VALUE rb_url)
  *
  *  Returns the remote's url for pushing or nil if no special url for
  *  pushing is set.
+ *
  *    remote.push_url #=> "git://github.com/libgit2/rugged.git"
  */
 static VALUE rb_git_remote_push_url(VALUE self)
@@ -345,6 +357,7 @@ static VALUE rb_git_remote_push_url(VALUE self)
  *
  *  Sets the remote's url for pushing without persisting it in the config.
  *  Existing connections will not be updated.
+ *
  *    remote.push_url = 'git@github.com/libgit2/rugged.git' #=> "git@github.com/libgit2/rugged.git"
  */
 static VALUE rb_git_remote_set_push_url(VALUE self, VALUE rb_url)
@@ -386,7 +399,7 @@ static VALUE rb_git_remote_refspecs(VALUE self, git_direction direction)
  *  call-seq:
  *  remote.fetch_refspecs -> array
  *
- *  Get the remote's list of fetch refspecs as +array+
+ *  Get the remote's list of fetch refspecs as +array+.
  */
 static VALUE rb_git_remote_fetch_refspecs(VALUE self)
 {
@@ -397,7 +410,7 @@ static VALUE rb_git_remote_fetch_refspecs(VALUE self)
  *  call-seq:
  *  remote.push_refspecs -> array
  *
- *  Get the remote's list of push refspecs as +array+
+ *  Get the remote's list of push refspecs as +array+.
  */
 static VALUE rb_git_remote_push_refspecs(VALUE self)
 {
@@ -427,7 +440,7 @@ static VALUE rb_git_remote_add_refspec(VALUE self, VALUE rb_refspec, git_directi
  *  call-seq:
  *    remote.add_fetch(refspec) -> nil
  *
- *  Add a fetch refspec to the remote
+ *  Add a fetch refspec to the remote.
  */
 static VALUE rb_git_remote_add_fetch(VALUE self, VALUE rb_refspec)
 {
@@ -438,7 +451,7 @@ static VALUE rb_git_remote_add_fetch(VALUE self, VALUE rb_refspec)
  *  call-seq:
  *    remote.add_push(refspec) -> nil
  *
- *  Add a push refspec to the remote
+ *  Add a push refspec to the remote.
  */
 static VALUE rb_git_remote_add_push(VALUE self, VALUE rb_refspec)
 {
@@ -466,11 +479,12 @@ static VALUE rb_git_remote_clear_refspecs(VALUE self)
  *  call-seq:
  *    remote.save -> true
  *
- *  Saves the remote data ( url, fetchspecs, ...) to the config
+ *  Saves the remote data (url, fetchspecs, ...) to the config.
  *
- *  One can't save a in-memory remote created with Remote.new.
+ *  Anonymous, in-memory remotes created through
+ *  +ReferenceCollection#create_anonymous+ can not be saved.
  *  Doing so will result in an exception being raised.
-*/
+ */
 static VALUE rb_git_remote_save(VALUE self)
 {
 	git_remote *remote;
@@ -493,7 +507,7 @@ static int cb_remote__rename_problem(const char* refspec_name, void *payload)
  *  call-seq:
  *    remote.rename!(new_name) -> array or nil
  *
- *  Renames a remote
+ *  Renames a remote.
  *
  *  All remote-tracking branches and configuration settings
  *  for the remote are updated.
@@ -502,12 +516,13 @@ static int cb_remote__rename_problem(const char* refspec_name, void *payload)
  *  that haven't been automatically updated and need potential manual
  *  tweaking.
  *
- *  A temporary in-memory remote, created with Remote.new
- *  cannot be given a name with this method.
+ *  Anonymous, in-memory remotes created through
+ *  +ReferenceCollection#create_anonymous+ can not be given a name through
+ *  this method.
+ *
  *    remote = Rugged::Remote.lookup(@repo, 'origin')
  *    remote.rename!('upstream') #=> nil
- *
-*/
+ */
 static VALUE rb_git_remote_rename(VALUE self, VALUE rb_new_name)
 {
 	git_remote *remote;
@@ -668,6 +683,9 @@ static int push_status_cb(const char *ref, const char *msg, void *payload)
  *  Pushes the given +refspecs+ to the given +remote+. Returns a hash that contains
  *  key-value pairs that reflect pushed refs and error messages, if applicable.
  *
+ *  You can optionally pass in an alternative list of +refspecs+ to use instead of the push
+ *  refspecs already configured for +remote+.
+ *
  *  The following options can be passed in the +options+ Hash:
  *
  *  :credentials ::
@@ -675,6 +693,10 @@ static int push_status_cb(const char *ref, const char *msg, void *payload)
  *    of the Rugged::Credentials types, or a proc returning one of the former.
  *    The proc will be called with the +url+, the +username+ from the url (if applicable) and
  *    a list of applicable credential types.
+ *
+ *  :update_tips ::
+ *    A callback that will be executed each time a reference is updated remotely. It will be
+ *    passed the +refname+, +old_oid+ and +new_oid+.
  *
  *  :message ::
  *    A single line log message to be appended to the reflog of each local remote-tracking
