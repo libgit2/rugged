@@ -453,6 +453,22 @@ Rugged.raw_to_hex("\277\336Y\315\320\337\254\035\211(\024\366j\225d\032\275\212\
 
 ---
 
+### Alternative backends
+
+You can store bare repositories in alternative backends instead of storing on disk. (see
+`redbadger/rugged-redis` for an example of how a rugged backend works).
+
+```ruby
+a_backend = Rugged::InMemory::Backend.new(opt1: 'setting', opt2: 'setting')
+
+repo = Rugged::Repository.init_at('repo_name', :bare, backend: a_backend)
+
+# or
+
+repo = Rugged::Repository.bare('repo_name', backend: a_backend)
+```
+---
+
 ## Contributing
 
 Fork libgit2/rugged on GitHub, make it awesomer (preferably in a branch named
