@@ -149,4 +149,10 @@ static inline VALUE rugged_create_oid(const git_oid *oid)
 	return rb_str_new(out, 40);
 }
 
+
+typedef struct _rugged_backend {
+  int (* odb_backend)(git_odb_backend **backend_out, struct _rugged_backend *backend, const char* path);
+  int (* refdb_backend)(git_refdb_backend **backend_out, struct _rugged_backend *backend, const char* path);
+} rugged_backend;
+
 #endif
