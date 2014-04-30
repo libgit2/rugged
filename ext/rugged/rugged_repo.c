@@ -1215,7 +1215,12 @@ static VALUE rb_git_repo_path(VALUE self)
 {
 	git_repository *repo;
 	Data_Get_Struct(self, git_repository, repo);
-	return rb_str_new_utf8(git_repository_path(repo));
+
+	const char *path = git_repository_path(repo);
+	if (path == NULL)
+		path = "";
+
+	return rb_str_new_utf8(path);
 }
 
 /*
