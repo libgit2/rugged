@@ -1107,7 +1107,7 @@ static int rugged__status_cb(const char *path, unsigned int flags, void *payload
 
 /*
  *  call-seq:
- *    repo.status { |status_data| block }
+ *    repo.status { |file, status_data| block }
  *    repo.status(path) -> status_data
  *
  *  Returns the status for one or more files in the working directory
@@ -1127,12 +1127,12 @@ static int rugged__status_cb(const char *path, unsigned int flags, void *payload
  *  single file on the working dir. The +block+ will be called with the
  *  status data for each file.
  *
- *    repo.status { |status_data| puts status_data.inspect }
+ *    repo.status { |file, status_data| puts "#{file} has status: #{status_data.inspect}" }
  *
  *  results in, for example:
  *
- *    [:index_new, :worktree_new]
- *    [:worktree_modified]
+ *    src/diff.c has status: [:index_new, :worktree_new]
+ *    README has status: [:worktree_modified]
  *
  *  If a +path+ is given instead, the function will return the +status_data+ for
  *  the file pointed to by path, or raise an exception if the path doesn't exist.
