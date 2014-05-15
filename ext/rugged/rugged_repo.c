@@ -355,7 +355,7 @@ static void parse_clone_options(git_clone_options *ret, VALUE rb_options, struct
  *  Example:
  *
  *    Repository.clone_at("https://github.com/libgit2/rugged.git", "./some/dir", {
- *      progress: lambda { |total_objects, indexed_objects, received_objects, local_objects, total_deltas, indexed_deltas, received_bytes|
+ *      transfer_progress: lambda { |total_objects, indexed_objects, received_objects, local_objects, total_deltas, indexed_deltas, received_bytes|
  *        # ...
  *      }
  *    })
