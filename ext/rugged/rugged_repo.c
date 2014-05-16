@@ -1093,6 +1093,9 @@ static VALUE flags_to_rb(unsigned int flags)
 	if (flags & GIT_STATUS_WT_DELETED)
 		rb_ary_push(rb_flags, CSTR2SYM("worktree_deleted"));
 
+	if (flags & GIT_STATUS_IGNORED)
+		rb_ary_push(rb_flags, CSTR2SYM("ignored"));
+
 	return rb_flags;
 }
 
