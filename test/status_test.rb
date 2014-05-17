@@ -1,17 +1,6 @@
 # encoding: UTF-8
 require "test_helper"
 
-class RepositoryStatusMiscTest < Rugged::TestCase
-  include Rugged::TempRepositoryAccess
-  def test_status_with_invalid_file_path
-    invalid_file = "something_that_doesnt_exist"
-    # "Attempt to get status of nonexistent file '#{invalid_file}'"
-    assert_raises Rugged::InvalidError do
-      @repo.status(invalid_file)
-    end
-  end
-end
-
 class LibgitRepositoryStatusTest < Rugged::SandboxedTestCase
   STATUSES = {
     "staged_changes" => [:index_modified],
@@ -53,6 +42,18 @@ class LibgitRepositoryStatusTest < Rugged::SandboxedTestCase
       assert_equal STATUSES[file], actual_statuses[file]
     end
     assert_equal STATUSES, actual_statuses
+  end
+
+  def test_status_with_invalid_file_path
+    invalid_file = "something_that_doesnt_exist"
+    assert_raises Rugged::InvalidError do
+      @repo.status(invalid_file)
+    end
+  end
+
+  def teardown
+    @repo.close
+    super
   end
 
 end
