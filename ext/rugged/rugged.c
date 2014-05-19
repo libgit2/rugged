@@ -157,21 +157,45 @@ static VALUE rb_git_raw_to_hex(VALUE self, VALUE raw)
 
 /*
  *  call-seq:
- *    Rugged.prettify_message(message, strip_comments) -> clean_message
+ *    Rugged.prettify_message(message, strip_comments = '#') -> clean_message
  *
  *  Process a commit or tag message into standard form, by stripping trailing spaces and
  *  comments, and making sure that the message has a proper header line.
  */
-static VALUE rb_git_prettify_message(VALUE self, VALUE rb_message, VALUE rb_strip_comments)
+static VALUE rb_git_prettify_message(int argc, VALUE *argv, VALUE self)
 {
+	char comment_char = '#';
+	int strip_comments = 1;
+
 	git_buf message = { NULL };
-	int strip_comments, error;
+	VALUE rb_message, rb_strip;
+	int error;
 	VALUE result = Qnil;
 
-	Check_Type(rb_message, T_STRING);
-	strip_comments = rugged_parse_bool(rb_strip_comments);
+	rb_scan_args(argc, argv, "11", &rb_message, &rb_strip);
 
-	if ((error = git_message_prettify(&message, StringValueCStr(rb_message), strip_comments)) == GIT_OK)
+	Check_Type(rb_message, T_STRING);
+	
+	switch (TYPE(rb_strip)) {
+	case T_FALSE:
+		strip_comments = 0;
+		break;
+
+	case T_STRING:
+		if (RSTRING_LEN(rb_strip) > 0)
+			comment_char = RSTRING_PTR(rb_strip)[0];
+		break;
+
+	case T_TRUE:
+	case T_NIL:
+	default:
+		break;
+	}
+
+	error = git_message_prettify(&message,
+				StringValueCStr(rb_message), strip_comments, comment_char);
+
+	if (!error)
 		result = rb_enc_str_new(message.ptr, message.size, rb_utf8_encoding());
 
 	git_buf_free(&message);
@@ -399,7 +423,7 @@ void Init_rugged(void)
 	rb_define_module_function(rb_mRugged, "hex_to_raw", rb_git_hex_to_raw, 1);
 	rb_define_module_function(rb_mRugged, "raw_to_hex", rb_git_raw_to_hex, 1);
 	rb_define_module_function(rb_mRugged, "minimize_oid", rb_git_minimize_oid, -1);
-	rb_define_module_function(rb_mRugged, "prettify_message", rb_git_prettify_message, 2);
+	rb_define_module_function(rb_mRugged, "prettify_message", rb_git_prettify_message, -1);
 	rb_define_module_function(rb_mRugged, "__cache_usage__", rb_git_cache_usage, 0);
 
 	Init_rugged_reference();
