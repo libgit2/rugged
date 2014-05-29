@@ -402,7 +402,7 @@ end
 class RepositoryCloneTest < Rugged::TestCase
   def setup
     @tmppath = Dir.mktmpdir
-    @source_path = File.join(Rugged::TestCase::TEST_DIR, 'fixtures', 'testrepo.git')
+    @source_path = "file://" + File.join(Rugged::TestCase::TEST_DIR, 'fixtures', 'testrepo.git')
   end
 
   def teardown
