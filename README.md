@@ -269,12 +269,11 @@ blob.content # => Gives you the content of the blob.
 
 There is currently no way to stream data from a blob, because `libgit2` itself does not (yet) support
 streaming blobs out of the git object database. While there are hooks and interfaces for supporting it,
-the git backend is only implemented in the file system, and it needs to load the entire blob contents
-into memory in order to read from an offset. 
+the default file system backend always loads the entire blob contents into memory. 
 
-If you wrap the blob contents into a StringIO object, it will load the entire contents into memory first.
-The only advantage here is a stream-compatible interface with the blob. And example is shown below for 
-a Sinatra endpoint.
+If you need to access a Blob object through an IO-like API, you can wrap it with the `StringIO` class.
+Note that the only advantage here is a stream-compatible interface, the complete blob object will still
+be loaded into memory. Below is an example for streaming a Blob using the Sinatra framework:
 
 ```ruby
 # Sinatra endpoint
