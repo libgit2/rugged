@@ -16,19 +16,27 @@ class RemoteNetworkTest < Rugged::TestCase
   end
 end
 
-class RemoteTest < Rugged::TestCase
-  include Rugged::RepositoryAccess
+class RemoteTest < Rugged::SandboxedTestCase
+  def setup
+    super
+    @repo = sandbox_init("testrepo.git")
+  end
+
+  def teardown
+    @repo.close
+    super
+  end
 
   class TestException < StandardError
   end
 
   def test_list_remote_names
-    assert_equal ["test_remote", "libgit2"].sort, @repo.remotes.each_name.sort
+    assert_equal ["empty-remote-pushurl", "empty-remote-url", "joshaber", "test", "test_with_pushurl"], @repo.remotes.each_name.sort
   end
 
   def test_list_remotes
     assert @repo.remotes.kind_of? Enumerable
-    assert_equal ["test_remote", "libgit2"].sort, @repo.remotes.map(&:name).sort
+    assert_equal ["empty-remote-pushurl", "empty-remote-url", "joshaber", "test", "test_with_pushurl"], @repo.remotes.map(&:name).sort
   end
 
   def test_remotes_each_protect
@@ -67,10 +75,10 @@ class RemoteTest < Rugged::TestCase
   end
 
   def test_push_url
-    assert_equal 'git://github.com/libgit2/TestEmptyRepository.git',
-      @repo.remotes['test_remote'].push_url
+    assert_equal 'git://github.com/libgit2/pushlibgit2',
+      @repo.remotes['test_with_pushurl'].push_url
 
-    assert_nil @repo.remotes['libgit2'].push_url
+    assert_nil @repo.remotes['joshaber'].push_url
   end
 
   def test_push_url_set
@@ -91,17 +99,20 @@ class RemoteTest < Rugged::TestCase
   end
 
   def test_fetch_refspecs
-    remote = @repo.remotes['test_remote']
-    assert_equal ['+refs/heads/*:refs/remotes/test_remote/*'], remote.fetch_refspecs
+    remote = @repo.remotes['test']
+    assert_equal ['+refs/heads/*:refs/remotes/test/*'], remote.fetch_refspecs
 
-    assert_empty @repo.remotes['libgit2'].fetch_refspecs
+    assert_empty @repo.remotes['joshaber'].fetch_refspecs
   end
 
   def test_push_refspecs
-    remote = @repo.remotes['test_remote']
+    remote = @repo.remotes['test']
+    assert_empty remote.push_refspecs
+
+    remote.add_push('refs/heads/*:refs/heads/testing/*')
     assert_equal ['refs/heads/*:refs/heads/testing/*'], remote.push_refspecs
 
-    assert_empty @repo.remotes['libgit2'].push_refspecs
+    assert_empty @repo.remotes['joshaber'].push_refspecs
   end
 
   def test_add_fetch
@@ -117,7 +128,7 @@ class RemoteTest < Rugged::TestCase
   end
 
   def test_clear_refspecs
-    remote = @repo.remotes['test_remote']
+    remote = @repo.remotes['test']
 
     remote.clear_refspecs
 
@@ -126,9 +137,9 @@ class RemoteTest < Rugged::TestCase
   end
 
   def test_remote_lookup
-    remote = @repo.remotes['libgit2']
-    assert_equal 'git://github.com/libgit2/libgit2.git', remote.url
-    assert_equal 'libgit2', remote.name
+    remote = @repo.remotes['test']
+    assert_equal 'git://github.com/libgit2/libgit2', remote.url
+    assert_equal 'test', remote.name
   end
 
   def test_remote_lookup_missing
