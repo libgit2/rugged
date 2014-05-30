@@ -231,6 +231,41 @@ static VALUE rb_git_remote_collection_each_name(VALUE self)
 	return rb_git_remote_collection__each(self, 1);
 }
 
+/*
+ *  call-seq:
+ *    remotes.delete(remote) -> nil
+ *    remotes.delete(name) -> nil
+ *
+ *  Delete the specified remote.
+ *
+ *    repo.remotes.delete("origin")
+ *    # Remote no longer exists in the configuration.
+ */
+static VALUE rb_git_remote_collection_delete(VALUE self, VALUE rb_name_or_remote)
+{
+	VALUE rb_repo = rugged_owner(self);
+	git_remote *remote;
+	git_repository *repo;
+	int error;
+
+	if (rb_obj_is_kind_of(rb_name_or_remote, rb_cRuggedRemote))
+		rb_name_or_remote = rb_funcall(rb_name_or_remote, rb_intern("name"), 0);
+
+	if (TYPE(rb_name_or_remote) != T_STRING)
+		rb_raise(rb_eTypeError, "Expecting a String or Rugged::Remote instance");
+
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	error = git_remote_load(&remote, repo, StringValueCStr(rb_name_or_remote));
+	rugged_exception_check(error);
+
+	error = git_remote_delete(remote);
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
 void Init_rugged_remote_collection(void)
 {
 	rb_cRuggedRemoteCollection = rb_define_class_under(rb_mRugged, "RemoteCollection", rb_cObject);
@@ -245,4 +280,6 @@ void Init_rugged_remote_collection(void)
 
 	rb_define_method(rb_cRuggedRemoteCollection, "each",             rb_git_remote_collection_each, 0);
 	rb_define_method(rb_cRuggedRemoteCollection, "each_name",        rb_git_remote_collection_each_name, 0);
+
+	rb_define_method(rb_cRuggedRemoteCollection, "delete",           rb_git_remote_collection_delete, 1);
 }

@@ -59,6 +59,11 @@ class RemoteTest < Rugged::SandboxedTestCase
     end
   end
 
+  def test_remote_delete
+    @repo.remotes.delete("test")
+    assert_nil @repo.remotes["test"]
+  end
+
   def test_url_set
     new_url = 'git://github.com/libgit2/TestGitRepository.git'
     remote = @repo.remotes.create_anonymous('git://github.com/libgit2/libgit2.git')
