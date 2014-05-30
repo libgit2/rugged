@@ -13,11 +13,12 @@ rvm:
   - 2.0.0
   - 2.1.2
   - ruby-head
-  - rbx
+  - rbx-2
 
 matrix:
   fast_finish: true
   allow_failures:
+    - rvm: rbx-2
     - { os: osx, rvm: 2.1.2 }
 
 install:
