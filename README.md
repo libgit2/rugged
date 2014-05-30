@@ -256,6 +256,47 @@ options[:update_ref] = 'HEAD'
 Rugged::Commit.create(repo, options)
 ```
 
+### Blob Objects
+
+Blob objects represent the data in the files of a Tree Object.
+
+```ruby
+blob = repo.lookup('e1253910439ea902cf49be8a9f02f3c08d89ac73')
+blob.content # => Gives you the content of the blob.
+```
+
+#### Streaming Blob Objects
+
+There is currently no way to stream data from a blob, because `libgit2` itself does not (yet) support
+streaming blobs out of the git object database. While there are hooks and interfaces for supporting it,
+the git backend is only implemented in the file system, and it needs to load the entire blob contents
+into memory in order to read from an offset. 
+
+If you wrap the blob contents into a StringIO object, it will load the entire contents into memory first.
+The only advantage here is a stream-compatible interface with the blob. And example is shown below for 
+a Sinatra endpoint.
+
+```ruby
+# Sinatra endpoint
+get "/blobs/:sha" do
+  repo = Rugged::Repository.new(my_repo_path)
+  blob = repo.lookup params[:sha]
+
+  headers({
+    "Vary" => "Accept",
+    "Connection" => "keep-alive",
+    "Transfer-Encoding" => "chunked",
+    "Content-Type" => "application/octet-stream",
+  })
+
+  stream do |out|
+    StringIO.new(blob.content).each(8000) do |chunk|
+      out << chunk
+    end
+  end
+end
+```
+
 ---
 
 ### Commit Walker
