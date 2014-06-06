@@ -124,7 +124,8 @@ more high-level, so it may be preferable:
 
 ```ruby
 oid = repo.write("This is a blob.", :blob)
-index = Rugged::Index.new
+index = repo.index
+index.read_tree(repo.head.target.tree)
 index.add(:path => "README.md", :oid => oid, :mode => 0100644)
 
 options = {}
