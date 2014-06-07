@@ -212,7 +212,7 @@ person = tag.tagger
 ### Tree Objects
 
 ```ruby
-tree = repo.lookup('779fbb1e17e666832773a9825875300ea736c2da')
+tree = repo.lookup('779fbb1e17e666832773a9825875300ea736c2da').tree
 # => #<Rugged::Tree:2245194360>
 
 # number of tree entries
