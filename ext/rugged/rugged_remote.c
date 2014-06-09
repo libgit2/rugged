@@ -656,12 +656,6 @@ static VALUE rb_git_remote_save(VALUE self)
 	return Qtrue;
 }
 
-static int cb_remote__rename_problem(const char* refspec_name, void *payload)
-{
-	rb_ary_push((VALUE) payload, rb_str_new_utf8(refspec_name));
-	return 0;
-}
-
 /*
  *  call-seq:
  *    remote.rename!(new_name) -> array or nil
@@ -684,19 +678,19 @@ static int cb_remote__rename_problem(const char* refspec_name, void *payload)
 static VALUE rb_git_remote_rename(VALUE self, VALUE rb_new_name)
 {
 	git_remote *remote;
-	int error = 0;
-	VALUE rb_refspec_ary = rb_ary_new();
+	git_strarray problems = {0};
+	VALUE rb_result;
 
 	Check_Type(rb_new_name, T_STRING);
 	Data_Get_Struct(self, git_remote, remote);
-	error = git_remote_rename(
-			remote,
-			StringValueCStr(rb_new_name),
-			cb_remote__rename_problem, (void *)rb_refspec_ary);
+	
+	rugged_exception_check(
+		git_remote_rename(&problems, remote, StringValueCStr(rb_new_name))
+	);
 
-	rugged_exception_check(error);
-
-	return RARRAY_LEN(rb_refspec_ary) == 0 ? Qnil : rb_refspec_ary;
+	rb_result = problems.count == 0 ? Qnil : rugged_strarray_to_rb_ary(&problems);
+	git_strarray_free(&problems);
+	return rb_result;
 }
 
 /*
