@@ -60,21 +60,25 @@ static VALUE rb_git_walker_new(VALUE klass, VALUE rb_repo)
 	return rugged_walker_new(klass, rb_repo, walk);;
 }
 
-static VALUE rb_git_walker_each_with_opts(int argc, VALUE *argv, VALUE self, int oid_only) {
+static VALUE rb_git_walker_each_with_opts(int argc, VALUE *argv, VALUE self, int oid_only)
+{
 	git_revwalk *walk;
 	git_commit *commit;
 	git_repository *repo;
 	git_oid commit_oid;
-	int error;
+
+	int error, exception = 0;
+	uint64_t offset = 0, limit = UINT64_MAX;
+
 	VALUE rb_options;
-	uint64_t offset, limit;
 
-	Data_Get_Struct(self, git_revwalk, walk);
-	repo = git_revwalk_repository(walk);
+	rb_scan_args(argc, argv, "01", &rb_options);
 
-	rb_scan_args(argc, argv, "00:", &rb_options);
+	if (!rb_block_given_p()) {
+		ID iter_method = ID2SYM(rb_intern(oid_only ? "each_oid" : "each"));
+		return rb_funcall(self, rb_intern("to_enum"), 2, iter_method, rb_options);
+	}
 
-	offset = limit = 0;
 	if (!NIL_P(rb_options)) {
 		VALUE rb_value = rb_hash_aref(rb_options, CSTR2SYM("offset"));
 		if (!NIL_P(rb_value)) {
@@ -89,36 +93,34 @@ static VALUE rb_git_walker_each_with_opts(int argc, VALUE *argv, VALUE self, int
 		}
 	}
 
-	if (limit == 0) {
-		limit = LLONG_MAX;
-	}
-
-	if (!rb_block_given_p()) {
-		if (oid_only) {
-			return rb_funcall(self, rb_intern("to_enum"), 2, ID2SYM(rb_intern("each_oid")), rb_options);
-		} else {
-			return rb_funcall(self, rb_intern("to_enum"), 2, ID2SYM(rb_intern("each")), rb_options);
-		}
-	}
+	Data_Get_Struct(self, git_revwalk, walk);
+	repo = git_revwalk_repository(walk);
 
 	while ((error = git_revwalk_next(&commit_oid, walk)) == 0) {
-		if (offset != 0) {
+		if (offset > 0) {
 			offset--;
 			continue;
 		}
 
-		if (limit != 0) {
-			if (oid_only) {
-				rb_yield(rugged_create_oid(&commit_oid));
-			} else {
-				error = git_commit_lookup(&commit, repo, &commit_oid);
-				rugged_exception_check(error);
+		if (oid_only) {
+			rb_protect(rb_yield,
+				rugged_create_oid(&commit_oid),
+				&exception);
+		} else {
+			error = git_commit_lookup(&commit, repo, &commit_oid);
+			rugged_exception_check(error);
 
-				rb_yield(rugged_object_new(rugged_owner(self), (git_object *)commit));
-			}
-			limit--;
+			rb_protect(rb_yield,
+				rugged_object_new(rugged_owner(self), (git_object *)commit),
+				&exception);
 		}
+
+		if (exception || --limit == 0)
+			break;
 	}
+
+	if (exception)
+		rb_jump_tag(exception);
 
 	if (error != GIT_ITEROVER)
 		rugged_exception_check(error);
