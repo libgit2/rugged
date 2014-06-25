@@ -406,8 +406,13 @@ static VALUE rb_git_tree_diff_(int argc, VALUE *argv, VALUE self)
 
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
-	if (!NIL_P(rb_self))
+	if (!NIL_P(rb_self)) {
+		if (!rb_obj_is_kind_of(rb_self, rb_cRuggedTree))
+			rb_raise(rb_eTypeError,
+				"At least a Rugged::Tree object is required for diffing");
+
 		Data_Get_Struct(rb_self, git_tree, tree);
+	}
 
 	if (NIL_P(rb_other)) {
 		if (tree == NULL) {
