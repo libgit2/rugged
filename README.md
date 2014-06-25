@@ -31,6 +31,24 @@ To load Rugged, you'll usually want to add something like this:
 require 'rugged'
 ```
 
+### Use the system provided libgit2
+
+By default, Rugged builds and uses a bundled version of libgit2. If you
+want to use the system library instead, you can install rugged as follows:
+
+```
+gem install rugged -- --use-system-libraries
+```
+
+Or if you are using bundler:
+
+```
+bundle config build.rugged --use-system-libraries
+bundle install
+```
+
+However, note that Rugged does only support specific versions of libgit2.
+
 ## Usage
 
 Rugged gives you access to the many parts of a Git repository. You can read and
