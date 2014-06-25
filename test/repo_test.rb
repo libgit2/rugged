@@ -574,8 +574,7 @@ class RepositoryPushTest < Rugged::SandboxedTestCase
   end
 
   def test_push_to_remote_instance
-    origin = Rugged::Remote.lookup(@repo, "origin")
-    result = @repo.push(origin, ["refs/heads/master"])
+    result = @repo.push(@repo.remotes["origin"], ["refs/heads/master"])
     assert_equal({}, result)
   end
 
