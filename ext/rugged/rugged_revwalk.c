@@ -60,6 +60,72 @@ static VALUE rb_git_walker_new(VALUE klass, VALUE rb_repo)
 	return rugged_walker_new(klass, rb_repo, walk);;
 }
 
+static VALUE rb_git_walker_each_with_opts(int argc, VALUE *argv, VALUE self, int oid_only) {
+	git_revwalk *walk;
+	git_commit *commit;
+	git_repository *repo;
+	git_oid commit_oid;
+	int error;
+	VALUE rb_options;
+	uint64_t offset, limit;
+
+	Data_Get_Struct(self, git_revwalk, walk);
+	repo = git_revwalk_repository(walk);
+
+	rb_scan_args(argc, argv, "00:", &rb_options);
+
+	offset = limit = 0;
+	if (!NIL_P(rb_options)) {
+		VALUE rb_value = rb_hash_aref(rb_options, CSTR2SYM("offset"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_FIXNUM);
+			offset = FIX2ULONG(rb_value);
+		}
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("limit"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_FIXNUM);
+			limit = FIX2ULONG(rb_value);
+		}
+	}
+
+	if (limit == 0) {
+		limit = LLONG_MAX;
+	}
+
+	if (!rb_block_given_p()) {
+		if (oid_only) {
+			return rb_funcall(self, rb_intern("to_enum"), 2, ID2SYM(rb_intern("each_oid")), rb_options);
+		} else {
+			return rb_funcall(self, rb_intern("to_enum"), 2, ID2SYM(rb_intern("each")), rb_options);
+		}
+	}
+
+	while ((error = git_revwalk_next(&commit_oid, walk)) == 0) {
+		if (offset != 0) {
+			offset--;
+			continue;
+		}
+
+		if (limit != 0) {
+			if (oid_only) {
+				rb_yield(rugged_create_oid(&commit_oid));
+			} else {
+				error = git_commit_lookup(&commit, repo, &commit_oid);
+				rugged_exception_check(error);
+
+				rb_yield(rugged_object_new(rugged_owner(self), (git_object *)commit));
+			}
+			limit--;
+		}
+	}
+
+	if (error != GIT_ITEROVER)
+		rugged_exception_check(error);
+
+	return Qnil;
+}
+
 /*
  *  call-seq:
  *    walker.each { |commit| block }
@@ -85,31 +151,39 @@ static VALUE rb_git_walker_new(VALUE klass, VALUE rb_repo)
  *    cb75e05f0f8ac3407fb3bd0ebd5ff07573b16c9f
  *    ...
  */
-static VALUE rb_git_walker_each(VALUE self)
+static VALUE rb_git_walker_each(int argc, VALUE *argv, VALUE self)
 {
-	git_revwalk *walk;
-	git_commit *commit;
-	git_repository *repo;
-	git_oid commit_oid;
-	int error;
+	return rb_git_walker_each_with_opts(argc, argv, self, 0);
+}
 
-	Data_Get_Struct(self, git_revwalk, walk);
-	repo = git_revwalk_repository(walk);
-
-	if (!rb_block_given_p())
-		return rb_funcall(self, rb_intern("to_enum"), 0);
-
-	while ((error = git_revwalk_next(&commit_oid, walk)) == 0) {
-		error = git_commit_lookup(&commit, repo, &commit_oid);
-		rugged_exception_check(error);
-
-		rb_yield(rugged_object_new(rugged_owner(self), (git_object *)commit));
-	}
-
-	if (error != GIT_ITEROVER)
-		rugged_exception_check(error);
-
-	return Qnil;
+/*
+ *  call-seq:
+ *    walker.each_oid { |commit| block }
+ *    walker.each_oid -> Iterator
+ *
+ *  Perform the walk through the repository, yielding each
+ *  one of the commit oids found as a <tt>String</tt>
+ *  to +block+.
+ *
+ *  If no +block+ is given, an +Iterator+ will be returned.
+ *
+ *  The walker must have been previously set-up before a walk can be performed
+ *  (i.e. at least one commit must have been pushed).
+ *
+ *    walker.push("92b22bbcb37caf4f6f53d30292169e84f5e4283b")
+ *    walker.each { |commit_oid| puts commit_oid }
+ *
+ *  generates:
+ *
+ *    92b22bbcb37caf4f6f53d30292169e84f5e4283b
+ *    6b750d5800439b502de669465b385e5f469c78b6
+ *    ef9207141549f4ffcd3c4597e270d32e10d0a6bc
+ *    cb75e05f0f8ac3407fb3bd0ebd5ff07573b16c9f
+ *    ...
+ */
+static VALUE rb_git_walker_each_oid(int argc, VALUE *argv, VALUE self)
+{
+	return rb_git_walker_each_with_opts(argc, argv, self, 1);
 }
 
 /*
@@ -224,8 +298,9 @@ void Init_rugged_revwalk(void)
 	rb_define_singleton_method(rb_cRuggedWalker, "new", rb_git_walker_new, 1);
 
 	rb_define_method(rb_cRuggedWalker, "push", rb_git_walker_push, 1);
-	rb_define_method(rb_cRuggedWalker, "each", rb_git_walker_each, 0);
-	rb_define_method(rb_cRuggedWalker, "walk", rb_git_walker_each, 0);
+	rb_define_method(rb_cRuggedWalker, "each", rb_git_walker_each, -1);
+	rb_define_method(rb_cRuggedWalker, "each_oid", rb_git_walker_each_oid, -1);
+	rb_define_method(rb_cRuggedWalker, "walk", rb_git_walker_each, -1);
 	rb_define_method(rb_cRuggedWalker, "hide", rb_git_walker_hide, 1);
 	rb_define_method(rb_cRuggedWalker, "reset", rb_git_walker_reset, 0);
 	rb_define_method(rb_cRuggedWalker, "sorting", rb_git_walker_sorting, 1);
