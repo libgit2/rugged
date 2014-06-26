@@ -479,6 +479,56 @@ repo.branches.delete(ref) # or...
 
 ---
 
+### Diffs
+
+There are various ways to get hands on diffs:
+
+```ruby
+# Diff between two subsequent commits
+diff_commits = commit_object.parents[0].diff(commit_object)
+
+# Diff between two tree objects
+diff_trees = tree_object_a.diff(tree_object_b)
+
+# Diff between index/staging and current working directory
+diff_index = repository.index.diff
+
+# Diff between index/staging and another diffable (commit/tree/index)
+diff_index_diffable = repository.index.diff(some_diffable)
+```
+
+When you already have a diff object, you can examine it:
+
+```ruby
+# Get patch
+diff.patch
+=> "diff --git a/foo1 b/foo1\nnew file mode 100644\nindex 0000000..81b68f0\n--- /dev/null\n+++ b/foo1\n@@ -0,0 +1,2 @@\n+abc\n+add line1\ndiff --git a/txt1 b/txt1\ndeleted file mode 100644\nindex 81b68f0..0000000\n--- a/txt1\n+++ /dev/null\n@@ -1,2 +0,0 @@\n-abc\n-add line1\ndiff --git a/txt2 b/txt2\nindex a7bb42f..a357de7 100644\n--- a/txt2\n+++ b/txt2\n@@ -1,2 +1,3 @@\n abc2\n add line2-1\n+add line2-2\n"
+
+# Get delta (faster, if you only need information on what files changed)
+diff.each_delta{ |d| puts d.inspect }
+#<Rugged::Diff::Delta:70144372137380 {old_file: {:oid=>"0000000000000000000000000000000000000000", :path=>"foo1", :size=>0, :flags=>6, :mode=>0}, new_file: {:oid=>"81b68f040b120c9627518213f7fc317d1ed18e1c", :path=>"foo1", :size=>14, :flags=>6, :mode=>33188}, similarity: 0, status: :added>
+#<Rugged::Diff::Delta:70144372136540 {old_file: {:oid=>"81b68f040b120c9627518213f7fc317d1ed18e1c", :path=>"txt1", :size=>14, :flags=>6, :mode=>33188}, new_file: {:oid=>"0000000000000000000000000000000000000000", :path=>"txt1", :size=>0, :flags=>6, :mode=>0}, similarity: 0, status: :deleted>
+#<Rugged::Diff::Delta:70144372135780 {old_file: {:oid=>"a7bb42f71183c162efea5e4c80597437d716c62b", :path=>"txt2", :size=>17, :flags=>6, :mode=>33188}, new_file: {:oid=>"a357de7d870823acc3953f1b2471f9c18d0d56ea", :path=>"txt2", :size=>29, :flags=>6, :mode=>33188}, similarity: 0, status: :modified>
+
+# Detect renamed files
+# Note that the status field changed from :added/:deleted to :renamed
+diff.find_similar!
+diff.each_delta{ |d| puts d.inspect }
+#<Rugged::Diff::Delta:70144372230920 {old_file: {:oid=>"81b68f040b120c9627518213f7fc317d1ed18e1c", :path=>"txt1", :size=>14, :flags=>6, :mode=>33188}, new_file: {:oid=>"81b68f040b120c9627518213f7fc317d1ed18e1c", :path=>"foo1", :size=>14, :flags=>6, :mode=>33188}, similarity: 100, status: :renamed>
+#<Rugged::Diff::Delta:70144372230140 {old_file: {:oid=>"a7bb42f71183c162efea5e4c80597437d716c62b", :path=>"txt2", :size=>17, :flags=>6, :mode=>33188}, new_file: {:oid=>"a357de7d870823acc3953f1b2471f9c18d0d56ea", :path=>"txt2", :size=>29, :flags=>6, :mode=>33188}, similarity: 0, status: :modified>
+
+# Merge one diff into another (mutating the first one)
+diff1.merge!(diff2)
+
+# Write a patch into a file (or any other object responding to write)
+# Note that the patch as in diff.patch will be written, it won't be applied
+file = File.open('/some/file', 'w')
+diff.write_patch(file)
+file.close
+```
+
+---
+
 ### Config files
 
 It's also easy to read and manipulate the Git config file data with Rugged.
