@@ -188,14 +188,21 @@ static VALUE rb_git_tree_each(VALUE self)
 	return Qnil;
 }
 
-static int rugged__treewalk_cb(const char *root, const git_tree_entry *entry, void *proc)
+static int rugged__treewalk_cb(const char *root, const git_tree_entry *entry, void *payload)
 {
-	rb_funcall((VALUE)proc, rb_intern("call"), 2,
-		rb_str_new_utf8(root),
-		rb_git_treeentry_fromC(entry)
-	);
+	int *exception = (int *)payload;
 
-	return GIT_OK;
+	VALUE rb_result, rb_args = rb_ary_new2(2);
+	rb_ary_push(rb_args, rb_str_new_utf8(root));
+	rb_ary_push(rb_args, rb_git_treeentry_fromC(entry));
+
+	rb_result = rb_protect(rb_yield_splat, rb_args, exception);
+
+	if (*exception)
+		return -1;
+
+	/* skip entry on truthy */
+	return RTEST(rb_result) ? 0 : 1;
 }
 
 /*
@@ -207,6 +214,9 @@ static int rugged__treewalk_cb(const char *root, const git_tree_entry *entry, vo
  *  to +block+ every entry in +tree+ and all its subtrees, as a +Hash+. The +block+
  *  also takes a +root+, the relative path in the traversal, starting from the root
  *  of the original tree.
+ *
+ *  If the +block+ returns a falsy value, that entry and its sub-entries (in the case
+ *  of a folder) will be skipped for the iteration.
  *
  *  If no +block+ is given, an +Iterator+ is returned instead.
  *
@@ -223,7 +233,7 @@ static int rugged__treewalk_cb(const char *root, const git_tree_entry *entry, vo
 static VALUE rb_git_tree_walk(VALUE self, VALUE rb_mode)
 {
 	git_tree *tree;
-	int error, mode = 0;
+	int error, mode = 0, exception = 0;
 	ID id_mode;
 
 	Data_Get_Struct(self, git_tree, tree);
@@ -242,7 +252,11 @@ static VALUE rb_git_tree_walk(VALUE self, VALUE rb_mode)
 		rb_raise(rb_eTypeError,
 				"Invalid iteration mode. Expected `:preorder` or `:postorder`");
 
-	error = git_tree_walk(tree, mode, &rugged__treewalk_cb, (void *)rb_block_proc());
+	error = git_tree_walk(tree, mode, &rugged__treewalk_cb, (void *)&exception);
+
+	if (exception)
+		rb_jump_tag(exception);
+
 	rugged_exception_check(error);
 
 	return Qnil;
