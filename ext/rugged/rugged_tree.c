@@ -193,6 +193,7 @@ static int rugged__treewalk_cb(const char *root, const git_tree_entry *entry, vo
 	int *exception = (int *)payload;
 
 	VALUE rb_result, rb_args = rb_ary_new2(2);
+
 	rb_ary_push(rb_args, rb_str_new_utf8(root));
 	rb_ary_push(rb_args, rb_git_treeentry_fromC(entry));
 
@@ -201,8 +202,12 @@ static int rugged__treewalk_cb(const char *root, const git_tree_entry *entry, vo
 	if (*exception)
 		return -1;
 
-	/* skip entry on truthy */
-	return RTEST(rb_result) ? 0 : 1;
+	/* skip entry when 'false' is returned */
+	if (TYPE(rb_result) == T_FALSE)
+		return 1;
+
+	/* otherwise continue normal iteration */
+	return 0;
 }
 
 /*
