@@ -643,9 +643,10 @@ static VALUE rb_git_repo_merge_commits(int argc, VALUE *argv, VALUE self)
  *    repo.exists?(oid) -> true or false
  *
  *  Return whether an object with the given SHA1 OID (represented as
- *  a 40-character string) exists in the repository.
+ *  a hex string of at least 7 characters) exists in the repository.
  *
  *    repo.include?("d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f") #=> true
+ *    repo.include?("d8786bfc") #=> true
  */
 static VALUE rb_git_repo_exists(VALUE self, VALUE hex)
 {
@@ -653,21 +654,23 @@ static VALUE rb_git_repo_exists(VALUE self, VALUE hex)
 	git_odb *odb;
 	git_oid oid;
 	int error;
-	VALUE rb_result;
 
 	Data_Get_Struct(self, git_repository, repo);
 	Check_Type(hex, T_STRING);
 
-	error = git_oid_fromstr(&oid, StringValueCStr(hex));
+	error = git_oid_fromstrn(&oid, RSTRING_PTR(hex), RSTRING_LEN(hex));
 	rugged_exception_check(error);
 
 	error = git_repository_odb(&odb, repo);
 	rugged_exception_check(error);
 
-	rb_result = git_odb_exists(odb, &oid) ? Qtrue : Qfalse;
+	error = git_odb_exists_prefix(NULL, odb, &oid, RSTRING_LEN(hex));
 	git_odb_free(odb);
 
-	return rb_result;
+	if (error == 0 || error == GIT_EAMBIGUOUS)
+		return Qtrue;
+
+	return Qfalse;
 }
 
 /*
