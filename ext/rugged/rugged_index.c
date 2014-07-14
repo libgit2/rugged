@@ -831,7 +831,7 @@ static VALUE rb_git_index_diff(int argc, VALUE *argv, VALUE self)
 	xfree(opts.pathspec.strings);
 	rugged_exception_check(error);
 
-	return rugged_diff_new(rb_cRuggedDiff, self, diff);
+	return rugged_diff_new(rb_cRuggedDiff, diff);
 }
 
 /*
