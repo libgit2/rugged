@@ -473,7 +473,7 @@ static VALUE rb_git_tree_diff_(int argc, VALUE *argv, VALUE self)
 	xfree(opts.pathspec.strings);
 	rugged_exception_check(error);
 
-	return rugged_diff_new(rb_cRuggedDiff, self, diff);
+	return rugged_diff_new(rb_cRuggedDiff, diff);
 }
 
 /*
@@ -508,7 +508,7 @@ static VALUE rb_git_tree_diff_workdir(int argc, VALUE *argv, VALUE self)
 	xfree(opts.pathspec.strings);
 	rugged_exception_check(error);
 
-	return rugged_diff_new(rb_cRuggedDiff, self, diff);
+	return rugged_diff_new(rb_cRuggedDiff, diff);
 }
 
 void rugged_parse_merge_options(git_merge_options *opts, VALUE rb_options)

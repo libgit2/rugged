@@ -27,11 +27,9 @@
 extern VALUE rb_mRugged;
 VALUE rb_cRuggedDiff;
 
-VALUE rugged_diff_new(VALUE klass, VALUE owner, git_diff *diff)
+VALUE rugged_diff_new(VALUE klass, git_diff *diff)
 {
-	VALUE rb_diff = Data_Wrap_Struct(klass, NULL, git_diff_free, diff);
-	rugged_set_owner(rb_diff, owner);
-	return rb_diff;
+	return Data_Wrap_Struct(klass, NULL, git_diff_free, diff);
 }
 
 /**
