@@ -4,7 +4,11 @@
 
     *Arthur Schreiber*
 
-*   Remove `Rugged::Diff#tree` and `Rugged::Diff#owner`.
+*   Remove `Rugged::Diff#tree` and change `Rugged::Diff#owner` to return the
+    repository that the `Rugged::Diff` object belongs to.
+
+    We need to keep a reference from the `Rugged::Diff` to the repository to
+    ensure that the underlying libgit2 data does not get freed accidentally.
 
     Fixes #389.
 
