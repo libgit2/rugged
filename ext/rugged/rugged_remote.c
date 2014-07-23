@@ -537,6 +537,74 @@ static VALUE rb_git_remote_rename(VALUE self, VALUE rb_new_name)
 
 /*
  *  call-seq:
+ *    remote.check_connection(direction, options = {}) -> boolean
+ *
+ *  Try to connect to the +remote+. Useful to simulate
+ *  <tt>git fetch --dry-run</tt> and <tt>git push --dry-run</tt>.
+ *
+ *  Returns +true+ if connection is successful, +false+ otherwise.
+ *
+ *  +direction+ must be either +:fetch+ or +:push+.
+ *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  +credentials+ ::
+ *    The credentials to use for the connection. Can be either an instance of
+ *    one of the Rugged::Credentials types, or a proc returning one of the
+ *    former.
+ *    The proc will be called with the +url+, the +username+ from the url (if
+ *    applicable) and a list of applicable credential types.
+ *
+ *  Example:
+ *
+ *    remote = repo.remotes["origin"]
+ *    success = remote.check_connection(:fetch)
+ *    raise Error("Unable to pull without credentials") unless success
+ */
+static VALUE rb_git_remote_check_connection(int argc, VALUE *argv, VALUE self)
+{
+	git_remote *remote;
+	git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
+	struct rugged_remote_cb_payload payload = { Qnil, Qnil, Qnil, Qnil, Qnil, 0 };
+	VALUE rb_direction, rb_options;
+	ID id_direction;
+	int error, direction;
+
+	Data_Get_Struct(self, git_remote, remote);
+	rb_scan_args(argc, argv, "01:", &rb_direction, &rb_options);
+
+	Check_Type(rb_direction, T_SYMBOL);
+	id_direction = SYM2ID(rb_direction);
+	if (id_direction == rb_intern("fetch"))
+		direction = GIT_DIRECTION_FETCH;
+	else if (id_direction == rb_intern("push"))
+		direction = GIT_DIRECTION_PUSH;
+	else
+		rb_raise(rb_eTypeError, "Invalid direction. Expected :fetch or :push");
+
+	if (!NIL_P(rb_options))
+		rugged_remote_init_callbacks_and_payload_from_options(rb_options, &callbacks, &payload);
+
+	if (error = git_remote_set_callbacks(remote, &callbacks))
+		goto cleanup;
+
+	if (git_remote_connect(remote, direction))
+		return Qfalse;
+	else {
+		git_remote_disconnect(remote);
+		return Qtrue;
+	}
+
+	cleanup:
+
+	if (payload.exception)
+		rb_jump_tag(payload.exception);
+	rugged_exception_check(error);
+	return Qfalse;
+}
+
+/*
+ *  call-seq:
  *    remote.fetch(refspecs = nil, options = {}) -> hash
  *
  *  Downloads new data from the remote for the given +refspecs+ and updates tips.
@@ -827,6 +895,7 @@ void Init_rugged_remote(void)
 	rb_define_method(rb_cRuggedRemote, "add_fetch", rb_git_remote_add_fetch, 1);
 	rb_define_method(rb_cRuggedRemote, "add_push", rb_git_remote_add_push, 1);
 	rb_define_method(rb_cRuggedRemote, "ls", rb_git_remote_ls, -1);
+	rb_define_method(rb_cRuggedRemote, "check_connection", rb_git_remote_check_connection, -1);
 	rb_define_method(rb_cRuggedRemote, "fetch", rb_git_remote_fetch, -1);
 	rb_define_method(rb_cRuggedRemote, "push", rb_git_remote_push, -1);
 	rb_define_method(rb_cRuggedRemote, "clear_refspecs", rb_git_remote_clear_refspecs, 0);
