@@ -4,15 +4,43 @@ require 'net/http'
 class RemoteNetworkTest < Rugged::TestCase
   include Rugged::RepositoryAccess
 
-  def test_remote_network_connect
+  def skip_if_unreachable
     begin
       Net::HTTP.new('github.com').head('/')
     rescue SocketError => msg
       skip "github is not reachable: #{msg}"
     end
+  end
 
+  def test_remote_network_connect
+    skip_if_unreachable
     remote = @repo.remotes.create_anonymous('git://github.com/libgit2/libgit2.git')
     assert remote.ls.any?
+  end
+
+  def test_remote_check_connection_fetch
+    skip_if_unreachable
+    remote = @repo.remotes.create_anonymous('git://github.com/libgit2/libgit2.git')
+    assert remote.check_connection(:fetch)
+  end
+
+  def test_remote_check_connection_push
+    skip_if_unreachable
+    remote = @repo.remotes.create_anonymous('git://github.com/libgit2/libgit2.git')
+    assert !remote.check_connection(:push)
+  end
+
+  def test_remote_check_connection_push_credentials
+    skip_if_unreachable
+    remote = @repo.remotes.create_anonymous('https://github.com/libgit2-push-test/libgit2-push-test.git')
+    credentials = Rugged::Credentials::UserPassword.new(username: "libgit2-push-test", password: "123qwe123")
+    assert remote.check_connection(:push, credentials: credentials)
+  end
+
+  def test_remote_check_connection_invalid
+    skip_if_unreachable
+    remote = @repo.remotes.create_anonymous('git://github.com/libgit2/libgit2.git')
+    assert_raises(TypeError) { remote.check_connection(:pull) }
   end
 end
 
