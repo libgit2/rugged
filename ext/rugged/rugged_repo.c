@@ -739,6 +739,78 @@ static VALUE rb_git_repo_read_header(VALUE self, VALUE hex)
 	return rb_hash;
 }
 
+/**
+ *  call-seq:
+ *    repo.expand_oids([oid..], object_type = :any) -> hash
+ *
+ *  Expand a list of short oids to their full value, assuming they exist
+ *  in the repository. If `object_type` is passed, OIDs are expected to be
+ *  of the given type.
+ *
+ *  Returns a hash of `{ short_oid => full_oid }` for the short OIDs which
+ *  exist in the repository and match the expected object type. Missing OIDs
+ *  will not appear in the resulting hash.
+ */
+static VALUE rb_git_repo_expand_oids(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_result, rb_oids, rb_expected_type;
+
+	git_otype expected_type = GIT_OBJ_ANY;
+
+	git_repository *repo;
+	git_oid oid;
+	git_odb *odb;
+	int i, error;
+
+	Data_Get_Struct(self, git_repository, repo);
+
+	rb_scan_args(argc, argv, "11", &rb_oids, &rb_expected_type);
+
+	Check_Type(rb_oids, T_ARRAY);
+	expected_type = rugged_otype_get(rb_expected_type);
+
+	error = git_repository_odb(&odb, repo);
+	rugged_exception_check(error);
+
+	rb_result = rb_hash_new();
+
+	for (i = 0; i < RARRAY_LEN(rb_oids); ++i) {
+		VALUE hex_oid = rb_ary_entry(rb_oids, i);
+		git_oid found_oid;
+
+		if (TYPE(hex_oid) != T_STRING) {
+			git_odb_free(odb);
+			rb_raise(rb_eTypeError, "Expected a SHA1 OID");
+		}
+
+		error = git_oid_fromstrn(&oid, RSTRING_PTR(hex_oid), RSTRING_LEN(hex_oid));
+		if (error < 0) {
+			git_odb_free(odb);
+			rugged_exception_check(error);
+		}
+
+		error = git_odb_exists_prefix(&found_oid, odb, &oid, RSTRING_LEN(hex_oid));
+
+		if (!error) {
+			if (expected_type != GIT_OBJ_ANY) {
+				size_t found_size;
+				git_otype found_type;
+
+				if (git_odb_read_header(&found_size, &found_type, odb, &found_oid) < 0)
+					continue;
+
+				if (found_type != expected_type)
+					continue;
+			}
+
+			rb_hash_aset(rb_result, hex_oid, rugged_create_oid(&found_oid));
+		}
+	}
+
+	git_odb_free(odb);
+	return rb_result;
+}
+
 /*
  *  call-seq:
  *    Repository.hash_data(str, type) -> oid
@@ -1945,6 +2017,7 @@ void Init_rugged_repo(void)
 
 	rb_define_method(rb_cRuggedRepo, "exists?", rb_git_repo_exists, 1);
 	rb_define_method(rb_cRuggedRepo, "include?", rb_git_repo_exists, 1);
+	rb_define_method(rb_cRuggedRepo, "expand_oids", rb_git_repo_expand_oids, -1);
 
 	rb_define_method(rb_cRuggedRepo, "read",   rb_git_repo_read,   1);
 	rb_define_method(rb_cRuggedRepo, "read_header",   rb_git_repo_read_header,   1);
