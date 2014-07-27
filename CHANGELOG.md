@@ -5,6 +5,13 @@
 
     *Andy Delcambre*
 
+*   Add `Rugged::Repository#expand_oids`.
+
+    This allows expanding a list of shortened SHA1 strings, optionally restricting
+    the expansion to a specific object type.
+
+    *Vicent Martí*
+
 *   Add `Rugged::Remote#check_connection`.
 
     This is useful if one needs to check if it is possible to fetch/push
