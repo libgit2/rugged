@@ -96,7 +96,7 @@ repo.bare?
 # => false
 repo.empty?
 # => true
-repo.head_orphan?
+repo.head_unborn?
 # => false
 repo.head_detached?
 # => false
