@@ -332,6 +332,16 @@ class IndexRepositoryTest < Rugged::TestCase
     assert head_sha != new_tree_sha
     assert_nil @repo.lookup(new_tree_sha)['second.txt']
   end
+
+  def test_read_tree_with_not_a_tree
+    head_sha = @repo.references['refs/remotes/origin/packed'].resolve.target_id
+    commit = @repo.lookup(head_sha)
+
+    index = @repo.index
+    assert_raises TypeError do
+      index.read_tree(commit)
+    end
+  end
 end
 
 class IndexAddAllTest < Rugged::SandboxedTestCase
