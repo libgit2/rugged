@@ -681,9 +681,9 @@ static VALUE rb_git_index_readtree(VALUE self, VALUE rb_tree)
 	Data_Get_Struct(self, git_index, index);
 	Data_Get_Struct(rb_tree, git_tree, tree);
 
-  if (!rb_obj_is_kind_of(rb_tree, rb_cRuggedTree)) {
-    rb_raise(rb_eTypeError, "A Rugged::Tree instance is required");
-  }
+	if (!rb_obj_is_kind_of(rb_tree, rb_cRuggedTree)) {
+		rb_raise(rb_eTypeError, "A Rugged::Tree instance is required");
+	}
 
 	error = git_index_read_tree(index, tree);
 	rugged_exception_check(error);
