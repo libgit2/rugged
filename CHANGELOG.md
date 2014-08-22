@@ -1,3 +1,10 @@
+*   `Rugged::Index#read_tree` now actually checks that the given object is a
+    `Rugged::Tree` instance.
+
+    Fixes #401.
+
+    *Andy Delcambre*
+
 *   Remove defunct `Rugged::Diff::Line#hunk` and `Rugged::Diff::Line#owner`.
 
     Fixes #390.
