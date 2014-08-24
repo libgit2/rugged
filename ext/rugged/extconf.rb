@@ -15,16 +15,8 @@ def sys(cmd)
   ret
 end
 
-if !find_executable('cmake')
-  abort "ERROR: CMake is required to build Rugged."
-end
-
 if !(MAKE = find_executable('gmake') || find_executable('make'))
   abort "ERROR: GNU make is required to build Rugged."
-end
-
-if !find_executable('pkg-config')
-  abort "ERROR: pkg-config is required to build Rugged."
 end
 
 if arg_config("--use-system-libraries", !!ENV['RUGGED_USE_SYSTEM_LIBRARIES'])
@@ -40,6 +32,14 @@ if arg_config("--use-system-libraries", !!ENV['RUGGED_USE_SYSTEM_LIBRARIES'])
 #endif
   SRC
 else
+  if !find_executable('cmake')
+    abort "ERROR: CMake is required to build Rugged."
+  end
+
+  if !find_executable('pkg-config')
+    abort "ERROR: pkg-config is required to build Rugged."
+  end
+
   CWD = File.expand_path(File.dirname(__FILE__))
   LIBGIT2_DIR = File.join(CWD, '..', '..', 'vendor', 'libgit2')
 
