@@ -5,6 +5,22 @@
 
     *Andy Delcambre*
 
+*   Add `Rugged::Repository#expand_oids`.
+
+    This allows expanding a list of shortened SHA1 strings, optionally restricting
+    the expansion to a specific object type.
+
+    *Vicent Martí*
+
+*   Add `Rugged::Remote#check_connection`.
+
+    This is useful if one needs to check if it is possible to fetch/push
+    from/to the remote.
+
+    Basically, it is analogue to `git fetch --dry-run` and `git push --dry-run`.
+
+    *Dmitry Medvinsky*
+
 *   Remove defunct `Rugged::Diff::Line#hunk` and `Rugged::Diff::Line#owner`.
 
     Fixes #390.
