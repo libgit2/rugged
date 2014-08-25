@@ -813,6 +813,35 @@ static VALUE rb_git_repo_expand_oids(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
+ *    repo.descendant_of?(commit, ancestor) -> true or false
+ *
+ *  +commit+ and +ancestor+ must be String commit OIDs or instances of Rugged::Commit.
+ *
+ *  Returns true if +commit+ is a descendant of +ancestor+, or false if not.
+ */
+static VALUE rb_git_repo_descendant_of(VALUE self, VALUE rb_commit, VALUE rb_ancestor)
+{
+	int result;
+	int error;
+	git_repository *repo;
+	git_oid commit, ancestor;
+
+	Data_Get_Struct(self, git_repository, repo);
+
+	error = rugged_oid_get(&commit, repo, rb_commit);
+	rugged_exception_check(error);
+
+	error = rugged_oid_get(&ancestor, repo, rb_ancestor);
+	rugged_exception_check(error);
+
+	result = git_graph_descendant_of(repo, &commit, &ancestor);
+	rugged_exception_check(result);
+
+	return result ? Qtrue : Qfalse;
+}
+
+/*
+ *  call-seq:
  *    Repository.hash_data(str, type) -> oid
  *
  *  Hash the contents of +str+ as raw bytes (ignoring any encoding
@@ -2018,6 +2047,7 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "exists?", rb_git_repo_exists, 1);
 	rb_define_method(rb_cRuggedRepo, "include?", rb_git_repo_exists, 1);
 	rb_define_method(rb_cRuggedRepo, "expand_oids", rb_git_repo_expand_oids, -1);
+	rb_define_method(rb_cRuggedRepo, "descendant_of?", rb_git_repo_descendant_of, 2);
 
 	rb_define_method(rb_cRuggedRepo, "read",   rb_git_repo_read,   1);
 	rb_define_method(rb_cRuggedRepo, "read_header",   rb_git_repo_read_header,   1);
