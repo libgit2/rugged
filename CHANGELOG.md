@@ -1,3 +1,7 @@
+*   Add `Rugged::Repository#descendant_of?`
+
+    *Jake Douglas*
+
 *   `Rugged::Index#read_tree` now actually checks that the given object is a
     `Rugged::Tree` instance.
 

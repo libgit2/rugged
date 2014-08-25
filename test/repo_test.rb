@@ -231,6 +231,41 @@ class RepositoryTest < Rugged::SandboxedTestCase
     assert_equal 2, @repo.expand_oids(['a4a7dce8', '1385f264af']).size
     assert_equal 1, @repo.expand_oids(['a4a7dce8', '1385f264af'], :commit).size
   end
+
+  def test_descendant_of
+    # String commit OIDs
+    assert @repo.descendant_of?("a65fedf39aefe402d3bb6e24df4d4f5fe4547750", "be3563ae3f795b2b4353bcce3a527ad0a4f7f644")
+    refute @repo.descendant_of?("be3563ae3f795b2b4353bcce3a527ad0a4f7f644", "a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
+
+    # Rugged::Commit instances
+    commit = @repo.lookup("a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
+    ancestor = @repo.lookup("be3563ae3f795b2b4353bcce3a527ad0a4f7f644")
+
+    assert @repo.descendant_of?(commit, ancestor)
+    refute @repo.descendant_of?(ancestor, commit)
+  end
+
+  def test_descendant_of_bogus_args
+    # non-existent commit
+    assert_raises(Rugged::OdbError) do
+      @repo.descendant_of?("deadbeef" * 5, "a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
+    end
+
+    # non-existent ancestor
+    assert_raises(Rugged::OdbError) do
+      @repo.descendant_of?("a65fedf39aefe402d3bb6e24df4d4f5fe4547750", "deadbeef" * 5)
+    end
+
+    # tree OID as the commit
+    assert_raises(Rugged::InvalidError) do
+      @repo.descendant_of?("181037049a54a1eb5fab404658a3a250b44335d7", "be3563ae3f795b2b4353bcce3a527ad0a4f7f644")
+    end
+
+    # tree OID as the ancestor
+    assert_raises(Rugged::InvalidError) do
+      @repo.descendant_of?("be3563ae3f795b2b4353bcce3a527ad0a4f7f644", "181037049a54a1eb5fab404658a3a250b44335d7")
+    end
+  end
 end
 
 class MergeCommitsRepositoryTest < Rugged::SandboxedTestCase
