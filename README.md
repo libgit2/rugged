@@ -109,13 +109,15 @@ repo.workdir
 
 # The HEAD of the repository.
 ref = repo.head
-# => #<Rugged::Reference:2228467240 {name: "refs/heads/master", target: "07b44cbda23b726e5d54e2ef383495922c024202"}>
+# => #<Rugged::Reference:2228467240 {name: "refs/heads/master", target:  #<Rugged::Commit:2228467250 {message: "helpful message", tree: #<Rugged::Tree:2228467260 {oid: 5d6f29220a0783b8085134df14ec4d960b6c3bf2}>}>
 
-# From the returned ref, you can also access the `name` and `target`:
+# From the returned ref, you can also access the `name`, `target`, and target SHA:
 ref.name
 # => "refs/heads/master"
 ref.target
-# => "07b44cbda23b726e5d54e2ef383495922c024202"
+# => #<Rugged::Commit:2228467250 {message: "helpful message", tree: #<Rugged::Tree:2228467260 {oid: 5d6f29220a0783b8085134df14ec4d960b6c3bf2}>
+ref.target_id
+# => "2bc6a70483369f33f641ca44873497f13a15cde5"
 
 # Reading an object
 object = repo.read('a0ae5566e3c8a3bddffab21022056f0b5e03ef07')
