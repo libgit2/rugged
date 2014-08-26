@@ -2028,6 +2028,68 @@ static VALUE rb_git_repo_is_path_ignored(VALUE self, VALUE rb_path) {
 	return ignored ? Qtrue : Qfalse;
 }
 
+static void rugged_parse_cherrypick_options(git_cherrypick_options *opts, VALUE rb_options)
+{
+	VALUE rb_value;
+
+	if (NIL_P(rb_options))
+		return;
+
+	Check_Type(rb_options, T_HASH);
+
+	rb_value = rb_hash_aref(rb_options, CSTR2SYM("mainline"));
+	if (!NIL_P(rb_value)) {
+		opts->mainline = FIX2UINT(rb_value);
+	}
+}
+
+/*
+ *  call-seq:
+ *    repo.cherrypick(commit[, options]) -> nil
+ *
+ *  Cherry-pick the given commit and update the index and working
+ *  directory accordingly.
+ *
+ *  `commit` can be either a string containing a commit id or a
+ *  `Rugged::Commit` object.
+ *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :mainline ::
+ *    When cherry-picking a merge, you need to specify the parent number
+ *    (starting from 1) which should be considered the mainline.
+ */
+static VALUE rb_git_repo_cherrypick(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_options, rb_commit;
+
+	git_repository *repo;
+	git_commit *commit;
+	git_cherrypick_options opts = GIT_CHERRYPICK_OPTIONS_INIT;
+
+	int error;
+
+	rb_scan_args(argc, argv, "10:", &rb_commit, &rb_options);
+
+	if (TYPE(rb_commit) == T_STRING) {
+		rb_commit = rugged_object_rev_parse(self, rb_commit, 1);
+	}
+
+	if (!rb_obj_is_kind_of(rb_commit, rb_cRuggedCommit)) {
+		rb_raise(rb_eArgError, "Expected a Rugged::Commit.");
+	}
+
+	Data_Get_Struct(self, git_repository, repo);
+	Data_Get_Struct(rb_commit, git_commit, commit);
+
+	rugged_parse_cherrypick_options(&opts, rb_options);
+
+	error = git_cherrypick(repo, commit, &opts);
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
 void Init_rugged_repo(void)
 {
 	id_call = rb_intern("call");
@@ -2091,6 +2153,8 @@ void Init_rugged_repo(void)
 
 	rb_define_method(rb_cRuggedRepo, "checkout_tree", rb_git_checkout_tree, -1);
 	rb_define_method(rb_cRuggedRepo, "checkout_head", rb_git_checkout_head, -1);
+
+	rb_define_method(rb_cRuggedRepo, "cherrypick", rb_git_repo_cherrypick, -1);
 
 	rb_cRuggedOdbObject = rb_define_class_under(rb_mRugged, "OdbObject", rb_cObject);
 	rb_define_method(rb_cRuggedOdbObject, "data",  rb_git_odbobj_data,  0);
