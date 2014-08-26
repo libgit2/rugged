@@ -115,7 +115,7 @@ ref = repo.head
 ref.name
 # => "refs/heads/master"
 ref.target
-# => #<Rugged::Commit:2228467250 {message: "helpful message", tree: #<Rugged::Tree:2228467260 {oid: 5d6f29220a0783b8085134df14ec4d960b6c3bf2}>
+# => #<Rugged::Commit:2228467250 {message: "helpful message", tree: #<Rugged::Tree:2228467260 {oid: 5d6f29220a0783b8085134df14ec4d960b6c3bf2}>}>
 ref.target_id
 # => "2bc6a70483369f33f641ca44873497f13a15cde5"
 
