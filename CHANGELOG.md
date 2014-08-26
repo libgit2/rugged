@@ -1,3 +1,7 @@
+*   Add `Rugged::Repository#cherrypick`.
+
+    *Arthur Schreiber*
+
 *   Add `Rugged::Repository#descendant_of?`
 
     *Jake Douglas*
