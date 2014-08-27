@@ -179,7 +179,7 @@ static VALUE rb_git_tag_collection_create(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *    tags.create_annotation(name, target, annotation) -> oid
+ *    tags.create_annotation(name, target, annotation) -> annotation
  *
  *  Create a new annotated tag object with the specified +name+ on +target+ in
  *  +repo+.
@@ -197,16 +197,16 @@ static VALUE rb_git_tag_collection_create(int argc, VALUE *argv, VALUE self)
  *  :message ::
  *    An optional string containing the message for the new tag.
  *
- *  Returns the OID of the newly created tag.
+ *  Returns an instance of Rugged::Tag::Annotation representing the newly
+ *  created annotation.
  */
 static VALUE rb_git_tag_collection_create_annotation(VALUE self, VALUE rb_name, VALUE rb_target, VALUE rb_annotation)
 {
 	git_oid tag_oid;
 	git_repository *repo = NULL;
-	git_object *target = NULL;
+	git_object *target = NULL, *tag = NULL;
 	git_signature *tagger = NULL;
 	VALUE rb_message;
-	char oid[GIT_OID_HEXSZ + 1];
 	int error;
 
 	VALUE rb_repo = rugged_owner(self);
@@ -237,8 +237,10 @@ static VALUE rb_git_tag_collection_create_annotation(VALUE self, VALUE rb_name, 
 
 	rugged_exception_check(error);
 
-	git_oid_tostr(oid, sizeof(oid), &tag_oid);
-	return rb_str_new_utf8(oid);
+	error = git_object_lookup(&tag, repo, &tag_oid, GIT_OBJ_TAG);
+	rugged_exception_check(error);
+
+	return rugged_object_new(rb_repo, tag);
 }
 
 static VALUE each_tag(int argc, VALUE *argv, VALUE self, int tag_names_only)
