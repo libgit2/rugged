@@ -233,6 +233,7 @@ static VALUE rb_git_tag_collection_create_annotation(VALUE self, VALUE rb_name, 
 		StringValueCStr(rb_message)
 	);
 
+	git_object_free(target);
 	git_signature_free(tagger);
 
 	rugged_exception_check(error);
