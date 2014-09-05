@@ -160,6 +160,13 @@ module Rugged
       @branches ||= BranchCollection.new(self)
     end
 
+    # All the submodules in the repository
+    #
+    # Returns an Enumerable::Enumerator containing Rugged::Submodule objects
+    def submodules
+      @submodules ||= SubmoduleCollection.new(self)
+    end
+
     # Create a new branch in the repository
     #
     # name - The name of the branch (without a full reference path)
