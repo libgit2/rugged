@@ -24,6 +24,8 @@
 
 #include "rugged.h"
 #include <git2/sys/repository.h>
+#include <git2/sys/odb_backend.h>
+#include <git2/sys/refdb_backend.h>
 #include <git2/refs.h>
 
 extern VALUE rb_mRugged;
@@ -196,35 +198,35 @@ static void rugged_repo_new_with_backend(git_repository **repo, VALUE rb_path, V
 	rugged_backend *backend;
 	Data_Get_Struct(rb_backend, rugged_backend, backend);
 
-	git_odb *odb;
-	git_odb_backend *odb_backend;
-	git_refdb *refdb;
-	git_refdb_backend *refdb_backend;
-	git_reference *head;
+	git_odb *odb = NULL;
+	git_odb_backend *odb_backend = NULL;
+	git_refdb *refdb = NULL;
+	git_refdb_backend *refdb_backend = NULL;
+	git_reference *head = NULL;
 
 	int head_err = 0;
 	int error;
 
 	error = git_odb_new(&odb);
-	rugged_exception_check(error);
+	if (error) goto cleanup;
 
 	error = backend->odb_backend(&odb_backend, backend, path);
-	rugged_exception_check(error);
+	if (error) goto cleanup;
 
 	error = git_odb_add_backend(odb, odb_backend, 1);
-	rugged_exception_check(error);
+	if (error) goto cleanup;
 
 	error = git_repository_wrap_odb(repo, odb);
-	rugged_exception_check(error);
+	if (error) goto cleanup;
 
 	error = git_refdb_new(&refdb, *repo);
-	rugged_exception_check(error);
+	if (error) goto cleanup;
 
 	error = backend->refdb_backend(&refdb_backend, backend, path);
-	rugged_exception_check(error);
+	if (error) goto cleanup;
 
 	error = git_refdb_set_backend(refdb, refdb_backend);
-	rugged_exception_check(error);
+	if (error) goto cleanup;
 
 	git_repository_set_refdb(*repo, refdb);
 
@@ -238,6 +240,18 @@ static void rugged_repo_new_with_backend(git_repository **repo, VALUE rb_path, V
 	if (!head_err) {
 		git_reference_free(head);
 	}
+
+	return;
+
+cleanup:
+	if (repo != NULL) git_repository_free(*repo);
+	if (odb != NULL) git_odb_free(odb);
+	if (refdb != NULL) git_refdb_free(refdb);
+
+	if (odb_backend != NULL) odb_backend->free(odb_backend);
+	if (refdb_backend != NULL) refdb_backend->free(refdb_backend);
+
+	rugged_exception_check(error);
 }
 
 /*
@@ -271,7 +285,7 @@ static VALUE rb_git_repo_open_bare(int argc, VALUE *argv, VALUE klass)
 		/* Check for `:backend` */
 		VALUE rb_backend = rb_hash_aref(rb_options, CSTR2SYM("backend"));
 
-		if (rb_backend && !NIL_P(rb_backend)) {
+		if (!NIL_P(rb_backend)) {
 			rugged_repo_new_with_backend(&repo, rb_path, rb_backend);
 		}
 	}
