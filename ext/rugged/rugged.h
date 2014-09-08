@@ -74,6 +74,7 @@ void Init_rugged_diff_hunk(void);
 void Init_rugged_diff_line(void);
 void Init_rugged_blame(void);
 void Init_rugged_cred(void);
+void Init_rugged_backend(void);
 
 VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE self);
 

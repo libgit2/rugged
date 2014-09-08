@@ -36,6 +36,7 @@ extern VALUE rb_cRuggedCommit;
 extern VALUE rb_cRuggedTag;
 extern VALUE rb_cRuggedTree;
 extern VALUE rb_cRuggedReference;
+extern VALUE rb_cRuggedBackend;
 
 extern VALUE rb_cRuggedCredPlaintext;
 extern VALUE rb_cRuggedCredSshKey;
@@ -188,8 +189,7 @@ static int rugged_repo_new_with_backend(git_repository **repo, VALUE rb_path, VA
 	Check_Type(rb_path, T_STRING);
 	char *path = StringValuePtr(rb_path);
 
-	VALUE rb_backend_klass = rb_const_get(rb_mRugged, rb_intern("Backend"));
-	if(rb_obj_is_kind_of(rb_backend, rb_backend_klass) == Qfalse) {
+	if(rb_obj_is_kind_of(rb_backend, rb_cRuggedBackend) == Qfalse) {
 		rb_raise(rb_eRuggedError, "Backend must be an instance of Rugged::Backend");
 	}
 
