@@ -184,7 +184,7 @@ static void load_alternates(git_repository *repo, VALUE rb_alternates)
 	rugged_exception_check(error);
 }
 
-static int rugged_repo_new_with_backend(git_repository **repo, VALUE rb_path, VALUE rb_backend)
+static void rugged_repo_new_with_backend(git_repository **repo, VALUE rb_path, VALUE rb_backend)
 {
 	Check_Type(rb_path, T_STRING);
 	char *path = StringValuePtr(rb_path);
@@ -238,8 +238,6 @@ static int rugged_repo_new_with_backend(git_repository **repo, VALUE rb_path, VA
 	if (!head_err) {
 		git_reference_free(head);
 	}
-
-	return error;
 }
 
 /*
@@ -274,8 +272,7 @@ static VALUE rb_git_repo_open_bare(int argc, VALUE *argv, VALUE klass)
 		VALUE rb_backend = rb_hash_aref(rb_options, CSTR2SYM("backend"));
 
 		if (rb_backend && !NIL_P(rb_backend)) {
-			error = rugged_repo_new_with_backend(&repo, rb_path, rb_backend);
-			rugged_exception_check(error);
+			rugged_repo_new_with_backend(&repo, rb_path, rb_backend);
 		}
 	}
 
@@ -374,8 +371,7 @@ static VALUE rb_git_repo_init_at(int argc, VALUE *argv, VALUE klass)
 		VALUE rb_backend = rb_hash_aref(rb_options, CSTR2SYM("backend"));
 
 		if (rb_backend && !NIL_P(rb_backend)) {
-			error = rugged_repo_new_with_backend(&repo, rb_path, rb_backend);
-			rugged_exception_check(error);
+			rugged_repo_new_with_backend(&repo, rb_path, rb_backend);
 		}
 	}
 
