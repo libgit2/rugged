@@ -585,7 +585,7 @@ static VALUE rb_git_remote_check_connection(int argc, VALUE *argv, VALUE self)
 	if (!NIL_P(rb_options))
 		rugged_remote_init_callbacks_and_payload_from_options(rb_options, &callbacks, &payload);
 
-	if (error = git_remote_set_callbacks(remote, &callbacks))
+	if ((error = git_remote_set_callbacks(remote, &callbacks)) < 0)
 		goto cleanup;
 
 	if (git_remote_connect(remote, direction))
@@ -595,8 +595,7 @@ static VALUE rb_git_remote_check_connection(int argc, VALUE *argv, VALUE self)
 		return Qtrue;
 	}
 
-	cleanup:
-
+cleanup:
 	if (payload.exception)
 		rb_jump_tag(payload.exception);
 	rugged_exception_check(error);
