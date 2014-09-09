@@ -655,6 +655,43 @@ class RepositoryPushTest < Rugged::SandboxedTestCase
   end
 end
 
+class RepositoryAttributesTest < Rugged::SandboxedTestCase
+
+  ATTRIBUTES = <<-ATTR
+*.txt linguist-lang=text
+new.txt other-attr=this
+README is_readme
+ATTR
+
+  def setup
+    super
+    @repo = sandbox_init("testrepo")
+    @repo.checkout_tree(@repo.rev_parse("refs/heads/dir"), :strategy => :force)
+    IO.write(File.join(@repo.workdir, ".gitattributes"), ATTRIBUTES)
+  end
+
+  def teardown
+    @repo.close
+    super
+  end
+
+  def test_read_attributes
+    assert_equal 'text', @repo.attributes('branch_file.txt', 'linguist-lang')
+    assert_equal 'text', @repo.attributes('new.txt', 'linguist-lang')
+    assert_equal 'this', @repo.attributes('new.txt', 'other-attr')
+    assert_equal true, @repo.attributes('README', 'is_readme')
+    assert_equal nil, @repo.attributes('README', 'linguist-lang')
+  end
+
+  def test_read_attributes_multi
+    attr_new = { 'linguist-lang' => 'text', 'other-attr' => 'this' }
+    assert_equal attr_new, @repo.attributes('new.txt', ['linguist-lang', 'other-attr'])
+
+    attr_readme = { 'is_readme' => true, 'other-attr' => nil}
+    assert_equal attr_readme, @repo.attributes('README', ['is_readme', 'other-attr'])
+  end
+end
+
 class RepositoryCheckoutTest < Rugged::SandboxedTestCase
   def setup
     super
