@@ -2061,6 +2061,13 @@ static VALUE rugged_create_attr(const char *attr)
 	}
 }
 
+static int foreach_attr_hash(const char *name, const char *value, void *payload)
+{
+	VALUE rb_hash = (VALUE)payload;
+	rb_hash_aset(rb_hash, rb_str_new2(name), rugged_create_attr(value));
+	return 0;
+}
+
 static VALUE rb_git_repo_attributes(int argc, VALUE *argv, VALUE self)
 {
 	VALUE rb_path, rb_names, rb_options;
@@ -2068,22 +2075,26 @@ static VALUE rb_git_repo_attributes(int argc, VALUE *argv, VALUE self)
 	git_repository *repo;
 	int error, options = 0;
 
-	rb_scan_args(argc, argv, "20:", &rb_path, &rb_names, &rb_options);
+	rb_scan_args(argc, argv, "12", &rb_path, &rb_names, &rb_options);
 
-	Check_Type(rb_path, T_STRING);
 	Data_Get_Struct(self, git_repository, repo);
+	Check_Type(rb_path, T_STRING);
 
 	if (!NIL_P(rb_options)) {
-		Check_Type(rb_options, T_HASH);
-
-		/* TODO */
+		Check_Type(rb_options, T_FIXNUM);
+		options = FIX2INT(rb_options);
 	}
 
-	if (TYPE(rb_names) == T_ARRAY) {
+	switch (TYPE(rb_names)) {
+	case T_ARRAY:
+	{
 		VALUE rb_result;
 		const char **values;
 		const char **names;
 		int i, num_attr = RARRAY_LEN(rb_names);
+
+		if (num_attr > 32)
+			rb_raise(rb_eRuntimeError, "Too many attributes requested");
 
 		values = alloca(num_attr * sizeof(const char *));
 		names = alloca(num_attr * sizeof(const char *));
@@ -2107,11 +2118,11 @@ static VALUE rb_git_repo_attributes(int argc, VALUE *argv, VALUE self)
 			rb_hash_aset(rb_result, attr, rugged_create_attr(values[i]));
 		}
 		return rb_result;
+	}
 
-	} else {
+	case T_STRING:
+	{
 		const char *value;
-
-		Check_Type(rb_names, T_STRING);
 
 		error = git_attr_get(
 			&value, repo, options,
@@ -2121,6 +2132,25 @@ static VALUE rb_git_repo_attributes(int argc, VALUE *argv, VALUE self)
 		rugged_exception_check(error);
 
 		return rugged_create_attr(value);
+	}
+
+	case T_NIL:
+	{
+		VALUE rb_result = rb_hash_new();
+
+		error = git_attr_foreach(
+			repo, options,
+			StringValueCStr(rb_path),
+			&foreach_attr_hash,
+			(void *)rb_result);
+
+		rugged_exception_check(error);
+		return rb_result;
+	}
+
+	default:
+		rb_raise(rb_eTypeError,
+			"Invalid attribute name (expected String or Array)");
 	}
 }
 
@@ -2236,8 +2266,7 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "checkout_head", rb_git_checkout_head, -1);
 
 	rb_define_method(rb_cRuggedRepo, "cherrypick", rb_git_repo_cherrypick, -1);
-
-	rb_define_method(rb_cRuggedRepo, "attributes", rb_git_repo_attributes, -1);
+	rb_define_method(rb_cRuggedRepo, "fetch_attributes", rb_git_repo_attributes, -1);
 
 	rb_cRuggedOdbObject = rb_define_class_under(rb_mRugged, "OdbObject", rb_cObject);
 	rb_define_method(rb_cRuggedOdbObject, "data",  rb_git_odbobj_data,  0);

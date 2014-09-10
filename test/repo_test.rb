@@ -675,20 +675,50 @@ ATTR
     super
   end
 
-  def test_read_attributes
-    assert_equal 'text', @repo.attributes('branch_file.txt', 'linguist-lang')
-    assert_equal 'text', @repo.attributes('new.txt', 'linguist-lang')
-    assert_equal 'this', @repo.attributes('new.txt', 'other-attr')
-    assert_equal true, @repo.attributes('README', 'is_readme')
-    assert_equal nil, @repo.attributes('README', 'linguist-lang')
+  def test_read_attributes_internal
+    assert_equal 'text', @repo.fetch_attributes('branch_file.txt', 'linguist-lang')
+    assert_equal 'text', @repo.fetch_attributes('new.txt', 'linguist-lang')
+    assert_equal 'this', @repo.fetch_attributes('new.txt', 'other-attr')
+    assert_equal true, @repo.fetch_attributes('README', 'is_readme')
+    assert_equal nil, @repo.fetch_attributes('README', 'linguist-lang')
   end
 
-  def test_read_attributes_multi
+  def test_read_attributes_internal_multi
     attr_new = { 'linguist-lang' => 'text', 'other-attr' => 'this' }
-    assert_equal attr_new, @repo.attributes('new.txt', ['linguist-lang', 'other-attr'])
+    assert_equal attr_new, @repo.fetch_attributes('new.txt', ['linguist-lang', 'other-attr'])
 
     attr_readme = { 'is_readme' => true, 'other-attr' => nil}
-    assert_equal attr_readme, @repo.attributes('README', ['is_readme', 'other-attr'])
+    assert_equal attr_readme, @repo.fetch_attributes('README', ['is_readme', 'other-attr'])
+  end
+
+  def test_read_attributes_internal_hash
+    attr_new = { 'linguist-lang' => 'text', 'other-attr' => 'this' }
+    assert_equal attr_new, @repo.fetch_attributes('new.txt')
+
+    attr_new = { 'linguist-lang' => 'text' }
+    assert_equal attr_new, @repo.fetch_attributes('branch_file.txt')
+  end
+
+  def test_attributes
+    atr = @repo.attributes('new.txt')
+    assert atr.instance_of? Rugged::Repository::Attributes
+    assert atr.to_h.instance_of? Hash
+
+    assert_equal 'text', atr['linguist-lang']
+    assert_equal 'this', atr['other-attr']
+
+    atr = @repo.attributes('branch_file.txt')
+    assert_equal 'text', atr['linguist-lang']
+    assert_equal nil, atr['other-attr']
+
+    atr.each do |key, value|
+      assert key.instance_of? String
+      assert [String, TrueClass, FalseClass].include? value.class
+    end
+
+    atr = @repo.attributes('new.txt', :priority => [:index])
+    assert_equal nil, atr['linguist-lang']
+    assert_equal nil, atr['linguist-lang']
   end
 end
 
