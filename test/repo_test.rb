@@ -204,8 +204,8 @@ class RepositoryTest < Rugged::SandboxedTestCase
       'a4a7dce85cf63874e984719f4fdd239f5145052f',
       'a65fedf39aefe402d3bb6e24df4d4f5fe4547750'
     )
-    assert_equal 2, ahead
-    assert_equal 1, behind
+    assert_equal 1, ahead
+    assert_equal 2, behind
   end
 
   def test_ahead_behind_with_commits
@@ -213,8 +213,8 @@ class RepositoryTest < Rugged::SandboxedTestCase
       @repo.lookup('a4a7dce85cf63874e984719f4fdd239f5145052f'),
       @repo.lookup('a65fedf39aefe402d3bb6e24df4d4f5fe4547750')
     )
-    assert_equal 2, ahead
-    assert_equal 1, behind
+    assert_equal 1, ahead
+    assert_equal 2, behind
   end
 
   def test_expand_objects
