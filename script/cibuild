@@ -18,8 +18,7 @@ git submodule update --init
 (
     cd vendor/libgit2
     git fetch origin
-    git reset -q --hard origin/development
-    make -f Makefile.embed clean
+    git reset -q --hard origin/master
 )
 
 bundle install --path vendor/gems --binstubs
