@@ -7,21 +7,15 @@ module Rugged
     class Attributes
       include Enumerable
 
-      def self.parse_opts(options)
-        flags = 0
+      LOAD_PRIORITIES = {
+        [:file, :index] => 0,
+        [:index, :file] => 1,
+        [:index] => 2,
+      }
 
-        case options[:priority]
-        when [:file, :index]
-          flags = 0
-        when [:index, :file]
-          flags = 1
-        when [:index]
-          flags = 2
-        else
-          raise TypeError, "Invalid load priority"
-        end
-
-        flags |= 4 if options[:skip_system]
+      def self.parse_opts(opt)
+        flags = LOAD_PRIORITIES[opt[:priority]] || 0
+        flags |= 4 if opt[:skip_system]
         flags
       end
 
