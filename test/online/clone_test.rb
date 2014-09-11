@@ -59,7 +59,7 @@ class OnlineCloneTest < Rugged::OnlineTestCase
 
         assert_equal "git@github.com:libgit2/TestGitRepository", url
         assert_equal "git", username
-        assert_equal [:plaintext, :ssh_key].sort, allowed_types.sort
+        assert_equal [:ssh_key].sort, allowed_types.sort
       end
     end
   end
