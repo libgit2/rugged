@@ -1224,13 +1224,12 @@ static VALUE rb_git_repo_get_head(VALUE self)
 static VALUE rb_git_repo_path(VALUE self)
 {
 	git_repository *repo;
+	const char *path;
+
 	Data_Get_Struct(self, git_repository, repo);
+	path = git_repository_path(repo);
 
-	const char *path = git_repository_path(repo);
-	if (path == NULL)
-		return Qnil;
-
-	return rb_str_new_utf8(path);
+	return path ? rb_str_new_utf8(path) : Qnil;
 }
 
 /*
