@@ -2043,6 +2043,117 @@ static void rugged_parse_cherrypick_options(git_cherrypick_options *opts, VALUE 
 	}
 }
 
+static VALUE rugged_create_attr(const char *attr)
+{
+	switch (git_attr_value(attr)) {
+	case GIT_ATTR_TRUE_T:
+		return Qtrue;
+
+	case GIT_ATTR_FALSE_T:
+		return Qfalse;
+
+	case GIT_ATTR_VALUE_T:
+		return rb_str_new2(attr);
+
+	case GIT_ATTR_UNSPECIFIED_T:
+	default:
+		return Qnil;
+	}
+}
+
+static int foreach_attr_hash(const char *name, const char *value, void *payload)
+{
+	VALUE rb_hash = (VALUE)payload;
+	rb_hash_aset(rb_hash, rb_str_new2(name), rugged_create_attr(value));
+	return 0;
+}
+
+static VALUE rb_git_repo_attributes(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_path, rb_names, rb_options;
+
+	git_repository *repo;
+	int error, options = 0;
+
+	rb_scan_args(argc, argv, "12", &rb_path, &rb_names, &rb_options);
+
+	Data_Get_Struct(self, git_repository, repo);
+	Check_Type(rb_path, T_STRING);
+
+	if (!NIL_P(rb_options)) {
+		Check_Type(rb_options, T_FIXNUM);
+		options = FIX2INT(rb_options);
+	}
+
+	switch (TYPE(rb_names)) {
+	case T_ARRAY:
+	{
+		VALUE rb_result;
+		const char **values;
+		const char **names;
+		int i, num_attr = RARRAY_LEN(rb_names);
+
+		if (num_attr > 32)
+			rb_raise(rb_eRuntimeError, "Too many attributes requested");
+
+		values = alloca(num_attr * sizeof(const char *));
+		names = alloca(num_attr * sizeof(const char *));
+
+		for (i = 0; i < num_attr; ++i) {
+			VALUE attr = rb_ary_entry(rb_names, i);
+			Check_Type(attr, T_STRING);
+			names[i] = StringValueCStr(attr);
+		}
+
+		error = git_attr_get_many(
+			values, repo, options,
+			StringValueCStr(rb_path),
+			(size_t)num_attr, names);
+
+		rugged_exception_check(error);
+
+		rb_result = rb_hash_new();
+		for (i = 0; i < num_attr; ++i) {
+			VALUE attr = rb_ary_entry(rb_names, i);
+			rb_hash_aset(rb_result, attr, rugged_create_attr(values[i]));
+		}
+		return rb_result;
+	}
+
+	case T_STRING:
+	{
+		const char *value;
+
+		error = git_attr_get(
+			&value, repo, options,
+			StringValueCStr(rb_path),
+			StringValueCStr(rb_names));
+
+		rugged_exception_check(error);
+
+		return rugged_create_attr(value);
+	}
+
+	case T_NIL:
+	{
+		VALUE rb_result = rb_hash_new();
+
+		error = git_attr_foreach(
+			repo, options,
+			StringValueCStr(rb_path),
+			&foreach_attr_hash,
+			(void *)rb_result);
+
+		rugged_exception_check(error);
+		return rb_result;
+	}
+
+	default:
+		rb_raise(rb_eTypeError,
+			"Invalid attribute name (expected String or Array)");
+	}
+}
+
 /*
  *  call-seq:
  *    repo.cherrypick(commit[, options]) -> nil
@@ -2155,6 +2266,7 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "checkout_head", rb_git_checkout_head, -1);
 
 	rb_define_method(rb_cRuggedRepo, "cherrypick", rb_git_repo_cherrypick, -1);
+	rb_define_method(rb_cRuggedRepo, "fetch_attributes", rb_git_repo_attributes, -1);
 
 	rb_cRuggedOdbObject = rb_define_class_under(rb_mRugged, "OdbObject", rb_cObject);
 	rb_define_method(rb_cRuggedOdbObject, "data",  rb_git_odbobj_data,  0);
