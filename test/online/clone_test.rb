@@ -44,25 +44,6 @@ class OnlineCloneTest < Rugged::OnlineTestCase
       end
     end
 
-    def test_clone_callback_args_without_username
-      Dir.mktmpdir do |dir|
-        url, username, allowed_types = nil, nil, nil
-
-        assert_raises Rugged::SshError do
-          Rugged::Repository.clone_at("github.com:libgit2/TestGitRepository", dir, {
-            credentials: lambda { |*args|
-              url, username, allowed_types = *args
-              return nil
-            }
-          })
-        end
-
-        assert_equal "github.com:libgit2/TestGitRepository", url
-        assert_nil username
-        assert_equal [:plaintext, :ssh_key].sort, allowed_types.sort
-      end
-    end
-
     def test_clone_callback_args_with_username
       Dir.mktmpdir do |dir|
         url, username, allowed_types = nil, nil, nil
