@@ -245,14 +245,16 @@ class CommitWriteTest < Rugged::TestCase
     end
   end
 
-  def test_write_empty_email
+  def test_write_empty_email_fails
     person = {:name => 'Jake', :email => '', :time => Time.now}
-    Rugged::Commit.create(@repo,
+    assert_raises Rugged::InvalidError do
+      Rugged::Commit.create(@repo,
       :message => "This is the commit message\n\nThis commit is created from Rugged",
       :committer => person,
       :author => person,
       :parents => [@repo.head.target],
       :tree => "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
+    end
   end
 end
 
