@@ -10,3 +10,4 @@ lib/rugged/**/rugged.so
 vendor/gems
 bin/
 pkg/
+rdoc/
