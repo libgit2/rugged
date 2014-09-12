@@ -38,13 +38,14 @@ module Rugged
     def sandbox_init(repository)
       FileUtils.cp_r(File.join(TestCase::LIBGIT2_FIXTURE_DIR, repository), @_sandbox_path)
 
-      Dir.chdir(File.join(@_sandbox_path, repository)) do
+      fixture_repo_path = File.join(@_sandbox_path, repository)
+      Dir.chdir(fixture_repo_path) do
         File.rename(".gitted", ".git") if File.exist?(".gitted")
         File.rename("gitattributes", ".gitattributes") if File.exist?("gitattributes")
         File.rename("gitignore", ".gitignore") if File.exist?("gitignore")
       end
 
-      Rugged::Repository.new(File.join(@_sandbox_path, repository))
+      Rugged::Repository.new(fixture_repo_path)
     end
 
     def sandbox_clone(repository, name)
