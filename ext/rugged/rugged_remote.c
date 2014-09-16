@@ -29,7 +29,7 @@ extern VALUE rb_cRuggedRepo;
 extern VALUE rb_eRuggedError;
 VALUE rb_cRuggedRemote;
 
-#define RUGGED_REMOTE_CALLBACKS_INIT {1, progress_cb, NULL, credentials_cb, transfer_progress_cb, update_tips_cb, NULL}
+#define RUGGED_REMOTE_CALLBACKS_INIT {1, progress_cb, NULL, credentials_cb, NULL, transfer_progress_cb, update_tips_cb, NULL}
 
 static int progress_cb(const char *str, int len, void *data)
 {
