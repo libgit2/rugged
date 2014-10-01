@@ -528,7 +528,10 @@ static VALUE rb_git_blob_sig_new(int argc, VALUE *argv, VALUE klass)
 	git_hashsig *sig;
 	VALUE rb_blob, rb_options;
 
-	rb_scan_args(argc, argv, "11", &rb_blob, &rb_options);
+	if (rb_scan_args(argc, argv, "11", &rb_blob, &rb_options) == 2) {
+		Check_Type(rb_options, T_FIXNUM);
+		opts = FIX2INT(rb_options);
+	}
 
 	if (rb_obj_is_kind_of(rb_blob, rb_cRuggedBlob)) {
 		git_blob *blob;

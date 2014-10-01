@@ -1,7 +1,13 @@
 module Rugged
   class Blob
-    def hashsig
-      @hashsig ||= HashSignature.new(self)
+    class HashSignature
+      WHITESPACE_DEFAULT  = 0
+      WHITESPACE_IGNORE   = 1
+      WHITESPACE_SMART    = 2
+    end
+
+    def hashsig(options = 0)
+      @hashsig ||= HashSignature.new(self, options)
     end
 
     def similarity(other)
