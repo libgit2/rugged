@@ -62,6 +62,13 @@ class WalkerTest < Rugged::TestCase
     assert_equal ["5b5b025afb0b4c913b4c338a42934a3863bf3644"], oids
   end
 
+  def test_walk_push_range
+    @walker.push_range("HEAD~2..HEAD")
+    data = @walker.each.to_a
+    oids = data.sort { |a, b| a.oid <=> b.oid }.map {|a| a.oid[0,5]}.join('.')
+    assert_equal "36060.5b5b0", oids
+  end
+
   def test_walk_partial_revlist
     oid = "8496071c1b46c854b31185ea97743be6a8774479"
     @walker.push(oid)
