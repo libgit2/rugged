@@ -1,4 +1,8 @@
 
+*   Add `Rugged::Blob#filtered_content`.
+
+    *Arthur Schreiber*
+
 *   Add submodule support.
 
     Expose git submodules functionality through `Rugged::Submodule` and

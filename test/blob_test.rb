@@ -1,7 +1,7 @@
 require "test_helper"
 
 class BlobTest < Rugged::TestCase
-  include Rugged::RepositoryAccess
+  include Rugged::TempRepositoryAccess
 
   def test_lookup_raises_error_if_object_type_does_not_match
     assert_raises Rugged::InvalidError do
@@ -80,6 +80,29 @@ class BlobTest < Rugged::TestCase
     blob = @repo.lookup(oid)
     content =  blob.content(-100)
     assert_equal blob.size, content.size
+  end
+
+  def test_blob_filtered_content
+    File.write(File.join(@repo.workdir, ".gitattributes"), <<-EOS)
+*.bin binary
+*.crlf text eol=crlf
+*.lf text eol=lf
+EOS
+
+    oid = "7771329dfa3002caf8c61a0ceb62a31d09023f37"
+    blob = @repo.lookup(oid)
+
+    content = blob.filtered_content("test.bin")
+    assert_equal 0, content.scan(/\r\n/).size
+    assert_equal 464, content.scan(/(?<!\r)\n/).size
+
+    content = blob.filtered_content("test.crlf")
+    assert_equal 464, content.scan(/\r\n/).size
+    assert_equal 0, content.scan(/(?<!\r)\n/).size
+
+    content = blob.filtered_content("test.lf")
+    assert_equal 0, content.scan(/\r\n/).size
+    assert_equal 464, content.scan(/(?<!\r)\n/).size
   end
 
   def test_blob_text_with_max_lines

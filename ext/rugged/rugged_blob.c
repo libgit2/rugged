@@ -87,7 +87,7 @@ static VALUE rb_git_blob_text_GET(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *    blob.content(max_bytes=-1) -> string
+ *    blob.content(max_bytes = -1) -> string
  *
  *  Return up to +max_bytes+ from the contents of a blob as bytes +String+.
  *  If +max_bytes+ is less than 0, the full string is returned.
@@ -123,6 +123,46 @@ static VALUE rb_git_blob_content_GET(int argc, VALUE *argv, VALUE self)
 	 * lets default to the binary encoding (ascii-8bit)
 	 */
 	return rb_str_new(content, size);
+}
+
+/*
+ *  call-seq:
+ *    blob.filtered_content(path, check_binary = true) -> string
+ *
+ *  Returns a string with the filtered content of a blob.
+ *
+ *  This applies filters as if the blob was checked out to the working
+ *  directory under the specified filename. This may apply CRLF filtering
+ *  or other types of changes depending on the file attributes set for the
+ *  path and the content detected in the blob.
+ *
+ *  The `check_binary` flag allows to specify whether libgit2 should
+ *  check whether the blob contains binary data before applying any filters.
+ *  If the blob contains binary data and the `check_binary` flag is set to `true`,
+ *  no filters will be applied and an empty string will be returned.
+ *
+ *  This string is tagged with the ASCII-8BIT encoding: the bytes are
+ *  returned as-is (after the filtering), since Git is encoding agnostic.
+ */
+static VALUE rb_git_blob_filtered_content(int argc, VALUE *argv, VALUE self)
+{
+	git_blob *blob;
+	git_buf content = { NULL };
+	int error = 0;
+
+	VALUE rb_path, rb_check_binary, rb_result = Qnil;
+
+	Data_Get_Struct(self, git_blob, blob);
+	if (rb_scan_args(argc, argv, "11", &rb_path, &rb_check_binary) < 2)
+		rb_check_binary = Qtrue;
+
+	if ((error = git_blob_filtered_content(&content, blob, StringValueCStr(rb_path), RTEST(rb_check_binary))) == GIT_OK)
+		rb_result = rb_str_new(content.ptr, content.size);
+
+	git_buf_free(&content);
+	rugged_exception_check(error);
+
+	return rb_result;
 }
 
 /*
@@ -581,6 +621,7 @@ void Init_rugged_blob(void)
 
 	rb_define_method(rb_cRuggedBlob, "size", rb_git_blob_rawsize, 0);
 	rb_define_method(rb_cRuggedBlob, "content", rb_git_blob_content_GET, -1);
+	rb_define_method(rb_cRuggedBlob, "filtered_content", rb_git_blob_filtered_content, -1);
 	rb_define_method(rb_cRuggedBlob, "text", rb_git_blob_text_GET, -1);
 	rb_define_method(rb_cRuggedBlob, "sloc", rb_git_blob_sloc, 0);
 	rb_define_method(rb_cRuggedBlob, "binary?", rb_git_blob_is_binary, 0);
