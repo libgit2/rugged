@@ -1,4 +1,11 @@
 
+*   Add submodule support.
+
+    Expose git submodules functionality through `Rugged::Submodule` and
+    `Rugged::SubmoduleCollection`.
+
+    *Nikolai Vladimirov*
+
 *   Add `Rugged::Walker#push_range`.
 
     *Evgeniy Sokovikov*

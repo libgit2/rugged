@@ -151,7 +151,7 @@ module Rugged
         # rename .gitted -> .git in submodule dirs
         submodules.each do |submodule|
           submodule_path = File.join(workdir, submodule)
-          if File.exists?(File.join(submodule_path, '.gitted'))
+          if File.exist?(File.join(submodule_path, '.gitted'))
             Dir.chdir(submodule_path) do
               File.rename('.gitted', '.git')
             end

@@ -138,7 +138,7 @@ void rb_git_repo__free(git_repository *repo)
 	git_repository_free(repo);
 }
 
-static VALUE rugged_repo_new(VALUE klass, git_repository *repo)
+VALUE rugged_repo_new(VALUE klass, git_repository *repo)
 {
 	VALUE rb_repo = Data_Wrap_Struct(klass, NULL, &rb_git_repo__free, repo);
 
