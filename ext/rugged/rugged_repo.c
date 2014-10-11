@@ -1450,7 +1450,7 @@ static VALUE rb_git_repo_reset(int argc, VALUE *argv, VALUE self)
 			log_message = StringValueCStr(rb_val);
 	}
 
-	error = git_reset(repo, target, reset_type, signature, log_message);
+	error = git_reset(repo, target, reset_type, NULL, signature, log_message);
 
 	git_object_free(target);
 	git_signature_free(signature);
