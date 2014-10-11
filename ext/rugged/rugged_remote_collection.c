@@ -244,7 +244,6 @@ static VALUE rb_git_remote_collection_each_name(VALUE self)
 static VALUE rb_git_remote_collection_delete(VALUE self, VALUE rb_name_or_remote)
 {
 	VALUE rb_repo = rugged_owner(self);
-	git_remote *remote;
 	git_repository *repo;
 	int error;
 
@@ -257,10 +256,7 @@ static VALUE rb_git_remote_collection_delete(VALUE self, VALUE rb_name_or_remote
 	rugged_check_repo(rb_repo);
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
-	error = git_remote_load(&remote, repo, StringValueCStr(rb_name_or_remote));
-	rugged_exception_check(error);
-
-	error = git_remote_delete(remote);
+	error = git_remote_delete(repo, StringValueCStr(rb_name_or_remote));
 	rugged_exception_check(error);
 
 	return Qnil;
