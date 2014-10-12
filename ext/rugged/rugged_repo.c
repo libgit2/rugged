@@ -517,6 +517,56 @@ static VALUE rb_git_repo_merge_base(VALUE self, VALUE rb_args)
 
 /*
  *  call-seq:
+ *    repo.merge_bases(oid1, oid2, ...) -> Array
+ *    repo.merge_bases(ref1, ref2, ...) -> Array
+ *    repo.merge_bases(commit1, commit2, ...) -> Array
+ *
+ *  Find all merge bases, given two or more commits or oids.
+ *  Returns an empty array if no merge bases are found.
+ */
+static VALUE rb_git_repo_merge_bases(VALUE self, VALUE rb_args)
+{
+	int error = GIT_OK, i;
+	git_repository *repo;
+	git_oidarray bases = {NULL, 0};
+	git_oid *input_array = xmalloc(sizeof(git_oid) * RARRAY_LEN(rb_args));
+	int len = (int)RARRAY_LEN(rb_args);
+
+	VALUE rb_bases;
+
+	if (len < 2)
+		rb_raise(rb_eArgError, "wrong number of arguments (%d for 2+)", len);
+
+	Data_Get_Struct(self, git_repository, repo);
+
+	for (i = 0; !error && i < len; ++i) {
+		error = rugged_oid_get(&input_array[i], repo, rb_ary_entry(rb_args, i));
+	}
+
+	if (error) {
+		xfree(input_array);
+		rugged_exception_check(error);
+	}
+
+	error = git_merge_bases_many(&bases, repo, len, input_array);
+	xfree(input_array);
+
+	if (error != GIT_ENOTFOUND)
+		rugged_exception_check(error);
+
+	rb_bases = rb_ary_new2(bases.count);
+
+	for (i = 0; i < bases.count; ++i) {
+		rb_ary_push(rb_bases, rugged_create_oid(&bases.ids[i]));
+	}
+
+	git_oidarray_free(&bases);
+
+	return rb_bases;
+}
+
+/*
+ *  call-seq:
  *    repo.merge_analysis(their_commit) -> Array
  *
  *  Analyzes the given commit and determines the opportunities for merging
@@ -2247,6 +2297,8 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "head", rb_git_repo_get_head, 0);
 
 	rb_define_method(rb_cRuggedRepo, "merge_base", rb_git_repo_merge_base, -2);
+	rb_define_method(rb_cRuggedRepo, "merge_bases", rb_git_repo_merge_bases, -2);
+
 	rb_define_method(rb_cRuggedRepo, "merge_analysis", rb_git_repo_merge_analysis, -1);
 	rb_define_method(rb_cRuggedRepo, "merge_commits", rb_git_repo_merge_commits, -1);
 

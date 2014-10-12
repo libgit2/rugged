@@ -199,6 +199,43 @@ class RepositoryTest < Rugged::SandboxedTestCase
     assert_equal base, @repo.merge_base(commit1, commit2, commit3)
   end
 
+  def test_find_merge_bases_between_oids
+    commit1 = 'a4a7dce85cf63874e984719f4fdd239f5145052f'
+    commit2 = 'a65fedf39aefe402d3bb6e24df4d4f5fe4547750'
+
+    assert_equal [
+      "c47800c7266a2be04c571c04d5a6614691ea99bd", "9fd738e8f7967c078dceed8190330fc8648ee56a"
+    ], @repo.merge_bases(commit1, commit2)
+  end
+
+  def test_find_merge_bases_between_commits
+    commit1 = @repo.lookup('a4a7dce85cf63874e984719f4fdd239f5145052f')
+    commit2 = @repo.lookup('a65fedf39aefe402d3bb6e24df4d4f5fe4547750')
+
+    assert_equal [
+      "c47800c7266a2be04c571c04d5a6614691ea99bd", "9fd738e8f7967c078dceed8190330fc8648ee56a"
+    ], @repo.merge_bases(commit1, commit2)
+  end
+
+  def test_find_merge_bases_between_ref_and_oid
+    commit1 = 'a4a7dce85cf63874e984719f4fdd239f5145052f'
+    commit2 = "refs/heads/master"
+
+    assert_equal [
+      "c47800c7266a2be04c571c04d5a6614691ea99bd", "9fd738e8f7967c078dceed8190330fc8648ee56a"
+    ], @repo.merge_bases(commit1, commit2)
+  end
+
+  def test_find_merge_bases_between_many
+    commit1 = 'a4a7dce85cf63874e984719f4fdd239f5145052f'
+    commit2 = "refs/heads/packed"
+    commit3 = @repo.lookup('a65fedf39aefe402d3bb6e24df4d4f5fe4547750')
+
+    assert_equal [
+      "c47800c7266a2be04c571c04d5a6614691ea99bd", "9fd738e8f7967c078dceed8190330fc8648ee56a"
+    ], @repo.merge_bases(commit1, commit2, commit3)
+  end
+
   def test_ahead_behind_with_oids
     ahead, behind = @repo.ahead_behind(
       'a4a7dce85cf63874e984719f4fdd239f5145052f',
@@ -344,6 +381,12 @@ class RepositoryWriteTest < Rugged::TestCase
     info = @repo.rev_parse('HEAD').to_hash
     baseless = Rugged::Commit.create(@repo, info.merge(:parents => []))
     assert_nil @repo.merge_base('HEAD', baseless)
+  end
+
+  def test_no_merge_bases_between_unrelated_branches
+    info = @repo.rev_parse('HEAD').to_hash
+    baseless = Rugged::Commit.create(@repo, info.merge(:parents => []))
+    assert_equal [], @repo.merge_bases('HEAD', baseless)
   end
 
   def test_default_signature

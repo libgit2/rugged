@@ -3,6 +3,13 @@
 
     *Arthur Schreiber*
 
+*   Add `Repository#merge_bases`.
+
+    This returns an array containing all merge bases between one or
+    multiple commits.
+
+    *Arthur Schreiber*
+
 *   Add submodule support.
 
     Expose git submodules functionality through `Rugged::Submodule` and
