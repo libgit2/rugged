@@ -1,5 +1,5 @@
 
-*   Update to the latest libgit2 version (bd62dc6fdde123339844dc199a6c3b8ba0630afa).
+*   Update to the latest libgit2 version (9e49cb7a4ba4f6961e3681cb59421cec04a50893).
 
     *Arthur Schreiber*
 
