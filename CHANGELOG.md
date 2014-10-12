@@ -1,4 +1,8 @@
 
+*   Update to the latest libgit2 version (bd62dc6fdde123339844dc199a6c3b8ba0630afa).
+
+    *Arthur Schreiber*
+
 *   Add submodule support.
 
     Expose git submodules functionality through `Rugged::Submodule` and
