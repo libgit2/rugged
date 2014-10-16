@@ -244,9 +244,9 @@ static void rugged_repo_new_with_backend(git_repository **repo, VALUE rb_path, V
 	return;
 
 cleanup:
-	if (repo != NULL) git_repository_free(*repo);
-	if (odb != NULL) git_odb_free(odb);
-	if (refdb != NULL) git_refdb_free(refdb);
+	git_repository_free(*repo);
+	git_odb_free(odb);
+	git_refdb_free(refdb);
 
 	if (odb_backend != NULL) odb_backend->free(odb_backend);
 	if (refdb_backend != NULL) refdb_backend->free(refdb_backend);
