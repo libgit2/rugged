@@ -269,7 +269,7 @@ cleanup:
  *  :backend ::
  *    A Rugged::Backend instance
  *  :alternates ::
- *    A list of alternate object folders. *
+ *    A list of alternate object folders.
  *    Rugged::Repository.bare(path, :alternates => ['./other/repo/.git/objects'])
  */
 static VALUE rb_git_repo_open_bare(int argc, VALUE *argv, VALUE klass)
