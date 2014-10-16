@@ -204,8 +204,7 @@ static void rugged_repo_new_with_backend(git_repository **repo, VALUE rb_path, V
 	git_refdb_backend *refdb_backend = NULL;
 	git_reference *head = NULL;
 
-	int head_err = 0;
-	int error;
+	int error = 0;
 
 	error = git_odb_new(&odb);
 	if (error) goto cleanup;
@@ -230,16 +229,16 @@ static void rugged_repo_new_with_backend(git_repository **repo, VALUE rb_path, V
 
 	git_repository_set_refdb(*repo, refdb);
 
-	head_err = git_reference_lookup(&head, *repo, "HEAD");
+	error = git_reference_lookup(&head, *repo, "HEAD");
 
-	if (head_err == GIT_ENOTFOUND) {
+	if (error == GIT_ENOTFOUND) {
 		giterr_clear();
-		head_err = git_reference_symbolic_create(&head, *repo, "HEAD", "refs/heads/master", 0, NULL, NULL);
+		error = git_reference_symbolic_create(&head, *repo, "HEAD", "refs/heads/master", 0, NULL, NULL);
 	}
 
-	if (!head_err) {
+	if (!error) {
 		git_reference_free(head);
-	}
+	} else goto cleanup;
 
 	return;
 
