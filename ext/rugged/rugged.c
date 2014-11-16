@@ -299,7 +299,7 @@ static VALUE rb_git_minimize_oid(int argc, VALUE *argv, VALUE self)
 static void cleanup_cb(void *unused)
 {
 	(void)unused;
-	git_threads_shutdown();
+	git_libgit2_shutdown();
 }
 
 void rugged_exception_raise(void)
@@ -486,7 +486,7 @@ void Init_rugged(void)
 	rb_define_const(rb_mRugged, "SORT_REVERSE", INT2FIX(GIT_SORT_REVERSE));
 
 	/* Initialize libgit2 */
-	git_threads_init();
+	git_libgit2_init();
 
 	/* Hook a global object to cleanup the library
 	 * on shutdown */
