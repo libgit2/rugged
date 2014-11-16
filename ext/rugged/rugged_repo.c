@@ -596,7 +596,7 @@ static VALUE rb_git_repo_merge_analysis(int argc, VALUE *argv, VALUE self)
 	int error;
 	git_repository *repo;
 	git_commit *their_commit;
-	git_merge_head *merge_head;
+	git_annotated_commit *annotated_commit;
 	git_merge_analysis_t analysis;
 	git_merge_preference_t preference;
 	VALUE rb_their_commit, result;
@@ -615,13 +615,13 @@ static VALUE rb_git_repo_merge_analysis(int argc, VALUE *argv, VALUE self)
 
 	Data_Get_Struct(rb_their_commit, git_commit, their_commit);
 
-	error = git_merge_head_from_id(&merge_head, repo, git_commit_id(their_commit));
+	error = git_annotated_commit_lookup(&annotated_commit, repo, git_commit_id(their_commit));
 	rugged_exception_check(error);
 
 	error = git_merge_analysis(&analysis, &preference, repo,
 				   /* hack as we currently only do one commit */
-				   (const git_merge_head **) &merge_head, 1);
-	git_merge_head_free(merge_head);
+				   (const git_annotated_commit **) &annotated_commit, 1);
+	git_annotated_commit_free(annotated_commit);
 	rugged_exception_check(error);
 
 	result = rb_ary_new();
