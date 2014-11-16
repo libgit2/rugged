@@ -1,4 +1,11 @@
 
+*   Replace `Remote#rename!` with `RemoteCollection#rename`.
+
+    This brings the `RemoteCollection` more in line with the API of
+    `ReferenceCollection` and `BranchCollection`.
+
+    *Arthur Schreiber*
+
 *   Remove URL validation from `Remote#url=`, `Remote#push_url=`,
     `RemoteCollection#create_anonymous` and `RemoteCollection#create`,
     as the underlying function `git_remote_supported_url()` was removed

@@ -499,44 +499,6 @@ static VALUE rb_git_remote_save(VALUE self)
 
 /*
  *  call-seq:
- *    remote.rename!(new_name) -> array or nil
- *
- *  Renames a remote.
- *
- *  All remote-tracking branches and configuration settings
- *  for the remote are updated.
- *
- *  Returns +nil+ if everything was updated or array of fetch refspecs
- *  that haven't been automatically updated and need potential manual
- *  tweaking.
- *
- *  Anonymous, in-memory remotes created through
- *  +ReferenceCollection#create_anonymous+ can not be given a name through
- *  this method.
- *
- *    remote = Rugged::Remote.lookup(@repo, 'origin')
- *    remote.rename!('upstream') #=> nil
- */
-static VALUE rb_git_remote_rename(VALUE self, VALUE rb_new_name)
-{
-	git_remote *remote;
-	git_strarray problems = {0};
-	VALUE rb_result;
-
-	Check_Type(rb_new_name, T_STRING);
-	Data_Get_Struct(self, git_remote, remote);
-	
-	rugged_exception_check(
-		git_remote_rename(&problems, remote, StringValueCStr(rb_new_name))
-	);
-
-	rb_result = problems.count == 0 ? Qnil : rugged_strarray_to_rb_ary(&problems);
-	git_strarray_free(&problems);
-	return rb_result;
-}
-
-/*
- *  call-seq:
  *    remote.check_connection(direction, options = {}) -> boolean
  *
  *  Try to connect to the +remote+. Useful to simulate
@@ -883,5 +845,4 @@ void Init_rugged_remote(void)
 	rb_define_method(rb_cRuggedRemote, "push", rb_git_remote_push, -1);
 	rb_define_method(rb_cRuggedRemote, "clear_refspecs", rb_git_remote_clear_refspecs, 0);
 	rb_define_method(rb_cRuggedRemote, "save", rb_git_remote_save, 0);
-	rb_define_method(rb_cRuggedRemote, "rename!", rb_git_remote_rename, 1);
 }
