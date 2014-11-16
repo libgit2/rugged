@@ -137,7 +137,7 @@ static VALUE rb_git_remote_collection_aref(VALUE self, VALUE rb_name)
 
 	Check_Type(rb_name, T_STRING);
 
-	error = git_remote_load(&remote, repo, StringValueCStr(rb_name));
+	error = git_remote_lookup(&remote, repo, StringValueCStr(rb_name));
 
 	if (error == GIT_ENOTFOUND)
 		return Qnil;
@@ -179,7 +179,7 @@ static VALUE rb_git_remote_collection__each(VALUE self, int only_names)
 		for (i = 0; !exception && !error && i < remotes.count; ++i) {
 			git_remote *remote;
 
-			if (!(error = git_remote_load(&remote, repo, remotes.strings[i])))
+			if (!(error = git_remote_lookup(&remote, repo, remotes.strings[i])))
 				rb_protect(rb_yield, rugged_remote_new(rb_repo, remote), &exception);
 		}
 	}
