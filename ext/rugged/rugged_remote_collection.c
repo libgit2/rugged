@@ -65,7 +65,6 @@ static VALUE rb_git_remote_collection_create_anonymous(VALUE self, VALUE rb_url)
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
 	Check_Type(rb_url, T_STRING);
-	rugged_validate_remote_url(rb_url);
 
 	error = git_remote_create_anonymous(
 			&remote,
@@ -102,9 +101,7 @@ static VALUE rb_git_remote_collection_create(VALUE self, VALUE rb_name, VALUE rb
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
 	Check_Type(rb_name, T_STRING);
-
 	Check_Type(rb_url, T_STRING);
-	rugged_validate_remote_url(rb_url);
 
 	error = git_remote_create(
 			&remote,

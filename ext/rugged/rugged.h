@@ -120,13 +120,6 @@ static inline VALUE rugged_owner(VALUE object)
 	return rb_iv_get(object, "@owner");
 }
 
-static inline void rugged_validate_remote_url(VALUE rb_url)
-{
-	Check_Type(rb_url, T_STRING);
-	if (!git_remote_supported_url(StringValueCStr(rb_url)))
-		rb_raise(rb_eArgError, "Invalid URL format");
-}
-
 extern void rugged_exception_raise(void);
 
 static inline void rugged_exception_check(int errorcode)

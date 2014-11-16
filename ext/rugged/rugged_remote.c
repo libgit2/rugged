@@ -322,7 +322,7 @@ static VALUE rb_git_remote_set_url(VALUE self, VALUE rb_url)
 {
 	git_remote *remote;
 
-	rugged_validate_remote_url(rb_url);
+	Check_Type(rb_url, T_STRING);
 	Data_Get_Struct(self, git_remote, remote);
 
 	rugged_exception_check(
@@ -364,7 +364,7 @@ static VALUE rb_git_remote_set_push_url(VALUE self, VALUE rb_url)
 {
 	git_remote *remote;
 
-	rugged_validate_remote_url(rb_url);
+	Check_Type(rb_url, T_STRING);
 	Data_Get_Struct(self, git_remote, remote);
 
 	rugged_exception_check(

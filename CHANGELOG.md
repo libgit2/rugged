@@ -1,4 +1,11 @@
 
+*   Remove URL validation from `Remote#url=`, `Remote#push_url=`,
+    `RemoteCollection#create_anonymous` and `RemoteCollection#create`,
+    as the underlying function `git_remote_supported_url()` was removed
+    from libgit2.
+
+    *Arthur Schreiber*
+
 *   Update to the latest libgit2 version (ce8822cb409917d0201f359cabe3ae55d25895da).
 
     *Arthur Schreiber*
@@ -21,6 +28,7 @@
 
     *Evgeniy Sokovikov*
 
+
 ## Rugged 0.21.1b2 (October 1, 2014) ##
 
 *   Update to the latest libgit2 version (9f57fd64436b6441684ce5e6641a0e390304224d).
@@ -33,6 +41,7 @@
     arbitrary strings.
 
     *Vicent Martí*
+
 
 ## Rugged 0.21.1b1 (September 17, 2014) ##
 

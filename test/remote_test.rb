@@ -82,9 +82,7 @@ class RemoteTest < Rugged::SandboxedTestCase
   end
 
   def test_remote_new_invalid_url
-    assert_raises ArgumentError do
-      @repo.remotes.create_anonymous('libgit2')
-    end
+    @repo.remotes.create_anonymous('libgit2')
   end
 
   def test_remote_delete
@@ -100,11 +98,8 @@ class RemoteTest < Rugged::SandboxedTestCase
   end
 
   def test_url_set_invalid
-    url = 'upstream'
     remote = @repo.remotes.create_anonymous('git://github.com/libgit2/libgit2.git')
-    assert_raises ArgumentError do
-      remote.url = url
-    end
+    remote.url = 'upstream'
   end
 
   def test_push_url
@@ -124,11 +119,8 @@ class RemoteTest < Rugged::SandboxedTestCase
   end
 
   def test_push_url_set_invalid
-    new_url = 'upstream'
     remote = @repo.remotes.create_anonymous('git://github.com/libgit2/libgit2.git')
-    assert_raises ArgumentError do
-      remote.push_url = new_url
-    end
+    remote.push_url = 'upstream'
   end
 
   def test_fetch_refspecs
@@ -253,9 +245,7 @@ class RemoteWriteTest < Rugged::TestCase
   end
 
   def test_remote_add_with_invalid_url
-    assert_raises ArgumentError do
-      @repo.remotes.create('upstream', 'libgit2')
-    end
+    @repo.remotes.create('upstream', 'libgit2')
   end
 
   def test_url_set
