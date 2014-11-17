@@ -35,31 +35,10 @@
 
     *Evgeniy Sokovikov*
 
-
-## Rugged 0.21.1b2 (October 1, 2014) ##
-
-*   Update to the latest libgit2 version (9f57fd64436b6441684ce5e6641a0e390304224d).
-
-    *Vicent Martí*
-
 *   Implement `Rugged::Blob::HashSignature` and `Rugged::Blob#hashsig`.
 
     Allows similarity detection of `Rugged::Blob` instances against other blobs or
     arbitrary strings.
-
-    *Vicent Martí*
-
-
-## Rugged 0.21.1b1 (September 17, 2014) ##
-
-*   Update to the latest libgit2 version (ecef28d55c7d72dda0e33649614f2b20db482cd6).
-
-    *Arthur Schreiber*
-
-
-## Rugged 0.21.1b0 (September 11, 2014) ##
-
-*   Update to the latest libgit2 version (31e752b6546537bbeee89b6d2f3027cf0eff9a53).
 
     *Vicent Martí*
 
