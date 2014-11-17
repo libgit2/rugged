@@ -82,9 +82,7 @@ class RemoteTest < Rugged::SandboxedTestCase
   end
 
   def test_remote_new_invalid_url
-    assert_raises ArgumentError do
-      @repo.remotes.create_anonymous('libgit2')
-    end
+    @repo.remotes.create_anonymous('libgit2')
   end
 
   def test_remote_delete
@@ -100,11 +98,8 @@ class RemoteTest < Rugged::SandboxedTestCase
   end
 
   def test_url_set_invalid
-    url = 'upstream'
     remote = @repo.remotes.create_anonymous('git://github.com/libgit2/libgit2.git')
-    assert_raises ArgumentError do
-      remote.url = url
-    end
+    remote.url = 'upstream'
   end
 
   def test_push_url
@@ -124,11 +119,8 @@ class RemoteTest < Rugged::SandboxedTestCase
   end
 
   def test_push_url_set_invalid
-    new_url = 'upstream'
     remote = @repo.remotes.create_anonymous('git://github.com/libgit2/libgit2.git')
-    assert_raises ArgumentError do
-      remote.push_url = new_url
-    end
+    remote.push_url = 'upstream'
   end
 
   def test_fetch_refspecs
@@ -253,9 +245,7 @@ class RemoteWriteTest < Rugged::TestCase
   end
 
   def test_remote_add_with_invalid_url
-    assert_raises ArgumentError do
-      @repo.remotes.create('upstream', 'libgit2')
-    end
+    @repo.remotes.create('upstream', 'libgit2')
   end
 
   def test_url_set
@@ -267,29 +257,36 @@ class RemoteWriteTest < Rugged::TestCase
   end
 
   def test_rename
-    remote = @repo.remotes['origin']
-    assert_nil remote.rename!('new_remote_name')
-    assert @repo.remotes['new_remote_name']
+    new_remote = @repo.remotes.rename('origin', 'new_remote_name') { }
+    assert_equal new_remote.name, 'new_remote_name'
+  end
+
+  def test_rename_with_remote
+    old_remote = @repo.remotes['origin']
+    new_remote = @repo.remotes.rename(old_remote, 'new_remote_name') { }
+
+    assert_equal new_remote.name, 'new_remote_name'
+    assert_equal old_remote.name, 'origin'
   end
 
   def test_rename_invalid_name
-    remote = @repo.remotes['origin']
     assert_raises Rugged::ConfigError do
-      remote.rename!('/?')
+      @repo.remotes.rename('origin', '/?') { }
     end
   end
 
-  def test_rename_exists
-    remote = @repo.remotes['origin']
+  def test_rename_to_existing
     assert_raises Rugged::ConfigError do
-      remote.rename!('origin')
+      @repo.remotes.rename('origin', 'origin') { }
     end
   end
 
   def test_rename_error_callback
-    @repo.config['remote.origin.fetch']  = '+refs/*:refs/*'
-    remote = @repo.remotes['origin']
-    assert_equal ["+refs/*:refs/*"], remote.rename!('test_remote')
+    @repo.config['remote.origin.fetch'] = '+refs/*:refs/*'
+
+    problems = []
+    @repo.remotes.rename('origin', 'test_remote') { |problem| problems << problem }
+    assert_equal ["+refs/*:refs/*"], problems
   end
 end
 
