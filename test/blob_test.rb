@@ -375,6 +375,36 @@ class BlobCreateFromIOTest < Rugged::TestCase
   end
 end
 
+class BlobLoaderTest < Rugged::TestCase
+  include Rugged::TempRepositoryAccess
+
+  def test_reading_many_objects
+    oids = []
+    
+    oids << Rugged::Blob.from_buffer(@repo, "blob content 0 " * 256)
+    oids << Rugged::Blob.from_buffer(@repo, "blob content 1 " * 256)
+    oids << Rugged::Blob.from_buffer(@repo, "blob content 2 " * 256)
+    oids << Rugged::Blob.from_buffer(@repo, "blob content 3 " * 256)
+
+    total_size = ("blob content 0 " * 256).size
+    prev_id = nil
+
+    loader = Rugged::Blob::Loader.new(@repo, 1024)
+
+    oids.each_with_index do |oid, idx|
+      blob, size = loader.load(oid)
+      assert blob.is_a?(String)
+      assert blob.include?("blob content #{idx}")
+      assert_equal 1024, blob.size
+      assert_equal total_size, size
+
+      # Ensure we're always returning the same string buffer
+      assert_equal(prev_id, blob.object_id) if prev_id
+      prev_id = blob.object_id
+    end
+  end
+end
+
 class BlobHashSignatureTest < Rugged::TestCase
   include Rugged::RepositoryAccess
 
