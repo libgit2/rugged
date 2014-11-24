@@ -32,7 +32,6 @@ extern VALUE rb_cRuggedRepo;
 static ID id_read;
 
 VALUE rb_cRuggedBlob;
-VALUE rb_cRuggedBlobLoader;
 VALUE rb_cRuggedBlobSig;
 
 /*
@@ -480,75 +479,46 @@ static VALUE rb_git_blob_diff(int argc, VALUE *argv, VALUE self)
 	return rugged_patch_new(self, patch);
 }
 
-/*
- *  call-seq:
- *    Rugged::Blob::Loader.new(repository, max_size) -> Blob::Loader instance
- *
- *	Create a Blob Loader instance that allows you to bring several blobs
- *	from the object database with no extra memory cost by reusing the same
- *	underlying storage.
- *
- *	repository - the repo where the blobs will be loaded from
- *	max_size - the maximum size for the underlying storage; blobs larger than
- *	that size will be truncated
- *
- *	Example:
- *
- *		loader = loader = Rugged::Blob::Loader.new(@repo, 4 * 1024)
- *		#=> Blob::Loader instance
- *
- *		loader.load("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
- *		#=> [contents, real_size]
- */
-static VALUE rb_git_blob_loader_new(VALUE self, VALUE rb_repo, VALUE rb_max_bytes)
+static VALUE rb_git_blob_to_buffer(int argc, VALUE *argv, VALUE self)
 {
-	long max_bytes;
-
-	rugged_check_repo(rb_repo);
-	Check_Type(rb_max_bytes, T_FIXNUM);
-
-	/* extra byte for NULL-termination */
-	max_bytes = (long)FIX2INT(rb_max_bytes) + 1;
-
-	rb_iv_set(self, "@repository", rb_repo);
-	rb_iv_set(self, "buffer", rb_str_buf_new(max_bytes));
-	return Qnil;
-}
-
-static VALUE rb_git_blob_loader_load(VALUE self, VALUE rb_sha1)
-{
-	VALUE rb_ret, rb_repo, rb_buffer;
+	VALUE rb_repo, rb_sha1, rb_max_bytes;
+	VALUE rb_ret;
 
 	git_repository *repo = NULL;
 	git_blob *blob = NULL;
 
-	size_t size, capacity;
+	size_t size;
 	const char *content;
 
-	rb_repo = rb_iv_get(self, "@repository");
-	rb_buffer = rb_iv_get(self, "buffer");
+	rb_scan_args(argc, argv, "21", &rb_repo, &rb_sha1, &rb_max_bytes);
 
-	Check_Type(rb_buffer, T_STRING);
 	rugged_check_repo(rb_repo);
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
 	blob = (git_blob *)rugged_object_get(repo, rb_sha1, GIT_OBJ_BLOB);
 
 	content = git_blob_rawcontent(blob);
-	size = (long)git_blob_rawsize(blob);
-	capacity = rb_str_capacity(rb_buffer);
+	size = git_blob_rawsize(blob);
 
-	if (size > capacity - 1)
-		size = capacity - 1;
+	if (!NIL_P(rb_max_bytes)) {
+		int maxbytes;
 
-	memcpy(RSTRING_PTR(rb_buffer), content, size);
-	rb_str_set_len(rb_buffer, size);
+		Check_Type(rb_max_bytes, T_FIXNUM);
+		maxbytes = FIX2INT(rb_max_bytes);
+
+		if (maxbytes >= 0 && (size_t)maxbytes < size)
+			size = (size_t)maxbytes;
+	}
 
 	rb_ret = rb_ary_new();
-	rb_ary_push(rb_ret, rb_buffer);
+
+	rb_ary_push(rb_ret, rb_str_new(content, size));
 	rb_ary_push(rb_ret, INT2FIX(git_blob_rawsize(blob)));
 
 	git_object_free((git_object*)blob);
+
+	/* TODO: LOC */
+
 	return rb_ret;
 }
 
@@ -621,11 +591,9 @@ void Init_rugged_blob(void)
 	rb_define_singleton_method(rb_cRuggedBlob, "from_disk", rb_git_blob_from_disk, 2);
 	rb_define_singleton_method(rb_cRuggedBlob, "from_io", rb_git_blob_from_io, -1);
 
+	rb_define_singleton_method(rb_cRuggedBlob, "to_buffer", rb_git_blob_to_buffer, -1);
+
 	rb_cRuggedBlobSig = rb_define_class_under(rb_cRuggedBlob, "HashSignature", rb_cObject);
 	rb_define_singleton_method(rb_cRuggedBlobSig, "new", rb_git_blob_sig_new, -1);
 	rb_define_singleton_method(rb_cRuggedBlobSig, "compare", rb_git_blob_sig_compare, 2);
-
-	rb_cRuggedBlobLoader = rb_define_class_under(rb_cRuggedBlob, "Loader", rb_cObject);
-	rb_define_method(rb_cRuggedBlobLoader, "initialize", rb_git_blob_loader_new, 2);
-	rb_define_method(rb_cRuggedBlobLoader, "load", rb_git_blob_loader_load, 1);
 }
