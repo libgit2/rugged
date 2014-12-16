@@ -310,12 +310,12 @@ void rugged_exception_raise(void)
 
 	error = giterr_last();
 
-	if (error && error->klass >= 0 && error->klass < RUGGED_ERROR_COUNT) {
+	if (error && error->klass > 0 && error->klass < RUGGED_ERROR_COUNT) {
 		err_klass = rb_eRuggedErrors[error->klass];
 		err_message = error->message;
 	} else {
-		err_klass = rb_eRuggedErrors[2]; /* InvalidError */
-		err_message = "Unknown Error";
+		err_klass = rb_eRuntimeError;
+		err_message = "Rugged operation failed";
 	}
 
 	err_obj = rb_exc_new2(err_klass, err_message);
@@ -409,11 +409,12 @@ void Init_rugged(void)
 
 		rb_eRuggedError = rb_define_class_under(rb_mRugged, "Error", rb_eStandardError);
 
-		rb_eRuggedErrors[0] = rb_define_class_under(rb_mRugged, RUGGED_ERROR_NAMES[0], rb_eNoMemError);
-		rb_eRuggedErrors[1] = rb_define_class_under(rb_mRugged, RUGGED_ERROR_NAMES[1], rb_eIOError);
-		rb_eRuggedErrors[2] = rb_define_class_under(rb_mRugged, RUGGED_ERROR_NAMES[2], rb_eArgError);
+		rb_eRuggedErrors[0] = Qnil; /* 0 return value -- no exception */
+		rb_eRuggedErrors[1] = rb_define_class_under(rb_mRugged, RUGGED_ERROR_NAMES[1], rb_eNoMemError);
+		rb_eRuggedErrors[2] = rb_define_class_under(rb_mRugged, RUGGED_ERROR_NAMES[2], rb_eIOError);
+		rb_eRuggedErrors[3] = rb_define_class_under(rb_mRugged, RUGGED_ERROR_NAMES[3], rb_eArgError);
 
-		for (i = 3; i < RUGGED_ERROR_COUNT; ++i) {
+		for (i = 4; i < RUGGED_ERROR_COUNT; ++i) {
 			rb_eRuggedErrors[i] = rb_define_class_under(rb_mRugged, RUGGED_ERROR_NAMES[i], rb_eRuggedError);
 		}
 	}
