@@ -803,11 +803,6 @@ static VALUE rb_git_remote_push(int argc, VALUE *argv, VALUE self)
 	if ((error = git_push_finish(push)))
 		goto cleanup;
 
-	if (!git_push_unpack_ok(push)) {
-		rb_exception = rb_exc_new2(rb_eRuggedError, "the remote side did not unpack successfully");
-		goto cleanup;
-	}
-
 	if ((error = git_push_status_foreach(push, &push_status_cb, (void *)rb_result)) ||
 	    (error = git_push_update_tips(push, signature, log_message)))
 	    goto cleanup;
