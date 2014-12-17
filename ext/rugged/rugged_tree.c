@@ -629,40 +629,42 @@ static void rb_git_treebuilder_free(git_treebuilder *bld)
 	git_treebuilder_free(bld);
 }
 
-static VALUE rb_git_treebuilder_allocate(VALUE klass)
-{
-	return Data_Wrap_Struct(klass, NULL, &rb_git_treebuilder_free, NULL);
-}
-
 /*
  *  call-seq:
- *    TreeBuilder.new([tree])
+ *    TreeBuilder.new(repository, [tree])
  *
- *  Create a new Rugged::Trebuilder instance.
+ *  Create a new Rugged::Trebuilder instance to write a tree to
+ *  the given +repository+.
  *
  *  If an optional +tree+ is given, the returned TreeBuilder will be
  *  initialized with the entry of +tree+. Otherwise, the TreeBuilder
  *  will be empty and has to be filled manually.
  */
-static VALUE rb_git_treebuilder_init(int argc, VALUE *argv, VALUE self)
+static VALUE rb_git_treebuilder_new(int argc, VALUE *argv, VALUE klass)
 {
 	git_treebuilder *builder;
+	git_repository *repo;
 	git_tree *tree = NULL;
-	VALUE rb_object;
+	VALUE rb_object, rb_builder, rb_repo;
 	int error;
 
-	if (rb_scan_args(argc, argv, "01", &rb_object) == 1) {
+	if (rb_scan_args(argc, argv, "11", &rb_repo, &rb_object) == 2) {
 		if (!rb_obj_is_kind_of(rb_object, rb_cRuggedTree))
 			rb_raise(rb_eTypeError, "A Rugged::Tree instance is required");
 
 		Data_Get_Struct(rb_object, git_tree, tree);
 	}
 
-	error = git_treebuilder_create(&builder, tree);
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	error = git_treebuilder_create(&builder, repo, tree);
 	rugged_exception_check(error);
 
-	DATA_PTR(self) = builder;
-	return Qnil;
+	rb_builder = Data_Wrap_Struct(klass, NULL, &rb_git_treebuilder_free, builder);
+	rugged_set_owner(rb_builder, rb_repo);
+
+	return rb_builder;
 }
 
 /*
@@ -759,24 +761,21 @@ static VALUE rb_git_treebuilder_remove(VALUE self, VALUE path)
 
 /*
  *  call-seq:
- *    builder.write(repo) -> oid
+ *    builder.write -> oid
  *
- *  Write +builder+'s content as a tree to the given +repo+
- *  and return the +oid+ for the newly created tree.
+ *  Write +builder+'s content as a tree to the repository
+ *  that owns the builder and return the +oid+ for the
+ *  newly created tree.
  */
-static VALUE rb_git_treebuilder_write(VALUE self, VALUE rb_repo)
+static VALUE rb_git_treebuilder_write(VALUE self)
 {
 	git_treebuilder *builder;
-	git_repository *repo;
 	git_oid written_id;
 	int error;
 
-	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
-
 	Data_Get_Struct(self, git_treebuilder, builder);
 
-	error = git_treebuilder_write(&written_id, repo, builder);
+	error = git_treebuilder_write(&written_id, builder);
 	rugged_exception_check(error);
 
 	return rugged_create_oid(&written_id);
@@ -827,13 +826,12 @@ void Init_rugged_tree(void)
 	rb_define_singleton_method(rb_cRuggedTree, "diff", rb_git_tree_diff_, -1);
 
 	rb_cRuggedTreeBuilder = rb_define_class_under(rb_cRuggedTree, "Builder", rb_cObject);
-	rb_define_alloc_func(rb_cRuggedTreeBuilder, rb_git_treebuilder_allocate);
-	rb_define_method(rb_cRuggedTreeBuilder, "initialize", rb_git_treebuilder_init, -1);
+	rb_define_singleton_method(rb_cRuggedTreeBuilder, "new", rb_git_treebuilder_new, -1);
 	rb_define_method(rb_cRuggedTreeBuilder, "clear", rb_git_treebuilder_clear, 0);
 	rb_define_method(rb_cRuggedTreeBuilder, "[]", rb_git_treebuilder_get, 1);
 	rb_define_method(rb_cRuggedTreeBuilder, "insert", rb_git_treebuilder_insert, 1);
 	rb_define_method(rb_cRuggedTreeBuilder, "<<", rb_git_treebuilder_insert, 1);
 	rb_define_method(rb_cRuggedTreeBuilder, "remove", rb_git_treebuilder_remove, 1);
-	rb_define_method(rb_cRuggedTreeBuilder, "write", rb_git_treebuilder_write, 1);
+	rb_define_method(rb_cRuggedTreeBuilder, "write", rb_git_treebuilder_write, 0);
 	rb_define_method(rb_cRuggedTreeBuilder, "reject!", rb_git_treebuilder_filter, 0);
 }
