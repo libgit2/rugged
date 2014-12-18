@@ -93,9 +93,9 @@ class TestCommit < Rugged::TestCase
              :oid  => "1385f264afb75a56a5bec74243be9b367ba4ca08",
              :filemode => 33188}
 
-    builder = Rugged::Tree::Builder.new
+    builder = Rugged::Tree::Builder.new(@repo)
     builder << entry
-    tree_oid = builder.write(@repo)
+    tree_oid = builder.write
 
     person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
 
@@ -154,9 +154,9 @@ class TestCommit < Rugged::TestCase
              :oid  => "1385f264afb75a56a5bec74243be9b367ba4ca08",
              :filemode => 33188}
 
-    builder = Rugged::Tree::Builder.new
+    builder = Rugged::Tree::Builder.new(@repo)
     builder << entry
-    tree_oid = builder.write(@repo)
+    tree_oid = builder.write
 
     person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
 
