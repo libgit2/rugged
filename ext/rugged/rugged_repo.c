@@ -255,7 +255,8 @@ cleanup:
 
 /*
  *  call-seq:
- *    Repository.bare(path, options = {}) -> repository
+ *    Repository.bare(path[, alternates]) -> repository OR
+ *    Repository.bare(path[, options]) -> repository
  *
  *  Open a bare Git repository at +path+ and return a +Repository+
  *  object representing it.
@@ -263,6 +264,11 @@ cleanup:
  *  This is faster than Rugged::Repository.new, as it won't attempt to perform
  *  any +.git+ directory discovery, won't try to load the config options to
  *  determine whether the repository is bare and won't try to load the workdir.
+ *
+ *  Optionally, you can pass a list of alternate object folders or an options Hash.
+ *
+ *    Rugged::Repository.bare(path, ['./other/repo/.git/objects'])
+ *    Rugged::Repository.bare(path, opts)
  *
  *  The following options can be passed in the +options+ Hash:
  *
@@ -276,17 +282,23 @@ static VALUE rb_git_repo_open_bare(int argc, VALUE *argv, VALUE klass)
 {
 	git_repository *repo = NULL;
 	int error = 0;
-	VALUE rb_path, rb_options;
+	VALUE rb_path, rb_options, rb_alternates = 0;
 
-	rb_scan_args(argc, argv, "10:", &rb_path, &rb_options);
+	rb_scan_args(argc, argv, "11", &rb_path, &rb_options);
 
-	if (!NIL_P(rb_options)) {
+	if (!NIL_P(rb_options) && TYPE(rb_options) == T_ARRAY)
+		rb_alternates = rb_options;
+
+	if (!NIL_P(rb_options) && TYPE(rb_options) == T_HASH) {
 		/* Check for `:backend` */
 		VALUE rb_backend = rb_hash_aref(rb_options, CSTR2SYM("backend"));
 
 		if (!NIL_P(rb_backend)) {
 			rugged_repo_new_with_backend(&repo, rb_path, rb_backend);
 		}
+
+		/* Check for `:alternates` */
+		rb_alternates = rb_hash_aref(rb_options, CSTR2SYM("alternates"));
 	}
 
 	if (!repo) {
@@ -296,9 +308,8 @@ static VALUE rb_git_repo_open_bare(int argc, VALUE *argv, VALUE klass)
 		rugged_exception_check(error);
 	}
 
-	if (!NIL_P(rb_options)) {
-		/* Check for `:alternates` */
-		load_alternates(repo, rb_hash_aref(rb_options, CSTR2SYM("alternates")));
+	if (rb_alternates) {
+		load_alternates(repo, rb_alternates);
 	}
 
 	return rugged_repo_new(klass, repo);
