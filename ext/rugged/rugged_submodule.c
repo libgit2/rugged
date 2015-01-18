@@ -862,7 +862,7 @@ static VALUE rb_git_submodule_update_rule(VALUE self)
 	git_submodule_update_t update;
 
 	Data_Get_Struct(self, git_submodule, submodule);
-	update = git_submodule_update(submodule);
+	update = git_submodule_update_strategy(submodule);
 
 	return rb_git_subm_update_rule_fromC(update);
 }

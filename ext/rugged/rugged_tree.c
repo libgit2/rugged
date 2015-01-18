@@ -658,7 +658,7 @@ static VALUE rb_git_treebuilder_new(int argc, VALUE *argv, VALUE klass)
 	rugged_check_repo(rb_repo);
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
-	error = git_treebuilder_create(&builder, repo, tree);
+	error = git_treebuilder_new(&builder, repo, tree);
 	rugged_exception_check(error);
 
 	rb_builder = Data_Wrap_Struct(klass, NULL, &rb_git_treebuilder_free, builder);
