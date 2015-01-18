@@ -631,13 +631,13 @@ static void rb_git_treebuilder_free(git_treebuilder *bld)
 
 /*
  *  call-seq:
- *    TreeBuilder.new(repository, [tree])
+ *    Tree::Builder.new(repository, [tree])
  *
- *  Create a new Rugged::Trebuilder instance to write a tree to
+ *  Create a new Rugged::Tree::Builder instance to write a tree to
  *  the given +repository+.
  *
- *  If an optional +tree+ is given, the returned TreeBuilder will be
- *  initialized with the entry of +tree+. Otherwise, the TreeBuilder
+ *  If an optional +tree+ is given, the returned Tree::Builder will be
+ *  initialized with the entry of +tree+. Otherwise, the Tree::Builder
  *  will be empty and has to be filled manually.
  */
 static VALUE rb_git_treebuilder_new(int argc, VALUE *argv, VALUE klass)

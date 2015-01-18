@@ -267,11 +267,11 @@ You can also write trees with the `TreeBuilder`:
 
 ```ruby
 oid = repo.write("This is a blob.", :blob)
-builder = Rugged::Tree::Builder.new
+builder = Rugged::Tree::Builder.new(repo)
 builder << { :type => :blob, :name => "README.md", :oid => oid, :filemode => 0100644 }
 
 options = {}
-options[:tree] = builder.write(repo)
+options[:tree] = builder.write
 
 options[:author] = { :email => "testuser@github.com", :name => 'Test Author', :time => Time.now }
 options[:committer] = { :email => "testuser@github.com", :name => 'Test Author', :time => Time.now }
