@@ -24,6 +24,9 @@
 
 #include "rugged.h"
 #include <git2/sys/repository.h>
+#include <git2/sys/odb_backend.h>
+#include <git2/sys/refdb_backend.h>
+#include <git2/refs.h>
 
 extern VALUE rb_mRugged;
 extern VALUE rb_eRuggedError;
@@ -35,6 +38,7 @@ extern VALUE rb_cRuggedCommit;
 extern VALUE rb_cRuggedTag;
 extern VALUE rb_cRuggedTree;
 extern VALUE rb_cRuggedReference;
+extern VALUE rb_cRuggedBackend;
 
 extern VALUE rb_cRuggedCredPlaintext;
 extern VALUE rb_cRuggedCredSshKey;
@@ -182,9 +186,77 @@ static void load_alternates(git_repository *repo, VALUE rb_alternates)
 	rugged_exception_check(error);
 }
 
+static void rugged_repo_new_with_backend(git_repository **repo, VALUE rb_path, VALUE rb_backend)
+{
+	Check_Type(rb_path, T_STRING);
+	char *path = StringValuePtr(rb_path);
+
+	if(rb_obj_is_kind_of(rb_backend, rb_cRuggedBackend) == Qfalse) {
+		rb_raise(rb_eRuggedError, "Backend must be an instance of Rugged::Backend");
+	}
+
+	rugged_backend *backend;
+	Data_Get_Struct(rb_backend, rugged_backend, backend);
+
+	git_odb *odb = NULL;
+	git_odb_backend *odb_backend = NULL;
+	git_refdb *refdb = NULL;
+	git_refdb_backend *refdb_backend = NULL;
+	git_reference *head = NULL;
+
+	int error = 0;
+
+	error = git_odb_new(&odb);
+	if (error) goto cleanup;
+
+	error = backend->odb_backend(&odb_backend, backend, path);
+	if (error) goto cleanup;
+
+	error = git_odb_add_backend(odb, odb_backend, 1);
+	if (error) goto cleanup;
+
+	error = git_repository_wrap_odb(repo, odb);
+	if (error) goto cleanup;
+
+	error = git_refdb_new(&refdb, *repo);
+	if (error) goto cleanup;
+
+	error = backend->refdb_backend(&refdb_backend, backend, path);
+	if (error) goto cleanup;
+
+	error = git_refdb_set_backend(refdb, refdb_backend);
+	if (error) goto cleanup;
+
+	git_repository_set_refdb(*repo, refdb);
+
+	error = git_reference_lookup(&head, *repo, "HEAD");
+
+	if (error == GIT_ENOTFOUND) {
+		giterr_clear();
+		error = git_reference_symbolic_create(&head, *repo, "HEAD", "refs/heads/master", 0, NULL, NULL);
+	}
+
+	if (!error) {
+		git_reference_free(head);
+	} else goto cleanup;
+
+	return;
+
+cleanup:
+	git_repository_free(*repo);
+	git_odb_free(odb);
+	git_refdb_free(refdb);
+
+	if (odb_backend != NULL) odb_backend->free(odb_backend);
+	if (refdb_backend != NULL) refdb_backend->free(refdb_backend);
+
+	rugged_exception_check(error);
+}
+
 /*
  *  call-seq:
- *    Repository.bare(path[, alternates]) -> repository
+ *    Repository.bare(path[, alternates]) -> repository OR
+ *    Repository.bare(path[, options]) -> repository
  *
  *  Open a bare Git repository at +path+ and return a +Repository+
  *  object representing it.
@@ -193,23 +265,52 @@ static void load_alternates(git_repository *repo, VALUE rb_alternates)
  *  any +.git+ directory discovery, won't try to load the config options to
  *  determine whether the repository is bare and won't try to load the workdir.
  *
- *  Optionally, you can pass a list of alternate object folders.
+ *  Optionally, you can pass a list of alternate object folders or an options Hash.
  *
  *    Rugged::Repository.bare(path, ['./other/repo/.git/objects'])
+ *    Rugged::Repository.bare(path, opts)
+ *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :backend ::
+ *    A Rugged::Backend instance
+ *  :alternates ::
+ *    A list of alternate object folders.
+ *    Rugged::Repository.bare(path, :alternates => ['./other/repo/.git/objects'])
  */
 static VALUE rb_git_repo_open_bare(int argc, VALUE *argv, VALUE klass)
 {
-	git_repository *repo;
+	git_repository *repo = NULL;
 	int error = 0;
-	VALUE rb_path, rb_alternates;
+	VALUE rb_path, rb_options, rb_alternates = 0;
 
-	rb_scan_args(argc, argv, "11", &rb_path, &rb_alternates);
-	Check_Type(rb_path, T_STRING);
+	rb_scan_args(argc, argv, "11", &rb_path, &rb_options);
 
-	error = git_repository_open_bare(&repo, StringValueCStr(rb_path));
-	rugged_exception_check(error);
+	if (!NIL_P(rb_options) && TYPE(rb_options) == T_ARRAY)
+		rb_alternates = rb_options;
 
-	load_alternates(repo, rb_alternates);
+	if (!NIL_P(rb_options) && TYPE(rb_options) == T_HASH) {
+		/* Check for `:backend` */
+		VALUE rb_backend = rb_hash_aref(rb_options, CSTR2SYM("backend"));
+
+		if (!NIL_P(rb_backend)) {
+			rugged_repo_new_with_backend(&repo, rb_path, rb_backend);
+		}
+
+		/* Check for `:alternates` */
+		rb_alternates = rb_hash_aref(rb_options, CSTR2SYM("alternates"));
+	}
+
+	if (!repo) {
+		Check_Type(rb_path, T_STRING);
+
+		error = git_repository_open_bare(&repo, StringValueCStr(rb_path));
+		rugged_exception_check(error);
+	}
+
+	if (rb_alternates) {
+		load_alternates(repo, rb_alternates);
+	}
 
 	return rugged_repo_new(klass, repo);
 }
@@ -260,7 +361,7 @@ static VALUE rb_git_repo_new(int argc, VALUE *argv, VALUE klass)
 
 /*
  *  call-seq:
- *    Repository.init_at(path, is_bare = false) -> repository
+ *    Repository.init_at(path, is_bare = false, opts = {}) -> repository
  *
  *  Initialize a Git repository in +path+. This implies creating all the
  *  necessary files on the FS, or re-initializing an already existing
@@ -272,19 +373,36 @@ static VALUE rb_git_repo_new(int argc, VALUE *argv, VALUE klass)
  *  of +path+. Non-bare repositories are created in a +.git+ folder and
  *  use +path+ as working directory.
  *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :backend ::
+ *    A Rugged::Backend instance
+ *
+ *
  *    Rugged::Repository.init_at('~/repository', :bare) #=> #<Rugged::Repository:0x108849488>
  */
 static VALUE rb_git_repo_init_at(int argc, VALUE *argv, VALUE klass)
 {
-	git_repository *repo;
-	VALUE rb_path, rb_is_bare;
+	git_repository *repo = NULL;
+	VALUE rb_path, rb_is_bare, rb_options;
+	int error;
 
-	rb_scan_args(argc, argv, "11", &rb_path, &rb_is_bare);
+	rb_scan_args(argc, argv, "11:", &rb_path, &rb_is_bare, &rb_options);
 	Check_Type(rb_path, T_STRING);
 
-	rugged_exception_check(
-		git_repository_init(&repo, StringValueCStr(rb_path), RTEST(rb_is_bare))
-	);
+	if (!NIL_P(rb_options)) {
+		/* Check for `:backend` */
+		VALUE rb_backend = rb_hash_aref(rb_options, CSTR2SYM("backend"));
+
+		if (rb_backend && !NIL_P(rb_backend)) {
+			rugged_repo_new_with_backend(&repo, rb_path, rb_backend);
+		}
+	}
+
+	if(!repo) {
+		error =	git_repository_init(&repo, StringValueCStr(rb_path), RTEST(rb_is_bare));
+		rugged_exception_check(error);
+	}
 
 	return rugged_repo_new(klass, repo);
 }
@@ -585,7 +703,7 @@ static VALUE rb_git_repo_merge_bases(VALUE self, VALUE rb_args)
  *  :fastforward ::
  *    The given commit is a fast-forward from HEAD and no merge needs to be
  *    performed. HEAD can simply be set to the given commit.
- *    
+ *
  *  :unborn ::
  *    The HEAD of the current repository is "unborn" and does not point to
  *    a valid commit. No merge can be performed, but the caller may wish
@@ -1116,8 +1234,12 @@ static VALUE rb_git_repo_get_head(VALUE self)
 static VALUE rb_git_repo_path(VALUE self)
 {
 	git_repository *repo;
+	const char *path;
+
 	Data_Get_Struct(self, git_repository, repo);
-	return rb_str_new_utf8(git_repository_path(repo));
+	path = git_repository_path(repo);
+
+	return path ? rb_str_new_utf8(path) : Qnil;
 }
 
 /*
