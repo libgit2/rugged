@@ -20,7 +20,7 @@ if !(MAKE = find_executable('gmake') || find_executable('make'))
 end
 
 CWD = File.expand_path(File.dirname(__FILE__))
-LIBGIT2_DIR = File.join(CWD, '..', '..', 'vendor', 'libgit2')
+LIBGIT2_DIR = File.expand_path(File.join('..', '..', 'vendor', 'libgit2'), CWD)
 
 if arg_config("--use-system-libraries", !!ENV['RUGGED_USE_SYSTEM_LIBRARIES'])
   puts "Building Rugged using system libraries.\n"
