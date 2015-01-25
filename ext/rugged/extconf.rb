@@ -67,7 +67,7 @@ else
     sys(MAKE)
 
     pcfile = File.join(LIBGIT2_BUILD_DIR, "libgit2.pc")
-    $LDFLAGS << " " + `pkg-config --libs --static #{pcfile}`.strip
+    $LDFLAGS << " " + `pkg-config --libs-only-l --static #{pcfile}`.strip
   end
 
   # Prepend the vendored libgit2 build dir to the $DEFLIBPATH.
