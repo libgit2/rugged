@@ -21,6 +21,8 @@ end
 
 CWD = File.expand_path(File.dirname(__FILE__))
 LIBGIT2_DIR = File.expand_path(File.join('..', '..', 'vendor', 'libgit2'), CWD)
+LIBGIT2_BUILD_DIR = File.join(LIBGIT2_DIR, 'build')
+LIBGIT2_INCLUDE_DIR = File.join(LIBGIT2_DIR, 'include')
 
 if arg_config("--use-system-libraries", !!ENV['RUGGED_USE_SYSTEM_LIBRARIES'])
   puts "Building Rugged using system libraries.\n"
@@ -59,16 +61,13 @@ else
     abort "ERROR: pkg-config is required to build Rugged."
   end
 
-  Dir.chdir(LIBGIT2_DIR) do
-    Dir.mkdir("build") if !Dir.exists?("build")
+  Dir.mkdir(LIBGIT2_BUILD_DIR) unless Dir.exists?(LIBGIT2_BUILD_DIR)
+  Dir.chdir(LIBGIT2_BUILD_DIR) do
+    sys("cmake .. -DBUILD_CLAR=OFF -DTHREADSAFE=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS=-fPIC -DCMAKE_BUILD_TYPE=RelWithDebInfo -G \"Unix Makefiles\"")
+    sys(MAKE)
 
-    Dir.chdir("build") do
-      sys("cmake .. -DBUILD_CLAR=OFF -DTHREADSAFE=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS=-fPIC -DCMAKE_BUILD_TYPE=RelWithDebInfo -G \"Unix Makefiles\"")
-      sys(MAKE)
-
-      pcfile = File.join(LIBGIT2_DIR, "build", "libgit2.pc")
-      $LDFLAGS << " " + `pkg-config --libs --static #{pcfile}`.strip
-    end
+    pcfile = File.join(LIBGIT2_BUILD_DIR, "libgit2.pc")
+    $LDFLAGS << " " + `pkg-config --libs --static #{pcfile}`.strip
   end
 
   # Prepend the vendored libgit2 build dir to the $DEFLIBPATH.
@@ -82,8 +81,8 @@ else
   #
   # By putting the path to the vendored libgit2 library at the front of
   # $DEFLIBPATH, we can ensure that our bundled version is always used.
-  $DEFLIBPATH.unshift("#{LIBGIT2_DIR}/build")
-  dir_config('git2', "#{LIBGIT2_DIR}/include", "#{LIBGIT2_DIR}/build")
+  $DEFLIBPATH.unshift(LIBGIT2_BUILD_DIR)
+  dir_config('git2', LIBGIT2_INCLUDE_DIR, LIBGIT2_BUILD_DIR)
 end
 
 unless have_library 'git2' and have_header 'git2.h'
