@@ -210,6 +210,17 @@ module Rugged
       remote_or_url.fetch(*args)
     end
 
+    # Get the tree at a path for a specific revision.
+    #
+    # revision - The String SHA1.
+    # path     - The String file path.
+    #
+    # Returns a String.
+    def tree_at(revision, path)
+      tree = Rugged::Commit.lookup(self, revision).tree
+      tree.path(path)[:oid]
+    end
+
     # Push a list of refspecs to the given remote.
     #
     # refspecs - A list of refspecs that should be pushed to the remote.
