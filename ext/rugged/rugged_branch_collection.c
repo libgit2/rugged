@@ -235,6 +235,7 @@ static VALUE each_branch(int argc, VALUE *argv, VALUE self, int branch_names_onl
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
 	error = git_branch_iterator_new(&iter, repo, filter);
+	rugged_exception_check(error);
 
 	if (branch_names_only) {
 		git_reference *branch;
