@@ -336,7 +336,7 @@ static VALUE rb_git_repo_open_bare(int argc, VALUE *argv, VALUE klass)
  *
  *  Examples:
  *
- *    Rugged::Repository.new('~/test/.git') #=> #<Rugged::Repository:0x108849488>
+ *    Rugged::Repository.new('test/.git') #=> #<Rugged::Repository:0x108849488>
  *    Rugged::Repository.new(path, :alternates => ['./other/repo/.git/objects'])
  */
 static VALUE rb_git_repo_new(int argc, VALUE *argv, VALUE klass)
@@ -379,7 +379,7 @@ static VALUE rb_git_repo_new(int argc, VALUE *argv, VALUE klass)
  *    A Rugged::Backend instance
  *
  *
- *    Rugged::Repository.init_at('~/repository', :bare) #=> #<Rugged::Repository:0x108849488>
+ *    Rugged::Repository.init_at('repository', :bare) #=> #<Rugged::Repository:0x108849488>
  */
 static VALUE rb_git_repo_init_at(int argc, VALUE *argv, VALUE klass)
 {
