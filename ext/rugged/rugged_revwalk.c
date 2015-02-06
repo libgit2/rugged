@@ -227,8 +227,7 @@ static VALUE rb_git_walker_push_range(VALUE self, VALUE range)
 {
 	git_revwalk *walk;
 	Data_Get_Struct(self, git_revwalk, walk);
-	int error = git_revwalk_push_range(walk, StringValuePtr(range));
-	rugged_exception_check(error);
+	rugged_exception_check(git_revwalk_push_range(walk, StringValueCStr(range)));
 	return Qnil;
 }
 
