@@ -645,18 +645,20 @@ static VALUE rb_git_repo_merge_base(VALUE self, VALUE rb_args)
  */
 static VALUE rb_git_repo_merge_bases(VALUE self, VALUE rb_args)
 {
-	int error = GIT_OK, i;
+	int error = GIT_OK;
+	size_t i, len = (size_t)RARRAY_LEN(rb_args);
 	git_repository *repo;
 	git_oidarray bases = {NULL, 0};
-	git_oid *input_array = xmalloc(sizeof(git_oid) * RARRAY_LEN(rb_args));
-	int len = (int)RARRAY_LEN(rb_args);
+	git_oid *input_array;
 
 	VALUE rb_bases;
 
 	if (len < 2)
-		rb_raise(rb_eArgError, "wrong number of arguments (%d for 2+)", len);
+		rb_raise(rb_eArgError, "wrong number of arguments (%ld for 2+)", RARRAY_LEN(rb_args));
 
 	Data_Get_Struct(self, git_repository, repo);
+
+	input_array = xmalloc(sizeof(git_oid) * len);
 
 	for (i = 0; !error && i < len; ++i) {
 		error = rugged_oid_get(&input_array[i], repo, rb_ary_entry(rb_args, i));
