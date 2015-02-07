@@ -251,7 +251,8 @@ static VALUE rb_git_remote_collection_rename(VALUE self, VALUE rb_name_or_remote
 {
 	VALUE rb_repo = rugged_owner(self);
 	git_repository *repo;
-	int i, error, exception;
+	size_t i;
+	int error, exception;
 	git_strarray problems;
 
 	if (!rb_block_given_p())

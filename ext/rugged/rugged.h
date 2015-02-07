@@ -154,6 +154,7 @@ struct rugged_remote_cb_payload
 	VALUE transfer_progress;
 	VALUE update_tips;
 	VALUE credentials;
+	VALUE result;
 	int exception;
 };
 
