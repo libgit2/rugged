@@ -139,7 +139,6 @@ module Rugged
             output.write(line)
           end
         end
-        FileUtils.remove_entry_secure(input_path)
 
         # rename .gitted -> .git in submodule dirs
         submodules.each do |submodule|
@@ -151,6 +150,8 @@ module Rugged
           end
         end
       end
+
+      FileUtils.remove_entry_secure(input_path)
     end
   end
 
