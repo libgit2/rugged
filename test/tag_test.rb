@@ -153,6 +153,11 @@ class AnnotatedTagObjectTest < Rugged::SandboxedTestCase
     })
   end
 
+  def teardown
+    @repo.close
+    super
+  end
+
   def test_annotation
     assert_kind_of Rugged::Tag::Annotation, @annotation
     assert_equal "test tag message\n", @annotation.message

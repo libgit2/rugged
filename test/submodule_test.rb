@@ -6,6 +6,11 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
     @repo = setup_submodule
   end
 
+  def teardown
+    @repo.close
+    super
+  end
+
   class TestException < StandardError
   end
 
