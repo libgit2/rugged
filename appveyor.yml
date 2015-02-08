@@ -11,6 +11,7 @@ install:
   - bundler --version
   - bundle install --deployment
   - choco install pkgconfiglite
+  - git config --global user.name 'The rugged tests are fragile'
 
 build_script:
   - bundle exec rake
