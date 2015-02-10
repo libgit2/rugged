@@ -27,7 +27,7 @@ If you want to build Rugged with HTTPS and SSH support, check out the list of op
 If you're using bundler and want to bundle `libgit2` with Rugged, you can use the `:submodules` option:
 
 ```ruby
-gem 'rugged', git: 'git://github.com/libgit2/rugged.git', branch: 'development', submodules: true
+gem 'rugged', git: 'git://github.com/libgit2/rugged.git', submodules: true
 ```
 
 To load Rugged, you'll usually want to add something like this:
