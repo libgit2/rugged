@@ -44,49 +44,53 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
     submodule_repo = submodule.repository
     assert_instance_of Rugged::Repository, submodule_repo
 
-    assert :none, submodule.ignore_rule
-    assert submodule.path.end_with?('sm_unchanged')
-    assert submodule.url.end_with?('submod2_target')
-    assert_equal 'sm_unchanged', submodule.name
+    begin
+      assert :none, submodule.ignore_rule
+      assert submodule.path.end_with?('sm_unchanged')
+      assert submodule.url.end_with?('submod2_target')
+      assert_equal 'sm_unchanged', submodule.name
 
-    assert_equal oid, submodule.head_oid
-    assert_equal oid, submodule.index_oid
-    assert_equal oid, submodule.workdir_oid
+      assert_equal oid, submodule.head_oid
+      assert_equal oid, submodule.index_oid
+      assert_equal oid, submodule.workdir_oid
 
-    # changed head
-    submodule = @repo.submodules['sm_changed_head']
+      # changed head
+      submodule = @repo.submodules['sm_changed_head']
 
-    assert_equal 'sm_changed_head', submodule.name
-    assert_equal oid, submodule.head_oid
-    assert_equal oid, submodule.index_oid
-    assert_equal '3d9386c507f6b093471a3e324085657a3c2b4247', submodule.workdir_oid
+      assert_equal 'sm_changed_head', submodule.name
+      assert_equal oid, submodule.head_oid
+      assert_equal oid, submodule.index_oid
+      assert_equal '3d9386c507f6b093471a3e324085657a3c2b4247', submodule.workdir_oid
 
-    # added and uncommited
-    submodule = @repo.submodules['sm_added_and_uncommited']
+      # added and uncommited
+      submodule = @repo.submodules['sm_added_and_uncommited']
 
-    assert_equal 'sm_added_and_uncommited', submodule.name
-    assert_nil submodule.head_oid
-    assert_equal oid, submodule.index_oid
-    assert_equal oid, submodule.workdir_oid
+      assert_equal 'sm_added_and_uncommited', submodule.name
+      assert_nil submodule.head_oid
+      assert_equal oid, submodule.index_oid
+      assert_equal oid, submodule.workdir_oid
 
-    # missing commits
-    submodule = @repo.submodules['sm_missing_commits']
-    assert_equal 'sm_missing_commits', submodule.name
-    assert_equal oid, submodule.head_oid
-    assert_equal oid, submodule.index_oid
-    assert_equal '5e4963595a9774b90524d35a807169049de8ccad', submodule.workdir_oid
+      # missing commits
+      submodule = @repo.submodules['sm_missing_commits']
+      assert_equal 'sm_missing_commits', submodule.name
+      assert_equal oid, submodule.head_oid
+      assert_equal oid, submodule.index_oid
+      assert_equal '5e4963595a9774b90524d35a807169049de8ccad', submodule.workdir_oid
 
-    # status checks
-    submodule = @repo.submodules['sm_unchanged']
+      # status checks
+      submodule = @repo.submodules['sm_unchanged']
 
-    expected = [:in_head, :in_index, :in_config, :in_workdir]
-    assert_equal expected, submodule.status
-    assert submodule.in_head?
-    assert submodule.in_index?
-    assert submodule.in_config?
-    assert submodule.in_workdir?
-    assert submodule.unmodified?
-    refute submodule.dirty_workdir?
+      expected = [:in_head, :in_index, :in_config, :in_workdir]
+      assert_equal expected, submodule.status
+      assert submodule.in_head?
+      assert submodule.in_index?
+      assert submodule.in_config?
+      assert submodule.in_workdir?
+      assert submodule.unmodified?
+      refute submodule.dirty_workdir?
+    ensure
+      submodule_repo.close
+    end
   end
 
   def test_submodule_each
@@ -323,7 +327,14 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
     assert File.file?(File.join(@repo.workdir, submod_path, 'README'))
 
     # sets up master as a remote tracking branch
-    assert submodule.repository.branches['master']
-    assert_equal 'origin/master', submodule.repository.branches['master'].upstream.name
+    submodule_repo = submodule.repository
+    assert_instance_of Rugged::Repository, submodule_repo
+
+    begin
+      assert submodule_repo.branches['master']
+      assert_equal 'origin/master', submodule_repo.branches['master'].upstream.name
+    ensure
+      submodule_repo.close
+    end
   end
 end
