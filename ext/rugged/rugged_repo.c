@@ -146,12 +146,6 @@ VALUE rugged_repo_new(VALUE klass, git_repository *repo)
 {
 	VALUE rb_repo = Data_Wrap_Struct(klass, NULL, &rb_git_repo__free, repo);
 
-#ifdef HAVE_RUBY_ENCODING_H
-	/* TODO: set this properly */
-	rb_iv_set(rb_repo, "@encoding",
-		rb_enc_from_encoding(rb_filesystem_encoding()));
-#endif
-
 	rb_iv_set(rb_repo, "@config", Qnil);
 	rb_iv_set(rb_repo, "@index", Qnil);
 
