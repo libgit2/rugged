@@ -176,7 +176,7 @@ static VALUE rb_git_tag_annotation(VALUE self)
 
 	rugged_check_repo(rb_repo);
 	Data_Get_Struct(self, git_reference, ref);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	RUGGED_GET_REPO(rb_repo, repo);
 
 	error = git_reference_resolve(&resolved_ref, ref);
 	rugged_exception_check(error);
@@ -204,7 +204,7 @@ static VALUE rb_git_tag_target(VALUE self)
 
 	rugged_check_repo(rb_repo);
 	Data_Get_Struct(self, git_reference, ref);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	RUGGED_GET_REPO(rb_repo, repo);
 
 	error = git_reference_resolve(&resolved_ref, ref);
 	rugged_exception_check(error);

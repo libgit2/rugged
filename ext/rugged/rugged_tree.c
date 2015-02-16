@@ -423,7 +423,7 @@ static VALUE rb_git_tree_diff_(int argc, VALUE *argv, VALUE self)
 	rb_scan_args(argc, argv, "22", &rb_repo, &rb_self, &rb_other, &rb_options);
 	rugged_parse_diff_options(&opts, rb_options);
 
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	RUGGED_GET_REPO(rb_repo, repo);
 
 	if (!NIL_P(rb_self)) {
 		if (!rb_obj_is_kind_of(rb_self, rb_cRuggedTree))
@@ -501,7 +501,7 @@ static VALUE rb_git_tree_diff_workdir(int argc, VALUE *argv, VALUE self)
 
 	Data_Get_Struct(self, git_tree, tree);
 	owner = rugged_owner(self);
-	Data_Get_Struct(owner, git_repository, repo);
+	RUGGED_GET_REPO(owner, repo);
 
 	error = git_diff_tree_to_workdir(&diff, repo, tree, &opts);
 
@@ -610,7 +610,7 @@ static VALUE rb_git_tree_merge(int argc, VALUE *argv, VALUE self)
 		rb_raise(rb_eTypeError, "Expecting a Rugged::Tree instance");
 
 	Data_Get_Struct(self, git_tree, tree);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	RUGGED_GET_REPO(rb_repo, repo);
 	Data_Get_Struct(rb_other_tree, git_tree, other_tree);
 
 	if (!NIL_P(rb_ancestor_tree))
@@ -656,7 +656,7 @@ static VALUE rb_git_treebuilder_new(int argc, VALUE *argv, VALUE klass)
 	}
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	RUGGED_GET_REPO(rb_repo, repo);
 
 	error = git_treebuilder_new(&builder, repo, tree);
 	rugged_exception_check(error);

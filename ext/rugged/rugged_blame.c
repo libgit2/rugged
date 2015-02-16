@@ -152,7 +152,7 @@ static VALUE rb_git_blame_new(int argc, VALUE *argv, VALUE klass)
 	rb_scan_args(argc, argv, "20:", &rb_repo, &rb_path, &rb_options);
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	RUGGED_GET_REPO(rb_repo, repo);
 
 	Check_Type(rb_path, T_STRING);
 

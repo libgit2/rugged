@@ -640,7 +640,7 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 
 	Data_Get_Struct(self, git_remote, remote);
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	RUGGED_GET_REPO(rb_repo, repo);
 
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &callbacks, &payload);
 
@@ -739,7 +739,7 @@ static VALUE rb_git_remote_push(int argc, VALUE *argv, VALUE self)
 	rugged_rb_ary_to_strarray(rb_refspecs, &refspecs);
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	RUGGED_GET_REPO(rb_repo, repo);
 	Data_Get_Struct(self, git_remote, remote);
 
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &callbacks, &payload);

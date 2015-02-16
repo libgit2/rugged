@@ -62,7 +62,7 @@ static VALUE rb_git_remote_collection_create_anonymous(VALUE self, VALUE rb_url)
 	VALUE rb_repo = rugged_owner(self);
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	RUGGED_GET_REPO(rb_repo, repo);
 
 	Check_Type(rb_url, T_STRING);
 
@@ -98,7 +98,7 @@ static VALUE rb_git_remote_collection_create(VALUE self, VALUE rb_name, VALUE rb
 	VALUE rb_repo = rugged_owner(self);
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	RUGGED_GET_REPO(rb_repo, repo);
 
 	Check_Type(rb_name, T_STRING);
 	Check_Type(rb_url, T_STRING);
@@ -133,7 +133,7 @@ static VALUE rb_git_remote_collection_aref(VALUE self, VALUE rb_name)
 
 	VALUE rb_repo = rugged_owner(self);
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	RUGGED_GET_REPO(rb_repo, repo);
 
 	Check_Type(rb_name, T_STRING);
 
@@ -166,7 +166,7 @@ static VALUE rb_git_remote_collection__each(VALUE self, int only_names)
 
 	rb_repo = rugged_owner(self);
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	RUGGED_GET_REPO(rb_repo, repo);
 
 	error = git_remote_list(&remotes, repo);
 	rugged_exception_check(error);
@@ -267,7 +267,7 @@ static VALUE rb_git_remote_collection_rename(VALUE self, VALUE rb_name_or_remote
 		rb_raise(rb_eTypeError, "Expecting a String or Rugged::Remote instance");
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	RUGGED_GET_REPO(rb_repo, repo);
 
 	error = git_remote_rename(&problems, repo, StringValueCStr(rb_name_or_remote), StringValueCStr(rb_new_name));
 	rugged_exception_check(error);
@@ -307,7 +307,7 @@ static VALUE rb_git_remote_collection_delete(VALUE self, VALUE rb_name_or_remote
 		rb_raise(rb_eTypeError, "Expecting a String or Rugged::Remote instance");
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	RUGGED_GET_REPO(rb_repo, repo);
 
 	error = git_remote_delete(repo, StringValueCStr(rb_name_or_remote));
 	rugged_exception_check(error);

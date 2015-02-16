@@ -44,6 +44,25 @@
 #define rb_str_new_utf8(str) rb_enc_str_new(str, strlen(str), rb_utf8_encoding())
 #define CSTR2SYM(s) (ID2SYM(rb_intern((s))))
 
+VALUE rb_mRugged;
+VALUE rb_eRuggedError;
+
+#define RUGGED_GET_REPO(_obj, _target) \
+	{ \
+		struct rugged_repository * _rugged_repo; \
+		Data_Get_Struct(_obj, struct rugged_repository, _rugged_repo); \
+		if (_rugged_repo->closed) { \
+			rb_raise(rb_eRuggedError, "closed repository"); \
+		} \
+		_target = _rugged_repo->repo; \
+	} \
+
+struct rugged_repository
+{
+	git_repository * repo;
+	int closed;
+};
+
 /*
  * Initialization functions
  */

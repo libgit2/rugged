@@ -52,7 +52,7 @@ static VALUE rb_git_walker_new(VALUE klass, VALUE rb_repo)
 	git_revwalk *walk;
 	int error;
 
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	RUGGED_GET_REPO(rb_repo, repo);
 
 	error = git_revwalk_new(&walk, repo);
 	rugged_exception_check(error);
