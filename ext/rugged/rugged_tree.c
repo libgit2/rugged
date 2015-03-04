@@ -95,7 +95,7 @@ static VALUE rb_git_tree_entrycount(VALUE self)
 
 static int rugged__treecount_cb(const char *root, const git_tree_entry *entry, void *payload)
 {
-	int *count = (int *)payload;
+	unsigned int *count = (int *)payload;
 
 	if(git_tree_entry_type(entry) == GIT_OBJ_TREE) {
 		return 0;
@@ -116,7 +116,7 @@ static VALUE rb_git_tree_entrycount_recursive(VALUE self)
 {
 	git_tree *tree;
 	Data_Get_Struct(self, git_tree, tree);
-	volatile int count = 0;
+	volatile unsigned int count = 0;
 	int error;
 
 	error = git_tree_walk(tree, GIT_TREEWALK_PRE, &rugged__treecount_cb, (void *)&count);
