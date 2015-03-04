@@ -96,7 +96,6 @@ static VALUE rb_git_tree_entrycount(VALUE self)
 static int rugged__treecount_cb(const char *root, const git_tree_entry *entry, void *payload)
 {
 	int *count = (int *)payload;
-  printf("%s: %d\n", git_tree_entry_name(entry), git_tree_entry_type(entry));
 
   if(git_tree_entry_type(entry) == GIT_OBJ_TREE) {
     return 0;
