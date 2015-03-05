@@ -50,6 +50,9 @@ class TreeTest < Rugged::TestCase
     assert_equal 6, @tree.count_recursive
     assert_equal 5, @tree.count_recursive(5)
     assert_equal 6, @tree.count_recursive(10)
+    assert_raises(TypeError) do
+      @tree.count_recursive("NaN")
+    end
     assert_equal "1385f264afb75a56a5bec74243be9b367ba4ca08", @tree[0][:oid]
     assert_equal "fa49b077972391ad58037050f2a75f74e3671e92", @tree[1][:oid]
   end

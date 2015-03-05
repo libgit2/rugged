@@ -129,14 +129,14 @@ static VALUE rb_git_tree_entrycount_recursive(int argc, VALUE* argv, VALUE self)
 	if (rb_scan_args(argc, argv, "01", &rbLimit) == 0)
 		rbLimit = Qnil;
 
-	if (NIL_P(rbLimit))
-		payload.limit = -1;
-	else if (TYPE(rbLimit) != T_FIXNUM)
-		rb_raise(rb_eTypeError, "limit must be a Fixnum");
-	else
-		payload.limit = FIX2INT(rbLimit);
-
+	payload.limit = -1;
 	payload.count = 0;
+
+	if (!NIL_P(rbLimit)) {
+		Check_Type(rbLimit, T_FIXNUM);
+		payload.limit = FIX2INT(rbLimit);
+	}
+
 
 	error = git_tree_walk(tree, GIT_TREEWALK_PRE, &rugged__treecount_cb, (void *)&payload);
 
