@@ -93,14 +93,16 @@ static VALUE rb_git_tree_entrycount(VALUE self)
 	return INT2FIX(git_tree_entrycount(tree));
 }
 
-static int rugged__treecount_cb(const char *root, const git_tree_entry *entry, void *payload)
+static int rugged__treecount_cb(const char *root, const git_tree_entry *entry, void *data)
 {
-	unsigned int *count = (unsigned int *)payload;
+	struct rugged_treecount_cb_payload *payload = data;
 
-	if(git_tree_entry_type(entry) == GIT_OBJ_TREE) {
+	if (payload->limit >= 0 && payload->count >= payload->limit)
+		return -1;
+	else if(git_tree_entry_type(entry) == GIT_OBJ_TREE)
 		return 0;
-	} else {
-		++(*count);
+	else {
+		++(payload->count);
 		return 1;
 	}
 }
@@ -112,18 +114,36 @@ static int rugged__treecount_cb(const char *root, const git_tree_entry *entry, v
  *
  *  Return the number of blobs contained in the tree and all subtrees.
  */
-static VALUE rb_git_tree_entrycount_recursive(VALUE self)
+static VALUE rb_git_tree_entrycount_recursive(int argc, VALUE* argv, VALUE self)
 {
 	git_tree *tree;
 	Data_Get_Struct(self, git_tree, tree);
-	volatile unsigned int count = 0;
 	int error;
+	struct rugged_treecount_cb_payload payload;
+	VALUE rbLimit;
 
-	error = git_tree_walk(tree, GIT_TREEWALK_PRE, &rugged__treecount_cb, (void *)&count);
+	if (rb_scan_args(argc, argv, "01", &rbLimit) == 0)
+		rbLimit = Qnil;
+
+	if (NIL_P(rbLimit))
+		payload.limit = -1;
+	else if (TYPE(rbLimit) != T_FIXNUM)
+		rb_raise(rb_eTypeError, "limit must be a Fixnum");
+	else
+		payload.limit = FIX2INT(rbLimit);
+
+	payload.count = 0;
+
+	error = git_tree_walk(tree, GIT_TREEWALK_PRE, &rugged__treecount_cb, (void *)&payload);
+
+	if(error && giterr_last()->klass == GITERR_CALLBACK) {
+		giterr_clear();
+		error = 0;
+	}
 
 	rugged_exception_check(error);
 
-	return INT2FIX(count);
+	return INT2FIX(payload.count);
 }
 
 /*
@@ -846,7 +866,7 @@ void Init_rugged_tree(void)
 	 */
 	rb_cRuggedTree = rb_define_class_under(rb_mRugged, "Tree", rb_cRuggedObject);
 	rb_define_method(rb_cRuggedTree, "count", rb_git_tree_entrycount, 0);
-	rb_define_method(rb_cRuggedTree, "count_recursive", rb_git_tree_entrycount_recursive, 0);
+	rb_define_method(rb_cRuggedTree, "count_recursive", rb_git_tree_entrycount_recursive, -1);
 	rb_define_method(rb_cRuggedTree, "length", rb_git_tree_entrycount, 0);
 	rb_define_method(rb_cRuggedTree, "get_entry", rb_git_tree_get_entry, 1);
 	rb_define_method(rb_cRuggedTree, "get_entry_by_oid", rb_git_tree_get_entry_by_oid, 1);
