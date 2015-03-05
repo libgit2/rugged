@@ -149,8 +149,8 @@ struct rugged_cb_payload
 
 struct rugged_treecount_cb_payload
 {
-	unsigned int count;
-	unsigned int limit;
+	int count;
+	int limit;
 };
 
 struct rugged_remote_cb_payload
