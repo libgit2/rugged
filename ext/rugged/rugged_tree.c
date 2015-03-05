@@ -109,10 +109,14 @@ static int rugged__treecount_cb(const char *root, const git_tree_entry *entry, v
 
 /*
  *  call-seq:
- *    tree.count_recursive -> count
- *    tree.length_recursive -> count
+ *    tree.count_recursive(limit=nil) -> count
  *
- *  Return the number of blobs contained in the tree and all subtrees.
+ *  `limit` - The maximum number of blobs to the count in the repository.
+ *  Rugged will stop walking the tree after `limit` items to avoid long
+ *  execution times.
+ *
+ *  Return the number of blobs (up to the limit) contained in the tree and
+ *  all subtrees.
  */
 static VALUE rb_git_tree_entrycount_recursive(int argc, VALUE* argv, VALUE self)
 {
