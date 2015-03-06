@@ -93,6 +93,12 @@ static VALUE rb_git_tree_entrycount(VALUE self)
 	return INT2FIX(git_tree_entrycount(tree));
 }
 
+struct rugged_treecount_cb_payload
+{
+	int count;
+	int limit;
+};
+
 static int rugged__treecount_cb(const char *root, const git_tree_entry *entry, void *data)
 {
 	struct rugged_treecount_cb_payload *payload = data;

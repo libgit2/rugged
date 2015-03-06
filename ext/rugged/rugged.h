@@ -147,12 +147,6 @@ struct rugged_cb_payload
     int exception;
 };
 
-struct rugged_treecount_cb_payload
-{
-	int count;
-	int limit;
-};
-
 struct rugged_remote_cb_payload
 {
 	VALUE progress;
