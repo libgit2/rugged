@@ -126,8 +126,7 @@ static VALUE rb_git_tree_entrycount_recursive(int argc, VALUE* argv, VALUE self)
 	struct rugged_treecount_cb_payload payload;
 	VALUE rb_limit;
 
-	if (rb_scan_args(argc, argv, "01", &rb_limit) == 0)
-		rb_limit = Qnil;
+	rb_scan_args(argc, argv, "01", &rb_limit);
 
 	payload.limit = -1;
 	payload.count = 0;
