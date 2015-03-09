@@ -93,6 +93,69 @@ static VALUE rb_git_tree_entrycount(VALUE self)
 	return INT2FIX(git_tree_entrycount(tree));
 }
 
+struct rugged_treecount_cb_payload
+{
+	int count;
+	int limit;
+};
+
+static int rugged__treecount_cb(const char *root, const git_tree_entry *entry, void *data)
+{
+	struct rugged_treecount_cb_payload *payload = data;
+
+	if (payload->limit >= 0 && payload->count >= payload->limit) {
+		return -1;
+	} else if(git_tree_entry_type(entry) == GIT_OBJ_TREE) {
+		return 0;
+	} else {
+		++(payload->count);
+		return 1;
+	}
+}
+
+/*
+ *  call-seq:
+ *    tree.count_recursive(limit=nil) -> count
+ *
+ *  `limit` - The maximum number of blobs to the count in the repository.
+ *  Rugged will stop walking the tree after `limit` items to avoid long
+ *  execution times.
+ *
+ *  Return the number of blobs (up to the limit) contained in the tree and
+ *  all subtrees.
+ */
+static VALUE rb_git_tree_entrycount_recursive(int argc, VALUE* argv, VALUE self)
+{
+	git_tree *tree;
+	int error;
+	struct rugged_treecount_cb_payload payload;
+	VALUE rb_limit;
+
+	Data_Get_Struct(self, git_tree, tree);
+
+	rb_scan_args(argc, argv, "01", &rb_limit);
+
+	payload.limit = -1;
+	payload.count = 0;
+
+	if (!NIL_P(rb_limit)) {
+		Check_Type(rb_limit, T_FIXNUM);
+		payload.limit = FIX2INT(rb_limit);
+	}
+
+
+	error = git_tree_walk(tree, GIT_TREEWALK_PRE, &rugged__treecount_cb, (void *)&payload);
+
+	if (error && giterr_last()->klass == GITERR_CALLBACK) {
+		giterr_clear();
+		error = 0;
+	}
+
+	rugged_exception_check(error);
+
+	return INT2FIX(payload.count);
+}
+
 /*
  *  call-seq:
  *    tree[e] -> entry
@@ -813,6 +876,7 @@ void Init_rugged_tree(void)
 	 */
 	rb_cRuggedTree = rb_define_class_under(rb_mRugged, "Tree", rb_cRuggedObject);
 	rb_define_method(rb_cRuggedTree, "count", rb_git_tree_entrycount, 0);
+	rb_define_method(rb_cRuggedTree, "count_recursive", rb_git_tree_entrycount_recursive, -1);
 	rb_define_method(rb_cRuggedTree, "length", rb_git_tree_entrycount, 0);
 	rb_define_method(rb_cRuggedTree, "get_entry", rb_git_tree_get_entry, 1);
 	rb_define_method(rb_cRuggedTree, "get_entry_by_oid", rb_git_tree_get_entry_by_oid, 1);
