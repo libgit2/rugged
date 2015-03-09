@@ -145,7 +145,7 @@ static VALUE rb_git_tree_entrycount_recursive(int argc, VALUE* argv, VALUE self)
 
 	error = git_tree_walk(tree, GIT_TREEWALK_PRE, &rugged__treecount_cb, (void *)&payload);
 
-	if(error && giterr_last()->klass == GITERR_CALLBACK) {
+	if (error && giterr_last()->klass == GITERR_CALLBACK) {
 		giterr_clear();
 		error = 0;
 	}
