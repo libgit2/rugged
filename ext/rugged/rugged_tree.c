@@ -103,11 +103,11 @@ static int rugged__treecount_cb(const char *root, const git_tree_entry *entry, v
 {
 	struct rugged_treecount_cb_payload *payload = data;
 
-	if (payload->limit >= 0 && payload->count >= payload->limit)
+	if (payload->limit >= 0 && payload->count >= payload->limit) {
 		return -1;
-	else if(git_tree_entry_type(entry) == GIT_OBJ_TREE)
+	} else if(git_tree_entry_type(entry) == GIT_OBJ_TREE) {
 		return 0;
-	else {
+	} else {
 		++(payload->count);
 		return 1;
 	}
