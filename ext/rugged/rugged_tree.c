@@ -127,10 +127,11 @@ static int rugged__treecount_cb(const char *root, const git_tree_entry *entry, v
 static VALUE rb_git_tree_entrycount_recursive(int argc, VALUE* argv, VALUE self)
 {
 	git_tree *tree;
-	Data_Get_Struct(self, git_tree, tree);
 	int error;
 	struct rugged_treecount_cb_payload payload;
 	VALUE rb_limit;
+
+	Data_Get_Struct(self, git_tree, tree);
 
 	rb_scan_args(argc, argv, "01", &rb_limit);
 
