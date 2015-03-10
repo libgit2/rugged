@@ -1,4 +1,14 @@
 
+*   Add `Rugged::Tree#count_recursive`.
+
+    This counts all blobs in a tree, recursively, with an optional limit
+    to bail early. This allows asking things like: "Are there more
+    than 1 million files in this repo?" in a very performant way.
+
+    Fixes #464.
+
+    *Andy Delcambre*
+
 *   Replace `Remote#rename!` with `RemoteCollection#rename`.
 
     This brings the `RemoteCollection` more in line with the API of
