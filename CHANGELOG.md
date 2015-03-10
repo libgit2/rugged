@@ -9,6 +9,37 @@
 
     *Andy Delcambre*
 
+*   Update bundled libgit2 to 0.22.1.
+
+    See https://github.com/libgit2/libgit2/releases/tag/v0.22.0 and
+    https://github.com/libgit2/libgit2/releases/tag/v0.22.1 for a list
+    of fixed issues and new features.
+
+    *Arthur Schreiber*
+
+*   Add missing handling of libgit2 errors in `Rugged::BranchCollection#each`
+    and `Rugged::BranchCollection#each_name`.
+
+    Fixes #457.
+
+    *aiionx*
+
+*   The `Rugged::Tree::Builder` API was changed to account for libgit2 changes.
+
+    When creating a new `Rugged::Tree::Builder` instance through
+    `Rugged::Tree::Builder.new` you have to pass a repository instance,
+    while `Rugged::Tree::Builder#write` does not take any arguments anymore.
+
+    *Vicent Martí*
+
+*   Add alternative backend support (experimental).
+
+    Bare repositories can now be stored using an alternative backend.
+
+    Fixes #410.
+
+    *Viktor Charypar*
+
 *   Replace `Remote#rename!` with `RemoteCollection#rename`.
 
     This brings the `RemoteCollection` more in line with the API of
@@ -20,10 +51,6 @@
     `RemoteCollection#create_anonymous` and `RemoteCollection#create`,
     as the underlying function `git_remote_supported_url()` was removed
     from libgit2.
-
-    *Arthur Schreiber*
-
-*   Update to the latest libgit2 version (ce8822cb409917d0201f359cabe3ae55d25895da).
 
     *Arthur Schreiber*
 
