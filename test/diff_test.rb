@@ -314,80 +314,88 @@ class TreeToWorkdirDiffTest < Rugged::SandboxedTestCase
 
   def test_diff_merge
     repo = sandbox_init("status")
-    index = repo.index
+    begin
+      index = repo.index
 
-    a = Rugged::Commit.lookup(repo, "26a125ee1bf").tree
+      a = Rugged::Commit.lookup(repo, "26a125ee1bf").tree
 
-    # merge diffs to simulate "git diff 26a125ee1bf"
+      # merge diffs to simulate "git diff 26a125ee1bf"
 
-    diff  = a.diff(index, :include_ignored => true, :include_untracked => true)
-    diff2 = index.diff(:include_ignored => true, :include_untracked => true)
-    diff.merge!(diff2)
+      diff  = a.diff(index, :include_ignored => true, :include_untracked => true)
+      diff2 = index.diff(:include_ignored => true, :include_untracked => true)
+      diff.merge!(diff2)
 
-    deltas = diff.deltas
-    patches = diff.patches
-    hunks = patches.map(&:hunks).flatten
-    lines = hunks.map(&:lines).flatten
+      deltas = diff.deltas
+      patches = diff.patches
+      hunks = patches.map(&:hunks).flatten
+      lines = hunks.map(&:lines).flatten
 
-    # expected values differ from "git diff --porcelain 26a125ee1bf"
-    # because that includes the file "staged_delete_modified_file" twice,
-    # once in the deleted list and again the untracked list and libgit2
-    # does not do that with a merged diff (though it would with status)
+      # expected values differ from "git diff --porcelain 26a125ee1bf"
+      # because that includes the file "staged_delete_modified_file" twice,
+      # once in the deleted list and again the untracked list and libgit2
+      # does not do that with a merged diff (though it would with status)
 
-    assert_equal 15, deltas.size
-    assert_equal 15, patches.size
+      assert_equal 15, deltas.size
+      assert_equal 15, patches.size
 
-    assert_equal 2, deltas.select(&:added?).size
-    assert_equal 5, deltas.select(&:deleted?).size
-    assert_equal 4, deltas.select(&:modified?).size
-    assert_equal 1, deltas.select(&:ignored?).size
-    assert_equal 3, deltas.select(&:untracked?).size
+      assert_equal 2, deltas.select(&:added?).size
+      assert_equal 5, deltas.select(&:deleted?).size
+      assert_equal 4, deltas.select(&:modified?).size
+      assert_equal 1, deltas.select(&:ignored?).size
+      assert_equal 3, deltas.select(&:untracked?).size
 
-    assert_equal 11, hunks.size
+      assert_equal 11, hunks.size
 
-    assert_equal 17, lines.size
-    assert_equal 4, lines.select(&:context?).size
-    assert_equal 8, lines.select(&:addition?).size
-    assert_equal 5, lines.select(&:deletion?).size
+      assert_equal 17, lines.size
+      assert_equal 4, lines.select(&:context?).size
+      assert_equal 8, lines.select(&:addition?).size
+      assert_equal 5, lines.select(&:deletion?).size
+    ensure
+      repo.close
+    end
   end
 
   def test_stats
     repo = sandbox_init("status")
-    index = repo.index
+    begin
+      index = repo.index
 
-    a = Rugged::Commit.lookup(repo, "26a125ee1bf").tree
+      a = Rugged::Commit.lookup(repo, "26a125ee1bf").tree
 
-    # merge diffs to simulate "git diff 26a125ee1bf"
+      # merge diffs to simulate "git diff 26a125ee1bf"
 
-    diff  = a.diff(index, :include_ignored => true, :include_untracked => true)
-    diff2 = index.diff(:include_ignored => true, :include_untracked => true)
-    diff.merge!(diff2)
+      diff  = a.diff(index, :include_ignored => true, :include_untracked => true)
+      diff2 = index.diff(:include_ignored => true, :include_untracked => true)
+      diff.merge!(diff2)
 
-    # expected values from: git diff --stat 26a125ee1bf
-    files, adds, dels = diff.stat
-    assert_equal 11, files
-    assert_equal 8, adds
-    assert_equal 5, dels
+      # expected values from: git diff --stat 26a125ee1bf
+      files, adds, dels = diff.stat
+      assert_equal 11, files
+      assert_equal 8, adds
+      assert_equal 5, dels
 
-    # expected per-file values from the diff --stat output plus total lines
-    expected_patch_stat = [
-      [ 0, 1, 1 ], [ 1, 0, 2 ], [ 1, 0, 2 ], [ 0, 1, 1 ], [ 2, 0, 3 ],
-      [ 0, 1, 1 ], [ 0, 1, 1 ], [ 1, 0, 1 ], [ 2, 0, 2 ], [ 0, 1, 1 ],
-      [ 1, 0, 2 ]
-    ]
+      # expected per-file values from the diff --stat output plus total lines
+      expected_patch_stat = [
+        [ 0, 1, 1 ], [ 1, 0, 2 ], [ 1, 0, 2 ], [ 0, 1, 1 ], [ 2, 0, 3 ],
+        [ 0, 1, 1 ], [ 0, 1, 1 ], [ 1, 0, 1 ], [ 2, 0, 2 ], [ 0, 1, 1 ],
+        [ 1, 0, 2 ]
+      ]
 
-    diff.each_patch do |patch|
-      next if [:unmodified, :ignored, :untracked].include? patch.delta.status
+      diff.each_patch do |patch|
+        next if [:unmodified, :ignored, :untracked].include? patch.delta.status
 
-      expected_adds, expected_dels, expected_lines = expected_patch_stat.shift
+        expected_adds, expected_dels, expected_lines = expected_patch_stat.shift
 
-      actual_adds, actual_dels = patch.stat
+        actual_adds, actual_dels = patch.stat
 
-      assert_equal expected_adds, actual_adds
-      assert_equal expected_dels, actual_dels
-      assert_equal expected_adds + expected_dels, patch.changes
+        assert_equal expected_adds, actual_adds
+        assert_equal expected_dels, actual_dels
+        assert_equal expected_adds + expected_dels, patch.changes
 
-      assert_equal expected_lines, patch.lines
+        assert_equal expected_lines, patch.lines
+      end
+    ensure
+      repo.close
     end
   end
 end
