@@ -120,12 +120,6 @@ static git_branch_t parse_branch_type(VALUE rb_filter)
  *    Overwrites the branch with the given +name+, if it already exists,
  *    instead of raising an exception.
  *
- *  :message ::
- *    A single line log message to be appended to the reflog.
- *
- *  :signature ::
- *    The signature to be used for populating the reflog entry.
- *
  *  If a branch with the given +name+ already exists and +:force+ is not +true+,
  *  an exception will be raised.
  *
@@ -137,8 +131,6 @@ static VALUE rb_git_branch_collection_create(int argc, VALUE *argv, VALUE self)
 	git_repository *repo;
 	git_reference *branch;
 	git_commit *target;
-	git_signature *signature = NULL;
-	char *log_message = NULL;
 	int error, force = 0;
 
 	rb_scan_args(argc, argv, "20:", &rb_name, &rb_target, &rb_options);
@@ -150,25 +142,14 @@ static VALUE rb_git_branch_collection_create(int argc, VALUE *argv, VALUE self)
 	Check_Type(rb_target, T_STRING);
 
 	if (!NIL_P(rb_options)) {
-		VALUE rb_val;
-
 		force = RTEST(rb_hash_aref(rb_options, CSTR2SYM("force")));
-
-		rb_val = rb_hash_aref(rb_options, CSTR2SYM("signature"));
-		if (!NIL_P(rb_val))
-			signature = rugged_signature_get(rb_val, repo);
-
-		rb_val = rb_hash_aref(rb_options, CSTR2SYM("message"));
-		if (!NIL_P(rb_val))
-			log_message = StringValueCStr(rb_val);
 	}
 
 	target = (git_commit *)rugged_object_get(repo, rb_target, GIT_OBJ_COMMIT);
 
-	error = git_branch_create(&branch, repo, StringValueCStr(rb_name), target, force, signature, log_message);
+	error = git_branch_create(&branch, repo, StringValueCStr(rb_name), target, force);
 
 	git_commit_free(target);
-	git_signature_free(signature);
 
 	rugged_exception_check(error);
 
@@ -342,12 +323,6 @@ static VALUE rb_git_branch_collection_delete(VALUE self, VALUE rb_name_or_branch
  *    Overwrites the branch with the given +name+, if it already exists,
  *    instead of raising an exception.
  *
- *  :message ::
- *    A single line log message to be appended to the reflog.
- *
- *  :signature ::
- *    The signature to be used for populating the reflog entry.
- *
  *  If a branch with the given +new_name+ already exists and +:force+ is not +true+,
  *  an exception will be raised.
  *
@@ -359,8 +334,6 @@ static VALUE rb_git_branch_collection_move(int argc, VALUE *argv, VALUE self)
 	VALUE rb_repo = rugged_owner(self), rb_name_or_branch, rb_new_branch_name, rb_options;
 	git_reference *old_branch = NULL, *new_branch = NULL;
 	git_repository *repo;
-	git_signature *signature = NULL;
-	char *log_message = NULL;
 	int error, force = 0;
 
 	rb_scan_args(argc, argv, "20:", &rb_name_or_branch, &rb_new_branch_name, &rb_options);
@@ -368,27 +341,16 @@ static VALUE rb_git_branch_collection_move(int argc, VALUE *argv, VALUE self)
 
 	rugged_check_repo(rb_repo);
 	Data_Get_Struct(rb_repo, git_repository, repo);
-	
+
 	error = rugged_branch_lookup(&old_branch, repo, rb_name_or_branch);
 	rugged_exception_check(error);
 
 	if (!NIL_P(rb_options)) {
-		VALUE rb_val;
-
 		force = RTEST(rb_hash_aref(rb_options, CSTR2SYM("force")));
-
-		rb_val = rb_hash_aref(rb_options, CSTR2SYM("signature"));
-		if (!NIL_P(rb_val))
-			signature = rugged_signature_get(rb_val, repo);
-
-		rb_val = rb_hash_aref(rb_options, CSTR2SYM("message"));
-		if (!NIL_P(rb_val))
-			log_message = StringValueCStr(rb_val);
 	}
 
-	error = git_branch_move(&new_branch, old_branch, StringValueCStr(rb_new_branch_name), force, signature, log_message);
+	error = git_branch_move(&new_branch, old_branch, StringValueCStr(rb_new_branch_name), force);
 
-	git_signature_free(signature);
 	git_reference_free(old_branch);
 
 	rugged_exception_check(error);
