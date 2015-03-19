@@ -27,11 +27,11 @@ class OnlineFetchTest < Rugged::OnlineTestCase
 
       @repo.fetch("origin")
 
-      assert_equal 5, @repo.refs.count
       assert_equal [
         "refs/remotes/origin/first-merge",
         "refs/remotes/origin/master",
         "refs/remotes/origin/no-parent",
+        "refs/tags/annotated_tag",
         "refs/tags/blob",
         "refs/tags/commit_tree"
       ], @repo.refs.map(&:name).sort
