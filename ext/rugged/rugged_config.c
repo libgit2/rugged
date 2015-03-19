@@ -87,18 +87,22 @@ static VALUE rb_git_config_new(VALUE klass, VALUE rb_path)
 static VALUE rb_git_config_get(VALUE self, VALUE rb_key)
 {
 	git_config *config;
-	const char *value;
+	git_buf buf = { NULL };
 	int error;
+	VALUE rb_result;
 
 	Data_Get_Struct(self, git_config, config);
 	Check_Type(rb_key, T_STRING);
 
-	error = git_config_get_string(&value, config, StringValueCStr(rb_key));
+	error = git_config_get_string_buf(&buf, config, StringValueCStr(rb_key));
 	if (error == GIT_ENOTFOUND)
 		return Qnil;
 
 	rugged_exception_check(error);
-	return rb_str_new_utf8(value);
+	rb_result = rb_str_new_utf8(buf.ptr);
+	git_buf_free(&buf);
+
+	return rb_result;
 }
 
 /*
