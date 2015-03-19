@@ -1866,10 +1866,10 @@ static void rugged_parse_checkout_options(git_checkout_options *opts, VALUE rb_o
 
 			if (rb_strategy == CSTR2SYM("safe")) {
 				opts->checkout_strategy |= GIT_CHECKOUT_SAFE;
-			} else if (rb_strategy == CSTR2SYM("safe_create")) {
-				opts->checkout_strategy |= GIT_CHECKOUT_SAFE_CREATE;
 			} else if (rb_strategy == CSTR2SYM("force")) {
 				opts->checkout_strategy |= GIT_CHECKOUT_FORCE;
+			} else if (rb_strategy == CSTR2SYM("recreate_missing")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_RECREATE_MISSING;
 			} else if (rb_strategy == CSTR2SYM("allow_conflicts")) {
 				opts->checkout_strategy |= GIT_CHECKOUT_ALLOW_CONFLICTS;
 			} else if (rb_strategy == CSTR2SYM("remove_untracked")) {
@@ -1999,8 +1999,8 @@ static void rugged_parse_checkout_options(git_checkout_options *opts, VALUE rb_o
  *    :safe ::
  *      Allow safe updates that cannot overwrite uncommitted data.
  *
- *    :safe_create ::
- *      Allow safe updates plus creation of missing files.
+ *    :recreate_missing ::
+ *      Allow checkout to recreate missing files.
  *
  *    :force ::
  *      Allow all updates to force working directory to look like index.

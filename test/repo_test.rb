@@ -863,13 +863,13 @@ class RepositoryCheckoutTest < Rugged::SandboxedTestCase
 
   def test_checkout_tree_raises_with_bare_repo
     assert_raises Rugged::RepositoryError do
-      @bare.checkout_tree("HEAD", :strategy => :safe_create)
+      @bare.checkout_tree("HEAD", :strategy => :safe)
     end
   end
 
   def test_checkout_tree_works_with_bare_repo_and_target_directory
     Dir.mktmpdir("alternative") do |dir|
-      @bare.checkout_tree("HEAD", :strategy => :safe_create, :target_directory => dir)
+      @bare.checkout_tree("HEAD", :strategy => [:safe, :recreate_missing], :target_directory => dir)
 
       assert File.exist?(File.join(dir, "README"))
       assert File.exist?(File.join(dir, "new.txt"))
