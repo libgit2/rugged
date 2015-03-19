@@ -32,6 +32,7 @@ class ReferenceTest < Rugged::SandboxedTestCase
     assert_equal [
       "refs/heads/br2",
       "refs/heads/dir",
+      "refs/heads/ident",
       "refs/heads/long-file-name",
       "refs/heads/master",
       "refs/heads/packed",
