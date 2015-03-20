@@ -33,23 +33,28 @@ module Rugged
       super
     end
 
-    def sandbox_fixture(repository)
-      FileUtils.cp_r(File.join(TestCase::LIBGIT2_FIXTURE_DIR, repository), @_sandbox_path)
+    def sandbox_fixture(repository_name)
+      FileUtils.cp_r(File.join(TestCase::LIBGIT2_FIXTURE_DIR, repository_name), @_sandbox_path)
     end
 
-    # Fills the current sandbox folder with the files
-    # found in the given repository
-    def sandbox_init(repository)
-      sandbox_fixture(repository)
-
-      fixture_repo_path = File.join(@_sandbox_path, repository)
-      Dir.chdir(fixture_repo_path) do
+    def prepare_fixture(repository_name)
+      Dir.chdir(File.join(@_sandbox_path, repository_name)) do
         File.rename(".gitted", ".git") if File.exist?(".gitted")
         File.rename("gitattributes", ".gitattributes") if File.exist?("gitattributes")
         File.rename("gitignore", ".gitignore") if File.exist?("gitignore")
       end
+    end
 
-      Rugged::Repository.new(fixture_repo_path)
+    def open_fixture(repository_name)
+      Rugged::Repository.new(File.join(@_sandbox_path, repository_name))
+    end
+
+    # Fills the current sandbox folder with the files
+    # found in the given repository name
+    def sandbox_init(repository_name)
+      sandbox_fixture(repository_name)
+      prepare_fixture(repository_name)
+      open_fixture(repository_name)
     end
 
     def sandbox_clone(repository, name)
@@ -104,32 +109,20 @@ module Rugged
     end
 
     def setup_submodule
-      repository = sandbox_init('submod2')
+      sandbox_fixture('submod2')
+      prepare_fixture('submod2')
+      prepare_fixture(File.join('submod2', 'not'))
+      prepare_fixture(File.join('submod2', 'not-submodule'))
+
       sandbox_fixture('submod2_target')
+      prepare_fixture('submod2_target')
 
-      Dir.chdir(@_sandbox_path) do
-        File.rename(
-          File.join('submod2_target', '.gitted'),
-          File.join('submod2_target', '.git')
-        )
-
-        rewrite_gitmodules(repository.workdir)
-
-        File.rename(
-          File.join('submod2', 'not-submodule', '.gitted'),
-          File.join('submod2', 'not-submodule', '.git')
-        )
-
-        File.rename(
-          File.join('submod2', 'not', '.gitted'),
-          File.join('submod2', 'not', '.git')
-        )
-      end
-
-      repository
+      rewrite_gitmodules('submod2')
+      open_fixture('submod2')
     end
 
-    def rewrite_gitmodules(workdir)
+    def rewrite_gitmodules(repository_name)
+      workdir = File.join(@_sandbox_path, repository_name)
       input_path = File.join(workdir, 'gitmodules')
       output_path = File.join(workdir, '.gitmodules')
       submodules = []
@@ -146,7 +139,6 @@ module Rugged
             output.write(line)
           end
         end
-        FileUtils.remove_entry_secure(input_path)
 
         # rename .gitted -> .git in submodule dirs
         submodules.each do |submodule|
@@ -158,6 +150,8 @@ module Rugged
           end
         end
       end
+
+      FileUtils.remove_entry_secure(input_path)
     end
   end
 

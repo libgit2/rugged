@@ -79,7 +79,7 @@ static VALUE rb_git_note_lookup(int argc, VALUE *argv, VALUE self)
 	Data_Get_Struct(self, git_object, object);
 
 	owner = rugged_owner(self);
-	Data_Get_Struct(owner, git_repository, repo);
+	RUGGED_GET_REPO(owner, repo);
 
 	error = git_note_read(&note, repo, notes_ref, git_object_id(object));
 
@@ -144,7 +144,7 @@ static VALUE rb_git_note_create(VALUE self, VALUE rb_data)
 	Data_Get_Struct(self, git_object, target);
 
 	owner = rugged_owner(self);
-	Data_Get_Struct(owner, git_repository, repo);
+	RUGGED_GET_REPO(owner, repo);
 
 	rb_ref = rb_hash_aref(rb_data, CSTR2SYM("ref"));
 
@@ -227,7 +227,7 @@ static VALUE rb_git_note_remove(int argc, VALUE *argv, VALUE self)
 	Data_Get_Struct(self, git_object, target);
 
 	owner = rugged_owner(self);
-	Data_Get_Struct(owner, git_repository, repo);
+	RUGGED_GET_REPO(owner, repo);
 
 	rb_scan_args(argc, argv, "01", &rb_data);
 
@@ -274,7 +274,7 @@ static int cb_note__each(const git_oid *blob_id, const git_oid *annotated_object
 
 	git_repository *repo;
 
-	Data_Get_Struct(payload->rb_data, git_repository, repo);
+	RUGGED_GET_REPO(payload->rb_data, repo);
 
 	rugged_exception_check(
 		git_object_lookup(&annotated_object, repo, annotated_object_id, GIT_OBJ_ANY)
@@ -314,6 +314,8 @@ static VALUE rb_git_note_each(int argc, VALUE *argv, VALUE self)
 	struct rugged_cb_payload payload = { self, 0 };
 	VALUE rb_notes_ref;
 
+	RUGGED_GET_REPO(self, repo);
+
 	rb_scan_args(argc, argv, "01", &rb_notes_ref);
 
 	if (!rb_block_given_p()) {
@@ -324,8 +326,6 @@ static VALUE rb_git_note_each(int argc, VALUE *argv, VALUE self)
 		Check_Type(rb_notes_ref, T_STRING);
 		notes_ref = StringValueCStr(rb_notes_ref);
 	}
-
-	Data_Get_Struct(self, git_repository, repo);
 
 	error = git_note_foreach(repo, notes_ref, &cb_note__each, &payload);
 
@@ -351,7 +351,7 @@ static VALUE rb_git_note_default_ref_GET(VALUE self)
 	git_repository *repo = NULL;
 	const char * ref_name;
 
-	Data_Get_Struct(self, git_repository, repo);
+	RUGGED_GET_REPO(self, repo);
 
 	rugged_exception_check(
 		git_note_default_ref(&ref_name, repo)

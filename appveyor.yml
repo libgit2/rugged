@@ -1,0 +1,31 @@
+---
+version: "{build}"
+
+clone_depth: 10
+
+install:
+  - SET PATH=C:\Ruby%ruby_version%\DevKit\bin;C:\Ruby%ruby_version%\DevKit\mingw\bin;C:\Ruby%ruby_version%\bin;%PATH%
+  - ruby --version
+  - gem --version
+  - gem install bundler --quiet --no-ri --no-rdoc
+  - bundler --version
+  - bundle install --deployment
+  - choco install pkgconfiglite
+  - git config --global user.name Rugged
+
+build_script:
+  - bundle exec rake
+
+on_success:
+  - bundle exec rake native gem
+
+artifacts:
+  - path: pkg\*.gem
+
+environment:
+  matrix:
+    - ruby_version: "193"
+    - ruby_version: "200"
+    - ruby_version: "200-x64"
+    - ruby_version: "21"
+    - ruby_version: "21-x64"

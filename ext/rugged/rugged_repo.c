@@ -137,20 +137,21 @@ VALUE rugged_raw_read(git_repository *repo, const git_oid *oid)
 	return Data_Wrap_Struct(rb_cRuggedOdbObject, NULL, rb_git__odbobj_free, obj);
 }
 
-void rb_git_repo__free(git_repository *repo)
+void rb_git_repo__free(struct rugged_repository * wrapper)
 {
-	git_repository_free(repo);
+	if (!wrapper->closed) {
+		git_repository_free(wrapper->repo);
+	}
+	xfree(wrapper);
 }
 
 VALUE rugged_repo_new(VALUE klass, git_repository *repo)
 {
-	VALUE rb_repo = Data_Wrap_Struct(klass, NULL, &rb_git_repo__free, repo);
+	struct rugged_repository * wrapper = malloc(sizeof(struct rugged_repository));
+	VALUE rb_repo = Data_Wrap_Struct(klass, NULL, &rb_git_repo__free, wrapper);
 
-#ifdef HAVE_RUBY_ENCODING_H
-	/* TODO: set this properly */
-	rb_iv_set(rb_repo, "@encoding",
-		rb_enc_from_encoding(rb_filesystem_encoding()));
-#endif
+	wrapper->repo = repo;
+	wrapper->closed = 0;
 
 	rb_iv_set(rb_repo, "@config", Qnil);
 	rb_iv_set(rb_repo, "@index", Qnil);
@@ -508,7 +509,7 @@ static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
 		git_repository *repo; \
 		git_##_object *data; \
 		int error; \
-		Data_Get_Struct(self, git_repository, repo); \
+		RUGGED_GET_REPO(self, repo); \
 		error = git_repository_##_object(&data, repo); \
 		rugged_exception_check(error); \
 		rb_data = rugged_##_object##_new(_klass, self, data); \
@@ -526,7 +527,7 @@ static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
 	if (!NIL_P(rugged_owner(rb_data))) \
 		rb_raise(rb_eRuntimeError, \
 			"The given object is already owned by another repository"); \
-	Data_Get_Struct(self, git_repository, repo); \
+	RUGGED_GET_REPO(self, repo); \
 	Data_Get_Struct(rb_data, git_##_object, data); \
 	git_repository_set_##_object(repo, data); \
 	rb_old_data = rb_iv_get(self, "@" #_object); \
@@ -609,10 +610,10 @@ static VALUE rb_git_repo_merge_base(VALUE self, VALUE rb_args)
 	git_oid base, *input_array = xmalloc(sizeof(git_oid) * RARRAY_LEN(rb_args));
 	int len = (int)RARRAY_LEN(rb_args);
 
+	RUGGED_GET_REPO(self, repo);
+
 	if (len < 2)
 		rb_raise(rb_eArgError, "wrong number of arguments (%d for 2+)", len);
-
-	Data_Get_Struct(self, git_repository, repo);
 
 	for (i = 0; !error && i < len; ++i) {
 		error = rugged_oid_get(&input_array[i], repo, rb_ary_entry(rb_args, i));
@@ -656,7 +657,7 @@ static VALUE rb_git_repo_merge_bases(VALUE self, VALUE rb_args)
 	if (len < 2)
 		rb_raise(rb_eArgError, "wrong number of arguments (%ld for 2+)", RARRAY_LEN(rb_args));
 
-	Data_Get_Struct(self, git_repository, repo);
+	RUGGED_GET_REPO(self, repo);
 
 	input_array = xmalloc(sizeof(git_oid) * len);
 
@@ -724,7 +725,7 @@ static VALUE rb_git_repo_merge_analysis(int argc, VALUE *argv, VALUE self)
 
 	rb_scan_args(argc, argv, "10", &rb_their_commit);
 
-	Data_Get_Struct(self, git_repository, repo);
+	RUGGED_GET_REPO(self, repo);
 
 	if (TYPE(rb_their_commit) == T_STRING) {
 		rb_their_commit = rugged_object_rev_parse(self, rb_their_commit, 1);
@@ -799,7 +800,7 @@ static VALUE rb_git_repo_merge_commits(int argc, VALUE *argv, VALUE self)
 		rugged_parse_merge_options(&opts, rb_options);
 	}
 
-	Data_Get_Struct(self, git_repository, repo);
+	RUGGED_GET_REPO(self, repo);
 	Data_Get_Struct(rb_our_commit, git_commit, our_commit);
 	Data_Get_Struct(rb_their_commit, git_commit, their_commit);
 
@@ -826,7 +827,7 @@ static VALUE rb_git_repo_exists(VALUE self, VALUE hex)
 	git_oid oid;
 	int error;
 
-	Data_Get_Struct(self, git_repository, repo);
+	RUGGED_GET_REPO(self, repo);
 	Check_Type(hex, T_STRING);
 
 	error = git_oid_fromstrn(&oid, RSTRING_PTR(hex), RSTRING_LEN(hex));
@@ -856,7 +857,7 @@ static VALUE rb_git_repo_read(VALUE self, VALUE hex)
 	git_oid oid;
 	int error;
 
-	Data_Get_Struct(self, git_repository, repo);
+	RUGGED_GET_REPO(self, repo);
 	Check_Type(hex, T_STRING);
 
 	error = git_oid_fromstr(&oid, StringValueCStr(hex));
@@ -890,7 +891,7 @@ static VALUE rb_git_repo_read_header(VALUE self, VALUE hex)
 	VALUE rb_hash;
 	int error;
 
-	Data_Get_Struct(self, git_repository, repo);
+	RUGGED_GET_REPO(self, repo);
 	Check_Type(hex, T_STRING);
 
 	error = git_oid_fromstr(&oid, StringValueCStr(hex));
@@ -933,7 +934,7 @@ static VALUE rb_git_repo_expand_oids(int argc, VALUE *argv, VALUE self)
 	git_odb *odb;
 	int i, error;
 
-	Data_Get_Struct(self, git_repository, repo);
+	RUGGED_GET_REPO(self, repo);
 
 	rb_scan_args(argc, argv, "11", &rb_oids, &rb_expected_type);
 
@@ -997,7 +998,7 @@ static VALUE rb_git_repo_descendant_of(VALUE self, VALUE rb_commit, VALUE rb_anc
 	git_repository *repo;
 	git_oid commit, ancestor;
 
-	Data_Get_Struct(self, git_repository, repo);
+	RUGGED_GET_REPO(self, repo);
 
 	error = rugged_oid_get(&commit, repo, rb_commit);
 	rugged_exception_check(error);
@@ -1090,7 +1091,7 @@ static VALUE rb_git_repo_write(VALUE self, VALUE rb_buffer, VALUE rub_type)
 
 	git_otype type;
 
-	Data_Get_Struct(self, git_repository, repo);
+	RUGGED_GET_REPO(self, repo);
 	Check_Type(rb_buffer, T_STRING);
 
 	error = git_repository_odb(&odb, repo);
@@ -1115,7 +1116,7 @@ static VALUE rb_git_repo_write(VALUE self, VALUE rb_buffer, VALUE rub_type)
 #define RB_GIT_REPO_GETTER(method) \
 	git_repository *repo; \
 	int error; \
-	Data_Get_Struct(self, git_repository, repo); \
+	RUGGED_GET_REPO(self, repo); \
 	error = git_repository_##method(repo); \
 	rugged_exception_check(error); \
 	return error ? Qtrue : Qfalse; \
@@ -1191,7 +1192,7 @@ static VALUE rb_git_repo_set_head(VALUE self, VALUE rb_head)
 	git_repository *repo;
 	int error;
 
-	Data_Get_Struct(self, git_repository, repo);
+	RUGGED_GET_REPO(self, repo);
 
 	Check_Type(rb_head, T_STRING);
 	error = git_repository_set_head(repo, StringValueCStr(rb_head), NULL, NULL);
@@ -1214,7 +1215,7 @@ static VALUE rb_git_repo_get_head(VALUE self)
 	git_reference *head;
 	int error;
 
-	Data_Get_Struct(self, git_repository, repo);
+	RUGGED_GET_REPO(self, repo);
 
 	error = git_repository_head(&head, repo);
 	if (error == GIT_ENOTFOUND)
@@ -1239,7 +1240,7 @@ static VALUE rb_git_repo_path(VALUE self)
 	git_repository *repo;
 	const char *path;
 
-	Data_Get_Struct(self, git_repository, repo);
+	RUGGED_GET_REPO(self, repo);
 	path = git_repository_path(repo);
 
 	return path ? rb_str_new_utf8(path) : Qnil;
@@ -1263,7 +1264,7 @@ static VALUE rb_git_repo_workdir(VALUE self)
 	git_repository *repo;
 	const char *workdir;
 
-	Data_Get_Struct(self, git_repository, repo);
+	RUGGED_GET_REPO(self, repo);
 	workdir = git_repository_workdir(repo);
 
 	return workdir ? rb_str_new_utf8(workdir) : Qnil;
@@ -1289,7 +1290,7 @@ static VALUE rb_git_repo_set_workdir(VALUE self, VALUE rb_workdir)
 {
 	git_repository *repo;
 
-	Data_Get_Struct(self, git_repository, repo);
+	RUGGED_GET_REPO(self, repo);
 	Check_Type(rb_workdir, T_STRING);
 
 	rugged_exception_check(
@@ -1430,7 +1431,7 @@ static VALUE rb_git_repo_status(int argc, VALUE *argv, VALUE self)
 	VALUE rb_path;
 	git_repository *repo;
 
-	Data_Get_Struct(self, git_repository, repo);
+	RUGGED_GET_REPO(self, repo);
 
 	if (rb_scan_args(argc, argv, "01", &rb_path) == 1) {
 		unsigned int flags;
@@ -1481,7 +1482,7 @@ static VALUE rb_git_repo_each_id(VALUE self)
 	if (!rb_block_given_p())
 		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_id"));
 
-	Data_Get_Struct(self, git_repository, repo);
+	RUGGED_GET_REPO(self, repo);
 
 	error = git_repository_odb(&odb, repo);
 	rugged_exception_check(error);
@@ -1558,7 +1559,7 @@ static VALUE rb_git_repo_reset(int argc, VALUE *argv, VALUE self)
 
 	rb_scan_args(argc, argv, "20:", &rb_target, &rb_reset_type, &rb_options);
 
-	Data_Get_Struct(self, git_repository, repo);
+	RUGGED_GET_REPO(self, repo);
 
 	reset_type = parse_reset_type(rb_reset_type);
 	target = rugged_object_get(repo, rb_target, GIT_OBJ_ANY);
@@ -1612,7 +1613,7 @@ static VALUE rb_git_repo_reset_path(int argc, VALUE *argv, VALUE self)
 	pathspecs.strings = NULL;
 	pathspecs.count = 0;
 
-	Data_Get_Struct(self, git_repository, repo);
+	RUGGED_GET_REPO(self, repo);
 
 	rb_scan_args(argc, argv, "11", &rb_paths, &rb_target);
 
@@ -1643,10 +1644,15 @@ static VALUE rb_git_repo_reset_path(int argc, VALUE *argv, VALUE self)
  */
 static VALUE rb_git_repo_close(VALUE self)
 {
-	git_repository *repo;
-	Data_Get_Struct(self, git_repository, repo);
+	struct rugged_repository *wrapper;
 
-	git_repository__cleanup(repo);
+	Data_Get_Struct(self, struct rugged_repository, wrapper);
+	if (wrapper->closed) {
+		rb_raise(rb_eRuggedError, "closed repository");
+	}
+
+	git_repository_free(wrapper->repo);
+	wrapper->closed = 1;
 
 	return Qnil;
 }
@@ -1663,7 +1669,7 @@ static VALUE rb_git_repo_set_namespace(VALUE self, VALUE rb_namespace)
 	git_repository *repo;
 	int error;
 
-	Data_Get_Struct(self, git_repository, repo);
+	RUGGED_GET_REPO(self, repo);
 
 	if (!NIL_P(rb_namespace)) {
 		Check_Type(rb_namespace, T_STRING);
@@ -1687,7 +1693,7 @@ static VALUE rb_git_repo_get_namespace(VALUE self)
 	git_repository *repo;
 	const char *namespace;
 
-	Data_Get_Struct(self, git_repository, repo);
+	RUGGED_GET_REPO(self, repo);
 
 	namespace = git_repository_get_namespace(repo);
 	return namespace ? rb_str_new_utf8(namespace) : Qnil;
@@ -1710,7 +1716,7 @@ static VALUE rb_git_repo_ahead_behind(VALUE self, VALUE rb_local, VALUE rb_upstr
 	size_t ahead, behind;
 	VALUE rb_result;
 
-	Data_Get_Struct(self, git_repository, repo);
+	RUGGED_GET_REPO(self, repo);
 
 	error = rugged_oid_get(&local, repo, rb_local);
 	rugged_exception_check(error);
@@ -1749,7 +1755,7 @@ static VALUE rb_git_repo_default_signature(VALUE self) {
 	git_signature *signature;
 	VALUE rb_signature;
 
-	Data_Get_Struct(self, git_repository, repo);
+	RUGGED_GET_REPO(self, repo);
 
 	error = git_signature_default(&signature, repo);
 
@@ -2115,7 +2121,7 @@ static VALUE rb_git_checkout_tree(int argc, VALUE *argv, VALUE self)
 		rb_raise(rb_eTypeError, "Expected Rugged::Commit, Rugged::Tag or Rugged::Tree");
 	}
 
-	Data_Get_Struct(self, git_repository, repo);
+	RUGGED_GET_REPO(self, repo);
 	Data_Get_Struct(rb_treeish, git_object, treeish);
 
 	rugged_parse_checkout_options(&opts, rb_options);
@@ -2159,7 +2165,7 @@ static VALUE rb_git_checkout_head(int argc, VALUE *argv, VALUE self)
 
 	rb_scan_args(argc, argv, "00:", &rb_options);
 
-	Data_Get_Struct(self, git_repository, repo);
+	RUGGED_GET_REPO(self, repo);
 
 	rugged_parse_checkout_options(&opts, rb_options);
 
@@ -2196,7 +2202,7 @@ static VALUE rb_git_repo_is_path_ignored(VALUE self, VALUE rb_path) {
 	int error;
 	int ignored;
 
-	Data_Get_Struct(self, git_repository, repo);
+	RUGGED_GET_REPO(self, repo);
 	path = StringValueCStr(rb_path);
 	error = git_ignore_path_is_ignored(&ignored, repo, path);
 	rugged_exception_check(error);
@@ -2252,7 +2258,7 @@ static VALUE rb_git_repo_attributes(int argc, VALUE *argv, VALUE self)
 
 	rb_scan_args(argc, argv, "12", &rb_path, &rb_names, &rb_options);
 
-	Data_Get_Struct(self, git_repository, repo);
+	RUGGED_GET_REPO(self, repo);
 	Check_Type(rb_path, T_STRING);
 
 	if (!NIL_P(rb_options)) {
@@ -2365,7 +2371,7 @@ static VALUE rb_git_repo_cherrypick(int argc, VALUE *argv, VALUE self)
 		rb_raise(rb_eArgError, "Expected a Rugged::Commit.");
 	}
 
-	Data_Get_Struct(self, git_repository, repo);
+	RUGGED_GET_REPO(self, repo);
 	Data_Get_Struct(rb_commit, git_commit, commit);
 
 	rugged_parse_cherrypick_options(&opts, rb_options);

@@ -14,6 +14,11 @@ GEM
       coderay (~> 1.0.5)
       method_source (~> 0.8)
       slop (~> 3.4)
+    pry (0.9.12.2-x86-mingw32)
+      coderay (~> 1.0.5)
+      method_source (~> 0.8)
+      slop (~> 3.4)
+      win32console (~> 1.3)
     rake (10.1.0)
     rake-compiler (0.9.1)
       rake
@@ -220,9 +225,12 @@ GEM
     rubysl-yaml (2.0.4)
     rubysl-zlib (2.0.1)
     slop (3.4.5)
+    win32console (1.3.2-x86-mingw32)
 
 PLATFORMS
   ruby
+  x64-mingw32
+  x86-mingw32
 
 DEPENDENCIES
   minitest (~> 3.0.0)

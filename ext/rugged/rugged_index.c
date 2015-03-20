@@ -652,7 +652,7 @@ static VALUE rb_git_index_writetree(int argc, VALUE *argv, VALUE self)
 	if (rb_scan_args(argc, argv, "01", &rb_repo) == 1) {
 		git_repository *repo = NULL;
 		rugged_check_repo(rb_repo);
-		Data_Get_Struct(rb_repo, git_repository, repo);
+		RUGGED_GET_REPO(rb_repo, repo);
 		error = git_index_write_tree_to(&tree_oid, index, repo);
 	}
 	else {
@@ -805,7 +805,7 @@ static VALUE rb_git_index_diff(int argc, VALUE *argv, VALUE self)
 
 	Data_Get_Struct(self, git_index, index);
 	owner = rugged_owner(self);
-	Data_Get_Struct(owner, git_repository, repo);
+	RUGGED_GET_REPO(owner, repo);
 
 	if (NIL_P(rb_other)) {
 		error = git_diff_index_to_workdir(&diff, repo, index, &opts);
@@ -1084,7 +1084,7 @@ static VALUE rb_git_merge_file(int argc, VALUE *argv, VALUE self)
 	Data_Get_Struct(self, git_index, index);
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	RUGGED_GET_REPO(rb_repo, repo);
 
 	error = git_index_conflict_get(&ancestor, &ours, &theirs, index, StringValueCStr(rb_path));
 	if (error == GIT_ENOTFOUND)

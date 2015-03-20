@@ -287,7 +287,7 @@ static VALUE rb_git_commit_amend(VALUE self, VALUE rb_data)
 	Data_Get_Struct(self, git_commit, commit_to_amend);
 
 	owner = rugged_owner(self);
-	Data_Get_Struct(owner, git_repository, repo);
+	RUGGED_GET_REPO(owner, repo);
 
 	rb_ref = rb_hash_aref(rb_data, CSTR2SYM("update_ref"));
 	if (!NIL_P(rb_ref)) {
@@ -384,7 +384,7 @@ static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 	Check_Type(rb_data, T_HASH);
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	RUGGED_GET_REPO(rb_repo, repo);
 
 	rb_ref = rb_hash_aref(rb_data, CSTR2SYM("update_ref"));
 	if (!NIL_P(rb_ref)) {
@@ -513,7 +513,7 @@ static VALUE rb_git_commit_to_mbox(int argc, VALUE *argv, VALUE self)
 	rb_scan_args(argc, argv, ":", &rb_options);
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	RUGGED_GET_REPO(rb_repo, repo);
 
 	Data_Get_Struct(self, git_commit, commit);
 

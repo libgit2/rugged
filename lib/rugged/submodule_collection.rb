@@ -22,8 +22,13 @@ module Rugged
     # Returns the newly created +submodule+
     def add(url, path, options = {})
       submodule = setup_add(url, path, options)
-      clone_submodule(submodule.repository, options)
-      submodule.finalize_add
+      repo = submodule.repository
+      begin
+        clone_submodule(repo, options)
+        submodule.finalize_add
+      ensure
+        repo.close
+      end
     end
 
     private

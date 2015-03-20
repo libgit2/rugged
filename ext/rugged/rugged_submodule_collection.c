@@ -80,7 +80,7 @@ static VALUE rb_git_submodule_collection_aref(VALUE self, VALUE rb_name)
 	int error;
 
 	VALUE rb_repo = rugged_owner(self);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	RUGGED_GET_REPO(rb_repo, repo);
 
 	Check_Type(rb_name, T_STRING);
 
@@ -106,7 +106,7 @@ static int cb_submodule__each(git_submodule *submodule, const char *name, void *
 	VALUE rb_repo;
 
 	rb_repo = payload->rb_data;
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	RUGGED_GET_REPO(rb_repo, repo);
 
 	/* The submodule passed here has it's refcount decreased just after
 	 * the foreach finishes. The only way to increase that refcount is
@@ -143,7 +143,7 @@ static VALUE rb_git_submodule_collection_each(VALUE self)
 	struct rugged_cb_payload payload;
 
 	VALUE rb_repo = rugged_owner(self);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	RUGGED_GET_REPO(rb_repo, repo);
 
 	if (!rb_block_given_p())
 		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each"));
@@ -202,7 +202,7 @@ static VALUE rb_git_submodule_setup_add(int argc, VALUE *argv, VALUE self)
 	Check_Type(rb_path, T_STRING);
 
 	rb_repo = rugged_owner(self);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	RUGGED_GET_REPO(rb_repo, repo);
 
 	if (!NIL_P(rb_options)) {
 		VALUE rb_val;
