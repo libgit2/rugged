@@ -1,0 +1,17 @@
+environment:
+  matrix:
+    - ruby_version: "193"
+    - ruby_version: "200"
+    - ruby_version: "21"
+
+branches:
+  only:
+    - master
+
+install:
+  - gem install bundler
+  - bundle install
+build_script:
+  - bundle exec rake native
+test_script:
+  - bundle exec rake test
