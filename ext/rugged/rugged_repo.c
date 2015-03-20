@@ -235,7 +235,7 @@ static void rugged_repo_new_with_backend(git_repository **repo, VALUE rb_path, V
 
 	if (error == GIT_ENOTFOUND) {
 		giterr_clear();
-		error = git_reference_symbolic_create(&head, *repo, "HEAD", "refs/heads/master", 0, NULL, NULL);
+		error = git_reference_symbolic_create(&head, *repo, "HEAD", "refs/heads/master", 0, NULL);
 	}
 
 	if (!error) {
@@ -1194,7 +1194,7 @@ static VALUE rb_git_repo_set_head(VALUE self, VALUE rb_head)
 	Data_Get_Struct(self, git_repository, repo);
 
 	Check_Type(rb_head, T_STRING);
-	error = git_repository_set_head(repo, StringValueCStr(rb_head), NULL, NULL);
+	error = git_repository_set_head(repo, StringValueCStr(rb_head));
 	rugged_exception_check(error);
 
 	return Qnil;
@@ -1517,7 +1517,7 @@ static int parse_reset_type(VALUE rb_reset_type)
 
 /*
  *  call-seq:
- *    repo.reset(target, reset_type, options = {}) -> nil
+ *    repo.reset(target, reset_type) -> nil
  *
  *  Sets the current head to the specified commit oid and optionally
  *  resets the index and working tree to match.
@@ -1534,51 +1534,25 @@ static int parse_reset_type(VALUE rb_reset_type)
  *    replaced with the content of the index. (Untracked and ignored files
  *    will be left alone)
  *
- *  The following options can be passed in the +options+ Hash:
- *
- *  :message ::
- *    A single line log message to be appended to the reflog.
- *
- *  :signature ::
- *    The signature to be used for populating the reflog entry.
- *
  *  Examples:
  *
  *    repo.reset('origin/master', :hard) #=> nil
  */
-static VALUE rb_git_repo_reset(int argc, VALUE *argv, VALUE self)
+static VALUE rb_git_repo_reset(VALUE self, VALUE rb_target, VALUE rb_reset_type)
 {
-	VALUE rb_target, rb_reset_type, rb_options;
 	git_repository *repo;
 	int reset_type;
 	git_object *target = NULL;
-	char *log_message = NULL;
-	git_signature *signature = NULL;
 	int error;
-
-	rb_scan_args(argc, argv, "20:", &rb_target, &rb_reset_type, &rb_options);
 
 	Data_Get_Struct(self, git_repository, repo);
 
 	reset_type = parse_reset_type(rb_reset_type);
 	target = rugged_object_get(repo, rb_target, GIT_OBJ_ANY);
 
-	if (!NIL_P(rb_options)) {
-		VALUE rb_val;
-
-		rb_val = rb_hash_aref(rb_options, CSTR2SYM("signature"));
-		if (!NIL_P(rb_val))
-			signature = rugged_signature_get(rb_val, repo);
-
-		rb_val = rb_hash_aref(rb_options, CSTR2SYM("message"));
-		if (!NIL_P(rb_val))
-			log_message = StringValueCStr(rb_val);
-	}
-
-	error = git_reset(repo, target, reset_type, NULL, signature, log_message);
+	error = git_reset(repo, target, reset_type, NULL);
 
 	git_object_free(target);
-	git_signature_free(signature);
 
 	rugged_exception_check(error);
 
@@ -1866,10 +1840,10 @@ static void rugged_parse_checkout_options(git_checkout_options *opts, VALUE rb_o
 
 			if (rb_strategy == CSTR2SYM("safe")) {
 				opts->checkout_strategy |= GIT_CHECKOUT_SAFE;
-			} else if (rb_strategy == CSTR2SYM("safe_create")) {
-				opts->checkout_strategy |= GIT_CHECKOUT_SAFE_CREATE;
 			} else if (rb_strategy == CSTR2SYM("force")) {
 				opts->checkout_strategy |= GIT_CHECKOUT_FORCE;
+			} else if (rb_strategy == CSTR2SYM("recreate_missing")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_RECREATE_MISSING;
 			} else if (rb_strategy == CSTR2SYM("allow_conflicts")) {
 				opts->checkout_strategy |= GIT_CHECKOUT_ALLOW_CONFLICTS;
 			} else if (rb_strategy == CSTR2SYM("remove_untracked")) {
@@ -1999,8 +1973,8 @@ static void rugged_parse_checkout_options(git_checkout_options *opts, VALUE rb_o
  *    :safe ::
  *      Allow safe updates that cannot overwrite uncommitted data.
  *
- *    :safe_create ::
- *      Allow safe updates plus creation of missing files.
+ *    :recreate_missing ::
+ *      Allow checkout to recreate missing files.
  *
  *    :force ::
  *      Allow all updates to force working directory to look like index.
@@ -2429,7 +2403,7 @@ void Init_rugged_repo(void)
 
 	rb_define_method(rb_cRuggedRepo, "path_ignored?", rb_git_repo_is_path_ignored, 1);
 
-	rb_define_method(rb_cRuggedRepo, "reset", rb_git_repo_reset, -1);
+	rb_define_method(rb_cRuggedRepo, "reset", rb_git_repo_reset, 2);
 	rb_define_method(rb_cRuggedRepo, "reset_path", rb_git_repo_reset_path, -1);
 
 	rb_define_method(rb_cRuggedRepo, "namespace=", rb_git_repo_set_namespace, 1);

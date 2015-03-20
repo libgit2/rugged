@@ -614,7 +614,7 @@ void rugged_parse_merge_options(git_merge_options *opts, VALUE rb_options)
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("renames")))) {
-			opts->flags |= GIT_MERGE_TREE_FIND_RENAMES;
+			opts->tree_flags |= GIT_MERGE_TREE_FIND_RENAMES;
 		}
 	}
 }

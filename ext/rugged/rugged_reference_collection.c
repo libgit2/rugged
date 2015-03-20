@@ -58,18 +58,8 @@ static VALUE rb_git_reference_collection_initialize(VALUE self, VALUE repo)
  *    Overwrites the reference with the given +name+, if it already exists,
  *    instead of raising an exception.
  *
- *  :message ::
- *    A single line log message to be appended to the reflog.
- *
- *  :signature ::
- *    The signature to be used for populating the reflog entry.
- *
  *  If a reference with the given +name+ already exists and +:force+ is not +true+,
  *  an exception will be raised.
- *
- *  The +:message+ and +:signature+ options are ignored if the reference does not
- *  belong to the standard set (+HEAD+, +refs/heads/*+, +refs/remotes/*+ or +refs/notes/*+)
- *  and it does not have a reflog.
  */
 static VALUE rb_git_reference_collection_create(int argc, VALUE *argv, VALUE self)
 {
@@ -77,7 +67,6 @@ static VALUE rb_git_reference_collection_create(int argc, VALUE *argv, VALUE sel
 	git_repository *repo;
 	git_reference *ref;
 	git_oid oid;
-	git_signature *signature = NULL;
 	char *log_message = NULL;
 	int error, force = 0;
 
@@ -89,28 +78,21 @@ static VALUE rb_git_reference_collection_create(int argc, VALUE *argv, VALUE sel
 	Check_Type(rb_target, T_STRING);
 
 	if (!NIL_P(rb_options)) {
-		VALUE rb_val;
-
-		force = RTEST(rb_hash_aref(rb_options, CSTR2SYM("force")));
-
-		rb_val = rb_hash_aref(rb_options, CSTR2SYM("signature"));
-		if (!NIL_P(rb_val))
-			signature = rugged_signature_get(rb_val, repo);
-
-		rb_val = rb_hash_aref(rb_options, CSTR2SYM("message"));
+		VALUE rb_val = rb_hash_aref(rb_options, CSTR2SYM("message"));
 		if (!NIL_P(rb_val))
 			log_message = StringValueCStr(rb_val);
+
+		force = RTEST(rb_hash_aref(rb_options, CSTR2SYM("force")));
 	}
 
 	if (git_oid_fromstr(&oid, StringValueCStr(rb_target)) == GIT_OK) {
 		error = git_reference_create(
-			&ref, repo, StringValueCStr(rb_name), &oid, force, signature, log_message);
+			&ref, repo, StringValueCStr(rb_name), &oid, force, log_message);
 	} else {
 		error = git_reference_symbolic_create(
-			&ref, repo, StringValueCStr(rb_name), StringValueCStr(rb_target), force, signature, log_message);
+			&ref, repo, StringValueCStr(rb_name), StringValueCStr(rb_target), force, log_message);
 	}
 
-	git_signature_free(signature);
 	rugged_exception_check(error);
 
 	return rugged_ref_new(rb_cRuggedReference, rb_repo, ref);
@@ -284,18 +266,8 @@ static VALUE rb_git_reference_collection_exist_p(VALUE self, VALUE rb_name_or_re
  *    Overwrites the reference with the given +name+, if it already exists,
  *    instead of raising an exception.
  *
- *  :message ::
- *    A single line log message to be appended to the reflog.
- *
- *  :signature ::
- *    The signature to be used for populating the reflog entry.
- *
  *  If a reference with the given +new_name+ already exists and +:force+ is not +true+,
  *  an exception will be raised.
- *
- *  The +:message+ and +:signature+ options are ignored if the reference does not
- *  belong to the standard set (+HEAD+, +refs/heads/*+, +refs/remotes/*+ or +refs/notes/*+)
- *  and it does not have a reflog.
  */
 static VALUE rb_git_reference_collection_rename(int argc, VALUE *argv, VALUE self)
 {
@@ -303,7 +275,6 @@ static VALUE rb_git_reference_collection_rename(int argc, VALUE *argv, VALUE sel
 	VALUE rb_repo = rugged_owner(self);
 	git_reference *ref, *out = NULL;
 	git_repository *repo;
-	git_signature *signature = NULL;
 	char *log_message = NULL;
 	int error, force = 0;
 
@@ -320,24 +291,17 @@ static VALUE rb_git_reference_collection_rename(int argc, VALUE *argv, VALUE sel
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
 	if (!NIL_P(rb_options)) {
-		VALUE rb_val;
-
-		force = RTEST(rb_hash_aref(rb_options, CSTR2SYM("force")));
-
-		rb_val = rb_hash_aref(rb_options, CSTR2SYM("signature"));
-		if (!NIL_P(rb_val))
-			signature = rugged_signature_get(rb_val, repo);
-
-		rb_val = rb_hash_aref(rb_options, CSTR2SYM("message"));
+		VALUE rb_val = rb_hash_aref(rb_options, CSTR2SYM("message"));
 		if (!NIL_P(rb_val))
 			log_message = StringValueCStr(rb_val);
+
+		force = RTEST(rb_hash_aref(rb_options, CSTR2SYM("force")));
 	}
 
 	if ((error = git_reference_lookup(&ref, repo, StringValueCStr(rb_name_or_ref))) == GIT_OK)
-		error = git_reference_rename(&out, ref, StringValueCStr(rb_new_name), force, signature, log_message);
+		error = git_reference_rename(&out, ref, StringValueCStr(rb_new_name), force, log_message);
 
 	git_reference_free(ref);
-	git_signature_free(signature);
 
 	rugged_exception_check(error);
 
@@ -371,7 +335,6 @@ static VALUE rb_git_reference_collection_update(int argc, VALUE *argv, VALUE sel
 {
 	VALUE rb_repo = rugged_owner(self), rb_name_or_ref, rb_target, rb_options;
 	git_repository *repo = NULL;
-	git_signature *signature = NULL;
 	git_reference *ref = NULL, *out = NULL;
 	char *log_message = NULL;
 	int error;
@@ -391,13 +354,7 @@ static VALUE rb_git_reference_collection_update(int argc, VALUE *argv, VALUE sel
 		rb_raise(rb_eTypeError, "Expecting a String or Rugged::Reference instance");
 
 	if (!NIL_P(rb_options)) {
-		VALUE rb_val;
-
-		rb_val = rb_hash_aref(rb_options, CSTR2SYM("signature"));
-		if (!NIL_P(rb_val))
-			signature = rugged_signature_get(rb_val, repo);
-
-		rb_val = rb_hash_aref(rb_options, CSTR2SYM("message"));
+		VALUE rb_val = rb_hash_aref(rb_options, CSTR2SYM("message"));
 		if (!NIL_P(rb_val))
 			log_message = StringValueCStr(rb_val);
 	}
@@ -414,15 +371,14 @@ static VALUE rb_git_reference_collection_update(int argc, VALUE *argv, VALUE sel
 		error = git_oid_fromstr(&target, StringValueCStr(rb_target));
 		if (error) goto cleanup;
 
-		error = git_reference_set_target(&out, ref, &target, signature, log_message);
+		error = git_reference_set_target(&out, ref, &target, log_message);
 	} else {
-		error = git_reference_symbolic_set_target(&out, ref, StringValueCStr(rb_target), signature, log_message);
+		error = git_reference_symbolic_set_target(&out, ref, StringValueCStr(rb_target), log_message);
 	}
 
 cleanup:
 
 	git_reference_free(ref);
-	git_signature_free(signature);
 	rugged_exception_check(error);
 
 	return rugged_ref_new(rb_cRuggedReference, rb_repo, out);
