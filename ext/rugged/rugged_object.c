@@ -285,7 +285,7 @@ VALUE rugged_object_rev_parse(VALUE rb_repo, VALUE rb_spec, int as_obj)
  *  Find and return a single object inside +repo+ as specified by the
  *  git revision string +str+.
  *
- *  See http://git-scm.com/docs/git-rev-parse.html#_specifying_revisions or 
+ *  See http://git-scm.com/docs/git-rev-parse.html#_specifying_revisions or
  *  <code>man gitrevisions</code> for information on the accepted syntax.
  *
  *  Raises a Rugged::InvalidError if +str+ does not contain a valid revision string.
@@ -301,7 +301,7 @@ VALUE rb_git_object_rev_parse(VALUE klass, VALUE rb_repo, VALUE rb_spec)
  *  Find and return the id of the object inside +repo+ as specified by the
  *  git revision string +str+.
  *
- *  See http://git-scm.com/docs/git-rev-parse.html#_specifying_revisions or 
+ *  See http://git-scm.com/docs/git-rev-parse.html#_specifying_revisions or
  *  <code>man gitrevisions</code> for information on the accepted syntax.
  *
  *  Raises a Rugged::InvalidError if +str+ does not contain a valid revision string.

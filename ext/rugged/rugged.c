@@ -175,7 +175,7 @@ static VALUE rb_git_prettify_message(int argc, VALUE *argv, VALUE self)
 	rb_scan_args(argc, argv, "11", &rb_message, &rb_strip);
 
 	Check_Type(rb_message, T_STRING);
-	
+
 	switch (TYPE(rb_strip)) {
 	case T_FALSE:
 		strip_comments = 0;
@@ -495,4 +495,3 @@ void Init_rugged(void)
 	rb_mShutdownHook = Data_Wrap_Struct(rb_cObject, NULL, &cleanup_cb, NULL);
 	rb_global_variable(&rb_mShutdownHook);
 }
-

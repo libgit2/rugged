@@ -74,7 +74,7 @@ static VALUE rb_git_delta_status_fromC(git_delta_t status)
 static VALUE rb_git_delta_status_char_fromC(git_delta_t status)
 {
 	char status_char[2];
-	
+
 	status_char[0] = git_diff_status_char(status);
 	status_char[1] = '\0';
 

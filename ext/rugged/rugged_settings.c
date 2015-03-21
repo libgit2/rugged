@@ -78,7 +78,7 @@ static VALUE rb_git_set_option(VALUE self, VALUE option, VALUE value)
 		val = NUM2SIZET(value);
 		git_libgit2_opts(GIT_OPT_SET_MWINDOW_SIZE, val);
 	}
-	
+
 	else if (strcmp(opt, "mwindow_mapped_limit") == 0) {
 		size_t val;
 		Check_Type(value, T_FIXNUM);
@@ -123,13 +123,13 @@ static VALUE rb_git_get_option(VALUE self, VALUE option)
 		git_libgit2_opts(GIT_OPT_GET_MWINDOW_SIZE, &val);
 		return SIZET2NUM(val);
 	}
-	
+
 	else if (strcmp(opt, "mwindow_mapped_limit") == 0) {
 		size_t val;
 		git_libgit2_opts(GIT_OPT_GET_MWINDOW_MAPPED_LIMIT, &val);
 		return SIZET2NUM(val);
 	}
-	
+
 	else if (strcmp(opt, "search_path_global") == 0) {
 		return get_search_path(GIT_CONFIG_LEVEL_GLOBAL);
 	}

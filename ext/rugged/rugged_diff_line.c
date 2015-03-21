@@ -58,7 +58,7 @@ VALUE rugged_diff_line_new(const git_diff_line *line)
 			break;
 		case GIT_DIFF_LINE_BINARY:
 			rb_line_origin = CSTR2SYM("binary");
-			break;			
+			break;
 		default:
 			/* FIXME: raise here instead? */
 			rb_line_origin = CSTR2SYM("unknown");
