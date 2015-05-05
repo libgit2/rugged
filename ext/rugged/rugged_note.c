@@ -349,7 +349,8 @@ static VALUE rb_git_note_each(int argc, VALUE *argv, VALUE self)
 static VALUE rb_git_note_default_ref_GET(VALUE self)
 {
 	git_repository *repo = NULL;
-	const char * ref_name;
+	git_buf ref_name = { 0 };
+	VALUE rb_result;
 
 	Data_Get_Struct(self, git_repository, repo);
 
@@ -357,7 +358,11 @@ static VALUE rb_git_note_default_ref_GET(VALUE self)
 		git_note_default_ref(&ref_name, repo)
 	);
 
-	return rb_str_new_utf8(ref_name);
+	rb_result = rb_enc_str_new(ref_name.ptr, ref_name.size, rb_utf8_encoding());
+
+	git_buf_free(&ref_name);
+
+	return rb_result;
 }
 
 void Init_rugged_notes(void)
