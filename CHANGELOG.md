@@ -1,4 +1,13 @@
 
+*   Update bundled libgit2 to 0.22.2.
+
+    See https://github.com/libgit2/libgit2/releases/tag/v0.22.0,
+    https://github.com/libgit2/libgit2/releases/tag/v0.22.1 and
+    https://github.com/libgit2/libgit2/releases/tag/v0.22.2 for a list
+    of fixed issues and new features.
+
+    *Arthur Schreiber*
+
 *   Add `Rugged::Tree#count_recursive`.
 
     This counts all blobs in a tree, recursively, with an optional limit
@@ -8,14 +17,6 @@
     Fixes #464.
 
     *Andy Delcambre*
-
-*   Update bundled libgit2 to 0.22.1.
-
-    See https://github.com/libgit2/libgit2/releases/tag/v0.22.0 and
-    https://github.com/libgit2/libgit2/releases/tag/v0.22.1 for a list
-    of fixed issues and new features.
-
-    *Arthur Schreiber*
 
 *   Add missing handling of libgit2 errors in `Rugged::BranchCollection#each`
     and `Rugged::BranchCollection#each_name`.
