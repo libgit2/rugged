@@ -138,6 +138,13 @@ class WalkerTest < Rugged::TestCase
     sort_list = do_sort(Rugged::SORT_TOPO | Rugged::SORT_REVERSE).reverse
     assert_equal is_toposorted(sort_list), true
   end
+
+  def test_walk_api
+    sha = "9fd738e8f7967c078dceed8190330fc8648ee56a"
+    data = Rugged::Walker.walk(@repo, show: sha).to_a
+    oids = data.sort { |a, b| a.oid <=> b.oid }.map {|a| a.oid[0,5]}.join('.')
+    assert_equal "4a202.5b5b0.84960.9fd73", oids
+  end
 end
 
 # testrepo (the non-bare repo) is the one with non-linear history,

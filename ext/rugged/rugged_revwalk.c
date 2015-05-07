@@ -302,13 +302,6 @@ static VALUE do_walk(VALUE _payload)
 	return Qnil;
 }
 
-static VALUE do_walk_cleanup(VALUE _payload)
-{
-	struct walk_options *w = (struct walk_options *)_payload;
-	git_revwalk_free(w->walk);
-	return Qnil;
-}
-
 /*
  *  call-seq:
  *    Rugged::Walker.walk(repo, options={}) { |commit| block }
@@ -360,8 +353,15 @@ static VALUE rb_git_walk(int argc, VALUE *argv, VALUE self)
 {
 	VALUE rb_repo, rb_options;
 	struct walk_options w;
+	int exception = 0;
 
 	rb_scan_args(argc, argv, "10:", &rb_repo, &rb_options);
+
+	if (!rb_block_given_p()) {
+		ID iter_method = ID2SYM(rb_intern("walk"));
+		return rb_funcall(self, rb_intern("to_enum"), 3,
+			iter_method, rb_repo, rb_options);
+	}
 
 	Data_Get_Struct(rb_repo, git_repository, w.repo);
 	rugged_exception_check(git_revwalk_new(&w.walk, w.repo));
@@ -373,21 +373,31 @@ static VALUE rb_git_walk(int argc, VALUE *argv, VALUE self)
 	w.offset = 0;
 	w.limit = UINT64_MAX;
 
-	if (!NIL_P(w.rb_options)) {
-		rb_ensure(
-			load_all_options, (VALUE)&w,
-			do_walk_cleanup, (VALUE)&w);
-	}
+	if (!NIL_P(w.rb_options))
+		rb_protect(load_all_options, (VALUE)&w, &exception);
 
-	return rb_ensure(
-			do_walk, (VALUE)&w,
-			do_walk_cleanup, (VALUE)&w);
+	if (!exception)
+		rb_protect(do_walk, (VALUE)&w, &exception);
+
+	git_revwalk_free(w.walk);
+
+	if (exception)
+		rb_jump_tag(exception);
+
+	return Qnil;
 }
 
 static VALUE rb_git_walk_with_opts(int argc, VALUE *argv, VALUE self, int oid_only)
 {
 	VALUE rb_options;
 	struct walk_options w;
+
+	rb_scan_args(argc, argv, "01", &rb_options);
+
+	if (!rb_block_given_p()) {
+		ID iter_method = ID2SYM(rb_intern(oid_only ? "each_oid" : "each"));
+		return rb_funcall(self, rb_intern("to_enum"), 2, iter_method, rb_options);
+	}
 
 	Data_Get_Struct(self, git_revwalk, w.walk);
 	w.repo = git_revwalk_repository(w.walk);
@@ -398,13 +408,6 @@ static VALUE rb_git_walk_with_opts(int argc, VALUE *argv, VALUE self, int oid_on
 	w.oid_only = oid_only;
 	w.offset = 0;
 	w.limit = UINT64_MAX;
-
-	rb_scan_args(argc, argv, "01", &rb_options);
-
-	if (!rb_block_given_p()) {
-		ID iter_method = ID2SYM(rb_intern(oid_only ? "each_oid" : "each"));
-		return rb_funcall(self, rb_intern("to_enum"), 2, iter_method, rb_options);
-	}
 
 	if (!NIL_P(rb_options))
 		load_walk_limits(&w, rb_options);
