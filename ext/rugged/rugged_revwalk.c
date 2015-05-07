@@ -206,7 +206,7 @@ static VALUE rb_git_walker_reset(VALUE self)
 }
 
 struct walk_options {
-	VALUE rb_self;
+	VALUE rb_owner;
 	VALUE rb_options;
 
 	git_repository *repo;
@@ -288,7 +288,7 @@ static VALUE do_walk(VALUE _payload)
 			rugged_exception_check(error);
 
 			rb_yield(
-				rugged_object_new(rugged_owner(w->rb_self), (git_object *)commit)
+				rugged_object_new(w->rb_owner, (git_object *)commit)
 			);
 		}
 
@@ -366,7 +366,7 @@ static VALUE rb_git_walk(int argc, VALUE *argv, VALUE self)
 	Data_Get_Struct(rb_repo, git_repository, w.repo);
 	rugged_exception_check(git_revwalk_new(&w.walk, w.repo));
 
-	w.rb_self = self;
+	w.rb_owner = rb_repo;
 	w.rb_options = rb_options;
 
 	w.oid_only = 0;
@@ -392,7 +392,7 @@ static VALUE rb_git_walk_with_opts(int argc, VALUE *argv, VALUE self, int oid_on
 	Data_Get_Struct(self, git_revwalk, w.walk);
 	w.repo = git_revwalk_repository(w.walk);
 
-	w.rb_self = self;
+	w.rb_owner = rugged_owner(self);
 	w.rb_options = Qnil;
 
 	w.oid_only = oid_only;
