@@ -264,8 +264,7 @@ static VALUE rb_git_remote_ls(int argc, VALUE *argv, VALUE self)
 
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &callbacks, &payload);
 
-	if ((error = git_remote_set_callbacks(remote, &callbacks)) ||
-	    (error = git_remote_connect(remote, GIT_DIRECTION_FETCH)) ||
+	if ((error = git_remote_connect(remote, GIT_DIRECTION_FETCH, &callbacks)) ||
 	    (error = git_remote_ls(&heads, &heads_len, remote)))
 		goto cleanup;
 
@@ -321,28 +320,6 @@ static VALUE rb_git_remote_url(VALUE self)
 
 /*
  *  call-seq:
- *    remote.url = url -> url
- *
- *  Sets the remote's url without persisting it in the config.
- *  Existing connections will not be updated.
- *
- *    remote.url = 'git://github.com/libgit2/rugged.git' #=> "git://github.com/libgit2/rugged.git"
- */
-static VALUE rb_git_remote_set_url(VALUE self, VALUE rb_url)
-{
-	git_remote *remote;
-
-	Check_Type(rb_url, T_STRING);
-	Data_Get_Struct(self, git_remote, remote);
-
-	rugged_exception_check(
-		git_remote_set_url(remote, StringValueCStr(rb_url))
-	);
-	return rb_url;
-}
-
-/*
- *  call-seq:
  *    remote.push_url() -> string or nil
  *
  *  Returns the remote's url for pushing or nil if no special url for
@@ -372,13 +349,18 @@ static VALUE rb_git_remote_push_url(VALUE self)
  */
 static VALUE rb_git_remote_set_push_url(VALUE self, VALUE rb_url)
 {
+	VALUE rb_repo = rugged_owner(self);
 	git_remote *remote;
+	git_repository *repo;
+
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
 
 	Check_Type(rb_url, T_STRING);
 	Data_Get_Struct(self, git_remote, remote);
 
 	rugged_exception_check(
-		git_remote_set_pushurl(remote, StringValueCStr(rb_url))
+		git_remote_set_pushurl(repo, git_remote_name(remote), StringValueCStr(rb_url))
 	);
 
 	return rb_url;
@@ -425,86 +407,6 @@ static VALUE rb_git_remote_fetch_refspecs(VALUE self)
 static VALUE rb_git_remote_push_refspecs(VALUE self)
 {
 	return rb_git_remote_refspecs(self, GIT_DIRECTION_PUSH);
-}
-
-static VALUE rb_git_remote_add_refspec(VALUE self, VALUE rb_refspec, git_direction direction)
-{
-	git_remote *remote;
-	int error = 0;
-
-	Data_Get_Struct(self, git_remote, remote);
-
-	Check_Type(rb_refspec, T_STRING);
-
-	if (direction == GIT_DIRECTION_FETCH)
-		error = git_remote_add_fetch(remote, StringValueCStr(rb_refspec));
-	else
-		error = git_remote_add_push(remote, StringValueCStr(rb_refspec));
-
-	rugged_exception_check(error);
-
-	return Qnil;
-}
-
-/*
- *  call-seq:
- *    remote.add_fetch(refspec) -> nil
- *
- *  Add a fetch refspec to the remote.
- */
-static VALUE rb_git_remote_add_fetch(VALUE self, VALUE rb_refspec)
-{
-	return rb_git_remote_add_refspec(self, rb_refspec, GIT_DIRECTION_FETCH);
-}
-
-/*
- *  call-seq:
- *    remote.add_push(refspec) -> nil
- *
- *  Add a push refspec to the remote.
- */
-static VALUE rb_git_remote_add_push(VALUE self, VALUE rb_refspec)
-{
-	return rb_git_remote_add_refspec(self, rb_refspec, GIT_DIRECTION_PUSH);
-}
-
-/*
- *  call-seq:
- *    remote.clear_refspecs -> nil
- *
- *  Remove all configured fetch and push refspecs from the remote.
- */
-static VALUE rb_git_remote_clear_refspecs(VALUE self)
-{
-	git_remote *remote;
-
-	Data_Get_Struct(self, git_remote, remote);
-
-	git_remote_clear_refspecs(remote);
-
-	return Qnil;
-}
-
-/*
- *  call-seq:
- *    remote.save -> true
- *
- *  Saves the remote data (url, fetchspecs, ...) to the config.
- *
- *  Anonymous, in-memory remotes created through
- *  +ReferenceCollection#create_anonymous+ can not be saved.
- *  Doing so will result in an exception being raised.
- */
-static VALUE rb_git_remote_save(VALUE self)
-{
-	git_remote *remote;
-
-	Data_Get_Struct(self, git_remote, remote);
-
-	rugged_exception_check(
-		git_remote_save(remote)
-	);
-	return Qtrue;
 }
 
 /*
@@ -556,21 +458,13 @@ static VALUE rb_git_remote_check_connection(int argc, VALUE *argv, VALUE self)
 
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &callbacks, &payload);
 
-	if ((error = git_remote_set_callbacks(remote, &callbacks)) < 0)
-		goto cleanup;
+	error = git_remote_connect(remote, direction, &callbacks);
+	git_remote_disconnect(remote);
 
-	if (git_remote_connect(remote, direction))
-		return Qfalse;
-	else {
-		git_remote_disconnect(remote);
-		return Qtrue;
-	}
-
-cleanup:
 	if (payload.exception)
 		rb_jump_tag(payload.exception);
-	rugged_exception_check(error);
-	return Qfalse;
+
+	return error ? Qfalse : Qtrue;
 }
 
 /*
@@ -622,7 +516,8 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 	git_remote *remote;
 	git_repository *repo;
 	git_strarray refspecs;
-	git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
+	git_fetch_options opts = GIT_FETCH_OPTIONS_INIT;
+	const git_transfer_progress *stats;
 	struct rugged_remote_cb_payload payload = { Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, 0 };
 
 	char *log_message = NULL;
@@ -638,7 +533,7 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 	rugged_check_repo(rb_repo);
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
-	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &callbacks, &payload);
+	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &opts.callbacks, &payload);
 
 	if (!NIL_P(rb_options)) {
 		VALUE rb_val = rb_hash_aref(rb_options, CSTR2SYM("message"));
@@ -646,23 +541,7 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 			log_message = StringValueCStr(rb_val);
 	}
 
-	if ((error = git_remote_set_callbacks(remote, &callbacks)))
-		goto cleanup;
-
-	if ((error = git_remote_fetch(remote, &refspecs, log_message)) == GIT_OK) {
-		const git_transfer_progress *stats = git_remote_stats(remote);
-
-		rb_result = rb_hash_new();
-		rb_hash_aset(rb_result, CSTR2SYM("total_objects"),    UINT2NUM(stats->total_objects));
-		rb_hash_aset(rb_result, CSTR2SYM("indexed_objects"),  UINT2NUM(stats->indexed_objects));
-		rb_hash_aset(rb_result, CSTR2SYM("received_objects"), UINT2NUM(stats->received_objects));
-		rb_hash_aset(rb_result, CSTR2SYM("local_objects"),    UINT2NUM(stats->local_objects));
-		rb_hash_aset(rb_result, CSTR2SYM("total_deltas"),     UINT2NUM(stats->total_deltas));
-		rb_hash_aset(rb_result, CSTR2SYM("indexed_deltas"),   UINT2NUM(stats->indexed_deltas));
-		rb_hash_aset(rb_result, CSTR2SYM("received_bytes"),   INT2FIX(stats->received_bytes));
-	}
-
-	cleanup:
+	error = git_remote_fetch(remote, &refspecs, &opts, log_message);
 
 	xfree(refspecs.strings);
 
@@ -670,6 +549,17 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 		rb_jump_tag(payload.exception);
 
 	rugged_exception_check(error);
+
+	stats = git_remote_stats(remote);
+
+	rb_result = rb_hash_new();
+	rb_hash_aset(rb_result, CSTR2SYM("total_objects"),    UINT2NUM(stats->total_objects));
+	rb_hash_aset(rb_result, CSTR2SYM("indexed_objects"),  UINT2NUM(stats->indexed_objects));
+	rb_hash_aset(rb_result, CSTR2SYM("received_objects"), UINT2NUM(stats->received_objects));
+	rb_hash_aset(rb_result, CSTR2SYM("local_objects"),    UINT2NUM(stats->local_objects));
+	rb_hash_aset(rb_result, CSTR2SYM("total_deltas"),     UINT2NUM(stats->total_deltas));
+	rb_hash_aset(rb_result, CSTR2SYM("indexed_deltas"),   UINT2NUM(stats->indexed_deltas));
+	rb_hash_aset(rb_result, CSTR2SYM("received_bytes"),   INT2FIX(stats->received_bytes));
 
 	return rb_result;
 }
@@ -708,7 +598,6 @@ static VALUE rb_git_remote_push(int argc, VALUE *argv, VALUE self)
 
 	git_repository *repo;
 	git_remote *remote;
-	git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
 	git_strarray refspecs;
 	git_push_options opts = GIT_PUSH_OPTIONS_INIT;
 
@@ -724,14 +613,10 @@ static VALUE rb_git_remote_push(int argc, VALUE *argv, VALUE self)
 	Data_Get_Struct(rb_repo, git_repository, repo);
 	Data_Get_Struct(self, git_remote, remote);
 
-	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &callbacks, &payload);
-
-	if ((error = git_remote_set_callbacks(remote, &callbacks)))
-	    goto cleanup;
+	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &opts.callbacks, &payload);
 
 	error = git_remote_push(remote, &refspecs, &opts);
 
-cleanup:
 	xfree(refspecs.strings);
 
 	if (payload.exception)
@@ -746,20 +631,13 @@ void Init_rugged_remote(void)
 {
 	rb_cRuggedRemote = rb_define_class_under(rb_mRugged, "Remote", rb_cObject);
 
-
 	rb_define_method(rb_cRuggedRemote, "name", rb_git_remote_name, 0);
 	rb_define_method(rb_cRuggedRemote, "url", rb_git_remote_url, 0);
-	rb_define_method(rb_cRuggedRemote, "url=", rb_git_remote_set_url, 1);
 	rb_define_method(rb_cRuggedRemote, "push_url", rb_git_remote_push_url, 0);
-	rb_define_method(rb_cRuggedRemote, "push_url=", rb_git_remote_set_push_url, 1);
 	rb_define_method(rb_cRuggedRemote, "fetch_refspecs", rb_git_remote_fetch_refspecs, 0);
 	rb_define_method(rb_cRuggedRemote, "push_refspecs", rb_git_remote_push_refspecs, 0);
-	rb_define_method(rb_cRuggedRemote, "add_fetch", rb_git_remote_add_fetch, 1);
-	rb_define_method(rb_cRuggedRemote, "add_push", rb_git_remote_add_push, 1);
 	rb_define_method(rb_cRuggedRemote, "ls", rb_git_remote_ls, -1);
 	rb_define_method(rb_cRuggedRemote, "check_connection", rb_git_remote_check_connection, -1);
 	rb_define_method(rb_cRuggedRemote, "fetch", rb_git_remote_fetch, -1);
 	rb_define_method(rb_cRuggedRemote, "push", rb_git_remote_push, -1);
-	rb_define_method(rb_cRuggedRemote, "clear_refspecs", rb_git_remote_clear_refspecs, 0);
-	rb_define_method(rb_cRuggedRemote, "save", rb_git_remote_save, 0);
 }

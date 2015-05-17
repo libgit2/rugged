@@ -5,6 +5,20 @@
 
     *Arthur Schreiber*
 
+*   `Rugged::Remote` instances are now immutable.
+
+    * `Remote#clear_refspecs` and `Remote#save` were removed without
+      replacement.
+
+    * `Remote#url=` and `Remote#push_url=` were removed and replaced by
+      `RemoteCollection#set_url` and `RemoteCollection#set_push_url`.
+
+    * `Remote#add_push` and `Remote#add_fetch` were removed and replaced by
+      `RemoteCollection#add_push_refspec` and
+      `RemoteCollection#add_fetch_refspec`.
+
+    *Arthur Schreiber*
+
 *   Update bundled libgit2 to 9042693e283f65d9afb4906ed693a862a250664b.
 
     *Arthur Schreiber*

@@ -410,7 +410,6 @@ static VALUE rb_git_repo_init_at(int argc, VALUE *argv, VALUE klass)
 
 static void parse_clone_options(git_clone_options *ret, VALUE rb_options, struct rugged_remote_cb_payload *remote_payload)
 {
-	git_remote_callbacks remote_callbacks = GIT_REMOTE_CALLBACKS_INIT;
 	VALUE val;
 
 	if (NIL_P(rb_options))
@@ -426,9 +425,7 @@ static void parse_clone_options(git_clone_options *ret, VALUE rb_options, struct
 		ret->checkout_branch = StringValueCStr(val);
 	}
 
-	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &remote_callbacks, remote_payload);
-
-	ret->remote_callbacks = remote_callbacks;
+	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &ret->fetch_opts.callbacks, remote_payload);
 }
 
 /*

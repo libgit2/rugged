@@ -90,37 +90,11 @@ class RemoteTest < Rugged::SandboxedTestCase
     assert_nil @repo.remotes["test"]
   end
 
-  def test_url_set
-    new_url = 'git://github.com/libgit2/TestGitRepository.git'
-    remote = @repo.remotes.create_anonymous('git://github.com/libgit2/libgit2.git')
-    remote.url = new_url
-    assert_equal new_url, remote.url
-  end
-
-  def test_url_set_invalid
-    remote = @repo.remotes.create_anonymous('git://github.com/libgit2/libgit2.git')
-    remote.url = 'upstream'
-  end
-
   def test_push_url
     assert_equal 'git://github.com/libgit2/pushlibgit2',
       @repo.remotes['test_with_pushurl'].push_url
 
     assert_nil @repo.remotes['joshaber'].push_url
-  end
-
-  def test_push_url_set
-    new_url = 'git://github.com/libgit2/TestGitRepository.git'
-    remote = @repo.remotes.create_anonymous('git://github.com/libgit2/libgit2.git')
-
-    assert_nil remote.push_url
-    remote.push_url = new_url
-    assert_equal new_url, remote.push_url
-  end
-
-  def test_push_url_set_invalid
-    remote = @repo.remotes.create_anonymous('git://github.com/libgit2/libgit2.git')
-    remote.push_url = 'upstream'
   end
 
   def test_fetch_refspecs
@@ -133,32 +107,6 @@ class RemoteTest < Rugged::SandboxedTestCase
   def test_push_refspecs
     remote = @repo.remotes['test']
     assert_empty remote.push_refspecs
-
-    remote.add_push('refs/heads/*:refs/heads/testing/*')
-    assert_equal ['refs/heads/*:refs/heads/testing/*'], remote.push_refspecs
-
-    assert_empty @repo.remotes['joshaber'].push_refspecs
-  end
-
-  def test_add_fetch
-    remote = @repo.remotes.create_anonymous('git://github.com/libgit2/libgit2.git')
-    assert_nil remote.add_fetch('+refs/heads/*:refs/remotes/test/*')
-    assert_equal ['+refs/heads/*:refs/remotes/test/*'], remote.fetch_refspecs
-  end
-
-  def test_add_push
-    remote = @repo.remotes.create_anonymous('git://github.com/libgit2/libgit2.git')
-    assert_nil remote.add_push('refs/heads/*:refs/heads/test/*')
-    assert_equal ['refs/heads/*:refs/heads/test/*'], remote.push_refspecs
-  end
-
-  def test_clear_refspecs
-    remote = @repo.remotes['test']
-
-    remote.clear_refspecs
-
-    assert_empty remote.push_refspecs
-    assert_empty remote.fetch_refspecs
   end
 
   def test_remote_lookup
@@ -248,12 +196,48 @@ class RemoteWriteTest < Rugged::TestCase
     @repo.remotes.create('upstream', 'libgit2')
   end
 
-  def test_url_set
-    new_url = 'git://github.com/l?#!@#$ibgit2/TestGitRepository.git'
+  def test_remote_set_url
     remote = @repo.remotes['origin']
-    remote.url = new_url
-    assert remote.save
+
+    old_url = remote.url
+    new_url = 'git://github.com/l?#!@#$ibgit2/TestGitRepository.git'
+
+    @repo.remotes.set_url(remote, new_url)
+
+    assert_equal old_url, remote.url
     assert_equal new_url, @repo.remotes['origin'].url
+  end
+
+  def test_remote_set_push_url
+    remote = @repo.remotes['origin']
+
+    old_url = remote.push_url
+    new_url = 'git://github.com/l?#!@#$ibgit2/TestGitRepository.git'
+
+    @repo.remotes.set_push_url(remote, new_url)
+
+    assert_equal old_url, remote.push_url
+    assert_equal new_url, @repo.remotes['origin'].push_url
+  end
+
+  def test_remote_add_fetch_refspech
+    remote = @repo.remotes['origin']
+    assert_nil @repo.remotes.add_fetch_refspec('origin', '+refs/pull/*/head:refs/remotes/origin/pr/*')
+
+    assert_equal ['+refs/heads/*:refs/remotes/origin/*'], remote.fetch_refspecs
+    assert_equal [
+      '+refs/heads/*:refs/remotes/origin/*', '+refs/pull/*/head:refs/remotes/origin/pr/*'
+    ], @repo.remotes['origin'].fetch_refspecs
+  end
+
+  def test_remote_add_push_refspec
+    remote = @repo.remotes['origin']
+    assert_nil @repo.remotes.add_push_refspec('origin', 'refs/heads/*:refs/heads/test/*')
+
+    assert_equal [], remote.push_refspecs
+    assert_equal [
+      'refs/heads/*:refs/heads/test/*'
+    ], @repo.remotes['origin'].push_refspecs
   end
 
   def test_rename
