@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    rugged (0.23.0b1)
+    rugged (0.23.0b2)
 
 GEM
   remote: http://rubygems.org/
