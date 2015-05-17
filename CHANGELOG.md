@@ -26,6 +26,18 @@
 
     *Arthur Schreiber*
 
+
+## Rugged 0.22.2 (May 17, 2015) ##
+
+*   Update bundled libgit2 to 0.22.2.
+
+    See https://github.com/libgit2/libgit2/releases/tag/v0.22.0,
+    https://github.com/libgit2/libgit2/releases/tag/v0.22.1 and
+    https://github.com/libgit2/libgit2/releases/tag/v0.22.2 for a list
+    of fixed issues and new features.
+
+    *Arthur Schreiber*
+
 *   Add `Rugged::Tree#count_recursive`.
 
     This counts all blobs in a tree, recursively, with an optional limit
