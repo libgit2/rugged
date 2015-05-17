@@ -1,8 +1,11 @@
-
 *   Add accessors for the Repository ident.
 
     Added `Repository#ident` and `Repository#ident=` to read and set the
     identity that is used when writing reflog entries.
+
+    *Arthur Schreiber*
+
+*   Update bundled libgit2 to 9042693e283f65d9afb4906ed693a862a250664b.
 
     *Arthur Schreiber*
 
@@ -26,10 +29,6 @@
 *   The `:safe_create` flag was removed from `Repository#checkout_tree`.
 
     You can use `:create` in combination with `:recreate_missing` instead.
-
-    *Arthur Schreiber*
-
-*   Update bundled libgit2 to 8311db0cf8ae15b46edd14358a8238862e0bac4d.
 
     *Arthur Schreiber*
 
