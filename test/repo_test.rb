@@ -397,6 +397,32 @@ class RepositoryWriteTest < Rugged::TestCase
     assert_equal name, @repo.default_signature[:name]
     assert_equal email, @repo.default_signature[:email]
   end
+
+  def test_ident
+    assert_equal(nil, @repo.ident[:name])
+    assert_equal(nil, @repo.ident[:email])
+
+    @repo.ident = { name: "Other User" }
+    assert_equal("Other User", @repo.ident[:name])
+    assert_equal(nil, @repo.ident[:email])
+
+    @repo.ident = { email: "other@example.com" }
+    assert_equal(nil, @repo.ident[:name])
+    assert_equal("other@example.com", @repo.ident[:email])
+
+    @repo.ident = { name: "Other User", email: "other@example.com" }
+    assert_equal("Other User", @repo.ident[:name])
+    assert_equal("other@example.com", @repo.ident[:email])
+
+    @repo.ident = {}
+    assert_equal(nil, @repo.ident[:name])
+    assert_equal(nil, @repo.ident[:email])
+
+    @repo.ident = { name: "Other User", email: "other@example.com" }
+    @repo.ident = nil
+    assert_equal(nil, @repo.ident[:name])
+    assert_equal(nil, @repo.ident[:email])
+  end
 end
 
 class RepositoryDiscoverTest < Rugged::TestCase

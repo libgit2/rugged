@@ -1,4 +1,11 @@
 
+*   Add accessors for the Repository ident.
+
+    Added `Repository#ident` and `Repository#ident=` to read and set the
+    identity that is used when writing reflog entries.
+
+    *Arthur Schreiber*
+
 *   Updated the API of reflog modifying methods.
 
     This removes both the optional `:message` as well as `:signature` options from

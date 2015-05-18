@@ -324,7 +324,12 @@ class ReflogTest < Rugged::SandboxedTestCase
     assert_kind_of Time, reflog[0][:committer][:time]
   end
 
-  def test_create_default_log_custom_signature
+  def test_create_default_log_custom_ident
+    @repo.ident = {
+      name: 'Other User',
+      email: 'other@example.com'
+    }
+
     ref = @repo.references.create("refs/heads/test-reflog-default",
       "a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
     reflog = ref.log
@@ -334,8 +339,8 @@ class ReflogTest < Rugged::SandboxedTestCase
     assert_equal '0000000000000000000000000000000000000000', reflog[0][:id_old]
     assert_equal 'a65fedf39aefe402d3bb6e24df4d4f5fe4547750', reflog[0][:id_new]
     assert_equal nil, reflog[0][:message]
-    assert_equal @ident[:name], reflog[0][:committer][:name]
-    assert_equal @ident[:email], reflog[0][:committer][:email]
+    assert_equal 'Other User', reflog[0][:committer][:name]
+    assert_equal 'other@example.com', reflog[0][:committer][:email]
     assert_kind_of Time, reflog[0][:committer][:time]
   end
 
@@ -357,7 +362,12 @@ class ReflogTest < Rugged::SandboxedTestCase
     assert_kind_of Time, reflog[0][:committer][:time]
   end
 
-  def test_create_default_log_custom_signature_and_log_message
+  def test_create_default_log_custom_ident_and_log_message
+    @repo.ident = {
+      name: 'Other User',
+      email: 'other@example.com'
+    }
+
     ref = @repo.references.create(
       "refs/heads/test-reflog-default",
       "a65fedf39aefe402d3bb6e24df4d4f5fe4547750", {
@@ -370,8 +380,8 @@ class ReflogTest < Rugged::SandboxedTestCase
     assert_equal '0000000000000000000000000000000000000000', reflog[0][:id_old]
     assert_equal 'a65fedf39aefe402d3bb6e24df4d4f5fe4547750', reflog[0][:id_new]
     assert_equal "reference created", reflog[0][:message]
-    assert_equal @ident[:name], reflog[0][:committer][:name]
-    assert_equal @ident[:email], reflog[0][:committer][:email]
+    assert_equal 'Other User', reflog[0][:committer][:name]
+    assert_equal 'other@example.com', reflog[0][:committer][:email]
     assert_kind_of Time, reflog[0][:committer][:time]
   end
 
@@ -386,6 +396,25 @@ class ReflogTest < Rugged::SandboxedTestCase
     assert_equal nil, reflog[1][:message]
     assert_equal @ident[:name], reflog[1][:committer][:name]
     assert_equal @ident[:email], reflog[1][:committer][:email]
+    assert_kind_of Time, reflog[1][:committer][:time]
+  end
+
+  def test_set_target_default_log_custom_signature
+    @repo.ident = {
+      name: "Other User",
+      email: "other@exmaple.com"
+    }
+
+    @repo.references.update(@ref, "5b5b025afb0b4c913b4c338a42934a3863bf3644")
+
+    reflog = @ref.log
+    assert_equal reflog.size, 2
+
+    assert_equal 'a65fedf39aefe402d3bb6e24df4d4f5fe4547750', reflog[1][:id_old]
+    assert_equal '5b5b025afb0b4c913b4c338a42934a3863bf3644', reflog[1][:id_new]
+    assert_equal nil, reflog[1][:message]
+    assert_equal "Other User", reflog[1][:committer][:name]
+    assert_equal "other@exmaple.com", reflog[1][:committer][:email]
     assert_kind_of Time, reflog[1][:committer][:time]
   end
 

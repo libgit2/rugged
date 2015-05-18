@@ -595,6 +595,75 @@ static VALUE rb_git_repo_get_config(VALUE self)
 
 /*
  *  call-seq:
+ *    repo.ident = ident
+ *
+ *  Set the identity to be used for writing reflogs.
+ *
+ *  +ident+ can be either +nil+ or a Hash containing +name+ and/or +email+ entries.
+ */
+static VALUE rb_git_repo_set_ident(VALUE self, VALUE rb_ident) {
+	VALUE rb_val;
+
+	git_repository *repo;
+	const char *name = NULL, *email = NULL;
+
+	Data_Get_Struct(self, git_repository, repo);
+
+	if (!NIL_P(rb_ident)) {
+		Check_Type(rb_ident, T_HASH);
+
+		if (!NIL_P(rb_val = rb_hash_aref(rb_ident, CSTR2SYM("name")))) {
+			Check_Type(rb_val, T_STRING);
+			name = StringValueCStr(rb_val);
+		}
+
+		if (!NIL_P(rb_val = rb_hash_aref(rb_ident, CSTR2SYM("email")))) {
+			Check_Type(rb_val, T_STRING);
+			email = StringValueCStr(rb_val);
+		}
+	}
+
+	rugged_exception_check(
+		git_repository_set_ident(repo, name, email)
+	);
+
+	return Qnil;
+}
+
+/*
+ *  call-seq:
+ *    repo.ident -> ident
+ *
+ *  Return a Hash containing the identity that is used to write reflogs.
+ *
+ *  +ident+ is a Hash containing +name+ and/or +email+ entries, or `nil`.
+ */
+static VALUE rb_git_repo_get_ident(VALUE self)
+{
+	VALUE rb_ident = rb_hash_new();
+
+	git_repository *repo;
+	const char *name = NULL, *email = NULL;
+
+	Data_Get_Struct(self, git_repository, repo);
+
+	rugged_exception_check(
+		git_repository_ident(&name, &email, repo)
+	);
+
+	if (name) {
+		rb_hash_aset(rb_ident, CSTR2SYM("name"), rb_str_new_utf8(name));
+	}
+
+	if (email) {
+		rb_hash_aset(rb_ident, CSTR2SYM("email"), rb_str_new_utf8(email));
+	}
+
+	return rb_ident;
+}
+
+/*
+ *  call-seq:
  *    repo.merge_base(oid1, oid2, ...)
  *    repo.merge_base(ref1, ref2, ...)
  *    repo.merge_base(commit1, commit2, ...)
@@ -2385,6 +2454,9 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "index=",  rb_git_repo_set_index,  1);
 	rb_define_method(rb_cRuggedRepo, "config",  rb_git_repo_get_config,  0);
 	rb_define_method(rb_cRuggedRepo, "config=",  rb_git_repo_set_config,  1);
+
+	rb_define_method(rb_cRuggedRepo, "ident", rb_git_repo_get_ident, 0);
+	rb_define_method(rb_cRuggedRepo, "ident=", rb_git_repo_set_ident, 1);
 
 	rb_define_method(rb_cRuggedRepo, "bare?",  rb_git_repo_is_bare,  0);
 	rb_define_method(rb_cRuggedRepo, "shallow?",  rb_git_repo_is_shallow,  0);
