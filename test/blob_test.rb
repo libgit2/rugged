@@ -170,6 +170,45 @@ class BlobWriteTest < Rugged::TestCase
   end
 end
 
+class BlobLOCTest < Rugged::TestCase
+  include Rugged::TempRepositoryAccess
+
+  def write_blob(data)
+    sha = Rugged::Blob.from_buffer(@repo, data)
+    Rugged::Blob.lookup(@repo, sha)
+  end
+
+  def test_loc_end_nl
+    blob = write_blob("hello\nworld\nwhat\n")
+    assert_equal 3, blob.loc
+  end
+
+  def test_loc_no_end_nl
+    blob = write_blob("hello\nworld\nwhat")
+    assert_equal 3, blob.loc
+  end
+
+  def test_loc_carriages
+    blob = write_blob("hello\r\nworld\r\nwhat\r\n")
+    assert_equal 3, blob.loc
+  end
+
+  def test_loc_carriages_no_end_nl
+    blob = write_blob("hello\r\nworld\r\nwhat")
+    assert_equal 3, blob.loc
+  end
+
+  def test_loc_mixed
+    blob = write_blob("hello\nworld\rwhat\r")
+    assert_equal 3, blob.loc
+  end
+
+  def test_loc_mixed_no_end_nl
+    blob = write_blob("hello\nworld\rwhat")
+    assert_equal 3, blob.loc
+  end
+end
+
 class BlobDiffTest < Rugged::SandboxedTestCase
   def setup
     super

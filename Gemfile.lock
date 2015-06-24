@@ -230,3 +230,6 @@ DEPENDENCIES
   rake-compiler (>= 0.9.0)
   rubysl (~> 2.0)
   rugged!
+
+BUNDLED WITH
+   1.10.3
