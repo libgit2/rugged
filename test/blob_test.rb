@@ -174,8 +174,8 @@ class BlobLOCTest < Rugged::TestCase
   include Rugged::TempRepositoryAccess
 
   def write_blob(data)
-      sha = Rugged::Blob.from_buffer(@repo, data)
-      Rugged::Blob.lookup(@repo, sha)
+    sha = Rugged::Blob.from_buffer(@repo, data)
+    Rugged::Blob.lookup(@repo, sha)
   end
 
   def test_loc_end_nl
