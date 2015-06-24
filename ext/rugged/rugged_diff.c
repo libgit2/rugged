@@ -120,11 +120,15 @@ void rugged_parse_diff_options(git_diff_options *opts, VALUE rb_options)
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("show_untracked_content")))) {
-			opts->flags |= GIT_DIFF_SHOW_UNTRACKED_CONTENT ;
+			opts->flags |= GIT_DIFF_SHOW_UNTRACKED_CONTENT;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("show_unmodified")))) {
-			opts->flags |= GIT_DIFF_SHOW_UNTRACKED_CONTENT ;
+			opts->flags |= GIT_DIFF_SHOW_UNMODIFIED;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("show_binary")))) {
+			opts->flags |= GIT_DIFF_SHOW_BINARY;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("patience")))) {
