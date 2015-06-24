@@ -317,6 +317,44 @@ static VALUE rb_git_blob_from_io(int argc, VALUE *argv, VALUE klass)
 	return rugged_create_oid(&oid);
 }
 
+/*
+ *  call-seq:
+ *    blob.loc -> int
+ *
+ *  Return the number of lines for this blob,
+ *  assuming the blob is plaintext (i.e. not binary)
+ */
+static VALUE rb_git_blob_loc(VALUE self)
+{
+	git_blob *blob;
+	const char *data, *data_end;
+	size_t loc = 0;
+
+	Data_Get_Struct(self, git_blob, blob);
+
+	data = git_blob_rawcontent(blob);
+	data_end = data + git_blob_rawsize(blob);
+
+	if (data == data_end)
+		return INT2FIX(0);
+
+	for (; data < data_end; ++data) {
+		if (data[0] == '\n') {
+			loc++;
+		}
+		else if (data[0] == '\r') {
+			if (data + 1 < data_end && data[1] == '\n')
+				data++;
+			loc++;
+		}
+	}
+
+	if (data[-1] != '\n' && data[-1] != '\r')
+		loc++;
+
+	return INT2FIX(loc);
+}
+
 
 /*
  *  call-seq:
@@ -583,6 +621,7 @@ void Init_rugged_blob(void)
 	rb_define_method(rb_cRuggedBlob, "content", rb_git_blob_content_GET, -1);
 	rb_define_method(rb_cRuggedBlob, "text", rb_git_blob_text_GET, -1);
 	rb_define_method(rb_cRuggedBlob, "sloc", rb_git_blob_sloc, 0);
+	rb_define_method(rb_cRuggedBlob, "loc", rb_git_blob_loc, 0);
 	rb_define_method(rb_cRuggedBlob, "binary?", rb_git_blob_is_binary, 0);
 	rb_define_method(rb_cRuggedBlob, "diff", rb_git_blob_diff, -1);
 
