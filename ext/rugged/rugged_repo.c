@@ -2306,7 +2306,7 @@ static VALUE rb_git_repo_attributes(int argc, VALUE *argv, VALUE self)
 		VALUE rb_result;
 		const char **values;
 		const char **names;
-		int i, num_attr = RARRAY_LEN(rb_names);
+		long i, num_attr = RARRAY_LEN(rb_names);
 
 		if (num_attr > 32)
 			rb_raise(rb_eRuntimeError, "Too many attributes requested");

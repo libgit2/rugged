@@ -69,8 +69,7 @@ static VALUE rb_git_remote_collection_create_anonymous(VALUE self, VALUE rb_url)
 	error = git_remote_create_anonymous(
 			&remote,
 			repo,
-			StringValueCStr(rb_url),
-			NULL);
+			StringValueCStr(rb_url));
 
 	rugged_exception_check(error);
 

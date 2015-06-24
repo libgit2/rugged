@@ -634,6 +634,7 @@ void Init_rugged_remote(void)
 	rb_define_method(rb_cRuggedRemote, "name", rb_git_remote_name, 0);
 	rb_define_method(rb_cRuggedRemote, "url", rb_git_remote_url, 0);
 	rb_define_method(rb_cRuggedRemote, "push_url", rb_git_remote_push_url, 0);
+	rb_define_method(rb_cRuggedRemote, "push_url=", rb_git_remote_set_push_url, 1);
 	rb_define_method(rb_cRuggedRemote, "fetch_refspecs", rb_git_remote_fetch_refspecs, 0);
 	rb_define_method(rb_cRuggedRemote, "push_refspecs", rb_git_remote_push_refspecs, 0);
 	rb_define_method(rb_cRuggedRemote, "ls", rb_git_remote_ls, -1);

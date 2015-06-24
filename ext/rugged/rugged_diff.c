@@ -643,7 +643,7 @@ static VALUE rb_git_diff_stat(VALUE self)
 	Data_Get_Struct(self, git_diff, diff);
 
 	git_diff_foreach(
-		diff, diff_file_stats_cb, NULL, diff_line_stats_cb, &stats);
+		diff, diff_file_stats_cb, NULL, NULL, diff_line_stats_cb, &stats);
 
 	return rb_ary_new3(
 		3, INT2FIX(stats.files), INT2FIX(stats.adds), INT2FIX(stats.dels));
