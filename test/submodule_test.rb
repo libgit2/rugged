@@ -141,7 +141,6 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
     # now mkdir sm_unchanged to test uninitialized
     FileUtils.mkdir(sm_unchanged_path, :mode => 0755)
     submodule = @repo.submodules['sm_unchanged']
-    submodule.reload
     assert_includes submodule.status, :uninitialized
     assert submodule.uninitialized?
 
@@ -157,50 +156,47 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
     index.write
 
     submodule = @repo.submodules['sm_changed_head']
-    submodule.reload
     assert_includes submodule.status, :deleted_from_index
     assert submodule.deleted_from_index?
   end
 
-  def test_submodule_ignore_rule
+  def test_submodule_update_ignore_rule
     sm_unchanged_path = File.join(@repo.workdir, 'sm_unchanged')
     # removed sm_unchanged for deleted workdir
     FileUtils.remove_entry_secure(sm_unchanged_path)
 
     # untracked
+    @repo.submodules.update('sm_changed_untracked_file', ignore_rule: :untracked)
     submodule = @repo.submodules['sm_changed_untracked_file']
-
-    submodule.ignore_rule = :untracked
-    submodule.reload
 
     assert submodule.unmodified?
     refute submodule.untracked_files_in_workdir?
 
     #dirty
+    @repo.submodules.update('sm_changed_file', ignore_rule: :dirty)
     submodule = @repo.submodules['sm_changed_file']
-    submodule.ignore_rule = :dirty
-    submodule.reload
 
     refute submodule.modified_files_in_workdir?
 
     #all
+    @repo.submodules.update('sm_added_and_uncommited', ignore_rule: :all)
     submodule = @repo.submodules['sm_added_and_uncommited']
-    submodule.ignore_rule = :all
-    submodule.reload
 
     assert submodule.unmodified?
     refute submodule.added_to_index?
-
   end
 
-  def test_submodule_modify
+  def test_submodule_update
     url = 'https://github.com/libgit2/libgit2.git'
     submodule = @repo.submodules['sm_changed_head']
 
-    submodule.ignore_rule = :untracked
-    submodule.url = url
     refute submodule.fetch_recurse_submodules?
-    submodule.fetch_recurse_submodules = true
+
+    @repo.submodules.update(submodule, {
+      url: url,
+      ignore_rule: :untracked,
+      fetch_recurse_submodules: true
+    })
 
     submodule.reload
 
@@ -209,19 +205,19 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
     assert submodule.fetch_recurse_submodules?
   end
 
-  def test_submodule_update_rule
+  def test_submodule_update_update_rule
     submodule = @repo.submodules['sm_unchanged']
     assert_equal :checkout, submodule.update_rule
 
-    submodule.update_rule = :rebase
+    @repo.submodules.update('sm_unchanged', update_rule: :rebase)
     submodule.reload
     assert_equal :rebase, submodule.update_rule
 
-    submodule.update_rule = :merge
+    @repo.submodules.update('sm_unchanged', update_rule: :merge)
     submodule.reload
     assert_equal :merge, submodule.update_rule
 
-    submodule.update_rule = :none
+    @repo.submodules.update('sm_unchanged', update_rule: :none)
     submodule.reload
     assert_equal :none, submodule.update_rule
   end
