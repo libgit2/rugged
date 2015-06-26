@@ -5,8 +5,6 @@ mkdir $HOME/_temp
 git init --bare $HOME/_temp/test.git
 git daemon --listen=localhost --export-all --enable=receive-pack --base-path=$HOME/_temp $HOME/_temp 2>/dev/null &
 
-sudo start ssh
-
 ssh-keygen -t rsa -f ~/.ssh/rugged_test_rsa -N "" -q
 cat ~/.ssh/rugged_test_rsa.pub >>~/.ssh/authorized_keys
 ssh-keyscan -t rsa localhost >>~/.ssh/known_hosts

@@ -16,6 +16,16 @@ rvm:
   - ruby-head
   - rbx-2
 
+addons:
+  apt:
+    packages:
+    - cmake
+    - libssh2-1-dev
+    - openssh-client
+    - openssh-server
+
+sudo: false
+
 matrix:
   fast_finish: true
   allow_failures:
@@ -23,7 +33,7 @@ matrix:
     - rvm: ruby-head
 
 install:
-  - ./vendor/libgit2/script/install-deps-${TRAVIS_OS_NAME}.sh
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then ./vendor/libgit2/script/install-deps-osx.sh; fi
   - bundle install --deployment
 
 script: script/travisbuild
