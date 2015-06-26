@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    rugged (0.23.0b2)
+    rugged (0.23.0b3)
 
 GEM
   remote: http://rubygems.org/
@@ -232,4 +232,4 @@ DEPENDENCIES
   rugged!
 
 BUNDLED WITH
-   1.10.3
+   1.10.5
