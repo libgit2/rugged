@@ -120,11 +120,15 @@ void rugged_parse_diff_options(git_diff_options *opts, VALUE rb_options)
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("show_untracked_content")))) {
-			opts->flags |= GIT_DIFF_SHOW_UNTRACKED_CONTENT ;
+			opts->flags |= GIT_DIFF_SHOW_UNTRACKED_CONTENT;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("show_unmodified")))) {
-			opts->flags |= GIT_DIFF_SHOW_UNTRACKED_CONTENT ;
+			opts->flags |= GIT_DIFF_SHOW_UNMODIFIED;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("show_binary")))) {
+			opts->flags |= GIT_DIFF_SHOW_BINARY;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("patience")))) {
@@ -643,7 +647,7 @@ static VALUE rb_git_diff_stat(VALUE self)
 	Data_Get_Struct(self, git_diff, diff);
 
 	git_diff_foreach(
-		diff, diff_file_stats_cb, NULL, diff_line_stats_cb, &stats);
+		diff, diff_file_stats_cb, NULL, NULL, diff_line_stats_cb, &stats);
 
 	return rb_ary_new3(
 		3, INT2FIX(stats.files), INT2FIX(stats.adds), INT2FIX(stats.dels));

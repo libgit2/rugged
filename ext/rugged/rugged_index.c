@@ -555,7 +555,7 @@ static VALUE rb_git_indexentry_fromC(const git_index_entry *entry)
 	return rb_entry;
 }
 
-static inline unsigned int
+static inline uint32_t
 default_entry_value(VALUE rb_entry, const char *key)
 {
 	VALUE val = rb_hash_aref(rb_entry, CSTR2SYM(key));
@@ -587,7 +587,7 @@ static void rb_git_indexentry_toC(git_index_entry *entry, VALUE rb_entry)
 	entry->mode = default_entry_value(rb_entry, "mode");
 	entry->gid = default_entry_value(rb_entry, "gid");
 	entry->uid = default_entry_value(rb_entry, "uid");
-	entry->file_size = (git_off_t)default_entry_value(rb_entry, "file_size");
+	entry->file_size = default_entry_value(rb_entry, "file_size");
 
 	if ((val = rb_hash_aref(rb_entry, CSTR2SYM("mtime"))) != Qnil) {
 		if (!rb_obj_is_kind_of(val, rb_cTime))

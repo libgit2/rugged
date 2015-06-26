@@ -171,36 +171,26 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
     submodule = @repo.submodules['sm_changed_untracked_file']
 
     submodule.ignore_rule = :untracked
+    submodule.reload
 
     assert submodule.unmodified?
     refute submodule.untracked_files_in_workdir?
 
-    submodule.reset_ignore_rule
-
-    refute submodule.unmodified?
-    assert submodule.untracked_files_in_workdir?
-
     #dirty
     submodule = @repo.submodules['sm_changed_file']
     submodule.ignore_rule = :dirty
+    submodule.reload
 
     refute submodule.modified_files_in_workdir?
-
-    submodule.reset_ignore_rule
-
-    assert submodule.modified_files_in_workdir?
 
     #all
     submodule = @repo.submodules['sm_added_and_uncommited']
     submodule.ignore_rule = :all
+    submodule.reload
 
     assert submodule.unmodified?
     refute submodule.added_to_index?
 
-    submodule.reset_ignore_rule
-
-    assert submodule.added_to_index?
-    refute submodule.unmodified?
   end
 
   def test_submodule_modify
@@ -212,7 +202,6 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
     refute submodule.fetch_recurse_submodules?
     submodule.fetch_recurse_submodules = true
 
-    submodule.save
     submodule.reload
 
     assert_equal :untracked, submodule.ignore_rule
@@ -225,17 +214,16 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
     assert_equal :checkout, submodule.update_rule
 
     submodule.update_rule = :rebase
+    submodule.reload
     assert_equal :rebase, submodule.update_rule
 
     submodule.update_rule = :merge
+    submodule.reload
     assert_equal :merge, submodule.update_rule
 
     submodule.update_rule = :none
+    submodule.reload
     assert_equal :none, submodule.update_rule
-
-    # reset
-    submodule.reset_update_rule
-    assert_equal :checkout, submodule.update_rule
   end
 
   def test_submodule_sync
