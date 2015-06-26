@@ -175,7 +175,7 @@ static VALUE rb_git_submodule_status(VALUE self)
 
 	rugged_exception_check(
 		git_submodule_status(&flags, repo, git_submodule_name(submodule),
-			GIT_SUBMODULE_IGNORE_FALLBACK)
+			GIT_SUBMODULE_IGNORE_UNSPECIFIED)
 	);
 
 	return submodule_status_flags_to_rb(flags);
@@ -245,7 +245,7 @@ static VALUE rb_git_submodule_status_in_workdir(VALUE self)
 	Data_Get_Struct(self, git_submodule, submodule); \
 	rugged_exception_check( \
 		git_submodule_status(&flags, repo, git_submodule_name(submodule), \
-			GIT_SUBMODULE_IGNORE_FALLBACK) \
+			GIT_SUBMODULE_IGNORE_UNSPECIFIED) \
 	); \
 	return (flags & flag) ? Qtrue : Qfalse; \
 
@@ -369,7 +369,7 @@ static VALUE rb_git_submodule_status_untracked_files_in_workdir(VALUE self)
 	Data_Get_Struct(self, git_submodule, submodule); \
 	rugged_exception_check( \
 		git_submodule_status(&flags, repo, git_submodule_name(submodule), \
-			GIT_SUBMODULE_IGNORE_FALLBACK) \
+			GIT_SUBMODULE_IGNORE_UNSPECIFIED) \
 	); \
 	return check(flags) ? Qtrue : Qfalse; \
 
