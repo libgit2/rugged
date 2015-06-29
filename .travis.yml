@@ -34,6 +34,6 @@ matrix:
 
 install:
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then ./vendor/libgit2/script/install-deps-osx.sh; fi
-  - bundle install --deployment
+  - bundle install --path vendor/local
 
 script: script/travisbuild
