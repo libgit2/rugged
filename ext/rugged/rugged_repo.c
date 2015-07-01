@@ -2182,6 +2182,54 @@ static VALUE rb_git_checkout_tree(int argc, VALUE *argv, VALUE self)
 }
 
 /**
+ *  call-seq: repo.checkout_index(index[,options]) -> nil
+ *
+ *  Updates files in the index and the working tree to match the content of the
+ *  commit pointed at by +index+.
+ *
+ *  See Repository#checkout_tree for a list of supported +options+.
+ */
+static VALUE rb_git_checkout_index(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_index, rb_options;
+	git_repository *repo;
+	git_index *index;
+	git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
+	struct rugged_cb_payload *payload;
+	int error, exception = 0;
+
+	rb_scan_args(argc, argv, "10:", &rb_index, &rb_options);
+
+	if (!rb_obj_is_kind_of(rb_index, rb_cRuggedIndex))
+		rb_raise(rb_eTypeError, "Expected Rugged::Index");
+
+	Data_Get_Struct(self, git_repository, repo);
+	Data_Get_Struct(rb_index, git_index, index);
+
+	rugged_parse_checkout_options(&opts, rb_options);
+
+	error = git_checkout_index(repo, index, &opts);
+	xfree(opts.paths.strings);
+
+	if ((payload = opts.notify_payload) != NULL) {
+		exception = payload->exception;
+		xfree(opts.notify_payload);
+	}
+
+	if ((payload = opts.progress_payload) != NULL) {
+		exception = payload->exception;
+		xfree(opts.progress_payload);
+	}
+
+	if (exception)
+		rb_jump_tag(exception);
+
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
+/**
  *  call-seq: repo.checkout_head([options]) -> nil
  *
  *  Updates files in the index and the working tree to match the content of the
@@ -2483,6 +2531,7 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "default_signature", rb_git_repo_default_signature, 0);
 
 	rb_define_method(rb_cRuggedRepo, "checkout_tree", rb_git_checkout_tree, -1);
+    rb_define_method(rb_cRuggedRepo, "checkout_index", rb_git_checkout_index, -1);
 	rb_define_method(rb_cRuggedRepo, "checkout_head", rb_git_checkout_head, -1);
 
 	rb_define_method(rb_cRuggedRepo, "cherrypick", rb_git_repo_cherrypick, -1);
