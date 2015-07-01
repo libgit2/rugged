@@ -1,16 +1,10 @@
 require "test_helper"
 require "time"
 
-class BlameTest < Rugged::SandboxedTestCase
+class BlameTest < Rugged::TestCase
   def setup
-    super
-    @repo = sandbox_init("testrepo")
+    @repo = FixtureRepo.from_libgit2("testrepo")
     @blame = Rugged::Blame.new(@repo, "branch_file.txt")
-  end
-
-  def teardown
-    @repo.close
-    super
   end
 
   def test_blame_index

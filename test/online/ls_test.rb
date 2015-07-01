@@ -2,15 +2,7 @@ require 'test_helper'
 
 class OnlineLsTest < Rugged::OnlineTestCase
   def setup
-    super
-
-    @repo = sandbox_init("push_src")
-  end
-
-  def teardown
-    @repo.close
-
-    super
+    @repo = FixtureRepo.from_libgit2("push_src")
   end
 
   if Rugged.features.include?(:https)

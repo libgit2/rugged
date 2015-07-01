@@ -1,14 +1,8 @@
 require "test_helper"
 
-class WorkdirCherrypickTest < Rugged::SandboxedTestCase
+class WorkdirCherrypickTest < Rugged::TestCase
   def setup
-    super
-    @repo = sandbox_init("cherrypick")
-  end
-
-  def teardown
-    @repo.close
-    super
+    @repo = FixtureRepo.from_libgit2("cherrypick")
   end
 
   def test_automerge

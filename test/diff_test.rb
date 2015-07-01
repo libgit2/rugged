@@ -1,6 +1,6 @@
 require "test_helper"
 
-class PatchFromStringsTest < Rugged::SandboxedTestCase
+class PatchFromStringsTest < Rugged::TestCase
   def test_from_strings_no_args
     patch = Rugged::Patch.from_strings()
     assert_equal 0, patch.size
@@ -64,9 +64,9 @@ EOS
   end
 end
 
-class RepoDiffTest < Rugged::SandboxedTestCase
+class RepoDiffTest < Rugged::TestCase
   def test_with_oid_string
-    repo = sandbox_init("attr")
+    repo = FixtureRepo.from_libgit2("attr")
     diff = repo.diff("605812a", "370fe9ec22", :context_lines => 1, :interhunk_lines => 1)
 
     deltas = diff.deltas
@@ -91,7 +91,7 @@ class RepoDiffTest < Rugged::SandboxedTestCase
   end
 
   def test_delta_status_char
-    repo = sandbox_init("attr")
+    repo = FixtureRepo.from_libgit2("attr")
     diff = repo.diff("605812a", "370fe9ec22", :context_lines => 1, :interhunk_lines => 1)
 
     deltas = diff.deltas
@@ -104,7 +104,7 @@ class RepoDiffTest < Rugged::SandboxedTestCase
   end
 
   def test_with_nil_on_left_side
-    repo = sandbox_init("attr")
+    repo = FixtureRepo.from_libgit2("attr")
     diff = repo.diff("605812a", nil, :context_lines => 1, :interhunk_lines => 1)
 
     deltas = diff.deltas
@@ -129,7 +129,7 @@ class RepoDiffTest < Rugged::SandboxedTestCase
   end
 
   def test_with_nil_on_right_side
-    repo = sandbox_init("attr")
+    repo = FixtureRepo.from_libgit2("attr")
     diff = repo.diff(nil, "605812a", :context_lines => 1, :interhunk_lines => 1)
 
     deltas = diff.deltas
@@ -154,9 +154,9 @@ class RepoDiffTest < Rugged::SandboxedTestCase
   end
 end
 
-class RepoWorkdirDiffTest < Rugged::SandboxedTestCase
+class RepoWorkdirDiffTest < Rugged::TestCase
   def test_basic_diff
-    repo = sandbox_init("status")
+    repo = FixtureRepo.from_libgit2("status")
     diff = repo.diff_workdir("26a125ee1bf",
       :context_lines => 3,
       :interhunk_lines => 1,
@@ -187,9 +187,9 @@ class RepoWorkdirDiffTest < Rugged::SandboxedTestCase
   end
 end
 
-class CommitDiffTest < Rugged::SandboxedTestCase
+class CommitDiffTest < Rugged::TestCase
   def test_diff_with_parent
-    repo = sandbox_init("attr")
+    repo = FixtureRepo.from_libgit2("attr")
     commit = Rugged::Commit.lookup(repo, "605812a")
 
     diff = commit.diff(:context_lines => 1, :interhunk_lines => 1)
@@ -216,7 +216,7 @@ class CommitDiffTest < Rugged::SandboxedTestCase
   end
 
   def test_diff_with_parent_for_initial_commit
-    repo = sandbox_init("attr")
+    repo = FixtureRepo.from_libgit2("attr")
     commit = Rugged::Commit.lookup(repo, "6bab5c79cd5140d0f800917f550eb2a3dc32b0da")
 
     diff = commit.diff(:context_lines => 1, :interhunk_lines => 1, :reverse => true)
@@ -243,9 +243,9 @@ class CommitDiffTest < Rugged::SandboxedTestCase
   end
 end
 
-class CommitToWorkdirDiffTest < Rugged::SandboxedTestCase
+class CommitToWorkdirDiffTest < Rugged::TestCase
   def test_basic_diff
-    repo = sandbox_init("status")
+    repo = FixtureRepo.from_libgit2("status")
     a = Rugged::Commit.lookup(repo, "26a125ee1bf")
 
     diff = a.diff_workdir(
@@ -278,9 +278,9 @@ class CommitToWorkdirDiffTest < Rugged::SandboxedTestCase
   end
 end
 
-class TreeToWorkdirDiffTest < Rugged::SandboxedTestCase
+class TreeToWorkdirDiffTest < Rugged::TestCase
   def test_basic_diff
-    repo = sandbox_init("status")
+    repo = FixtureRepo.from_libgit2("status")
     a = Rugged::Commit.lookup(repo, "26a125ee1bf").tree
 
     diff = a.diff_workdir(
@@ -313,7 +313,7 @@ class TreeToWorkdirDiffTest < Rugged::SandboxedTestCase
   end
 
   def test_diff_merge
-    repo = sandbox_init("status")
+    repo = FixtureRepo.from_libgit2("status")
     index = repo.index
 
     a = Rugged::Commit.lookup(repo, "26a125ee1bf").tree
@@ -352,7 +352,7 @@ class TreeToWorkdirDiffTest < Rugged::SandboxedTestCase
   end
 
   def test_stats
-    repo = sandbox_init("status")
+    repo = FixtureRepo.from_libgit2("status")
     index = repo.index
 
     a = Rugged::Commit.lookup(repo, "26a125ee1bf").tree
@@ -392,9 +392,9 @@ class TreeToWorkdirDiffTest < Rugged::SandboxedTestCase
   end
 end
 
-class TreeToTreeDiffTest < Rugged::SandboxedTestCase
+class TreeToTreeDiffTest < Rugged::TestCase
   def test_basic_diff
-    repo = sandbox_init("attr")
+    repo = FixtureRepo.from_libgit2("attr")
     a = Rugged::Commit.lookup(repo, "605812a").tree
     b = Rugged::Commit.lookup(repo, "370fe9ec22").tree
     c = Rugged::Commit.lookup(repo, "f5b0af1fb4f5c").tree
@@ -444,7 +444,7 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
   end
 
   def test_diff_with_empty_tree
-    repo = sandbox_init("attr")
+    repo = FixtureRepo.from_libgit2("attr")
     a = Rugged::Commit.lookup(repo, "605812a").tree
 
     diff = a.diff(nil, :context_lines => 1, :interhunk_lines => 1)
@@ -471,7 +471,7 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
   end
 
   def test_diff_with_rev_string
-    repo = sandbox_init("attr")
+    repo = FixtureRepo.from_libgit2("attr")
     a = Rugged::Commit.lookup(repo, "605812a").tree
 
     diff = a.diff("370fe9ec22", :context_lines => 1, :interhunk_lines => 1)
@@ -498,7 +498,7 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
   end
 
   def test_diff_merge
-    repo = sandbox_init("attr")
+    repo = FixtureRepo.from_libgit2("attr")
     a = Rugged::Commit.lookup(repo, "605812a").tree
     b = Rugged::Commit.lookup(repo, "370fe9ec22").tree
     c = Rugged::Commit.lookup(repo, "f5b0af1fb4f5c").tree
@@ -527,7 +527,7 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
   end
 
   def test_symlink_blob_mode_changed_to_regular_file
-    repo = sandbox_init("unsymlinked.git")
+    repo = FixtureRepo.from_libgit2("unsymlinked.git")
 
     a = Rugged::Commit.lookup(repo, "7fccd7").tree
     b = Rugged::Commit.lookup(repo, "806999").tree
@@ -548,7 +548,7 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
   end
 
   def test_symlink_blob_mode_changed_to_regular_file_as_typechange
-    repo = sandbox_init("unsymlinked.git")
+    repo = FixtureRepo.from_libgit2("unsymlinked.git")
 
     a = Rugged::Commit.lookup(repo, "7fccd7").tree
     b = Rugged::Commit.lookup(repo, "806999").tree
@@ -569,7 +569,7 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
   end
 
   def test_regular_blob_mode_changed_to_executable_file
-    repo = sandbox_init("unsymlinked.git")
+    repo = FixtureRepo.from_libgit2("unsymlinked.git")
 
     a = Rugged::Commit.lookup(repo, "806999").tree
     b = Rugged::Commit.lookup(repo, "a8595c").tree
@@ -590,7 +590,7 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
   end
 
   def test_size
-    repo = sandbox_init("diff")
+    repo = FixtureRepo.from_libgit2("diff")
 
     a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
     b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
@@ -600,7 +600,7 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
   end
 
   def test_each_delta
-    repo = sandbox_init("diff")
+    repo = FixtureRepo.from_libgit2("diff")
 
     a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
     b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
@@ -627,7 +627,7 @@ class TreeToTreeDiffTest < Rugged::SandboxedTestCase
   end
 
   def test_diff_treats_files_bigger_as_max_size_as_binary
-    repo = sandbox_init("diff")
+    repo = FixtureRepo.from_libgit2("diff")
 
     a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
     b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
@@ -645,7 +645,7 @@ EOS
   end
 
   def test_contraining_paths
-    repo = sandbox_init("diff")
+    repo = FixtureRepo.from_libgit2("diff")
 
     a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
     b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
@@ -667,7 +667,7 @@ EOS
   end
 
   def test_options
-    repo = sandbox_init("diff")
+    repo = FixtureRepo.from_libgit2("diff")
 
     a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
     b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
@@ -716,7 +716,7 @@ EOS
   end
 
   def test_iteration
-    repo = sandbox_init("diff")
+    repo = FixtureRepo.from_libgit2("diff")
 
     a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
     b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
@@ -827,7 +827,7 @@ EOS
   end
 
   def test_each_line_patch
-    repo = sandbox_init("diff")
+    repo = FixtureRepo.from_libgit2("diff")
 
     a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
     b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
@@ -869,7 +869,7 @@ EOS
   end
 
   def test_each_line_patch_header
-    repo = sandbox_init("diff")
+    repo = FixtureRepo.from_libgit2("diff")
 
     a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
     b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
@@ -893,7 +893,7 @@ EOS
   end
 
   def test_each_line_raw
-    repo = sandbox_init("diff")
+    repo = FixtureRepo.from_libgit2("diff")
 
     a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
     b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
@@ -917,7 +917,7 @@ EOS
   end
 
   def test_each_line_name_only
-    repo = sandbox_init("diff")
+    repo = FixtureRepo.from_libgit2("diff")
 
     a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
     b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
@@ -941,7 +941,7 @@ EOS
   end
 
   def test_each_line_name_status
-    repo = sandbox_init("diff")
+    repo = FixtureRepo.from_libgit2("diff")
 
     a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
     b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
@@ -965,7 +965,7 @@ EOS
   end
 
   def test_each_line_unknown_format_raises_error
-    repo = sandbox_init("diff")
+    repo = FixtureRepo.from_libgit2("diff")
 
     a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
     b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
@@ -978,7 +978,7 @@ EOS
   end
 
   def test_each_patch_returns_enumerator
-    repo = sandbox_init("diff")
+    repo = FixtureRepo.from_libgit2("diff")
 
     a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
     b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
@@ -996,7 +996,7 @@ EOS
   end
 
   def test_each_hunk_returns_enumerator
-    repo = sandbox_init("diff")
+    repo = FixtureRepo.from_libgit2("diff")
 
     a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
     b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
@@ -1009,7 +1009,7 @@ EOS
   end
 
   def test_each_line_returns_enumerator
-    repo = sandbox_init("diff")
+    repo = FixtureRepo.from_libgit2("diff")
 
     a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
     b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
@@ -1024,7 +1024,7 @@ EOS
   end
 
   def test_patch
-    repo = sandbox_init("diff")
+    repo = FixtureRepo.from_libgit2("diff")
 
     a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
     b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
@@ -1109,7 +1109,7 @@ EOS
   end
 
   def test_patch_compact
-    repo = sandbox_init("diff")
+    repo = FixtureRepo.from_libgit2("diff")
 
     a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
     b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
@@ -1123,7 +1123,7 @@ EOS
   end
 
   def test_stats
-    repo = sandbox_init("diff")
+    repo = FixtureRepo.from_libgit2("diff")
 
     a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
     b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")

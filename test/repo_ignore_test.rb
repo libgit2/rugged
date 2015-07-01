@@ -1,16 +1,8 @@
 require "test_helper"
 
-class RepositoryIgnoreTest < Rugged::SandboxedTestCase
+class RepositoryIgnoreTest < Rugged::TestCase
   def setup
-    super
-
-    @repo = sandbox_init "attr"
-  end
-
-  def teardown
-    @repo.close
-
-    super
+    @repo = FixtureRepo.from_libgit2 "attr"
   end
 
   def test_path_ignored
@@ -24,4 +16,3 @@ class RepositoryIgnoreTest < Rugged::SandboxedTestCase
     refute @repo.path_ignored?("direction")
   end
 end
-

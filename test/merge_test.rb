@@ -1,8 +1,8 @@
 require "test_helper"
 
-class TrivialMergeTest < Rugged::SandboxedTestCase
+class TrivialMergeTest < Rugged::TestCase
   def test_2alt
-    repo = sandbox_init("merge-resolve")
+    repo = FixtureRepo.from_libgit2("merge-resolve")
 
     ours = repo.rev_parse("trivial-2alt")
     theirs = repo.rev_parse("trivial-2alt-branch")
@@ -18,7 +18,7 @@ class TrivialMergeTest < Rugged::SandboxedTestCase
   end
 
   def test_4
-    repo = sandbox_init("merge-resolve")
+    repo = FixtureRepo.from_libgit2("merge-resolve")
 
     ours = repo.rev_parse("trivial-4")
     theirs = repo.rev_parse("trivial-4-branch")
@@ -33,7 +33,7 @@ class TrivialMergeTest < Rugged::SandboxedTestCase
   end
 
   def test_analysis
-    repo = sandbox_init("merge-resolve")
+    repo = FixtureRepo.from_libgit2("merge-resolve")
 
     analysis = repo.merge_analysis("HEAD")
     assert_equal [:up_to_date], analysis

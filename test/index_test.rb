@@ -155,35 +155,29 @@ end
 
 class IndexWorkdirTest < Rugged::TestCase
   def setup
-    @tmppath = Dir.mktmpdir
-    @repo = Rugged::Repository.init_at(@tmppath, false)
+    @repo = FixtureRepo.empty
     @index = @repo.index
   end
 
-  def teardown
-    @repo.close
-    FileUtils.remove_entry_secure(@tmppath)
-  end
-
   def test_adding_a_path
-    File.open(File.join(@tmppath, 'test.txt'), 'w') do |f|
+    File.open(File.join(@repo.workdir, 'test.txt'), 'w') do |f|
       f.puts "test content"
     end
     @index.add('test.txt')
     @index.write
 
-    index2 = Rugged::Index.new(@tmppath + '/.git/index')
+    index2 = Rugged::Index.new(File.join(@repo.workdir, '.git', 'index'))
     assert_equal index2[0][:path], 'test.txt'
   end
 
   def test_reloading_index
-    File.open(File.join(@tmppath, 'test.txt'), 'w') do |f|
+    File.open(File.join(@repo.workdir, 'test.txt'), 'w') do |f|
       f.puts "test content"
     end
     @index.add('test.txt')
     @index.write
 
-    rindex = Rugged::Index.new(File.join(@tmppath, '/.git/index'))
+    rindex = Rugged::Index.new(File.join(@repo.workdir, '.git', 'index'))
     e = rindex['test.txt']
     assert_equal 0, e[:stage]
 
@@ -199,17 +193,9 @@ class IndexWorkdirTest < Rugged::TestCase
   end
 end
 
-class IndexConflictsTest < Rugged::SandboxedTestCase
+class IndexConflictsTest < Rugged::TestCase
   def setup
-    super
-
-    @repo = sandbox_init("mergedrepo")
-  end
-
-  def teardown
-    @repo.close
-
-    super
+    @repo = FixtureRepo.from_libgit2("mergedrepo")
   end
 
   def test_conflicts?
@@ -283,17 +269,9 @@ class IndexConflictsTest < Rugged::SandboxedTestCase
   end
 end
 
-class IndexMergeFileTest < Rugged::SandboxedTestCase
+class IndexMergeFileTest < Rugged::TestCase
   def setup
-    super
-
-    @repo = sandbox_init("mergedrepo")
-  end
-
-  def teardown
-    @repo.close
-
-    super
+    @repo = FixtureRepo.from_libgit2("mergedrepo")
   end
 
   def test_merge_file
@@ -307,7 +285,11 @@ class IndexMergeFileTest < Rugged::SandboxedTestCase
 end
 
 class IndexRepositoryTest < Rugged::TestCase
-  include Rugged::TempRepositoryAccess
+  def setup
+    @source_repo = FixtureRepo.from_rugged("testrepo.git")
+    @repo = FixtureRepo.clone(@source_repo)
+    @path = @repo.workdir
+  end
 
   def test_idempotent_read_write
     head_sha = @repo.references['HEAD'].resolve.target_id
@@ -344,11 +326,9 @@ class IndexRepositoryTest < Rugged::TestCase
   end
 end
 
-class IndexAddAllTest < Rugged::SandboxedTestCase
+class IndexAddAllTest < Rugged::TestCase
   def setup
-    super
-
-    @repo = Rugged::Repository.init_at(File.join(@_sandbox_path, "add-all"))
+    @repo = FixtureRepo.empty
 
     Dir.chdir(@repo.workdir) do
       File.open("file.foo", "w") { |f| f.write "a file" }
@@ -358,12 +338,6 @@ class IndexAddAllTest < Rugged::SandboxedTestCase
       File.open("more.zzz", "w") { |f| f.write "yet another one" }
       File.open(".gitignore", "w") { |f| f.write "*.foo\n" }
     end
-  end
-
-  def teardown
-    @repo.close
-
-    super
   end
 
   def test_add_all_lifecycle

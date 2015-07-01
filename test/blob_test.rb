@@ -1,7 +1,9 @@
 require "test_helper"
 
 class BlobTest < Rugged::TestCase
-  include Rugged::RepositoryAccess
+  def setup
+    @repo = FixtureRepo.from_rugged("testrepo.git")
+  end
 
   def test_lookup_raises_error_if_object_type_does_not_match
     assert_raises Rugged::InvalidError do
@@ -123,7 +125,10 @@ class BlobTest < Rugged::TestCase
 end
 
 class BlobWriteTest < Rugged::TestCase
-  include Rugged::TempRepositoryAccess
+  def setup
+    @source_repo = FixtureRepo.from_rugged("testrepo.git")
+    @repo = FixtureRepo.clone(@source_repo)
+  end
 
   def test_fetch_blob_content_with_nulls
     content = "100644 example_helper.rb\x00\xD3\xD5\xED\x9DA4_"+
@@ -171,7 +176,9 @@ class BlobWriteTest < Rugged::TestCase
 end
 
 class BlobLOCTest < Rugged::TestCase
-  include Rugged::TempRepositoryAccess
+  def setup
+    @repo = FixtureRepo.from_rugged("testrepo.git")
+  end
 
   def write_blob(data)
     sha = Rugged::Blob.from_buffer(@repo, data)
@@ -209,15 +216,9 @@ class BlobLOCTest < Rugged::TestCase
   end
 end
 
-class BlobDiffTest < Rugged::SandboxedTestCase
+class BlobDiffTest < Rugged::TestCase
   def setup
-    super
-    @repo = sandbox_init("diff")
-  end
-
-  def teardown
-    @repo.close
-    super
+    @repo = FixtureRepo.from_libgit2("diff")
   end
 
   def test_diff_blob
@@ -351,7 +352,9 @@ class BlobDiffTest < Rugged::SandboxedTestCase
 end
 
 class BlobCreateFromIOTest < Rugged::TestCase
-  include Rugged::TempRepositoryAccess
+  def setup
+    @repo = FixtureRepo.from_rugged("testrepo.git")
+  end
 
   def test_write_blob_from_io_with_hintpath
     file_path= File.join(TEST_DIR, (File.join('fixtures', 'archive.tar.gz')))
@@ -415,7 +418,9 @@ class BlobCreateFromIOTest < Rugged::TestCase
 end
 
 class BlobHashSignatureTest < Rugged::TestCase
-  include Rugged::RepositoryAccess
+  def setup
+    @repo = FixtureRepo.from_rugged("testrepo.git")
+  end
 
   LOREM = <<-LOREM
 Lorem ipsum dolor sit amet, consectetur adipiscing elit.
@@ -445,4 +450,3 @@ LOREM
     assert Rugged::Blob::HashSignature.compare(sig1, sig2) > 75
   end
 end
-

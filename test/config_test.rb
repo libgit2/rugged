@@ -1,7 +1,9 @@
 require "test_helper"
 
-class ConfigTest < Rugged::TestCase 
-  include Rugged::RepositoryAccess
+class ConfigTest < Rugged::TestCase
+  def setup
+    @repo = FixtureRepo.from_rugged("testrepo.git")
+  end
 
   def test_read_config_file
     config = @repo.config
@@ -22,7 +24,11 @@ class ConfigTest < Rugged::TestCase
 end
 
 class ConfigWriteTest < Rugged::TestCase
-  include Rugged::TempRepositoryAccess
+  def setup
+    @source_repo = FixtureRepo.from_rugged("testrepo.git")
+    @repo = FixtureRepo.clone(@source_repo)
+    @path = @repo.workdir
+  end
 
   def test_write_config_values
     config = @repo.config

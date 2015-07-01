@@ -6,62 +6,80 @@ require 'pp'
 
 module Rugged
   class TestCase < MiniTest::Unit::TestCase
+    # Helper methods to
+    module FixtureRepo
+      # Create a new, empty repository.
+      def self.empty(*args)
+        path = Dir.mktmpdir("rugged-empty")
+        with_cleanup(Rugged::Repository.init_at(path, *args), path)
+      rescue
+        FileUtils.remove_entry_secure(path)
+        raise
+      end
+
+      # Create a repository based on a rugged fixture repo.
+      def self.from_rugged(name, *args)
+        path = Dir.mktmpdir("rugged-#{name}")
+
+        FileUtils.cp_r(File.join(TestCase::TEST_DIR, "fixtures", name, "."), path)
+
+        prepare(path)
+
+        with_cleanup(Rugged::Repository.new(path, *args), path)
+      rescue
+        FileUtils.remove_entry_secure(path)
+        raise
+      end
+
+      # Create a repository based on a libgit2 fixture repo.
+      def self.from_libgit2(name, *args)
+        path = Dir.mktmpdir("rugged-libgit2-#{name}")
+
+        FileUtils.cp_r(File.join(TestCase::LIBGIT2_FIXTURE_DIR, name, "."), path)
+
+        prepare(path)
+
+        with_cleanup(Rugged::Repository.new(path, *args), path)
+      rescue
+        FileUtils.remove_entry_secure(path)
+        raise
+      end
+
+      # Create a repository cloned from another Rugged::Repository instance.
+      def self.clone(repository)
+        path = Dir.mktmpdir("rugged")
+
+        `git clone --quiet -- #{repository.path} #{path}`
+
+        with_cleanup(Rugged::Repository.new(path), path)
+      rescue
+        FileUtils.remove_entry_secure(path)
+        raise
+      end
+
+      def self.prepare(path)
+        Dir.chdir(path) do
+          File.rename(".gitted", ".git") if File.exist?(".gitted")
+          File.rename("gitattributes", ".gitattributes") if File.exist?("gitattributes")
+          File.rename("gitignore", ".gitignore") if File.exist?("gitignore")
+        end
+      end
+
+      def self.finalize_cleanup(path)
+        proc { FileUtils.remove_entry_secure(path) }
+      end
+
+      def self.with_cleanup(repo, path)
+        ObjectSpace.define_finalizer(repo, finalize_cleanup(path))
+        repo
+      end
+    end
+
     TEST_DIR = File.dirname(File.expand_path(__FILE__))
     LIBGIT2_FIXTURE_DIR = File.expand_path("../../vendor/libgit2/tests/resources", __FILE__)
-
-    protected
-    def with_default_encoding(encoding, &block)
-      old_encoding = Encoding.default_internal
-
-      new_encoding = Encoding.find(encoding)
-      Encoding.default_internal = new_encoding
-
-      yield new_encoding
-
-      Encoding.default_internal = old_encoding
-    end
   end
 
-  class SandboxedTestCase < TestCase
-    def setup
-      super
-      @_sandbox_path = Dir.mktmpdir("rugged_sandbox")
-    end
-
-    def teardown
-      FileUtils.remove_entry_secure @_sandbox_path
-      super
-    end
-
-    def sandbox_fixture(repository)
-      FileUtils.cp_r(File.join(TestCase::LIBGIT2_FIXTURE_DIR, repository), @_sandbox_path)
-    end
-
-    # Fills the current sandbox folder with the files
-    # found in the given repository
-    def sandbox_init(repository)
-      sandbox_fixture(repository)
-
-      fixture_repo_path = File.join(@_sandbox_path, repository)
-      Dir.chdir(fixture_repo_path) do
-        File.rename(".gitted", ".git") if File.exist?(".gitted")
-        File.rename("gitattributes", ".gitattributes") if File.exist?("gitattributes")
-        File.rename("gitignore", ".gitignore") if File.exist?("gitignore")
-      end
-
-      Rugged::Repository.new(fixture_repo_path)
-    end
-
-    def sandbox_clone(repository, name)
-      Dir.chdir(@_sandbox_path) do
-        `git clone --quiet -- #{repository} #{name}`
-      end
-
-      Rugged::Repository.new(File.join(@_sandbox_path, name))
-    end
-  end
-
-  class OnlineTestCase < SandboxedTestCase
+  class OnlineTestCase < TestCase
     def reset_remote_repo
       remote_repo = Rugged::Repository.new(ENV['GITTEST_REMOTE_REPO_PATH'])
       remote_repo.references.each do |ref|
@@ -98,38 +116,30 @@ module Rugged
   #
   # This should be the same as the libgit2 fixture
   # setup in vendor/libgit2/tests/submodule/submodule_helpers.c
-  class SubmoduleTestCase < Rugged::SandboxedTestCase
-    def setup
-      super
-    end
-
+  class SubmoduleTestCase < Rugged::TestCase
     def setup_submodule
-      repository = sandbox_init('submod2')
-      sandbox_fixture('submod2_target')
+      repository = FixtureRepo.from_libgit2('submod2')
 
-      Dir.chdir(@_sandbox_path) do
+      rewrite_gitmodules(repository)
+
+      Dir.chdir(repository.workdir) do
         File.rename(
-          File.join('submod2_target', '.gitted'),
-          File.join('submod2_target', '.git')
-        )
-
-        rewrite_gitmodules(repository.workdir)
-
-        File.rename(
-          File.join('submod2', 'not-submodule', '.gitted'),
-          File.join('submod2', 'not-submodule', '.git')
+          File.join('not-submodule', '.gitted'),
+          File.join('not-submodule', '.git')
         )
 
         File.rename(
-          File.join('submod2', 'not', '.gitted'),
-          File.join('submod2', 'not', '.git')
+          File.join('not', '.gitted'),
+          File.join('not', '.git')
         )
       end
 
       repository
     end
 
-    def rewrite_gitmodules(workdir)
+    def rewrite_gitmodules(repo)
+      workdir = repo.workdir
+
       input_path = File.join(workdir, 'gitmodules')
       output_path = File.join(workdir, '.gitmodules')
       submodules = []
@@ -139,57 +149,31 @@ module Rugged
           input.each_line do |line|
             if %r{path = (?<submodule>.+$)} =~ line
               submodules << submodule.strip
-            # convert relative URLs in "url =" lines
-            elsif %r{url = (?<url>.+$)} =~ line
-              line = "url = #{File.expand_path(File.join(workdir, url))}\n"
+            elsif %r{url = \.\.\/(?<url>.+$)} =~ line
+              # Copy repositories pointed to by relative urls
+              # and replace the relative url by the absolute path to the
+              # copied repo.
+              path = Dir.mktmpdir(url)
+              FileUtils.cp_r(File.join(TestCase::LIBGIT2_FIXTURE_DIR, url, "."), path)
+              ObjectSpace.define_finalizer(repo, FixtureRepo.finalize_cleanup(path) )
+              line = "url = #{path}\n"
             end
             output.write(line)
           end
         end
-        FileUtils.remove_entry_secure(input_path)
+      end
 
-        # rename .gitted -> .git in submodule dirs
-        submodules.each do |submodule|
-          submodule_path = File.join(workdir, submodule)
-          if File.exist?(File.join(submodule_path, '.gitted'))
-            Dir.chdir(submodule_path) do
-              File.rename('.gitted', '.git')
-            end
+      FileUtils.remove_entry_secure(input_path)
+
+      # rename .gitted -> .git in submodule dirs
+      submodules.each do |submodule|
+        submodule_path = File.join(workdir, submodule)
+        if File.exist?(File.join(submodule_path, '.gitted'))
+          Dir.chdir(submodule_path) do
+            File.rename('.gitted', '.git')
           end
         end
       end
-    end
-  end
-
-  module RepositoryAccess
-    def setup
-      @path = File.dirname(__FILE__) + '/fixtures/testrepo.git/'
-      @repo = Rugged::Repository.new(@path)
-    end
-  end
-
-  module TempRepositoryAccess
-    def setup
-      @path = temp_repo("testrepo.git")
-      @repo = Rugged::Repository.new(@path)
-    end
-
-    def teardown
-      @repo.close
-      GC.start
-      destroy_temp_repo(@path)
-    end
-
-    protected
-    def temp_repo(repo)
-      dir = Dir.mktmpdir 'dir'
-      repo_dir = File.join(TestCase::TEST_DIR, (File.join('fixtures', repo, '.')))
-      `git clone --quiet -- #{repo_dir} #{dir}`
-      dir
-    end
-
-    def destroy_temp_repo(path)
-      FileUtils.remove_entry_secure(path)
     end
   end
 end

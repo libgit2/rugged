@@ -1,17 +1,9 @@
 require 'test_helper'
 require 'base64'
 
-class RepositoryTest < Rugged::SandboxedTestCase
+class RepositoryTest < Rugged::TestCase
   def setup
-    super
-
-    @repo = sandbox_init "testrepo.git"
-  end
-
-  def teardown
-    @repo.close
-
-    super
+    @repo = FixtureRepo.from_libgit2 "testrepo.git"
   end
 
   def test_last_commit
@@ -155,12 +147,9 @@ class RepositoryTest < Rugged::SandboxedTestCase
   def test_loading_alternates
     alt_path = File.dirname(__FILE__) + '/fixtures/alternate/objects'
     repo = Rugged::Repository.new(@repo.path, :alternates => [alt_path])
-    begin
-      assert_equal 1690, repo.each_id.count
-      assert repo.read('146ae76773c91e3b1d00cf7a338ec55ae58297e2')
-    ensure
-      repo.close
-    end
+
+    assert_equal 1690, repo.each_id.count
+    assert repo.read('146ae76773c91e3b1d00cf7a338ec55ae58297e2')
   end
 
   def test_alternates_with_invalid_path_type
@@ -305,15 +294,9 @@ class RepositoryTest < Rugged::SandboxedTestCase
   end
 end
 
-class MergeCommitsRepositoryTest < Rugged::SandboxedTestCase
+class MergeCommitsRepositoryTest < Rugged::TestCase
   def setup
-    super
-
-    @repo = sandbox_init("merge-resolve")
-  end
-
-  def teardown
-    @repo.close
+    @repo = FixtureRepo.from_libgit2("merge-resolve")
   end
 
   def test_merge_commits
@@ -339,19 +322,10 @@ class MergeCommitsRepositoryTest < Rugged::SandboxedTestCase
   end
 end
 
-class ShallowRepositoryTest < Rugged::SandboxedTestCase
+class ShallowRepositoryTest < Rugged::TestCase
   def setup
-    super
-
-    @repo = sandbox_init("testrepo.git")
-    @shallow_repo = sandbox_init("shallow.git")
-  end
-
-  def teardown
-    @repo.close
-    @shallow_repo.close
-
-    super
+    @repo = FixtureRepo.from_libgit2("testrepo.git")
+    @shallow_repo = FixtureRepo.from_libgit2("shallow.git")
   end
 
   def test_is_shallow
@@ -361,7 +335,10 @@ class ShallowRepositoryTest < Rugged::SandboxedTestCase
 end
 
 class RepositoryWriteTest < Rugged::TestCase
-  include Rugged::TempRepositoryAccess
+  def setup
+    @source_repo = FixtureRepo.from_rugged("testrepo.git")
+    @repo = FixtureRepo.clone(@source_repo)
+  end
 
   TEST_CONTENT = "my test data\n"
   TEST_CONTENT_TYPE = 'blob'
@@ -628,17 +605,9 @@ class RepositoryCloneTest < Rugged::TestCase
   end
 end
 
-class RepositoryNamespaceTest < Rugged::SandboxedTestCase
+class RepositoryNamespaceTest < Rugged::TestCase
   def setup
-    super
-
-    @repo = sandbox_init("testrepo.git")
-  end
-
-  def teardown
-    @repo.close
-
-    super
+    @repo = FixtureRepo.from_libgit2("testrepo.git")
   end
 
   def test_no_namespace
@@ -665,23 +634,15 @@ class RepositoryNamespaceTest < Rugged::SandboxedTestCase
   end
 end
 
-class RepositoryPushTest < Rugged::SandboxedTestCase
+class RepositoryPushTest < Rugged::TestCase
   def setup
-    super
-    @remote_repo = sandbox_init("testrepo.git")
+    @remote_repo = FixtureRepo.from_libgit2("testrepo.git")
     # We can only push to bare repos
     @remote_repo.config['core.bare'] = 'true'
 
-    @repo = sandbox_clone("testrepo.git", "testrepo")
+    @repo = FixtureRepo.clone(@remote_repo)
     @repo.references.create("refs/heads/unit_test",
       "8496071c1b46c854b31185ea97743be6a8774479")
-  end
-
-  def teardown
-    @repo.close
-    @remote_repo.close
-
-    super
   end
 
   def test_push_single_ref
@@ -724,7 +685,7 @@ class RepositoryPushTest < Rugged::SandboxedTestCase
   end
 end
 
-class RepositoryAttributesTest < Rugged::SandboxedTestCase
+class RepositoryAttributesTest < Rugged::TestCase
 
   ATTRIBUTES = <<-ATTR
 *.txt linguist-lang=text
@@ -733,15 +694,9 @@ README is_readme
 ATTR
 
   def setup
-    super
-    @repo = sandbox_init("testrepo")
+    @repo = FixtureRepo.from_libgit2("testrepo")
     @repo.checkout_tree(@repo.rev_parse("refs/heads/dir"), :strategy => :force)
     IO.write(File.join(@repo.workdir, ".gitattributes"), ATTRIBUTES)
-  end
-
-  def teardown
-    @repo.close
-    super
   end
 
   def test_read_attributes_internal
@@ -791,24 +746,14 @@ ATTR
   end
 end
 
-class RepositoryCheckoutTest < Rugged::SandboxedTestCase
+class RepositoryCheckoutTest < Rugged::TestCase
   def setup
-    super
+    @repo = FixtureRepo.from_libgit2("testrepo")
+    @clone = FixtureRepo.clone(@repo)
 
-    @repo = sandbox_init("testrepo")
-    @clone = sandbox_clone("testrepo", "cloned_testrepo")
-
-    _bare = sandbox_init("testrepo.git")
+    _bare = FixtureRepo.from_libgit2("testrepo.git")
     @bare = Rugged::Repository.bare(_bare.path)
     _bare.close
-  end
-
-  def teardown
-    @bare.close
-    @clone.close
-    @repo.close
-
-    super
   end
 
   def verify_dir

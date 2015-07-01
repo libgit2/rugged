@@ -2,13 +2,7 @@ require 'test_helper'
 
 class OnlineFetchTest < Rugged::OnlineTestCase
   def setup
-    super
-    @repo = Rugged::Repository.init_at(File.join(@_sandbox_path, "repo"))
-  end
-
-  def teardown
-    @repo.close
-    super
+    @repo = FixtureRepo.empty
   end
 
   if git_creds?
