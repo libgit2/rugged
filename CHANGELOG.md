@@ -1,3 +1,10 @@
+*   Add `Rugged::Repository#checkout_index`.
+
+    This allows to perform checkout from a given GIT index.
+    It might be handy in case of manual merge conflicts resolution with user intervention.
+
+    *Dmytro Milinevskyy*
+
 *   Add accessors for the Repository ident.
 
     Added `Repository#ident` and `Repository#ident=` to read and set the
