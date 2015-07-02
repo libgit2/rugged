@@ -2531,7 +2531,7 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "default_signature", rb_git_repo_default_signature, 0);
 
 	rb_define_method(rb_cRuggedRepo, "checkout_tree", rb_git_checkout_tree, -1);
-    rb_define_method(rb_cRuggedRepo, "checkout_index", rb_git_checkout_index, -1);
+	rb_define_method(rb_cRuggedRepo, "checkout_index", rb_git_checkout_index, -1);
 	rb_define_method(rb_cRuggedRepo, "checkout_head", rb_git_checkout_head, -1);
 
 	rb_define_method(rb_cRuggedRepo, "cherrypick", rb_git_repo_cherrypick, -1);
