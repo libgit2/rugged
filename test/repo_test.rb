@@ -811,20 +811,16 @@ class RepositoryCheckoutTest < Rugged::SandboxedTestCase
     super
   end
 
-  def test_checkout_tree_with_commit
-    @repo.checkout_tree(@repo.rev_parse("refs/heads/dir"), :strategy => :force)
-    @repo.head = "refs/heads/dir"
-
+  def verify_dir
     assert File.exist?(File.join(@repo.workdir, "README"))
     assert File.exist?(File.join(@repo.workdir, "branch_file.txt"))
     assert File.exist?(File.join(@repo.workdir, "new.txt"))
     assert File.exist?(File.join(@repo.workdir, "a/b.txt"))
 
     refute File.exist?(File.join(@repo.workdir, "ab"))
+  end
 
-    @repo.checkout_tree(@repo.rev_parse("refs/heads/subtrees"), :strategy => :safe)
-    @repo.head = "refs/heads/subtrees"
-
+  def verify_subtrees
     assert File.exist?(File.join(@repo.workdir, "README"))
     assert File.exist?(File.join(@repo.workdir, "branch_file.txt"))
     assert File.exist?(File.join(@repo.workdir, "new.txt"))
@@ -836,16 +832,29 @@ class RepositoryCheckoutTest < Rugged::SandboxedTestCase
     refute File.exist?(File.join(@repo.workdir, "a"))
   end
 
+  def test_checkout_tree_with_commit
+    @repo.checkout_tree(@repo.rev_parse("refs/heads/dir"), :strategy => :force)
+    @repo.head = "refs/heads/dir"
+    verify_dir
+
+    @repo.checkout_tree(@repo.rev_parse("refs/heads/subtrees"), :strategy => :safe)
+    @repo.head = "refs/heads/subtrees"
+    verify_subtrees
+  end
+
   def test_checkout_with_revspec_string
     @repo.checkout_tree("refs/heads/dir", :strategy => :force)
     @repo.head = "refs/heads/dir"
+    verify_dir
+  end
 
-    assert File.exist?(File.join(@repo.workdir, "README"))
-    assert File.exist?(File.join(@repo.workdir, "branch_file.txt"))
-    assert File.exist?(File.join(@repo.workdir, "new.txt"))
-    assert File.exist?(File.join(@repo.workdir, "a/b.txt"))
-
-    refute File.exist?(File.join(@repo.workdir, "ab"))
+  def test_checkout_tree_with_index
+    index = @repo.index
+    head = @repo.references["refs/heads/dir"]
+    index.read_tree head.target.tree
+    @repo.checkout_index(index, :strategy => :force)
+    @repo.head = "refs/heads/dir"
+    verify_dir
   end
 
   def test_checkout_tree_raises_errors_in_notify_cb
