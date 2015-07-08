@@ -6,7 +6,12 @@ require 'pp'
 
 module Rugged
   class TestCase < MiniTest::Unit::TestCase
-    # Helper methods to
+    # Automatically clean up created fixture repos after each test run
+    def after_teardown
+      Rugged::TestCase::FixtureRepo.eager_teardown
+      super
+    end
+
     module FixtureRepo
       # Create a new, empty repository.
       def self.empty(*args)
@@ -66,11 +71,26 @@ module Rugged
       end
 
       def self.finalize_cleanup(path)
-        proc { FileUtils.remove_entry_secure(path) }
+        proc { FileUtils.remove_entry_secure(path) if File.exist?(path) }
       end
 
+      # Try to eagerly delete directories containing fixture repos.
+      def self.eager_teardown
+        while path = self.directories.pop
+          FileUtils.remove_entry_secure(path) rescue nil
+        end
+      end
+
+      def self.directories
+        @directories ||= []
+      end
+
+      # Schedule the given +path+ to be deleted, either when
+      # +FixtureRepo.eager_teardown+ is called or when the given +repo+
+      # gets gc'ed.
       def self.with_cleanup(repo, path)
         ObjectSpace.define_finalizer(repo, finalize_cleanup(path))
+        self.directories << path
         repo
       end
     end
