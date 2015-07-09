@@ -1,8 +1,20 @@
 require 'test_helper'
 
-class SubmoduleTest < Rugged::SubmoduleTestCase
+class SubmoduleTest < Rugged::TestCase
   def setup
-    @repo = setup_submodule
+    @repo = FixtureRepo.from_libgit2('submod2').tap do |repo|
+      Dir.chdir(repo.workdir) do
+        File.rename(
+          File.join('not-submodule', '.gitted'),
+          File.join('not-submodule', '.git')
+        )
+
+        File.rename(
+          File.join('not', '.gitted'),
+          File.join('not', '.git')
+        )
+      end
+    end
   end
 
   class TestException < StandardError
