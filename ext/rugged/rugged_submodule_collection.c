@@ -291,10 +291,10 @@ static git_submodule_update_t rb_git_subm_update_rule_toC(VALUE rb_update_rule)
 static VALUE rb_git_submodule_update(VALUE self, VALUE rb_name_or_submodule, VALUE rb_settings)
 {
 	git_repository *repo;
-	git_submodule_ignore_t ignore_rule;
-	git_submodule_update_t update_rule;
+	git_submodule_ignore_t ignore_rule = GIT_SUBMODULE_IGNORE_UNSPECIFIED;
+	git_submodule_update_t update_rule = GIT_SUBMODULE_UPDATE_DEFAULT;
 	const char *submodule_name;
-	int fetch_recurse_submodules;
+	int fetch_recurse_submodules = 0;
 	VALUE rb_repo = rugged_owner(self);
 	VALUE rb_url, rb_fetch_recurse_submodules, rb_ignore_rule, rb_update_rule;
 

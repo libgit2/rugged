@@ -514,7 +514,6 @@ static VALUE rb_git_remote_check_connection(int argc, VALUE *argv, VALUE self)
 static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 {
 	git_remote *remote;
-	git_repository *repo;
 	git_strarray refspecs;
 	git_fetch_options opts = GIT_FETCH_OPTIONS_INIT;
 	const git_transfer_progress *stats;
@@ -523,15 +522,13 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 	char *log_message = NULL;
 	int error;
 
-	VALUE rb_options, rb_refspecs, rb_result = Qnil, rb_repo = rugged_owner(self);
+	VALUE rb_options, rb_refspecs, rb_result = Qnil;
 
 	rb_scan_args(argc, argv, "01:", &rb_refspecs, &rb_options);
 
 	rugged_rb_ary_to_strarray(rb_refspecs, &refspecs);
 
 	Data_Get_Struct(self, git_remote, remote);
-	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
 
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &opts.callbacks, &payload);
 
@@ -594,9 +591,7 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 static VALUE rb_git_remote_push(int argc, VALUE *argv, VALUE self)
 {
 	VALUE rb_refspecs, rb_options;
-	VALUE rb_repo = rugged_owner(self);
 
-	git_repository *repo;
 	git_remote *remote;
 	git_strarray refspecs;
 	git_push_options opts = GIT_PUSH_OPTIONS_INIT;
@@ -609,8 +604,6 @@ static VALUE rb_git_remote_push(int argc, VALUE *argv, VALUE self)
 
 	rugged_rb_ary_to_strarray(rb_refspecs, &refspecs);
 
-	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
 	Data_Get_Struct(self, git_remote, remote);
 
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &opts.callbacks, &payload);
