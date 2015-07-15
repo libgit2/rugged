@@ -8,7 +8,7 @@ module Rugged
   class TestCase < MiniTest::Unit::TestCase
     # Automatically clean up created fixture repos after each test run
     def after_teardown
-      Rugged::TestCase::FixtureRepo.eager_teardown
+      Rugged::TestCase::FixtureRepo.teardown
       super
     end
 
@@ -16,60 +16,46 @@ module Rugged
       # Create a new, empty repository.
       def self.empty(*args)
         path = Dir.mktmpdir("rugged-empty")
-        Rugged::Repository.init_at(path, *args).tap do |repo|
-          schedule_cleanup(repo, path)
-        end
-      rescue
-        FileUtils.remove_entry_secure(path)
-        raise
+        ensure_cleanup(path)
+        Rugged::Repository.init_at(path, *args)
       end
 
       # Create a repository based on a rugged fixture repo.
       def self.from_rugged(name, *args)
         path = Dir.mktmpdir("rugged-#{name}")
+        ensure_cleanup(path)
 
         FileUtils.cp_r(File.join(TestCase::TEST_DIR, "fixtures", name, "."), path)
 
         prepare(path)
 
         Rugged::Repository.new(path, *args).tap do |repo|
-          schedule_cleanup(repo, path)
           rewrite_gitmodules(repo) unless repo.bare?
         end
-      rescue
-        FileUtils.remove_entry_secure(path)
-        raise
       end
 
       # Create a repository based on a libgit2 fixture repo.
       def self.from_libgit2(name, *args)
         path = Dir.mktmpdir("rugged-libgit2-#{name}")
+        ensure_cleanup(path)
 
         FileUtils.cp_r(File.join(TestCase::LIBGIT2_FIXTURE_DIR, name, "."), path)
 
         prepare(path)
 
         Rugged::Repository.new(path, *args).tap do |repo|
-          schedule_cleanup(repo, path)
           rewrite_gitmodules(repo) unless repo.bare?
         end
-      rescue
-        FileUtils.remove_entry_secure(path)
-        raise
       end
 
       # Create a repository cloned from another Rugged::Repository instance.
       def self.clone(repository)
         path = Dir.mktmpdir("rugged")
+        ensure_cleanup(path)
 
         `git clone --quiet -- #{repository.path} #{path}`
 
-        Rugged::Repository.new(path).tap do |repo|
-          schedule_cleanup(repo, path)
-        end
-      rescue
-        FileUtils.remove_entry_secure(path)
-        raise
+        Rugged::Repository.new(path)
       end
 
       def self.prepare(path)
@@ -104,8 +90,8 @@ module Rugged
                 # copied repo.
                 url.strip!
                 path = Dir.mktmpdir(url)
+                ensure_cleanup(path)
                 FileUtils.cp_r(File.join(TestCase::LIBGIT2_FIXTURE_DIR, url, "."), path)
-                schedule_cleanup(repo, path)
 
                 line = "url = #{path}\n"
               end
@@ -127,26 +113,18 @@ module Rugged
         end
       end
 
-      def self.finalize_cleanup(path)
-        proc { FileUtils.remove_entry_secure(path) if File.exist?(path) }
-      end
-
-      # Try to eagerly delete directories containing fixture repos.
-      def self.eager_teardown
-        while path = self.directories.pop
-          FileUtils.remove_entry_secure(path) rescue nil
-        end
+      # Delete temp directories that got created
+      def self.teardown
+        self.directories.each { |path| FileUtils.remove_entry_secure(path) }
+        self.directories.clear
       end
 
       def self.directories
         @directories ||= []
       end
 
-      # Schedule the given +path+ to be deleted, either when
-      # +FixtureRepo.eager_teardown+ is called or when the given +repo+
-      # gets gc'ed.
-      def self.schedule_cleanup(repo, path)
-        ObjectSpace.define_finalizer(repo, finalize_cleanup(path))
+      # Registers the given +path+ to be deleted when #teardown is called.
+      def self.ensure_cleanup(path)
         self.directories << path
       end
     end
