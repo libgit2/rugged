@@ -22,6 +22,16 @@ class OnlineCloneTest < Rugged::OnlineTestCase
       end
     end
 
+    def test_clone_over_ssh_with_credentials_from_memory
+      Dir.mktmpdir do |dir|
+        repo = Rugged::Repository.clone_at(ENV['GITTEST_REMOTE_SSH_URL'], dir, {
+          credentials: ssh_key_credential_from_memory
+        })
+
+        assert_instance_of Rugged::Repository, repo
+      end
+    end
+
     def test_clone_over_ssh_with_credentials_from_agent
       Dir.mktmpdir do |dir|
         repo = Rugged::Repository.clone_at(ENV['GITTEST_REMOTE_SSH_URL'], dir, {

@@ -32,6 +32,16 @@ module Rugged
       end
     end
 
+    class SshKeyFromMemory
+      def initialize(options)
+        @username, @publickey, @privatekey, @passphrase = options[:username], options[:publickey], options[:privatekey], options[:passphrase]
+      end
+
+      def call(url, username_from_url, allowed_types)
+        self
+      end
+    end
+
     # A "default" credential usable for Negotiate mechanisms like NTLM or
     # Kerberos authentication
     class Default
