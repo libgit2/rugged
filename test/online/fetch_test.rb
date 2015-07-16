@@ -49,6 +49,16 @@ class OnlineFetchTest < Rugged::OnlineTestCase
       })
     end
 
+    def test_fetch_over_ssh_with_credentials_from_memory
+      reset_remote_repo
+
+      @repo.remotes.create("origin", ENV['GITTEST_REMOTE_SSH_URL'])
+
+      @repo.fetch("origin", {
+        credentials: ssh_key_credential_from_memory
+      })
+    end
+
     def test_fetch_over_ssh_with_credentials_from_agent
       reset_remote_repo
 
