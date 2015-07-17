@@ -152,6 +152,7 @@ oid = repo.write("This is a blob.", :blob)
 index = repo.index
 index.read_tree(repo.head.target.tree)
 index.add(:path => "README.md", :oid => oid, :mode => 0100644)
+index.write
 
 options = {}
 options[:tree] = index.write_tree(repo)
@@ -377,6 +378,9 @@ index.add(ientry)
 
 # Stage. Create ientry from file in path, updates the index.
 index.add(path)
+
+# Write the index back to memory.
+index.write
 ```
 
 ---
