@@ -2,10 +2,8 @@ require "test_helper"
 require 'base64'
 
 class WalkerTest < Rugged::TestCase
-  include Rugged::RepositoryAccess
-
   def setup
-    super
+    @repo = FixtureRepo.from_rugged("testrepo.git")
     @walker = Rugged::Walker.new(@repo)
   end
 
@@ -150,9 +148,9 @@ end
 # testrepo (the non-bare repo) is the one with non-linear history,
 # which we need in order to make sure that we are activating the
 # first-parent simplification
-class WalkerTest2 < Rugged::SandboxedTestCase
+class WalkerTest2 < Rugged::TestCase
   def test_simplify_first_parent
-    repo = sandbox_init("testrepo")
+    repo = FixtureRepo.from_libgit2("testrepo")
     walker = Rugged::Walker.new(repo)
     walker.push("099fabac3a9ea935598528c27f866e34089c2eff")
     walker.simplify_first_parent

@@ -2,17 +2,9 @@ require 'test_helper'
 
 class OnlineGitPushTest < Rugged::OnlineTestCase
   def setup
-    super
-
-    @repo = sandbox_init("push_src")
+    @repo = FixtureRepo.from_libgit2("push_src")
     @remote = @repo.remotes.create("test", ENV['GITTEST_REMOTE_GIT_URL'])
     @target_repo = Rugged::Repository.new(ENV['GITTEST_REMOTE_REPO_PATH'])
-  end
-
-  def teardown
-    @repo.close
-
-    super
   end
 
   if git_creds?
@@ -37,17 +29,9 @@ end
 if Rugged.features.include?(:ssh)
   class OnlineSshPushTest < Rugged::OnlineTestCase
     def setup
-      super
-
-      @repo = sandbox_init("push_src")
+      @repo = FixtureRepo.from_libgit2("push_src")
       @remote = @repo.remotes.create("test", ENV['GITTEST_REMOTE_SSH_URL'])
       @target_repo = Rugged::Repository.new(ENV['GITTEST_REMOTE_REPO_PATH'])
-    end
-
-    def teardown
-      @repo.close
-
-      super
     end
 
     if ssh_creds?

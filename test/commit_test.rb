@@ -1,7 +1,9 @@
 require "test_helper"
 
 class TestCommit < Rugged::TestCase
-  include Rugged::RepositoryAccess
+  def setup
+    @repo = FixtureRepo.from_rugged("testrepo.git")
+  end
 
   def test_lookup_raises_error_if_object_type_does_not_match
     assert_raises Rugged::InvalidError do
@@ -174,7 +176,10 @@ class TestCommit < Rugged::TestCase
 end
 
 class CommitWriteTest < Rugged::TestCase
-  include Rugged::TempRepositoryAccess
+  def setup
+    @source_repo = FixtureRepo.from_rugged("testrepo.git")
+    @repo = FixtureRepo.clone(@source_repo)
+  end
 
   def test_write_commit_with_time
     person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
@@ -258,17 +263,9 @@ class CommitWriteTest < Rugged::TestCase
   end
 end
 
-class CommitToMboxTest < Rugged::SandboxedTestCase
+class CommitToMboxTest < Rugged::TestCase
   def setup
-    super
-
-    @repo = sandbox_init "diff_format_email"
-  end
-
-  def teardown
-    @repo.close
-
-    super
+    @repo = FixtureRepo.from_libgit2 "diff_format_email"
   end
 
   def test_format_to_mbox

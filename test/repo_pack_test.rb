@@ -2,7 +2,9 @@ require "test_helper"
 require 'base64'
 
 class PackfileTest < Rugged::TestCase
-  include Rugged::RepositoryAccess
+  def setup
+    @repo = FixtureRepo.from_rugged("testrepo.git")
+  end
 
   def test_packfile_object_exists
     assert @repo.exists?("41bc8c69075bbdb46c5c6f0566cc8cc5b46e8bd9")

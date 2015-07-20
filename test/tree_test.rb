@@ -1,7 +1,11 @@
 require "test_helper"
 
 class TreeTest < Rugged::TestCase
-  include Rugged::RepositoryAccess
+  def setup
+    @repo = FixtureRepo.from_rugged("testrepo.git")
+    @oid = "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b"
+    @tree = @repo.lookup(@oid)
+  end
 
   def test_lookup_raises_error_if_object_type_does_not_match
     assert_raises Rugged::InvalidError do
@@ -35,12 +39,6 @@ class TreeTest < Rugged::TestCase
       # tag
       subclass.lookup(@repo, "0c37a5391bbff43c37f0d0371823a5509eed5b1d")
     end
-  end
-
-  def setup
-    super
-    @oid = "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b"
-    @tree = @repo.lookup(@oid)
   end
 
   def test_read_tree_data
@@ -114,7 +112,10 @@ class TreeTest < Rugged::TestCase
 end
 
 class TreeWriteTest < Rugged::TestCase
-  include Rugged::TempRepositoryAccess
+  def setup
+    @source_repo = FixtureRepo.from_rugged("testrepo.git")
+    @repo = FixtureRepo.clone(@source_repo)
+  end
 
   def test_write_tree_data
     entry = {:type => :blob,

@@ -1,7 +1,9 @@
 require 'test_helper'
 
 class NoteTest < Rugged::TestCase
-  include Rugged::RepositoryAccess
+  def setup
+    @repo = FixtureRepo.from_rugged("testrepo.git")
+  end
 
   def test_read_note_for_object
     oid = "36060c58702ed4c2a40832c51758d5344201d89a"
@@ -49,7 +51,10 @@ class NoteTest < Rugged::TestCase
 end
 
 class NoteWriteTest < Rugged::TestCase
-  include Rugged::TempRepositoryAccess
+  def setup
+    @source_repo = FixtureRepo.from_rugged("testrepo.git")
+    @repo = FixtureRepo.clone(@source_repo)
+  end
 
   def test_create_note
     person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }

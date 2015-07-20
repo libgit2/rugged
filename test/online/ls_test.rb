@@ -2,15 +2,7 @@ require 'test_helper'
 
 class OnlineLsTest < Rugged::OnlineTestCase
   def setup
-    super
-
-    @repo = sandbox_init("push_src")
-  end
-
-  def teardown
-    @repo.close
-
-    super
+    @repo = FixtureRepo.from_libgit2("push_src")
   end
 
   if Rugged.features.include?(:https)
@@ -33,8 +25,6 @@ class OnlineLsTest < Rugged::OnlineTestCase
 
   if git_creds?
     def test_ls_over_git
-      reset_remote_repo
-
       remote = @repo.remotes.create("origin", ENV['GITTEST_REMOTE_GIT_URL'])
       remote.push(["refs/heads/b1:refs/heads/b1"])
 
@@ -46,8 +36,6 @@ class OnlineLsTest < Rugged::OnlineTestCase
 
   if Rugged.features.include?(:ssh) && ssh_creds?
     def test_ls_over_ssh_with_credentials
-      reset_remote_repo
-
       remote = @repo.remotes.create("origin", ENV['GITTEST_REMOTE_SSH_URL'])
       remote.push(["refs/heads/b1:refs/heads/b1"], credentials: ssh_key_credential)
 

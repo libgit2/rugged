@@ -2,7 +2,9 @@ require "test_helper"
 require 'net/http'
 
 class RemoteNetworkTest < Rugged::TestCase
-  include Rugged::RepositoryAccess
+  def setup
+    @repo = FixtureRepo.from_rugged("testrepo.git")
+  end
 
   def skip_if_unreachable
     begin
@@ -44,15 +46,9 @@ class RemoteNetworkTest < Rugged::TestCase
   end
 end
 
-class RemoteTest < Rugged::SandboxedTestCase
+class RemoteTest < Rugged::TestCase
   def setup
-    super
-    @repo = sandbox_init("testrepo.git")
-  end
-
-  def teardown
-    @repo.close
-    super
+    @repo = FixtureRepo.from_libgit2("testrepo.git")
   end
 
   class TestException < StandardError
@@ -126,25 +122,17 @@ class RemoteTest < Rugged::SandboxedTestCase
   end
 end
 
-class RemotePushTest < Rugged::SandboxedTestCase
+class RemotePushTest < Rugged::TestCase
   def setup
-    super
-    @remote_repo = sandbox_init("testrepo.git")
+    @remote_repo = FixtureRepo.from_libgit2("testrepo.git")
     # We can only push to bare repos
     @remote_repo.config['core.bare'] = 'true'
 
-    @repo = sandbox_clone("testrepo.git", "testrepo")
+    @repo = FixtureRepo.clone(@remote_repo)
     @repo.references.create("refs/heads/unit_test",
       "8496071c1b46c854b31185ea97743be6a8774479")
 
     @remote = @repo.remotes['origin']
-  end
-
-  def teardown
-    @repo.close
-    @remote_repo.close
-
-    super
   end
 
   def test_push_single_ref
@@ -183,7 +171,10 @@ class RemotePushTest < Rugged::SandboxedTestCase
 end
 
 class RemoteWriteTest < Rugged::TestCase
-  include Rugged::TempRepositoryAccess
+  def setup
+    @source_repo = FixtureRepo.from_rugged("testrepo.git")
+    @repo = FixtureRepo.clone(@source_repo)
+  end
 
   def test_remote_add
     @repo.remotes.create('upstream', 'git://github.com/libgit2/libgit2.git')
@@ -279,15 +270,9 @@ class RemoteTransportTest < Rugged::TestCase
   end
 
   def setup
-    @path = Dir.mktmpdir 'dir'
-    @repo = Rugged::Repository.init_at(@path, false)
+    @repo = FixtureRepo.empty
     repo_dir = File.join(TEST_DIR, (File.join('fixtures', 'testrepo.git', '.')))
     @remote = @repo.remotes.create('origin', repo_dir)
-  end
-
-  def teardown
-    @repo.close
-    FileUtils.remove_entry_secure(@path)
   end
 
   def test_remote_ls

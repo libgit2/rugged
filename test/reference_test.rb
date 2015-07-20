@@ -1,15 +1,9 @@
 # encoding: UTF-8
 require "test_helper"
 
-class ReferenceTest < Rugged::SandboxedTestCase
+class ReferenceTest < Rugged::TestCase
   def setup
-    super
-    @repo = sandbox_init("testrepo")
-  end
-
-  def teardown
-    @repo.close
-    super
+    @repo = FixtureRepo.from_libgit2("testrepo")
   end
 
   def test_reference_validity
@@ -131,45 +125,37 @@ class ReferenceTest < Rugged::SandboxedTestCase
   end
 
   def test_reference_is_branch
-    repo = sandbox_init("testrepo.git")
+    repo = FixtureRepo.from_libgit2("testrepo.git")
 
-    begin
-      assert repo.references["refs/heads/master"].branch?
+    assert repo.references["refs/heads/master"].branch?
 
-      refute repo.references["refs/remotes/test/master"].branch?
-      refute repo.references["refs/tags/test"].branch?
-    ensure
-      repo.close
-    end
+    refute repo.references["refs/remotes/test/master"].branch?
+    refute repo.references["refs/tags/test"].branch?
   end
 
   def test_reference_is_remote
-    repo = sandbox_init("testrepo.git")
-    begin
-      assert repo.references["refs/remotes/test/master"].remote?
+    repo = FixtureRepo.from_libgit2("testrepo.git")
 
-      refute repo.references["refs/heads/master"].remote?
-      refute repo.references["refs/tags/test"].remote?
-    ensure
-      repo.close
-    end
+    assert repo.references["refs/remotes/test/master"].remote?
+
+    refute repo.references["refs/heads/master"].remote?
+    refute repo.references["refs/tags/test"].remote?
   end
 
   def test_reference_is_tag
-    repo = sandbox_init("testrepo.git")
-    begin
-      assert repo.references["refs/tags/test"].tag?
+    repo = FixtureRepo.from_libgit2("testrepo.git")
 
-      refute repo.references["refs/heads/master"].tag?
-      refute repo.references["refs/remotes/test/master"].tag?
-    ensure
-      repo.close
-    end
+    assert repo.references["refs/tags/test"].tag?
+
+    refute repo.references["refs/heads/master"].tag?
+    refute repo.references["refs/remotes/test/master"].tag?
   end
 end
 
 class ReferenceWriteTest < Rugged::TestCase
-  include Rugged::TempRepositoryAccess
+  def setup
+    @repo = FixtureRepo.from_rugged("testrepo.git")
+  end
 
   def test_create_force
     @repo.references.create("refs/heads/unit_test", "refs/heads/master")
@@ -286,11 +272,9 @@ class ReferenceWriteTest < Rugged::TestCase
   end
 end
 
-class ReflogTest < Rugged::SandboxedTestCase
+class ReflogTest < Rugged::TestCase
   def setup
-    super
-
-    @repo = sandbox_init("testrepo")
+    @repo = FixtureRepo.from_libgit2("testrepo")
 
     @ident = {
       name: 'Rugged User',
@@ -302,11 +286,6 @@ class ReflogTest < Rugged::SandboxedTestCase
 
     @ref = @repo.references.create("refs/heads/test-reflog",
       "a65fedf39aefe402d3bb6e24df4d4f5fe4547750")
-  end
-
-  def teardown
-    @repo.close
-    super
   end
 
   def test_create_default_log

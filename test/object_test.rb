@@ -2,7 +2,9 @@ require "test_helper"
 require 'base64'
 
 class ObjectTest < Rugged::TestCase
-  include Rugged::RepositoryAccess
+  def setup
+    @repo = FixtureRepo.from_rugged("testrepo.git")
+  end
 
   def test_lookup_can_lookup_any_object_type
     blob = Rugged::Object.lookup(@repo, "fa49b077972391ad58037050f2a75f74e3671e92")

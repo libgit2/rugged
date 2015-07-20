@@ -1,14 +1,8 @@
 require "test_helper"
 
-class TagTest < Rugged::SandboxedTestCase
+class TagTest < Rugged::TestCase
   def setup
-    super
-    @repo = sandbox_init("testrepo.git")
-  end
-
-  def teardown
-    @repo.close
-    super
+    @repo = FixtureRepo.from_libgit2("testrepo.git")
   end
 
   def test_lookup_raises_error_if_object_type_does_not_match
@@ -106,19 +100,13 @@ class TagTest < Rugged::SandboxedTestCase
   end
 end
 
-class AnnotatedTagTest < Rugged::SandboxedTestCase
+class AnnotatedTagTest < Rugged::TestCase
   def setup
-    super
-    @repo = sandbox_init("testrepo.git")
+    @repo = FixtureRepo.from_libgit2("testrepo.git")
     @tag = @repo.tags.create('annotated_tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
       :message => "test tag message\n",
       :tagger  => { :name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
     })
-  end
-
-  def teardown
-    @repo.close
-    super
   end
 
   def test_is_annotated
@@ -143,10 +131,9 @@ class AnnotatedTagTest < Rugged::SandboxedTestCase
   end
 end
 
-class AnnotatedTagObjectTest < Rugged::SandboxedTestCase
+class AnnotatedTagObjectTest < Rugged::TestCase
   def setup
-    super
-    @repo = sandbox_init("testrepo.git")
+    @repo = FixtureRepo.from_libgit2("testrepo.git")
     @annotation = @repo.tags.create_annotation("my-tag", "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
       :message => "test tag message\n",
       :tagger  => { :name => "Scott", :email => "schacon@gmail.com", :time => Time.now },
@@ -171,16 +158,10 @@ class AnnotatedTagObjectTest < Rugged::SandboxedTestCase
   end
 end
 
-class LightweightTagTest < Rugged::SandboxedTestCase
+class LightweightTagTest < Rugged::TestCase
   def setup
-    super
-    @repo = sandbox_init("testrepo.git")
+    @repo = FixtureRepo.from_libgit2("testrepo.git")
     @tag = @repo.tags.create('lightweight_tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644")
-  end
-
-  def teardown
-    @repo.close
-    super
   end
 
   def test_is_not_annotated
@@ -200,7 +181,10 @@ class LightweightTagTest < Rugged::SandboxedTestCase
 end
 
 class TagWriteTest < Rugged::TestCase
-  include Rugged::TempRepositoryAccess
+  def setup
+    @source_repo = FixtureRepo.from_rugged("testrepo.git")
+    @repo = FixtureRepo.clone(@source_repo)
+  end
 
   def test_writing_a_tag
     tag = @repo.tags.create('tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
