@@ -3,6 +3,7 @@ require "test_helper"
 class TestCommit < Rugged::TestCase
   def setup
     @repo = FixtureRepo.from_rugged("testrepo.git")
+    @repo.config['core.abbrev'] = 7
   end
 
   def test_lookup_raises_error_if_object_type_does_not_match
@@ -179,6 +180,7 @@ class CommitWriteTest < Rugged::TestCase
   def setup
     @source_repo = FixtureRepo.from_rugged("testrepo.git")
     @repo = FixtureRepo.clone(@source_repo)
+    @repo.config['core.abbrev'] = 7
   end
 
   def test_write_commit_with_time
@@ -266,6 +268,7 @@ end
 class CommitToMboxTest < Rugged::TestCase
   def setup
     @repo = FixtureRepo.from_libgit2 "diff_format_email"
+    @repo.config['core.abbrev'] = 7
   end
 
   def test_format_to_mbox
