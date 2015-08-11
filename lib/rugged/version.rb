@@ -1,3 +1,3 @@
 module Rugged
-  Version = VERSION = '0.23.0'
+  Version = VERSION = '0.23.1'
 end
