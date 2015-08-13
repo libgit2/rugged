@@ -2,6 +2,7 @@
 # see travis-ci.org for details
 
 language: ruby
+cache: bundler
 
 os:
   - linux
