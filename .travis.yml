@@ -50,7 +50,7 @@ deploy:
   gem: rugged
   on:
     condition:
-      - "$TRAVIS_OS_NAME" = "linux"
-      - "$TRAVIS_TAG" != "" || "$TRAVIS_BRANCH" = "master"
+      - '"$TRAVIS_OS_NAME" = "linux"'
+      - '"$TRAVIS_TAG" != "" || "$TRAVIS_BRANCH" = "master"'
     repo: libgit2/rugged
     ruby: 2.2.2
