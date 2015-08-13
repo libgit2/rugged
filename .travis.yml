@@ -1,6 +1,3 @@
-# Travis-CI Build for rugged
-# see travis-ci.org for details
-
 language: ruby
 cache: bundler
 
@@ -8,7 +5,6 @@ os:
   - linux
   - osx
 
-# Ruby versions to test against
 rvm:
   - 1.9.3
   - 2.0.0
@@ -37,3 +33,24 @@ before_install:
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then ./vendor/libgit2/script/install-deps-osx.sh; fi
 
 script: script/travisbuild
+
+before_deploy:
+  - echo "module Rugged" > lib/rugged/version.rb
+  - if [ ! -z "$TRAVIS_TAG" ]; then
+  -   echo "  Version = VERSION = \"$(echo "$TRAVIS_TAG" | tail -c +2)\"" >> lib/rugged/version.rb
+  - else
+  -   echo "  Version = VERSION = \"$(git describe --tags --first-parent | tail -c +2 | tr '-' '.').pre\"" >> lib/rugged/version.rb
+  - fi;
+  - echo "end" >> lib/rugged/version.rb
+
+deploy:
+  provider: rubygems
+  api_key:
+    secure: ffCPQ8RQ+0GTAeHmBUCBMKa2K0aegFd++BQ9m8kNSd2pC/PtWtrqeiG6ZkcEsaN/CbiJrNsetibqMq44IL+r5Eq2NyQC869VfOb0KRExI2ovVfan0NoE1U+pyFOwMy7V5OG6EZ1rCkFazJdEHiPbjO0xoEq4jZuygEIAhQJGvJo=
+  gem: rugged
+  on:
+    condition: "$TRAVIS_OS_NAME = linux"
+    branch: master
+    tags: true
+    repo: libgit2/rugged
+    ruby: 2.2.2

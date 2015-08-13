@@ -1,3 +1,4 @@
 module Rugged
-  Version = VERSION = '0.23.1'
+  # This file is automatically overwritten during a deployment from Travis.
+  Version = VERSION = "#{`git describe --tags --first-parent | tail -c +2 | tr '-' '.'`.strip}.pre" rescue "0.0.0.dev"
 end
