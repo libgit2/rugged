@@ -49,8 +49,8 @@ deploy:
     secure: ffCPQ8RQ+0GTAeHmBUCBMKa2K0aegFd++BQ9m8kNSd2pC/PtWtrqeiG6ZkcEsaN/CbiJrNsetibqMq44IL+r5Eq2NyQC869VfOb0KRExI2ovVfan0NoE1U+pyFOwMy7V5OG6EZ1rCkFazJdEHiPbjO0xoEq4jZuygEIAhQJGvJo=
   gem: rugged
   on:
-    condition: "$TRAVIS_OS_NAME = linux"
-    branch: master
-    tags: true
+    condition:
+      - "$TRAVIS_OS_NAME" = "linux"
+      - "$TRAVIS_TAG" != "" || "$TRAVIS_BRANCH" = "master"
     repo: libgit2/rugged
     ruby: 2.2.2
