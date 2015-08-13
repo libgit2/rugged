@@ -34,14 +34,14 @@ before_install:
 
 script: script/travisbuild
 
-before_deploy:
-  - echo "module Rugged" > lib/rugged/version.rb
-  - if [ ! -z "$TRAVIS_TAG" ]; then
-  -   echo "  Version = VERSION = \"$(echo "$TRAVIS_TAG" | tail -c +2)\"" >> lib/rugged/version.rb
-  - else
-  -   echo "  Version = VERSION = \"$(git describe --tags --first-parent | tail -c +2 | tr '-' '.').pre\"" >> lib/rugged/version.rb
-  - fi;
-  - echo "end" >> lib/rugged/version.rb
+before_deploy: |
+  echo "module Rugged" > lib/rugged/version.rb
+  if [ ! -z "$TRAVIS_TAG" ]; then
+   echo "  Version = VERSION = \"$(echo "$TRAVIS_TAG" | tail -c +2)\"" >> lib/rugged/version.rb
+  else
+   echo "  Version = VERSION = \"$(git describe --tags --first-parent | tail -c +2 | tr '-' '.').pre\"" >> lib/rugged/version.rb
+  fi;
+  echo "end" >> lib/rugged/version.rb
 
 deploy:
   provider: rubygems
