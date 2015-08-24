@@ -111,6 +111,28 @@ static VALUE rb_git_features(VALUE self)
 
 /*
  *  call-seq:
+ *    Rugged.valid_full_oid?(oid) -> true or false
+ *
+ *  Checks to see if a string contains a full 40-character sha1.
+ *
+ *    Rugged.valid_full_oid?('d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f')
+ *    #=> true
+ */
+static VALUE rb_git_valid_full_oid(VALUE self, VALUE hex)
+{
+	git_oid oid;
+
+	Check_Type(hex, T_STRING);
+	int errorcode = git_oid_fromstr(&oid, StringValueCStr(hex));
+	if (errorcode < 0) {
+		return Qfalse;
+	} else {
+		return Qtrue;
+	}
+}
+
+/*
+ *  call-seq:
  *    Rugged.hex_to_raw(oid) -> raw_buffer
  *
  *  Turn a string of 40 hexadecimal characters into the buffer of
@@ -421,6 +443,7 @@ void Init_rugged(void)
 
 	rb_define_module_function(rb_mRugged, "libgit2_version", rb_git_libgit2_version, 0);
 	rb_define_module_function(rb_mRugged, "features", rb_git_features, 0);
+	rb_define_module_function(rb_mRugged, "valid_full_oid?", rb_git_valid_full_oid, 1);
 	rb_define_module_function(rb_mRugged, "hex_to_raw", rb_git_hex_to_raw, 1);
 	rb_define_module_function(rb_mRugged, "raw_to_hex", rb_git_raw_to_hex, 1);
 	rb_define_module_function(rb_mRugged, "minimize_oid", rb_git_minimize_oid, -1);
