@@ -44,6 +44,12 @@ class RuggedTest < Rugged::TestCase
     assert features.is_a? Array
   end
 
+  def test_valid_full_oid
+    assert Rugged.valid_full_oid?("ce08fe4884650f067bd5703b6a59a8b3b3c99a09")
+    refute Rugged.valid_full_oid?("nope")
+    refute Rugged.valid_full_oid?("ce08fe4884650f067bd5703b6a59a8b3b3c99a0")
+  end
+
   def test_hex_to_raw_oid
     raw = Rugged::hex_to_raw("ce08fe4884650f067bd5703b6a59a8b3b3c99a09")
     b64raw = Base64.encode64(raw).strip
