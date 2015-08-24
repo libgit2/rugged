@@ -121,9 +121,10 @@ static VALUE rb_git_features(VALUE self)
 static VALUE rb_git_valid_full_oid(VALUE self, VALUE hex)
 {
 	git_oid oid;
+	int errorcode;
 
 	Check_Type(hex, T_STRING);
-	int errorcode = git_oid_fromstr(&oid, StringValueCStr(hex));
+	errorcode = git_oid_fromstr(&oid, StringValueCStr(hex));
 	if (errorcode < 0) {
 		return Qfalse;
 	} else {
