@@ -21,6 +21,20 @@ class ConfigTest < Rugged::TestCase
     assert config['user.name'] != nil
     assert_nil config['core.bare']
   end
+
+  def test_snapshot
+    config = Rugged::Config.new(File.join(@repo.path, 'config'))
+    config['old.value'] = 5
+
+    snapshot = config.snapshot
+    assert_equal '5', snapshot['old.value']
+
+    config['new.value'] = 42
+    config['old.value'] = 1337
+
+    assert_equal '5', snapshot['old.value']
+    assert_nil snapshot['new.value']
+  end
 end
 
 class ConfigWriteTest < Rugged::TestCase
