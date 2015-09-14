@@ -328,6 +328,47 @@ static VALUE rb_git_config_snapshot(VALUE self)
 	return rugged_config_new(rb_obj_class(self), Qnil, snapshot);
 }
 
+/*
+ *  call-seq:
+ *    config.transaction { |config| }
+ *
+ *  Perform configuration changes in a transaction.
+ *
+ *  Locks the configuration, executes the given block and stores
+ *  any changes that were made to the configuration. If the block
+ *  throws an exception, all changes are rolled back automatically.
+ *
+ *  During the execution of the block, configuration changes don't
+ *  get stored to disk immediately, so reading from the configuration
+ *  will continue to return the values that were stored in the configuration
+ *  when the transaction was started.
+ */
+static VALUE rb_git_config_transaction(VALUE self)
+{
+	git_config *config;
+	git_transaction *tx;
+	VALUE rb_result;
+	int error = 0, exception = 0;
+
+	Data_Get_Struct(self, git_config, config);
+
+	git_config_lock(&tx, config);
+
+	rb_result = rb_protect(rb_yield, self, &exception);
+
+	if (!exception)
+		error = git_transaction_commit(tx);
+
+	git_transaction_free(tx);
+
+	if (exception)
+		rb_jump_tag(exception);
+	else if (error)
+		rugged_exception_check(error);
+
+	return rb_result;
+}
+
 void Init_rugged_config(void)
 {
 	/*
@@ -353,4 +394,5 @@ void Init_rugged_config(void)
 	rb_define_method(rb_cRuggedConfig, "to_hash", rb_git_config_to_hash, 0);
 
 	rb_define_method(rb_cRuggedConfig, "snapshot", rb_git_config_snapshot, 0);
+	rb_define_method(rb_cRuggedConfig, "transaction", rb_git_config_transaction, 0);
 }
