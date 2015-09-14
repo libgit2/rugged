@@ -306,6 +306,28 @@ static VALUE rb_git_config_open_default(VALUE klass)
 	return rugged_config_new(klass, Qnil, cfg);
 }
 
+/*
+ *  call-seq:
+ *    config.snapshot -> snapshot
+ *
+ *  Create a snapshot of the configuration.
+ *
+ *  Provides a consistent, read-only view of the configuration for
+ *  looking up complex values from a configuration.
+ */
+static VALUE rb_git_config_snapshot(VALUE self)
+{
+	git_config *config, *snapshot;
+
+	Data_Get_Struct(self, git_config, config);
+
+	rugged_exception_check(
+		git_config_snapshot(&snapshot, config)
+	);
+
+	return rugged_config_new(rb_obj_class(self), Qnil, snapshot);
+}
+
 void Init_rugged_config(void)
 {
 	/*
@@ -330,4 +352,5 @@ void Init_rugged_config(void)
 	rb_define_method(rb_cRuggedConfig, "each", rb_git_config_each_pair, 0);
 	rb_define_method(rb_cRuggedConfig, "to_hash", rb_git_config_to_hash, 0);
 
+	rb_define_method(rb_cRuggedConfig, "snapshot", rb_git_config_snapshot, 0);
 }
