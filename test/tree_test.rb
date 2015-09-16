@@ -130,3 +130,17 @@ class TreeWriteTest < Rugged::TestCase
     assert_equal 38, obj.read_raw.len
   end
 end
+
+class TreeUpdateTest < Rugged::TestCase
+  def setup
+    @source_repo = FixtureRepo.from_rugged("testrepo.git")
+    @repo = FixtureRepo.clone(@source_repo)
+  end
+
+  def test_treebuilder_remove
+    builder = Rugged::Tree::Builder.new(@repo, @repo.head.target.tree)
+    assert_equal builder.remove("new.txt"), true
+    assert_equal builder.remove("nonexistent file"), false
+  end
+
+end
