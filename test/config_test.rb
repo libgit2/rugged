@@ -35,6 +35,29 @@ class ConfigTest < Rugged::TestCase
     assert_equal '5', snapshot['old.value']
     assert_nil snapshot['new.value']
   end
+
+  def test_transaction
+    config = Rugged::Config.new(File.join(@repo.path, 'config'))
+    config['section.name'] = 'value'
+
+    config2 = Rugged::Config.new(File.join(@repo.path, 'config'))
+
+    config.transaction do
+      config['section.name'] = 'other value'
+      config['section2.name3'] = 'more value'
+
+      assert_equal 'value', config2['section.name']
+      assert_nil config2['section2.name3']
+
+      assert_equal 'value', config['section.name']
+      assert_nil config['section2.name3']
+    end
+
+    assert_equal 'other value', config['section.name']
+    assert_equal 'more value', config['section2.name3']
+    assert_equal 'other value', config2['section.name']
+    assert_equal 'more value', config2['section2.name3']
+  end
 end
 
 class ConfigWriteTest < Rugged::TestCase
