@@ -815,8 +815,11 @@ static VALUE rb_git_treebuilder_remove(VALUE self, VALUE path)
 	Check_Type(path, T_STRING);
 
 	error = git_treebuilder_remove(builder, StringValueCStr(path));
-	if (error == GIT_ENOTFOUND)
+	if (error == GIT_ENOTFOUND) {
 		return Qfalse;
+	} else if (error == GIT_ERROR && giterr_last()->klass == GITERR_TREE) {
+		return Qfalse;
+	}
 
 	rugged_exception_check(error);
 	return Qtrue;
