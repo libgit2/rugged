@@ -189,6 +189,8 @@ static void load_alternates(git_repository *repo, VALUE rb_alternates)
 static void rugged_repo_new_with_backend(git_repository **repo, VALUE rb_path, VALUE rb_backend)
 {
 	char *path;
+	int odb_associated = 0;
+	int refdb_associated = 0;
 
 	git_odb *odb = NULL;
 	git_odb_backend *odb_backend = NULL;
@@ -215,7 +217,10 @@ static void rugged_repo_new_with_backend(git_repository **repo, VALUE rb_path, V
 	if (error) goto cleanup;
 
 	error = git_odb_add_backend(odb, odb_backend, 1);
-	if (error) goto cleanup;
+	if (error)
+	    goto cleanup;
+	else
+	    odb_associated = 1;
 
 	error = git_repository_wrap_odb(repo, odb);
 	if (error) goto cleanup;
@@ -224,7 +229,10 @@ static void rugged_repo_new_with_backend(git_repository **repo, VALUE rb_path, V
 	if (error) goto cleanup;
 
 	error = backend->refdb_backend(&refdb_backend, backend, path);
-	if (error) goto cleanup;
+	if (error)
+	   goto cleanup;
+	else
+	    refdb_associated = 1;
 
 	error = git_refdb_set_backend(refdb, refdb_backend);
 	if (error) goto cleanup;
@@ -248,8 +256,8 @@ cleanup:
 	git_odb_free(odb);
 	git_refdb_free(refdb);
 
-	if (odb_backend != NULL) odb_backend->free(odb_backend);
-	if (refdb_backend != NULL) refdb_backend->free(refdb_backend);
+	if (odb_backend != NULL && !odb_associated && odb_backend->free) odb_backend->free(odb_backend);
+	if (refdb_backend != NULL && !refdb_associated && refdb_backend->free) refdb_backend->free(refdb_backend);
 
 	rugged_exception_check(error);
 }
