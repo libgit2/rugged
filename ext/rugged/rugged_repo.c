@@ -216,8 +216,8 @@ static void rugged_repo_new_with_backend(git_repository **repo, VALUE rb_path, V
 
 	error = git_odb_add_backend(odb, odb_backend, 1);
 	if (error) {
-		if (odb_backend->free) odb_backend->free(odb_backend);
-		else git__free(odb_backend);
+		assert(odb_backend->free);
+		odb_backend->free(odb_backend);
 		goto cleanup;
 	}
 
@@ -229,8 +229,8 @@ static void rugged_repo_new_with_backend(git_repository **repo, VALUE rb_path, V
 
 	error = backend->refdb_backend(&refdb_backend, backend, path);
 	if (error) {
-		if (refdb_backend->free) odb_backend->free(odb_backend);
-		else git__free(refdb_backend);
+		assert(refdb_backend->free);
+		refdb_backend->free(refdb_backend);
 		goto cleanup;
 	}
 
