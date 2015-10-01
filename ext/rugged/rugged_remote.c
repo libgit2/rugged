@@ -181,6 +181,19 @@ void rugged_remote_init_callbacks_and_payload_from_options(
 	}
 }
 
+static int parse_prune_type(VALUE rb_prune_type)
+{
+	if (rb_prune_type == Qtrue) {
+		return GIT_FETCH_PRUNE;
+	} else if (rb_prune_type == Qfalse) {
+		return GIT_FETCH_NO_PRUNE;
+	} else if (rb_prune_type == Qnil) {
+		return GIT_FETCH_PRUNE_UNSPECIFIED;
+	} else {
+		rb_raise(rb_eTypeError, "wrong argument type for :prune (expected true, false or nil)");
+	}
+}
+
 static void rb_git_remote__free(git_remote *remote)
 {
 	git_remote_free(remote);
@@ -502,6 +515,10 @@ static VALUE rb_git_remote_check_connection(int argc, VALUE *argv, VALUE self)
  *  :message ::
  *    The message to insert into the reflogs. Defaults to "fetch".
  *
+ *  :prune ::
+ *    Specifies the prune mode for the fetch. +true+ remove any remote-tracking references that
+ *    no longer exist, +false+ do not prune, +nil+ use configured settings Defaults to "nil".
+ *
  *  Example:
  *
  *    remote = Rugged::Remote.lookup(@repo, 'origin')
@@ -536,6 +553,10 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 		VALUE rb_val = rb_hash_aref(rb_options, CSTR2SYM("message"));
 		if (!NIL_P(rb_val))
 			log_message = StringValueCStr(rb_val);
+
+		VALUE rb_prune_type = rb_hash_aref(rb_options, CSTR2SYM("prune"));
+		if (!NIL_P(rb_prune_type))
+			opts.prune = parse_prune_type(rb_prune_type);
 	}
 
 	error = git_remote_fetch(remote, &refspecs, &opts, log_message);
@@ -620,6 +641,49 @@ static VALUE rb_git_remote_push(int argc, VALUE *argv, VALUE self)
 	return payload.result;
 }
 
+/*
+ *  call-seq:
+ *    remote.prune(options = {}) -> nil
+ *
+ *  Prune tracking refs that are no longer present on remote
+ *
+ *  Returns nil
+ *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :credentials ::
+ *    The credentials to use for the fetch operation. Can be either an instance of one
+ *    of the Rugged::Credentials types, or a proc returning one of the former.
+ *    The proc will be called with the +url+, the +username+ from the url (if applicable) and
+ *    a list of applicable credential types.
+ *
+ *  Example:
+ *
+ *    remote = Rugged::Remote.lookup(@repo, 'origin')
+ *    remote.prune()
+ *
+ */
+static VALUE rb_git_remote_prune(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_options;
+	git_remote *remote;
+	git_fetch_options opts = GIT_FETCH_OPTIONS_INIT;
+	struct rugged_remote_cb_payload payload = { Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, 0 };
+	int error;
+
+	Data_Get_Struct(self, git_remote, remote);
+	rb_scan_args(argc, argv, ":", &rb_options);
+	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &opts.callbacks, &payload);
+
+	if ((error = git_remote_connect(remote, GIT_DIRECTION_FETCH, &opts.callbacks)) ||
+			(error = git_remote_prune(remote, &opts.callbacks)))
+	git_remote_disconnect(remote);
+
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
 void Init_rugged_remote(void)
 {
 	rb_cRuggedRemote = rb_define_class_under(rb_mRugged, "Remote", rb_cObject);
@@ -634,4 +698,5 @@ void Init_rugged_remote(void)
 	rb_define_method(rb_cRuggedRemote, "check_connection", rb_git_remote_check_connection, -1);
 	rb_define_method(rb_cRuggedRemote, "fetch", rb_git_remote_fetch, -1);
 	rb_define_method(rb_cRuggedRemote, "push", rb_git_remote_push, -1);
+	rb_define_method(rb_cRuggedRemote, "prune", rb_git_remote_prune, -1);
 }

@@ -168,6 +168,56 @@ class RemotePushTest < Rugged::TestCase
 
     assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @remote_repo.ref("refs/heads/master").target_id
   end
+
+end
+
+class RemotePruneTest < Rugged::TestCase
+  def setup
+    @remote_repo = FixtureRepo.from_libgit2("testrepo.git")
+    # We can only push to bare repos
+    @remote_repo.config['core.bare'] = 'true'
+
+    @repo = FixtureRepo.clone(@remote_repo)
+    @repo.references.create("refs/heads/unit_test", "8496071c1b46c854b31185ea97743be6a8774479")
+
+    @remote = @repo.remotes['origin']
+
+    @remote.push(["refs/heads/unit_test"])
+    @remote_repo.references.delete("refs/heads/unit_test")
+  end
+
+  def test_remote_prune
+    assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @repo.ref("refs/remotes/origin/unit_test").target_id
+    assert_equal nil, @remote.prune
+    assert_nil @repo.ref("refs/remotes/origin/unit_test")
+  end
+
+  def test_fetch_prune_is_forced
+    assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @repo.ref("refs/remotes/origin/unit_test").target_id
+    @remote.fetch(prune: true)
+    assert_nil @repo.ref("refs/remotes/origin/unit_test")
+  end
+
+  def test_fetch_prune_is_not_forced
+    @remote.fetch(prune: false)
+    assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @repo.ref("refs/remotes/origin/unit_test").target_id
+  end
+
+  def test_fetch_prune_nil
+    @remote.fetch(prune: nil)
+    assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @repo.ref("refs/remotes/origin/unit_test").target_id
+  end
+
+  def test_fetch_prune_nil
+    @remote.fetch(prune: nil)
+    assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @repo.ref("refs/remotes/origin/unit_test").target_id
+  end
+
+  def test_fetch_prune_with_invalid_argument_raises
+    assert_raises TypeError do
+      @remote.fetch(prune: 'INVALID')
+    end
+  end
 end
 
 class RemoteWriteTest < Rugged::TestCase
