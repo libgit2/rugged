@@ -473,6 +473,7 @@ void Init_rugged(void)
 	Init_rugged_branch();
 	Init_rugged_branch_collection();
 	Init_rugged_config();
+	Init_rugged_config_backend();
 	Init_rugged_remote();
 	Init_rugged_remote_collection();
 	Init_rugged_notes();
@@ -486,7 +487,16 @@ void Init_rugged(void)
 	Init_rugged_diff_line();
 	Init_rugged_blame();
 	Init_rugged_cred();
-	Init_rugged_backend();
+
+	Init_rugged_refdb();
+	Init_rugged_refdb_backend();
+	Init_rugged_refdb_backend_fs();
+
+	Init_rugged_odb();
+	Init_rugged_odb_backend();
+	Init_rugged_odb_backend_loose();
+	Init_rugged_odb_backend_one_pack();
+	Init_rugged_odb_backend_pack();
 
 	/*
 	 * Sort the repository contents in no particular ordering;

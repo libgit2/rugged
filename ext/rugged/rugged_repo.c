@@ -23,22 +23,18 @@
  */
 
 #include "rugged.h"
-#include <git2/sys/repository.h>
-#include <git2/sys/odb_backend.h>
-#include <git2/sys/refdb_backend.h>
-#include <git2/refs.h>
 
 extern VALUE rb_mRugged;
 extern VALUE rb_eRuggedError;
 extern VALUE rb_cRuggedIndex;
 extern VALUE rb_cRuggedConfig;
-extern VALUE rb_cRuggedBackend;
 extern VALUE rb_cRuggedRemote;
 extern VALUE rb_cRuggedCommit;
 extern VALUE rb_cRuggedTag;
 extern VALUE rb_cRuggedTree;
 extern VALUE rb_cRuggedReference;
-extern VALUE rb_cRuggedBackend;
+extern VALUE rb_cRuggedOdb;
+extern VALUE rb_cRuggedRefdb;
 
 extern VALUE rb_cRuggedCredPlaintext;
 extern VALUE rb_cRuggedCredSshKey;
@@ -154,6 +150,7 @@ VALUE rugged_repo_new(VALUE klass, git_repository *repo)
 
 	rb_iv_set(rb_repo, "@config", Qnil);
 	rb_iv_set(rb_repo, "@index", Qnil);
+	rb_iv_set(rb_repo, "@refdb", Qnil);
 
 	return rb_repo;
 }
@@ -186,79 +183,6 @@ static void load_alternates(git_repository *repo, VALUE rb_alternates)
 	rugged_exception_check(error);
 }
 
-static void rugged_repo_new_with_backend(git_repository **repo, VALUE rb_path, VALUE rb_backend)
-{
-	char *path;
-
-	git_odb *odb = NULL;
-	git_odb_backend *odb_backend = NULL;
-	git_refdb *refdb = NULL;
-	git_refdb_backend *refdb_backend = NULL;
-	git_reference *head = NULL;
-	rugged_backend *backend;
-
-	int error = 0;
-
-	Check_Type(rb_path, T_STRING);
-	path = StringValueCStr(rb_path);
-
-	if (rb_obj_is_kind_of(rb_backend, rb_cRuggedBackend) == Qfalse) {
-		rb_raise(rb_eRuggedError, "Backend must be an instance of Rugged::Backend");
-	}
-
-	Data_Get_Struct(rb_backend, rugged_backend, backend);
-
-	error = git_odb_new(&odb);
-	if (error) goto cleanup;
-
-	error = backend->odb_backend(&odb_backend, backend, path);
-	if (error) goto cleanup;
-
-	error = git_odb_add_backend(odb, odb_backend, 1);
-	if (error) {
-		assert(odb_backend->free);
-		odb_backend->free(odb_backend);
-		goto cleanup;
-	}
-
-	error = git_repository_wrap_odb(repo, odb);
-	if (error) goto cleanup;
-
-	error = git_refdb_new(&refdb, *repo);
-	if (error) goto cleanup;
-
-	error = backend->refdb_backend(&refdb_backend, backend, path);
-	if (error) {
-		assert(refdb_backend->free);
-		refdb_backend->free(refdb_backend);
-		goto cleanup;
-	}
-
-	error = git_refdb_set_backend(refdb, refdb_backend);
-	if (error) goto cleanup;
-
-	git_repository_set_refdb(*repo, refdb);
-
-	error = git_reference_lookup(&head, *repo, "HEAD");
-
-	if (error == GIT_ENOTFOUND) {
-		giterr_clear();
-		error = git_reference_symbolic_create(&head, *repo, "HEAD", "refs/heads/master", 0, NULL);
-	}
-
-	if (!error) {
-		git_reference_free(head);
-		return;
-	}
-
-cleanup:
-	git_repository_free(*repo);
-	git_odb_free(odb);
-	git_refdb_free(refdb);
-
-	rugged_exception_check(error);
-}
-
 /*
  *  call-seq:
  *    Repository.bare(path[, alternates]) -> repository OR
@@ -278,8 +202,6 @@ cleanup:
  *
  *  The following options can be passed in the +options+ Hash:
  *
- *  :backend ::
- *    A Rugged::Backend instance
  *  :alternates ::
  *    A list of alternate object folders.
  *    Rugged::Repository.bare(path, :alternates => ['./other/repo/.git/objects'])
@@ -296,13 +218,6 @@ static VALUE rb_git_repo_open_bare(int argc, VALUE *argv, VALUE klass)
 		rb_alternates = rb_options;
 
 	if (!NIL_P(rb_options) && TYPE(rb_options) == T_HASH) {
-		/* Check for `:backend` */
-		VALUE rb_backend = rb_hash_aref(rb_options, CSTR2SYM("backend"));
-
-		if (!NIL_P(rb_backend)) {
-			rugged_repo_new_with_backend(&repo, rb_path, rb_backend);
-		}
-
 		/* Check for `:alternates` */
 		rb_alternates = rb_hash_aref(rb_options, CSTR2SYM("alternates"));
 	}
@@ -379,36 +294,19 @@ static VALUE rb_git_repo_new(int argc, VALUE *argv, VALUE klass)
  *  of +path+. Non-bare repositories are created in a +.git+ folder and
  *  use +path+ as working directory.
  *
- *  The following options can be passed in the +options+ Hash:
- *
- *  :backend ::
- *    A Rugged::Backend instance
- *
- *
  *    Rugged::Repository.init_at('repository', :bare) #=> #<Rugged::Repository:0x108849488>
  */
 static VALUE rb_git_repo_init_at(int argc, VALUE *argv, VALUE klass)
 {
 	git_repository *repo = NULL;
-	VALUE rb_path, rb_is_bare, rb_options;
+	VALUE rb_path, rb_is_bare;
 	int error;
 
-	rb_scan_args(argc, argv, "11:", &rb_path, &rb_is_bare, &rb_options);
+	rb_scan_args(argc, argv, "11", &rb_path, &rb_is_bare);
 	Check_Type(rb_path, T_STRING);
 
-	if (!NIL_P(rb_options)) {
-		/* Check for `:backend` */
-		VALUE rb_backend = rb_hash_aref(rb_options, CSTR2SYM("backend"));
-
-		if (rb_backend && !NIL_P(rb_backend)) {
-			rugged_repo_new_with_backend(&repo, rb_path, rb_backend);
-		}
-	}
-
-	if(!repo) {
-		error =	git_repository_init(&repo, StringValueCStr(rb_path), RTEST(rb_is_bare));
-		rugged_exception_check(error);
-	}
+	error =	git_repository_init(&repo, StringValueCStr(rb_path), RTEST(rb_is_bare));
+	rugged_exception_check(error);
 
 	return rugged_repo_new(klass, repo);
 }
@@ -593,6 +491,42 @@ static VALUE rb_git_repo_set_config(VALUE self, VALUE rb_data)
 static VALUE rb_git_repo_get_config(VALUE self)
 {
 	RB_GIT_REPO_OWNED_GET(rb_cRuggedConfig, config);
+}
+
+/*
+ *  call-seq:
+ *    repo.odb = odb
+ */
+static VALUE rb_git_repo_set_odb(VALUE self, VALUE rb_data)
+{
+	RB_GIT_REPO_OWNED_SET(rb_cRuggedOdb, odb);
+}
+
+/*
+ *  call-seq:
+ *    repo.odb -> odb
+ */
+static VALUE rb_git_repo_get_odb(VALUE self)
+{
+	RB_GIT_REPO_OWNED_GET(rb_cRuggedOdb, odb);
+}
+
+/*
+ *  call-seq:
+ *    repo.refdb = refdb
+ */
+static VALUE rb_git_repo_set_refdb(VALUE self, VALUE rb_data)
+{
+	RB_GIT_REPO_OWNED_SET(rb_cRuggedRefdb, refdb);
+}
+
+/*
+ *  call-seq:
+ *    repo.refdb -> refdb
+ */
+static VALUE rb_git_repo_get_refdb(VALUE self)
+{
+	RB_GIT_REPO_OWNED_GET(rb_cRuggedRefdb, refdb);
 }
 
 /*
@@ -2504,6 +2438,10 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "index=",  rb_git_repo_set_index,  1);
 	rb_define_method(rb_cRuggedRepo, "config",  rb_git_repo_get_config,  0);
 	rb_define_method(rb_cRuggedRepo, "config=",  rb_git_repo_set_config,  1);
+	rb_define_method(rb_cRuggedRepo, "odb",  rb_git_repo_get_odb, 0);
+	rb_define_method(rb_cRuggedRepo, "odb=",  rb_git_repo_set_odb, 1);
+	rb_define_method(rb_cRuggedRepo, "refdb", rb_git_repo_get_refdb, 0);
+	rb_define_method(rb_cRuggedRepo, "refdb=", rb_git_repo_set_refdb, 1);
 
 	rb_define_method(rb_cRuggedRepo, "ident", rb_git_repo_get_ident, 0);
 	rb_define_method(rb_cRuggedRepo, "ident=", rb_git_repo_set_ident, 1);

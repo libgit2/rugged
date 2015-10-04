@@ -41,15 +41,21 @@ VALUE rugged_config_new(VALUE klass, VALUE owner, git_config *cfg)
 
 /*
  *  call-seq:
- *    Config.new(path) -> new_config
+ *    Config.new([path]) -> config
  *
- *  Open the file specified in +path+ as a +Rugged::Config+ file.
- *  If +path+ cannot be found, or the file is an invalid Git config,
- *  an exception will be raised.
+ *  Create a new config object.
+ *
+ *  If +path+ is specified, the file at this path will be used as the backing
+ *  config store. +path+ can also be an array of file paths to be used.
+ *
+ *  If +path+ is not specified, an empty config object will be returned.
  */
-static VALUE rb_git_config_new(VALUE klass, VALUE rb_path)
+static VALUE rb_git_config_new(int argc, VALUE *argv, VALUE klass)
 {
-	git_config *config = NULL;
+	git_config *config;
+	VALUE rb_path;
+
+	rb_scan_args(argc, argv, "01", &rb_path);
 
 	if (TYPE(rb_path) == T_ARRAY) {
 		int error, i;
@@ -71,8 +77,11 @@ static VALUE rb_git_config_new(VALUE klass, VALUE rb_path)
 		rugged_exception_check(
 			git_config_open_ondisk(&config, StringValueCStr(rb_path))
 		);
+	} else if (NIL_P(rb_path)) {
+		rugged_exception_check(git_config_new(&config));
 	} else {
-		rb_raise(rb_eTypeError, "Expecting a filename or an array of filenames");
+		rb_raise(rb_eTypeError, "wrong argument type %s (expected an Array, String, or nil)",
+			rb_obj_classname(rb_path));
 	}
 
 	return rugged_config_new(klass, Qnil, config);
@@ -375,18 +384,79 @@ static VALUE rb_git_config_transaction(VALUE self)
 	return rb_result;
 }
 
+/*
+ *  call-seq:
+ *    config.add_backend(backend, level, force = false) -> config
+ *
+ *  Add a backend to be used by the config.
+ *
+ *  A backend can only be assigned once, and becomes unusable from that
+ *  point on. Trying to assign a backend a second time will raise an
+ *  exception.
+ */
+static VALUE rb_git_config_add_backend(int argc, VALUE *argv, VALUE self)
+{
+	git_config *config;
+	git_config_backend *backend;
+	ID id_level;
+	git_config_level_t level;
+	VALUE rb_backend, rb_level, rb_force;
+
+	rb_scan_args(argc, argv, "21", &rb_backend, &rb_level, &rb_force);
+
+	// TODO: Check rb_backend
+
+	Check_Type(rb_level, T_SYMBOL);
+
+	id_level = SYM2ID(rb_level);
+
+	if (id_level == rb_intern("system")) {
+		level = GIT_CONFIG_LEVEL_SYSTEM;
+	} else if (id_level == rb_intern("xdg")) {
+		level = GIT_CONFIG_LEVEL_XDG;
+	} else if (id_level == rb_intern("global")) {
+		level = GIT_CONFIG_LEVEL_GLOBAL;
+	} else if (id_level == rb_intern("local")) {
+		level = GIT_CONFIG_LEVEL_LOCAL;
+	} else if (id_level == rb_intern("app")) {
+		level = GIT_CONFIG_LEVEL_APP;
+	} else if (id_level == rb_intern("highest")) {
+		level = GIT_CONFIG_HIGHEST_LEVEL;
+	} else {
+		rb_raise(rb_eArgError, "Invalid config backend level.");
+	}
+
+	// TODO: if (!NIL_P(rb_force) && rb_force != Qtrue && rb_force != Qfalse)
+
+	Data_Get_Struct(self, git_config, config);
+	Data_Get_Struct(rb_backend, git_config_backend, backend);
+
+	if (!backend)
+		rb_exc_raise(rb_exc_new2(rb_eRuntimeError, "Can not reuse config backend instances"));
+
+	rugged_exception_check(git_config_add_backend(config, backend, level, RTEST(rb_force)));
+
+	// libgit2 has taken ownership of the backend, so we should make sure
+	// we don't try to free it.
+	((struct RData *)rb_backend)->data = NULL;
+
+	return self;
+}
+
 void Init_rugged_config(void)
 {
 	/*
 	 * Config
 	 */
 	rb_cRuggedConfig = rb_define_class_under(rb_mRugged, "Config", rb_cObject);
-	rb_define_singleton_method(rb_cRuggedConfig, "new", rb_git_config_new, 1);
+	rb_define_singleton_method(rb_cRuggedConfig, "new", rb_git_config_new, -1);
 
 	rb_define_singleton_method(rb_cRuggedConfig, "global", rb_git_config_open_default, 0);
 	rb_define_singleton_method(rb_cRuggedConfig, "open_global", rb_git_config_open_default, 0);
 
 	rb_define_method(rb_cRuggedConfig, "delete", rb_git_config_delete, 1);
+
+	rb_define_method(rb_cRuggedConfig, "add_backend", rb_git_config_add_backend, -1);
 
 	rb_define_method(rb_cRuggedConfig, "store", rb_git_config_store, 2);
 	rb_define_method(rb_cRuggedConfig, "[]=", rb_git_config_store, 2);

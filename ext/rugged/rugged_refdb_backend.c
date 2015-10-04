@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2014 GitHub, Inc
+ * Copyright (c) 2015 GitHub, Inc
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,11 +24,10 @@
 
 #include "rugged.h"
 
-extern VALUE rb_mRugged;
+extern VALUE rb_cRuggedRefdb;
+VALUE rb_cRuggedRefdbBackend;
 
-VALUE rb_cRuggedBackend;
-
-void Init_rugged_backend(void)
+void Init_rugged_refdb_backend(void)
 {
-	rb_cRuggedBackend = rb_define_class_under(rb_mRugged, "Backend", rb_cObject);
+	rb_cRuggedRefdbBackend = rb_define_class_under(rb_cRuggedRefdb, "Backend", rb_cObject);
 }
