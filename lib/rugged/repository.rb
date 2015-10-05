@@ -223,5 +223,28 @@ module Rugged
 
       remote_or_url.push(*args)
     end
+
+    # Get the history of a file
+    #
+    # path - Path of the file
+    #
+    # Returns an Array of Hashes, each Hash describing a commit with author,
+    # date, hash and subject.
+    def history_of_file path
+      w = Rugged::Walker.new self
+      w.sorting Rugged::SORT_DATE
+      w.push self.last_commit
+      w.inject [] do |a, c|
+        if c.diff(paths: [path.to_s.sub(/#{repo_root}\//, '')]).size > 0
+          a << {
+            author:   c.author,
+            date:     c.time,
+            hash:     c.oid,
+            subject:  c.message.split("\n").first
+          }
+        end
+        a
+      end
+    end
   end
 end
