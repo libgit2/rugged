@@ -223,5 +223,24 @@ module Rugged
 
       remote_or_url.push(*args)
     end
+
+    # Clean a repository of untracked files
+    #
+    # Returns a hash of files that were cleaned up
+    def clean(force: false, ignored: false, directories: false)
+      self.status do |file, status_data|
+        full_path = File.join(self.workdir, file)
+        if status_data == [:worktree_new] || (ignored && status_data == [:ignored])
+          puts "#{file} has status: #{status_data.inspect}"
+          if File.directory?(full_path) && (force || Dir.glob("#{full_path}/.git").empty?)
+            puts "Deleting folder #{full_path}"
+            #FileUtils.rm_r(full_path)
+          else
+            puts "Deleting file #{full_path}"
+            # File.delete(full_path)
+          end
+        end
+      end
+    end
   end
 end
