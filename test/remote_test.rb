@@ -186,12 +186,6 @@ class RemotePruneTest < Rugged::TestCase
     @remote_repo.references.delete("refs/heads/unit_test")
   end
 
-  def test_remote_prune
-    assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @repo.ref("refs/remotes/origin/unit_test").target_id
-    assert_equal nil, @remote.prune
-    assert_nil @repo.ref("refs/remotes/origin/unit_test")
-  end
-
   def test_fetch_prune_is_forced
     assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @repo.ref("refs/remotes/origin/unit_test").target_id
     @remote.fetch(prune: true)
