@@ -1,9 +1,60 @@
+
+## Rugged 0.23.3 (October 6, 2015) ##
+
+*   Update bundled libgit2 to 0.23.3.
+
+    See https://github.com/libgit2/libgit2/releases/tag/v0.23.3
+    for a list of fixed issues and new features.
+
+    *Arthur Schreiber*
+
+## Rugged 0.23.2 (August 13, 2015) ##
+
+*   Update bundled libgit2 to 98f7bd289dfb172473b7d7353d4b0f0b09c67937.
+
+    *Vicent Martí*
+
+## Rugged 0.23.1 (August 11, 2015) ##
+
+*   Update bundled libgit2 to 98f7bd289dfb172473b7d7353d4b0f0b09c67937.
+
+    *Vicent Martí*
+
+## Rugged 0.23.0 (July 6, 2015) ##
+
+*   Update bundled libgit2 to 0.23.0.
+
+    See https://github.com/libgit2/libgit2/releases/tag/v0.23.0
+    for a list of fixed issues and new features.
+
+    *Arthur Schreiber*
+
 *   Add `Rugged::Repository#checkout_index`.
 
-    This allows to perform checkout from a given GIT index.
+    This allows to perform checkout from a given index.
     It might be handy in case of manual merge conflicts resolution with user intervention.
 
     *Dmytro Milinevskyy*
+
+*   Remove `Rugged::Submodule#reset_update_rule`, `Rugged::Submodule#reset_ignore_rule`
+    and `Rugged::Submodule#save`.
+
+    These methods were removed due to changes in the underlying libgit2 API.
+
+    *Arthur Schreiber*
+
+*   Add `Rugged::Blob#loc`.
+
+    Returns the number of lines in a blob, assuming it is plaintext.
+
+    *Vicent Martí*
+
+*   Add `Rugged::Walker.walk`.
+
+    This API allows creating a walker, performing a walk, and cleaning it up
+    immediately after the walk was performed.
+
+    *Vicent Martí*
 
 *   Add accessors for the Repository ident.
 
