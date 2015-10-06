@@ -264,7 +264,7 @@ static VALUE rb_git_remote_ls(int argc, VALUE *argv, VALUE self)
 
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &callbacks, &payload);
 
-	if ((error = git_remote_connect(remote, GIT_DIRECTION_FETCH, &callbacks)) ||
+	if ((error = git_remote_connect(remote, GIT_DIRECTION_FETCH, &callbacks, NULL)) ||
 	    (error = git_remote_ls(&heads, &heads_len, remote)))
 		goto cleanup;
 
@@ -458,7 +458,7 @@ static VALUE rb_git_remote_check_connection(int argc, VALUE *argv, VALUE self)
 
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &callbacks, &payload);
 
-	error = git_remote_connect(remote, direction, &callbacks);
+	error = git_remote_connect(remote, direction, &callbacks, NULL);
 	git_remote_disconnect(remote);
 
 	if (payload.exception)
