@@ -181,6 +181,19 @@ void rugged_remote_init_callbacks_and_payload_from_options(
 	}
 }
 
+static int parse_prune_type(VALUE rb_prune_type)
+{
+	if (rb_prune_type == Qtrue) {
+		return GIT_FETCH_PRUNE;
+	} else if (rb_prune_type == Qfalse) {
+		return GIT_FETCH_NO_PRUNE;
+	} else if (rb_prune_type == Qnil) {
+		return GIT_FETCH_PRUNE_UNSPECIFIED;
+	} else {
+		rb_raise(rb_eTypeError, "wrong argument type for :prune (expected true, false or nil)");
+	}
+}
+
 static void rb_git_remote__free(git_remote *remote)
 {
 	git_remote_free(remote);
@@ -502,6 +515,10 @@ static VALUE rb_git_remote_check_connection(int argc, VALUE *argv, VALUE self)
  *  :message ::
  *    The message to insert into the reflogs. Defaults to "fetch".
  *
+ *  :prune ::
+ *    Specifies the prune mode for the fetch. +true+ remove any remote-tracking references that
+ *    no longer exist, +false+ do not prune, +nil+ use configured settings Defaults to "nil".
+ *
  *  Example:
  *
  *    remote = Rugged::Remote.lookup(@repo, 'origin')
@@ -536,6 +553,9 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 		VALUE rb_val = rb_hash_aref(rb_options, CSTR2SYM("message"));
 		if (!NIL_P(rb_val))
 			log_message = StringValueCStr(rb_val);
+
+		VALUE rb_prune_type = rb_hash_aref(rb_options, CSTR2SYM("prune"));
+		opts.prune = parse_prune_type(rb_prune_type);
 	}
 
 	error = git_remote_fetch(remote, &refspecs, &opts, log_message);
