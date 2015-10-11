@@ -26,30 +26,36 @@
 
 const char *RUGGED_ERROR_NAMES[] = {
 	"None",            /* GITERR_NONE */
-	"NoMemError",      /* GITERR_NOMEMORY, */
-	"OSError",         /* GITERR_OS, */
-	"InvalidError",    /* GITERR_INVALID, */
-	"ReferenceError",  /* GITERR_REFERENCE, */
-	"ZlibError",       /* GITERR_ZLIB, */
-	"RepositoryError", /* GITERR_REPOSITORY, */
-	"ConfigError",     /* GITERR_CONFIG, */
-	"RegexError",      /* GITERR_REGEX, */
-	"OdbError",        /* GITERR_ODB, */
-	"IndexError",      /* GITERR_INDEX, */
-	"ObjectError",     /* GITERR_OBJECT, */
-	"NetworkError",    /* GITERR_NET, */
-	"TagError",        /* GITERR_TAG, */
-	"TreeError",       /* GITERR_TREE, */
-	"IndexerError",    /* GITERR_INDEXER, */
-	"SslError",        /* GITERR_SSL, */
-	"SubmoduleError",  /* GITERR_SUBMODULE, */
-	"ThreadError",     /* GITERR_THREAD, */
-	"StashError",      /* GITERR_STASH, */
-	"CheckoutError",   /* GITERR_CHECKOUT, */
-	"FetchheadError",  /* GITERR_FETCHHEAD, */
-	"MergeError",      /* GITERR_MERGE, */
-	"SshError",        /* GITERR_SSH, */
-	"FilterError"      /* GITERR_FILTER, */
+	"NoMemError",      /* GITERR_NOMEMORY */
+	"OSError",         /* GITERR_OS */
+	"InvalidError",    /* GITERR_INVALID */
+	"ReferenceError",  /* GITERR_REFERENCE */
+	"ZlibError",       /* GITERR_ZLIB */
+	"RepositoryError", /* GITERR_REPOSITORY */
+	"ConfigError",     /* GITERR_CONFIG */
+	"RegexError",      /* GITERR_REGEX */
+	"OdbError",        /* GITERR_ODB */
+	"IndexError",      /* GITERR_INDEX */
+	"ObjectError",     /* GITERR_OBJECT */
+	"NetworkError",    /* GITERR_NET */
+	"TagError",        /* GITERR_TAG */
+	"TreeError",       /* GITERR_TREE */
+	"IndexerError",    /* GITERR_INDEXER */
+	"SslError",        /* GITERR_SSL */
+	"SubmoduleError",  /* GITERR_SUBMODULE */
+	"ThreadError",     /* GITERR_THREAD */
+	"StashError",      /* GITERR_STASH */
+	"CheckoutError",   /* GITERR_CHECKOUT */
+	"FetchheadError",  /* GITERR_FETCHHEAD */
+	"MergeError",      /* GITERR_MERGE */
+	"SshError",        /* GITERR_SSH */
+	"FilterError",     /* GITERR_FILTER */
+	"RevertError",     /* GITERR_REVERT */
+	"CallbackError",   /* GITERR_CALLBACK */
+	"CherrypickError", /* GITERR_CHERRYPICK */
+	"DescribeError",   /* GITERR_DESCRIBE */
+	"RebaseError",     /* GITERR_REBASE */
+	"FilesystemError", /* GITERR_FILESYSTEM */
 };
 
 #define RUGGED_ERROR_COUNT (int)((sizeof(RUGGED_ERROR_NAMES)/sizeof(RUGGED_ERROR_NAMES[0])))
