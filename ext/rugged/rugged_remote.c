@@ -181,6 +181,15 @@ void rugged_remote_init_callbacks_and_payload_from_options(
 	}
 }
 
+static void init_custom_headers(VALUE rb_options, git_strarray *custom_headers)
+{
+	if (!NIL_P(rb_options))
+	{
+		VALUE rb_headers = rb_hash_aref(rb_options, CSTR2SYM("headers"));
+		rugged_rb_ary_to_strarray(rb_headers, custom_headers);
+	}
+}
+
 static int parse_prune_type(VALUE rb_prune_type)
 {
 	if (rb_prune_type == Qtrue) {
@@ -254,11 +263,15 @@ static VALUE rugged_rhead_new(const git_remote_head *head)
  *    of the Rugged::Credentials types, or a proc returning one of the former.
  *    The proc will be called with the +url+, the +username+ from the url (if applicable) and
  *    a list of applicable credential types.
+ *
+ *  :headers ::
+ *    Extra HTTP headers to include with the request (only applies to http:// or https:// remotes)
  */
 static VALUE rb_git_remote_ls(int argc, VALUE *argv, VALUE self)
 {
 	git_remote *remote;
 	git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
+	git_strarray custom_headers = {0};
 	const git_remote_head **heads;
 
 	struct rugged_remote_cb_payload payload = { Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, 0 };
@@ -276,8 +289,9 @@ static VALUE rb_git_remote_ls(int argc, VALUE *argv, VALUE self)
 		return rb_funcall(self, rb_intern("to_enum"), 2, CSTR2SYM("ls"), rb_options);
 
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &callbacks, &payload);
+	init_custom_headers(rb_options, &custom_headers);
 
-	if ((error = git_remote_connect(remote, GIT_DIRECTION_FETCH, &callbacks, NULL)) ||
+	if ((error = git_remote_connect(remote, GIT_DIRECTION_FETCH, &callbacks, &custom_headers)) ||
 	    (error = git_remote_ls(&heads, &heads_len, remote)))
 		goto cleanup;
 
@@ -287,6 +301,7 @@ static VALUE rb_git_remote_ls(int argc, VALUE *argv, VALUE self)
 	cleanup:
 
 	git_remote_disconnect(remote);
+	git_strarray_free(&custom_headers);
 
 	if (payload.exception)
 		rb_jump_tag(payload.exception);
@@ -442,6 +457,9 @@ static VALUE rb_git_remote_push_refspecs(VALUE self)
  *    The proc will be called with the +url+, the +username+ from the url (if
  *    applicable) and a list of applicable credential types.
  *
+ *  :headers ::
+ *    Extra HTTP headers to include with the request (only applies to http:// or https:// remotes)
+ *
  *  Example:
  *
  *    remote = repo.remotes["origin"]
@@ -452,6 +470,7 @@ static VALUE rb_git_remote_check_connection(int argc, VALUE *argv, VALUE self)
 {
 	git_remote *remote;
 	git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
+	git_strarray custom_headers = {0};
 	struct rugged_remote_cb_payload payload = { Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, 0 };
 	VALUE rb_direction, rb_options;
 	ID id_direction;
@@ -470,9 +489,12 @@ static VALUE rb_git_remote_check_connection(int argc, VALUE *argv, VALUE self)
 		rb_raise(rb_eTypeError, "Invalid direction. Expected :fetch or :push");
 
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &callbacks, &payload);
+	init_custom_headers(rb_options, &custom_headers);
 
-	error = git_remote_connect(remote, direction, &callbacks, NULL);
+	error = git_remote_connect(remote, direction, &callbacks, &custom_headers);
 	git_remote_disconnect(remote);
+
+	git_strarray_free(&custom_headers);
 
 	if (payload.exception)
 		rb_jump_tag(payload.exception);
@@ -498,6 +520,9 @@ static VALUE rb_git_remote_check_connection(int argc, VALUE *argv, VALUE self)
  *    of the Rugged::Credentials types, or a proc returning one of the former.
  *    The proc will be called with the +url+, the +username+ from the url (if applicable) and
  *    a list of applicable credential types.
+ *
+ *  :headers ::
+ *    Extra HTTP headers to include with the request (only applies to http:// or https:// remotes)
  *
  *  :progress ::
  *    A callback that will be executed with the textual progress received from the remote.
@@ -548,6 +573,7 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 	Data_Get_Struct(self, git_remote, remote);
 
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &opts.callbacks, &payload);
+	init_custom_headers(rb_options, &opts.custom_headers);
 
 	if (!NIL_P(rb_options)) {
 		VALUE rb_val = rb_hash_aref(rb_options, CSTR2SYM("message"));
@@ -561,6 +587,7 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 	error = git_remote_fetch(remote, &refspecs, &opts, log_message);
 
 	xfree(refspecs.strings);
+	git_strarray_free(&opts.custom_headers);
 
 	if (payload.exception)
 		rb_jump_tag(payload.exception);
@@ -603,6 +630,9 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
  *    A callback that will be executed each time a reference is updated remotely. It will be
  *    passed the +refname+, +old_oid+ and +new_oid+.
  *
+ *  :headers ::
+ *    Extra HTTP headers to include with the push (only applies to http:// or https:// remotes)
+ *
  *  Example:
  *
  *    remote = Rugged::Remote.lookup(@repo, 'origin')
@@ -627,10 +657,12 @@ static VALUE rb_git_remote_push(int argc, VALUE *argv, VALUE self)
 	Data_Get_Struct(self, git_remote, remote);
 
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &opts.callbacks, &payload);
+	init_custom_headers(rb_options, &opts.custom_headers);
 
 	error = git_remote_push(remote, &refspecs, &opts);
 
 	xfree(refspecs.strings);
+	git_strarray_free(&opts.custom_headers);
 
 	if (payload.exception)
 		rb_jump_tag(payload.exception);
