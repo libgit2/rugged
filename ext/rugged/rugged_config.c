@@ -50,21 +50,27 @@ VALUE rugged_config_new(VALUE klass, VALUE owner, git_config *cfg)
 static VALUE rb_git_config_new(VALUE klass, VALUE rb_path)
 {
 	git_config *config = NULL;
-	int error, i;
 
 	if (TYPE(rb_path) == T_ARRAY) {
+		int error, i;
+
 		error = git_config_new(&config);
 		rugged_exception_check(error);
 
-		for (i = 0; i < RARRAY_LEN(rb_path); ++i) {
+		for (i = 0; i < RARRAY_LEN(rb_path) && !error; ++i) {
 			VALUE f = rb_ary_entry(rb_path, i);
 			Check_Type(f, T_STRING);
 			error = git_config_add_file_ondisk(config, StringValueCStr(f), i + 1, 1);
+		}
+
+		if (error) {
+			git_config_free(config);
 			rugged_exception_check(error);
 		}
 	} else if (TYPE(rb_path) == T_STRING) {
-		error = git_config_open_ondisk(&config, StringValueCStr(rb_path));
-		rugged_exception_check(error);
+		rugged_exception_check(
+			git_config_open_ondisk(&config, StringValueCStr(rb_path))
+		);
 	} else {
 		rb_raise(rb_eTypeError, "Expecting a filename or an array of filenames");
 	}
