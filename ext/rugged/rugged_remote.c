@@ -576,11 +576,13 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 	init_custom_headers(rb_options, &opts.custom_headers);
 
 	if (!NIL_P(rb_options)) {
+		VALUE rb_prune_type;
 		VALUE rb_val = rb_hash_aref(rb_options, CSTR2SYM("message"));
+
 		if (!NIL_P(rb_val))
 			log_message = StringValueCStr(rb_val);
 
-		VALUE rb_prune_type = rb_hash_aref(rb_options, CSTR2SYM("prune"));
+		rb_prune_type = rb_hash_aref(rb_options, CSTR2SYM("prune"));
 		opts.prune = parse_prune_type(rb_prune_type);
 	}
 
