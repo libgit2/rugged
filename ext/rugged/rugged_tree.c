@@ -616,6 +616,10 @@ void rugged_parse_merge_options(git_merge_options *opts, VALUE rb_options)
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("renames")))) {
 			opts->tree_flags |= GIT_MERGE_TREE_FIND_RENAMES;
 		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("fail_on_conflict")))) {
+			opts->tree_flags |= GIT_MERGE_TREE_FAIL_ON_CONFLICT;
+		}
 	}
 }
 
@@ -682,6 +686,9 @@ static VALUE rb_git_tree_merge(int argc, VALUE *argv, VALUE self)
 		ancestor_tree = NULL;
 
 	error = git_merge_trees(&index, repo, ancestor_tree, tree, other_tree, &opts);
+	if (error == GIT_EMERGECONFLICT)
+		return Qnil;
+
 	rugged_exception_check(error);
 
 	return rugged_index_new(rb_cRuggedIndex, rb_repo, index);

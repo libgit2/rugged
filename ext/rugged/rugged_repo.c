@@ -846,6 +846,7 @@ static VALUE rb_git_repo_merge_commits(int argc, VALUE *argv, VALUE self)
 	git_index *index;
 	git_repository *repo;
 	git_merge_options opts = GIT_MERGE_OPTIONS_INIT;
+	int error;
 
 	rb_scan_args(argc, argv, "20:", &rb_our_commit, &rb_their_commit, &rb_options);
 
@@ -874,7 +875,11 @@ static VALUE rb_git_repo_merge_commits(int argc, VALUE *argv, VALUE self)
 	Data_Get_Struct(rb_our_commit, git_commit, our_commit);
 	Data_Get_Struct(rb_their_commit, git_commit, their_commit);
 
-	rugged_exception_check(git_merge_commits(&index, repo, our_commit, their_commit, &opts));
+	error = git_merge_commits(&index, repo, our_commit, their_commit, &opts);
+	if (error == GIT_EMERGECONFLICT)
+		return Qnil;
+
+	rugged_exception_check(error);
 
 	return rugged_index_new(rb_cRuggedIndex, self, index);
 }
