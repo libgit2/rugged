@@ -620,6 +620,10 @@ void rugged_parse_merge_options(git_merge_options *opts, VALUE rb_options)
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("fail_on_conflict")))) {
 			opts->tree_flags |= GIT_MERGE_TREE_FAIL_ON_CONFLICT;
 		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("skip_reuc")))) {
+			opts->tree_flags |= GIT_MERGE_TREE_SKIP_REUC;
+		}
 	}
 }
 
