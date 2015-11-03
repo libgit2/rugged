@@ -202,11 +202,6 @@ class RemotePruneTest < Rugged::TestCase
     assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @repo.ref("refs/remotes/origin/unit_test").target_id
   end
 
-  def test_fetch_prune_nil
-    @remote.fetch(prune: nil)
-    assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @repo.ref("refs/remotes/origin/unit_test").target_id
-  end
-
   def test_fetch_prune_with_invalid_argument_raises
     assert_raises TypeError do
       @remote.fetch(prune: 'INVALID')

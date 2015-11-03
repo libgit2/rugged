@@ -831,6 +831,62 @@ static VALUE rb_git_repo_merge_analysis(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
+ *    repo.revert_commit(revert_commit, our_commit, options = {}) -> index
+ *    
+ *	Reverts the given commit against the given "our" commit, producing an
+ *	index that reflects the result of the revert.
+ */
+static VALUE rb_git_repo_revert_commit(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_revert_commit, rb_our_commit, rb_options;
+	git_commit *revert_commit, *our_commit;
+	git_index *index;
+	git_repository *repo;
+	git_merge_options opts = GIT_MERGE_OPTIONS_INIT;
+	unsigned int mainline = 0;
+	int error;
+
+	rb_scan_args(argc, argv, "20:", &rb_revert_commit, &rb_our_commit, &rb_options);
+
+	if (TYPE(rb_revert_commit) == T_STRING)
+		rb_revert_commit = rugged_object_rev_parse(self, rb_revert_commit, 1);
+
+	if (TYPE(rb_our_commit) == T_STRING)
+		rb_our_commit = rugged_object_rev_parse(self, rb_our_commit, 1);
+
+	if (!rb_obj_is_kind_of(rb_revert_commit, rb_cRuggedCommit) ||
+		!rb_obj_is_kind_of(rb_our_commit, rb_cRuggedCommit)) {
+		rb_raise(rb_eArgError, "Expected a Rugged::Commit.");
+	}
+
+	if (!NIL_P(rb_options)) {
+		VALUE rb_mainline;
+
+		Check_Type(rb_options, T_HASH);
+		rugged_parse_merge_options(&opts, rb_options);
+
+		rb_mainline = rb_hash_aref(rb_options, CSTR2SYM("mainline"));
+		if (!NIL_P(rb_mainline)) {
+			Check_Type(rb_mainline, T_FIXNUM);
+			mainline = FIX2UINT(rb_mainline);
+		}
+	}
+
+	Data_Get_Struct(self, git_repository, repo);
+	Data_Get_Struct(rb_revert_commit, git_commit, revert_commit);
+	Data_Get_Struct(rb_our_commit, git_commit, our_commit);
+
+	error = git_revert_commit(&index, repo, revert_commit, our_commit, mainline, &opts);
+	if (error == GIT_EMERGECONFLICT)
+		return Qnil;
+
+	rugged_exception_check(error);
+
+	return rugged_index_new(rb_cRuggedIndex, self, index);
+}
+
+/*
+ *  call-seq:
  *    repo.merge_commits(our_commit, their_commit, options = {}) -> index
  *
  *  Merges the two given commits, returning a Rugged::Index that reflects
@@ -2527,6 +2583,8 @@ void Init_rugged_repo(void)
 
 	rb_define_method(rb_cRuggedRepo, "merge_analysis", rb_git_repo_merge_analysis, -1);
 	rb_define_method(rb_cRuggedRepo, "merge_commits", rb_git_repo_merge_commits, -1);
+
+	rb_define_method(rb_cRuggedRepo, "revert_commit", rb_git_repo_revert_commit, -1);
 
 	rb_define_method(rb_cRuggedRepo, "path_ignored?", rb_git_repo_is_path_ignored, 1);
 
