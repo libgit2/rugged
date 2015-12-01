@@ -624,6 +624,10 @@ void rugged_parse_merge_options(git_merge_options *opts, VALUE rb_options)
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("skip_reuc")))) {
 			opts->flags |= GIT_MERGE_SKIP_REUC;
 		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("no_recursive")))) {
+			opts->flags |= GIT_MERGE_NO_RECURSIVE;
+		}
 	}
 }
 
