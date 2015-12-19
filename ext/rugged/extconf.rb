@@ -70,13 +70,13 @@ else
       sys("cmake .. -DBUILD_CLAR=OFF -DTHREADSAFE=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS=-fPIC -DCMAKE_BUILD_TYPE=RelWithDebInfo -G \"Unix Makefiles\"")
       sys(MAKE)
 
-	  # "normal" libraries (and libgit2 builds) get all these when they build but we're doing it
-	  # statically so we put the libraries in by hand. It's important that we put the libraries themselves
-	  # in $LIBS or the final linking stage won't pick them up
+      # "normal" libraries (and libgit2 builds) get all these when they build but we're doing it
+      # statically so we put the libraries in by hand. It's important that we put the libraries themselves
+      # in $LIBS or the final linking stage won't pick them up
       if on_windows
-	    $LDFLAGS << " " + "-L#{Dir.pwd}/deps/winhttp"
-		$LIBS << " -lwinhttp -lcrypt32 -lrpcrt4 -lole32"
-	  else
+        $LDFLAGS << " " + "-L#{Dir.pwd}/deps/winhttp"
+        $LIBS << " -lwinhttp -lcrypt32 -lrpcrt4 -lole32"
+      else
         pcfile = File.join(LIBGIT2_DIR, "build", "libgit2.pc")
         $LDFLAGS << " " + `pkg-config --libs --static #{pcfile}`.strip
       end
