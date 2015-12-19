@@ -15,7 +15,7 @@ def sys(cmd)
   ret
 end
 
-def on_windows
+def windows?
   RbConfig::CONFIG['host_os'] =~ /mswin|mingw/
 end
 
@@ -59,7 +59,7 @@ else
     abort "ERROR: CMake is required to build Rugged."
   end
 
-  if !on_windows && !find_executable('pkg-config')
+  if !windows? && !find_executable('pkg-config')
     abort "ERROR: pkg-config is required to build Rugged."
   end
 
@@ -73,7 +73,7 @@ else
       # "normal" libraries (and libgit2 builds) get all these when they build but we're doing it
       # statically so we put the libraries in by hand. It's important that we put the libraries themselves
       # in $LIBS or the final linking stage won't pick them up
-      if on_windows
+      if windows?
         $LDFLAGS << " " + "-L#{Dir.pwd}/deps/winhttp"
         $LIBS << " -lwinhttp -lcrypt32 -lrpcrt4 -lole32"
       else
