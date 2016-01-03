@@ -59,8 +59,11 @@ else
     abort "ERROR: CMake is required to build Rugged."
   end
 
-  if !windows? && !find_executable('pkg-config')
-    abort "ERROR: pkg-config is required to build Rugged."
+  have_pkg_config = true
+  if !find_executable('pkg-config')
+    # pkg-config is optional on Windows.
+    abort "ERROR: pkg-config is required to build Rugged." if !windows?
+    have_pkg_config = false
   end
 
   Dir.chdir(LIBGIT2_DIR) do
@@ -74,11 +77,18 @@ else
       # statically so we put the libraries in by hand. It's important that we put the libraries themselves
       # in $LIBS or the final linking stage won't pick them up
       if windows?
-        $LDFLAGS << " " + "-L#{Dir.pwd}/deps/winhttp"
+        $LDFLAGS << " " + "-L#{Dir.pwd}/deps/winhttp -L#{ENV['RI_DEVKIT']}/lib"
         $LIBS << " -lwinhttp -lcrypt32 -lrpcrt4 -lole32"
-      else
+      end
+
+      if have_pkg_config
         pcfile = File.join(LIBGIT2_DIR, "build", "libgit2.pc")
-        $LDFLAGS << " " + `pkg-config --libs --static #{pcfile}`.strip
+        if windows?
+          args = '--libs-only-l --static'
+        else
+          args = '--libs --static'
+        end
+        $LDFLAGS << " " + `pkg-config #{args} #{pcfile}`.strip
       end
     end
   end
