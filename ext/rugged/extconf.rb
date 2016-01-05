@@ -63,6 +63,24 @@ else
     abort "ERROR: pkg-config is required to build Rugged."
   end
 
+  if windows?
+    gem "mini_portile2", "~> 2.0.0"
+    require "mini_portile2"
+
+    pkg_config = MiniPortile.new "pkg-config-lite", "0.28-1"
+    pkg_config.files << "http://downloads.sourceforge.net/project/pkgconfiglite/#{pkg_config.version}/pkg-config-lite-#{pkg_config.version}.tar.gz"
+    pkg_config.cook
+    pkg_config.activate
+
+    libssh2 = MiniPortile.new "libssh2", "1.6.0"
+    libssh2.files << "https://github.com/libssh2/libssh2/releases/download/libssh2-#{libssh2.version}/libssh2-#{libssh2.version}.tar.gz"
+    libssh2.configure_options << "--with-wincng" << "--without-openssl"
+    libssh2.cook
+    libssh2.activate
+
+    ENV['PKG_CONFIG_PATH'] = File.join(libssh2.path, "lib", "pkgconfig")
+  end
+
   Dir.chdir(LIBGIT2_DIR) do
     Dir.mkdir("build") if !Dir.exists?("build")
 
@@ -70,15 +88,17 @@ else
       sys("cmake .. -DBUILD_CLAR=OFF -DTHREADSAFE=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS=-fPIC -DCMAKE_BUILD_TYPE=RelWithDebInfo -G \"Unix Makefiles\"")
       sys(MAKE)
 
+      ENV['PKG_CONFIG_PATH'] = ENV['PKG_CONFIG_PATH'] + File::PATH_SEPARATOR + File.join(LIBGIT2_DIR, "build")
+
       # "normal" libraries (and libgit2 builds) get all these when they build but we're doing it
       # statically so we put the libraries in by hand. It's important that we put the libraries themselves
       # in $LIBS or the final linking stage won't pick them up
       if windows?
+        $LDFLAGS << " " + "-L#{libssh2.path}/lib"
         $LDFLAGS << " " + "-L#{Dir.pwd}/deps/winhttp"
-        $LIBS << " -lwinhttp -lcrypt32 -lrpcrt4 -lole32"
+        $LIBS << " -lwinhttp -lcrypt32 -lrpcrt4 -lole32 " + `pkg-config --libs-only-l --static libgit2`.strip
       else
-        pcfile = File.join(LIBGIT2_DIR, "build", "libgit2.pc")
-        $LDFLAGS << " " + `pkg-config --libs --static #{pcfile}`.strip
+        $LDFLAGS << " " + `pkg-config --libs --static libgit2`.strip
       end
     end
   end
