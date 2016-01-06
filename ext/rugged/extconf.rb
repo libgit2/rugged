@@ -1,5 +1,8 @@
 require 'mkmf'
 
+gem "mini_portile2", "~> 2.0.0"
+require "mini_portile2"
+
 RbConfig::MAKEFILE_CONFIG['CC'] = ENV['CC'] if ENV['CC']
 
 $CFLAGS << " #{ENV["CFLAGS"]}"
@@ -25,6 +28,71 @@ end
 
 CWD = File.expand_path(File.dirname(__FILE__))
 LIBGIT2_DIR = File.join(CWD, '..', '..', 'vendor', 'libgit2')
+
+class Libgit2Recipe < MiniPortile
+  # No need to extract anything
+  def extract
+  end
+
+  # No need to download anything
+  def downloaded?
+    true
+  end
+
+  def configure_defaults
+    [
+      "-DBUILD_CLAR=OFF",
+      "-DTHREADSAFE=ON",
+      "-DBUILD_SHARED_LIBS=OFF",
+      "-DCMAKE_C_FLAGS=-fPIC",
+      "-DCMAKE_BUILD_TYPE=RelWithDebInfo",
+      "-G", "Unix Makefiles"
+    ]
+  end
+
+  def configure_prefix
+    "-DCMAKE_INSTALL_PREFIX=\"#{path}\""
+  end
+
+  def configured?
+    false
+  end
+
+  def work_path
+    tmp_path
+  end
+
+  def configure
+    FileUtils.mkdir_p tmp_path
+
+    execute('configure', ["cmake", LIBGIT2_DIR, *computed_options])
+  end
+
+  def activate
+    super
+
+    ENV['PKG_CONFIG_PATH'] = ((ENV['PKG_CONFIG_PATH'] || '').split(File::PATH_SEPARATOR) << File.join(path, "lib", "pkgconfig")).join(File::PATH_SEPARATOR)
+
+    # MINGW does not have
+    if windows?
+      $LDFLAGS << " -L#{File.join(tmp_path, "deps", "winhttp")}"
+    end
+  end
+end
+
+class Libssh2Recipe < MiniPortile
+  def initialize(name, version)
+    super
+
+    @files << "https://github.com/libssh2/libssh2/releases/download/libssh2-#{version}/libssh2-#{version}.tar.gz"
+  end
+
+  def activate
+    super
+
+    ENV['PKG_CONFIG_PATH'] = ((ENV['PKG_CONFIG_PATH'] || '').split(File::PATH_SEPARATOR) << File.join(path, "lib", "pkgconfig")).join(File::PATH_SEPARATOR)
+  end
+end
 
 if arg_config("--use-system-libraries", !!ENV['RUGGED_USE_SYSTEM_LIBRARIES'])
   puts "Building Rugged using system libraries.\n"
@@ -59,63 +127,29 @@ else
     abort "ERROR: CMake is required to build Rugged."
   end
 
-  if !windows? && !find_executable('pkg-config')
-    abort "ERROR: pkg-config is required to build Rugged."
-  end
-
-  if windows?
-    gem "mini_portile2", "~> 2.0.0"
-    require "mini_portile2"
-
-    pkg_config = MiniPortile.new "pkg-config-lite", "0.28-1"
-    pkg_config.files << "http://downloads.sourceforge.net/project/pkgconfiglite/#{pkg_config.version}/pkg-config-lite-#{pkg_config.version}.tar.gz"
-    pkg_config.cook
-    pkg_config.activate
-
-    libssh2 = MiniPortile.new "libssh2", "1.6.0"
-    libssh2.files << "https://github.com/libssh2/libssh2/releases/download/libssh2-#{libssh2.version}/libssh2-#{libssh2.version}.tar.gz"
-    libssh2.configure_options << "--with-wincng" << "--without-openssl"
-    libssh2.cook
-    libssh2.activate
-
-    ENV['PKG_CONFIG_PATH'] = File.join(libssh2.path, "lib", "pkgconfig")
-  end
-
-  Dir.chdir(LIBGIT2_DIR) do
-    Dir.mkdir("build") if !Dir.exists?("build")
-
-    Dir.chdir("build") do
-      sys("cmake .. -DBUILD_CLAR=OFF -DTHREADSAFE=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS=-fPIC -DCMAKE_BUILD_TYPE=RelWithDebInfo -G \"Unix Makefiles\"")
-      sys(MAKE)
-
-      ENV['PKG_CONFIG_PATH'] = ENV['PKG_CONFIG_PATH'] + File::PATH_SEPARATOR + File.join(LIBGIT2_DIR, "build")
-
-      # "normal" libraries (and libgit2 builds) get all these when they build but we're doing it
-      # statically so we put the libraries in by hand. It's important that we put the libraries themselves
-      # in $LIBS or the final linking stage won't pick them up
-      if windows?
-        $LDFLAGS << " " + "-L#{libssh2.path}/lib"
-        $LDFLAGS << " " + "-L#{Dir.pwd}/deps/winhttp"
-        $LIBS << " -lwinhttp -lcrypt32 -lrpcrt4 -lole32 " + `pkg-config --libs-only-l --static libgit2`.strip
-      else
-        $LDFLAGS << " " + `pkg-config --libs --static libgit2`.strip
-      end
+  if !find_executable('pkg-config')
+    if windows?
+      pkg_config = MiniPortile.new "pkg-config-lite", "0.28-1"
+      pkg_config.files << "http://downloads.sourceforge.net/project/pkgconfiglite/#{pkg_config.version}/pkg-config-lite-#{pkg_config.version}.tar.gz"
+      pkg_config.cook
+      pkg_config.activate
+    else
+      abort "ERROR: pkg-config is required to build Rugged."
     end
   end
 
-  # Prepend the vendored libgit2 build dir to the $DEFLIBPATH.
-  #
-  # By default, $DEFLIBPATH includes $(libpath), which usually points
-  # to something like /usr/lib for system ruby versions (not those
-  # installed through rbenv or rvm).
-  #
-  # This was causing system-wide libgit2 installations to be preferred
-  # over of our vendored libgit2 version when building rugged.
-  #
-  # By putting the path to the vendored libgit2 library at the front of
-  # $DEFLIBPATH, we can ensure that our bundled version is always used.
-  $DEFLIBPATH.unshift("#{LIBGIT2_DIR}/build")
-  dir_config('git2', "#{LIBGIT2_DIR}/include", "#{LIBGIT2_DIR}/build")
+  if with_config("ssh") || with_config("ssh").nil?
+    libssh2 = Libssh2Recipe.new "libssh2", "1.6.0"
+    libssh2.cook
+    libssh2.activate
+  end
+
+  libgit2 = Libgit2Recipe.new "libgit2", "bundled"
+  libgit2.cook
+  libgit2.activate
+
+  $PKGCONFIG = "pkg-config --static"
+  pkg_config("libgit2")
 end
 
 unless have_library 'git2' and have_header 'git2.h'
