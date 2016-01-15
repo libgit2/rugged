@@ -557,6 +557,12 @@ static VALUE rb_git_commit_to_mbox(int argc, VALUE *argv, VALUE self)
 	return rb_email_patch;
 }
 
+/*
+ *  call-seq:
+ *    commit.header_field(field_name) -> str
+ *
+ *  Returns +commit+'s header field value.
+ */
 static VALUE rb_git_commit_header_field(VALUE self, VALUE rb_field) {
 	git_buf header_field = { 0 };
 	VALUE rb_result;
@@ -577,6 +583,12 @@ static VALUE rb_git_commit_header_field(VALUE self, VALUE rb_field) {
 	return rb_result;
 }
 
+/*
+ *  call-seq:
+ *    commit.header -> str
+ *
+ *  Returns +commit+'s entire raw header.
+ */
 static VALUE rb_git_commit_header(VALUE self) {
 	VALUE rb_result;
 	git_commit *commit;
