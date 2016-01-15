@@ -23,6 +23,7 @@
  */
 
 #include "rugged.h"
+#include "git2/commit.h"
 
 extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedObject;
@@ -576,6 +577,20 @@ static VALUE rb_git_commit_header_field(VALUE self, VALUE rb_field) {
 	return rb_result;
 }
 
+static VALUE rb_git_commit_header(VALUE self) {
+	VALUE rb_result;
+	git_commit *commit;
+	const char *raw_header;
+
+	Data_Get_Struct(self, git_commit, commit);
+
+	raw_header = git_commit_raw_header(commit);
+
+	rb_result = rb_enc_str_new(raw_header, strlen(raw_header), rb_utf8_encoding());
+
+	return rb_result;
+}
+
 void Init_rugged_commit(void)
 {
 	rb_cRuggedCommit = rb_define_class_under(rb_mRugged, "Commit", rb_cRuggedObject);
@@ -600,4 +615,5 @@ void Init_rugged_commit(void)
 	rb_define_method(rb_cRuggedCommit, "to_mbox", rb_git_commit_to_mbox, -1);
 
 	rb_define_method(rb_cRuggedCommit, "header_field", rb_git_commit_header_field, 1);
+	rb_define_method(rb_cRuggedCommit, "header", rb_git_commit_header, 0);
 }
