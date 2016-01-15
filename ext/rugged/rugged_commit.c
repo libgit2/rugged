@@ -556,6 +556,25 @@ static VALUE rb_git_commit_to_mbox(int argc, VALUE *argv, VALUE self)
 	return rb_email_patch;
 }
 
+static VALUE rb_git_commit_header_field(VALUE self, VALUE rb_field) {
+	git_buf header_field = { 0 };
+	VALUE rb_result;
+	git_commit *commit;
+
+	Check_Type(rb_field, T_STRING);
+
+	Data_Get_Struct(self, git_commit, commit);
+
+	rugged_exception_check(
+		git_commit_header_field(&header_field, commit, StringValueCStr(rb_field))
+	);
+
+	rb_result = rb_enc_str_new(header_field.ptr, header_field.size, rb_utf8_encoding());
+
+	git_buf_free(&header_field);
+
+	return rb_result;
+}
 
 void Init_rugged_commit(void)
 {
@@ -579,4 +598,6 @@ void Init_rugged_commit(void)
 	rb_define_method(rb_cRuggedCommit, "amend", rb_git_commit_amend, 1);
 
 	rb_define_method(rb_cRuggedCommit, "to_mbox", rb_git_commit_to_mbox, -1);
+
+	rb_define_method(rb_cRuggedCommit, "header_field", rb_git_commit_header_field, 1);
 }
