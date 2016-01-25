@@ -174,6 +174,27 @@ class TestCommit < Rugged::TestCase
     amended_commit = @repo.lookup(new_commit_oid)
     assert_equal tree_oid, amended_commit.tree.oid
   end
+
+  def test_header_field
+    oid = "8496071c1b46c854b31185ea97743be6a8774479"
+    obj = @repo.lookup(oid)
+
+    expected_header_field = "Scott Chacon <schacon@gmail.com> 1273360386 -0700"
+    assert_equal expected_header_field, obj.header_field("author")
+  end
+
+  def test_header
+    oid = "8496071c1b46c854b31185ea97743be6a8774479"
+    obj = @repo.lookup(oid)
+
+    expected_header = <<-HEADER
+tree 181037049a54a1eb5fab404658a3a250b44335d7
+author Scott Chacon <schacon@gmail.com> 1273360386 -0700
+committer Scott Chacon <schacon@gmail.com> 1273360386 -0700
+    HEADER
+
+    assert_equal expected_header, obj.header
+  end
 end
 
 class CommitWriteTest < Rugged::TestCase
