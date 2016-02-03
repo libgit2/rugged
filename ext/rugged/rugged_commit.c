@@ -567,20 +567,20 @@ static VALUE rb_git_commit_header_field(VALUE self, VALUE rb_field) {
 	git_buf header_field = { 0 };
 	VALUE rb_result;
 	git_commit *commit;
-	int err;
+	int error;
 
 	Check_Type(rb_field, T_STRING);
 
 	Data_Get_Struct(self, git_commit, commit);
 
-	err = git_commit_header_field(&header_field, commit, StringValueCStr(rb_field));
+	error = git_commit_header_field(&header_field, commit, StringValueCStr(rb_field));
 
-	if (err == GIT_ENOTFOUND) {
+	if (error == GIT_ENOTFOUND) {
 		git_buf_free(&header_field);
 		return Qnil;
 	}
 
-	rugged_exception_check(err);
+	rugged_exception_check(error);
 
 	rb_result = rb_enc_str_new(header_field.ptr, header_field.size, rb_utf8_encoding());
 
