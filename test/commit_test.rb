@@ -184,6 +184,14 @@ class TestCommit < Rugged::TestCase
     assert_equal nil, obj.header_field("foobar")
   end
 
+  def test_header_field?
+    oid = "8496071c1b46c854b31185ea97743be6a8774479"
+    obj = @repo.lookup(oid)
+
+    assert_equal true, obj.header_field?("author")
+    assert_equal false, obj.header_field?("foobar")
+  end
+
   def test_header
     oid = "8496071c1b46c854b31185ea97743be6a8774479"
     obj = @repo.lookup(oid)

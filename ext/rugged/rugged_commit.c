@@ -591,6 +591,33 @@ static VALUE rb_git_commit_header_field(VALUE self, VALUE rb_field) {
 
 /*
  *  call-seq:
+ *    commit.header_field?(field_name) -> bool
+ *
+ *  Returns true if header field is present, false otherwise.
+ */
+static VALUE rb_git_commit_header_field_present(VALUE self, VALUE rb_field) {
+	git_buf header_field = { 0 };
+	git_commit *commit;
+	int error;
+
+	Check_Type(rb_field, T_STRING);
+
+	Data_Get_Struct(self, git_commit, commit);
+
+	error = git_commit_header_field(&header_field, commit, StringValueCStr(rb_field));
+
+	git_buf_free(&header_field);
+
+	if (error == GIT_ENOTFOUND)
+		return Qfalse;
+
+	rugged_exception_check(error);
+
+	return Qtrue;
+}
+
+/*
+ *  call-seq:
  *    commit.header -> str
  *
  *  Returns +commit+'s entire raw header.
@@ -633,5 +660,6 @@ void Init_rugged_commit(void)
 	rb_define_method(rb_cRuggedCommit, "to_mbox", rb_git_commit_to_mbox, -1);
 
 	rb_define_method(rb_cRuggedCommit, "header_field", rb_git_commit_header_field, 1);
+	rb_define_method(rb_cRuggedCommit, "header_field?", rb_git_commit_header_field_present, 1);
 	rb_define_method(rb_cRuggedCommit, "header", rb_git_commit_header, 0);
 }
