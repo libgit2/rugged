@@ -5,6 +5,14 @@ class ConfigTest < Rugged::TestCase
     @repo = FixtureRepo.from_rugged("testrepo.git")
   end
 
+  def test_empty_config
+    config = Rugged::Config.new
+    assert_nil config['not.exist']
+
+    config = Rugged::Config.new(nil)
+    assert_nil config['not.exist']
+  end
+
   def test_read_config_file
     config = @repo.config
     assert_equal 'false', config['core.bare']

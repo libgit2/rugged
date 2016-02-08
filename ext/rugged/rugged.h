@@ -40,6 +40,11 @@
 #include <assert.h>
 #include <git2.h>
 #include <git2/odb_backend.h>
+#include <git2/sys/config.h>
+#include <git2/sys/refdb_backend.h>
+#include <git2/sys/refs.h>
+#include <git2/sys/repository.h>
+#include <git2/sys/odb_backend.h>
 
 #define rb_str_new_utf8(str) rb_enc_str_new(str, strlen(str), rb_utf8_encoding())
 #define CSTR2SYM(s) (ID2SYM(rb_intern((s))))
@@ -61,6 +66,7 @@ void Init_rugged_revwalk(void);
 void Init_rugged_reference(void);
 void Init_rugged_reference_collection(void);
 void Init_rugged_config(void);
+void Init_rugged_config_backend(void);
 void Init_rugged_remote(void);
 void Init_rugged_remote_collection(void);
 void Init_rugged_notes(void);
@@ -74,7 +80,14 @@ void Init_rugged_diff_hunk(void);
 void Init_rugged_diff_line(void);
 void Init_rugged_blame(void);
 void Init_rugged_cred(void);
-void Init_rugged_backend(void);
+void Init_rugged_refdb(void);
+void Init_rugged_refdb_backend(void);
+void Init_rugged_refdb_backend_fs(void);
+void Init_rugged_odb(void);
+void Init_rugged_odb_backend(void);
+void Init_rugged_odb_backend_loose(void);
+void Init_rugged_odb_backend_one_pack(void);
+void Init_rugged_odb_backend_pack(void);
 
 VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE self);
 
@@ -84,7 +97,9 @@ VALUE rugged_signature_new(const git_signature *sig, const char *encoding_name);
 
 VALUE rugged_repo_new(VALUE klass, git_repository *repo);
 VALUE rugged_index_new(VALUE klass, VALUE owner, git_index *index);
+VALUE rugged_refdb_new(VALUE klass, VALUE owner, git_refdb *refdb);
 VALUE rugged_config_new(VALUE klass, VALUE owner, git_config *cfg);
+VALUE rugged_odb_new(VALUE klass, VALUE owner, git_odb *odb);
 VALUE rugged_object_new(VALUE owner, git_object *object);
 VALUE rugged_object_rev_parse(VALUE rb_repo, VALUE rb_spec, int as_obj);
 VALUE rugged_ref_new(VALUE klass, VALUE owner, git_reference *ref);
@@ -175,11 +190,5 @@ static inline VALUE rugged_create_oid(const git_oid *oid)
 	git_oid_fmt(out, oid);
 	return rb_str_new(out, 40);
 }
-
-
-typedef struct _rugged_backend {
-  int (* odb_backend)(git_odb_backend **backend_out, struct _rugged_backend *backend, const char* path);
-  int (* refdb_backend)(git_refdb_backend **backend_out, struct _rugged_backend *backend, const char* path);
-} rugged_backend;
 
 #endif
