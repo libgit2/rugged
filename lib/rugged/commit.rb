@@ -9,6 +9,10 @@ module Rugged
       "#<Rugged::Commit:#{object_id} {message: #{message.inspect}, tree: #{tree.inspect}, parents: #{parent_oids}}>"
     end
 
+    def header_field?(field)
+      !!header_field(field)
+    end
+
     # Return a diff between this commit and its first parent or another commit or tree.
     #
     # See Rugged::Tree#diff for more details.

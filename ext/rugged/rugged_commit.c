@@ -563,57 +563,36 @@ static VALUE rb_git_commit_to_mbox(int argc, VALUE *argv, VALUE self)
  *
  *  Returns +commit+'s header field value.
  */
-static VALUE rb_git_commit_header_field(VALUE self, VALUE rb_field) {
+static VALUE rb_git_commit_header_field(VALUE self, VALUE rb_field)
+{
 	git_buf header_field = { 0 };
+	git_commit *commit = NULL;
+
+	const char *encoding_name;
+	rb_encoding *encoding = rb_utf8_encoding();
 	VALUE rb_result;
-	git_commit *commit;
+
 	int error;
 
 	Check_Type(rb_field, T_STRING);
-
 	Data_Get_Struct(self, git_commit, commit);
 
 	error = git_commit_header_field(&header_field, commit, StringValueCStr(rb_field));
 
-	if (error == GIT_ENOTFOUND) {
+	if (error < 0) {
 		git_buf_free(&header_field);
-		return Qnil;
+		if (error == GIT_ENOTFOUND)
+			return Qnil;
+		rugged_exception_check(error);
 	}
 
-	rugged_exception_check(error);
+	encoding_name = git_commit_message_encoding(commit);
+	if (encoding_name != NULL)
+		encoding = rb_enc_find(encoding_name);
 
-	rb_result = rb_enc_str_new(header_field.ptr, header_field.size, rb_utf8_encoding());
-
+	rb_result = rb_enc_str_new(header_field.ptr, header_field.size, encoding);
 	git_buf_free(&header_field);
-
 	return rb_result;
-}
-
-/*
- *  call-seq:
- *    commit.header_field?(field_name) -> bool
- *
- *  Returns true if header field is present, false otherwise.
- */
-static VALUE rb_git_commit_header_field_present(VALUE self, VALUE rb_field) {
-	git_buf header_field = { 0 };
-	git_commit *commit;
-	int error;
-
-	Check_Type(rb_field, T_STRING);
-
-	Data_Get_Struct(self, git_commit, commit);
-
-	error = git_commit_header_field(&header_field, commit, StringValueCStr(rb_field));
-
-	git_buf_free(&header_field);
-
-	if (error == GIT_ENOTFOUND)
-		return Qfalse;
-
-	rugged_exception_check(error);
-
-	return Qtrue;
 }
 
 /*
@@ -622,18 +601,15 @@ static VALUE rb_git_commit_header_field_present(VALUE self, VALUE rb_field) {
  *
  *  Returns +commit+'s entire raw header.
  */
-static VALUE rb_git_commit_header(VALUE self) {
-	VALUE rb_result;
+static VALUE rb_git_commit_header(VALUE self)
+{
 	git_commit *commit;
 	const char *raw_header;
 
 	Data_Get_Struct(self, git_commit, commit);
 
 	raw_header = git_commit_raw_header(commit);
-
-	rb_result = rb_enc_str_new(raw_header, strlen(raw_header), rb_utf8_encoding());
-
-	return rb_result;
+	return rb_str_new_utf8(raw_header);
 }
 
 void Init_rugged_commit(void)
@@ -660,6 +636,5 @@ void Init_rugged_commit(void)
 	rb_define_method(rb_cRuggedCommit, "to_mbox", rb_git_commit_to_mbox, -1);
 
 	rb_define_method(rb_cRuggedCommit, "header_field", rb_git_commit_header_field, 1);
-	rb_define_method(rb_cRuggedCommit, "header_field?", rb_git_commit_header_field_present, 1);
 	rb_define_method(rb_cRuggedCommit, "header", rb_git_commit_header, 0);
 }
