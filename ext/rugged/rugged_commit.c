@@ -612,11 +612,58 @@ static VALUE rb_git_commit_header(VALUE self)
 	return rb_str_new_utf8(raw_header);
 }
 
+/*
+ *  call-seq:
+ *    Rugged::Commit.extract_signature(repo, commit, field_name) -> [str, str]
+ *
+ *  Returns +commit+'s signature in 'field' and the signed data
+ *
+ *  The signature is done over the contents of the commit without the
+ *  signature block in the header, which is the data in the second
+ *  element in the return array.
+ */
+static VALUE rb_git_commit_extract_signature(int argc, VALUE *argv, VALUE self)
+{
+	int error;
+	VALUE ret_arr;
+	git_oid commit_id;
+	const char *field;
+	git_repository *repo;
+	git_buf signature = {0}, signed_data = {0};
+	VALUE rb_repo, rb_commit, rb_field = Qnil;
+
+	rb_scan_args(argc, argv, "21", &rb_repo, &rb_commit, &rb_field);
+
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	error = git_oid_fromstr(&commit_id, StringValueCStr(rb_commit));
+	rugged_exception_check(error);
+
+	field = NIL_P(rb_field) ? NULL : StringValueCStr(rb_field);
+	error = git_commit_extract_signature(&signature, &signed_data, repo, &commit_id, field);
+	if (error < 0) {
+		git_buf_free(&signature);
+		git_buf_free(&signed_data);
+	}
+
+	rugged_exception_check(error);
+
+	ret_arr = rb_ary_new3(2, rb_str_new(signature.ptr, signature.size),
+			         rb_str_new(signed_data.ptr, signed_data.size));
+
+	git_buf_free(&signature);
+	git_buf_free(&signed_data);
+
+	return ret_arr;
+}
+
 void Init_rugged_commit(void)
 {
 	rb_cRuggedCommit = rb_define_class_under(rb_mRugged, "Commit", rb_cRuggedObject);
 
 	rb_define_singleton_method(rb_cRuggedCommit, "create", rb_git_commit_create, 2);
+	rb_define_singleton_method(rb_cRuggedCommit, "extract_signature", rb_git_commit_extract_signature, -1);
 
 	rb_define_method(rb_cRuggedCommit, "message", rb_git_commit_message_GET, 0);
 	rb_define_method(rb_cRuggedCommit, "epoch_time", rb_git_commit_epoch_time_GET, 0);
