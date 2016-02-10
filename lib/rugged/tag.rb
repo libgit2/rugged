@@ -9,14 +9,14 @@ module Rugged
         raise GitRPC::InvalidObject, "Invalid object type #{object.type}, expected tag"
       end
 
-      unless index = object.data.index(prefix)
-        raise GitRPC::InvalidObject, "Tag does not contain signature"
+      if index = object.data.index(prefix)
+        [
+          object.data.byteslice(index..-1),
+          object.data.byteslice(0...index)
+        ]
+      else
+        [nil, object.data]
       end
-
-      [
-        object.data.byteslice(index..-1),
-        object.data.byteslice(0...index)
-      ]
     end
 
     def name
