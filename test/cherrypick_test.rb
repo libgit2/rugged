@@ -75,4 +75,35 @@ class WorkdirCherrypickTest < Rugged::TestCase
     assert_equal "e5183bfd18e3a0a691fadde2f0d5610b73282d31", @repo.index["file2.txt"][:oid]
     assert_equal "409a1bec58bf35348e8b62b72bb9c1f45cf5a587", @repo.index["file3.txt"][:oid]
   end
+
+  def test_cherrypick_commit
+    index = @repo.cherrypick_commit("cfc4f0999a8367568e049af4f72e452d40828a15",
+                                    "d3d77487660ee3c0194ee01dc5eaf478782b1c7e")
+
+    assert_equal 0, index.conflicts.size
+    assert_equal "38c05a857e831a7e759d83778bfc85d003e21c45", index["file1.txt"][:oid]
+    assert_equal "a661b5dec1004e2c62654ded3762370c27cf266b", index["file2.txt"][:oid]
+    assert_equal "df6b290e0bd6a89b01d69f66687e8abf385283ca", index["file3.txt"][:oid]
+
+
+    assert_raises(Rugged::CherrypickError) do
+      @repo.cherrypick_commit("abe4603bc7cd5b8167a267e0e2418fd2348f8cff",
+                              "cfc4f0999a8367568e049af4f72e452d40828a15")
+    end
+
+    index = @repo.cherrypick_commit("abe4603bc7cd5b8167a267e0e2418fd2348f8cff",
+                                  "cfc4f0999a8367568e049af4f72e452d40828a15", 1)
+
+    assert_equal 0, index.conflicts.size
+    assert_equal "f90f9dcbdac2cce5cc166346160e19cb693ef4e8", index["file1.txt"][:oid]
+    assert_equal "563f6473a3858f99b80e5f93c660512ed38e1e6f", index["file2.txt"][:oid]
+    assert_equal "e233b9ed408a95e9d4b65fec7fc34943a556deb2", index["file3.txt"][:oid]
+
+    index = @repo.cherrypick_commit("abe4603bc7cd5b8167a267e0e2418fd2348f8cff",
+                                  "cfc4f0999a8367568e049af4f72e452d40828a15", 2)
+
+    assert_equal "487434cace79238a7091e2220611d4f20a765690", index["file1.txt"][:oid]
+    assert_equal "e5183bfd18e3a0a691fadde2f0d5610b73282d31", index["file2.txt"][:oid]
+    assert_equal "409a1bec58bf35348e8b62b72bb9c1f45cf5a587", index["file3.txt"][:oid]
+  end
 end

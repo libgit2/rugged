@@ -2530,6 +2530,61 @@ static VALUE rb_git_repo_cherrypick(int argc, VALUE *argv, VALUE self)
 	return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    repo.cherrypick_commit(commit, our_commit, [mainline, options]) -> nil
+ *
+ *  Cherry-pick the given commit on the given base in-memory and
+ *  return an index with the result.
+ *
+ *  `commit` can be either a string containing a commit id or a
+ *  `Rugged::Commit` object.
+ *
+ *  `our_commit` is the base commit, can be either a string containing
+ *  a commit id or a `Rugged::Commit` object.
+ *
+ *  `mainline` when cherry-picking a merge, this is the parent number
+ *   (starting from 1) which should be considered the mainline.
+ */
+static VALUE rb_git_repo_cherrypick_commit(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_options, rb_commit, rb_our_commit, rb_mainline;
+
+	git_repository *repo;
+	git_commit *commit, *our_commit;
+	git_merge_options opts = GIT_MERGE_OPTIONS_INIT;
+	git_index *index;
+	int error, mainline;
+
+	rb_scan_args(argc, argv, "21:", &rb_commit, &rb_our_commit, &rb_mainline, &rb_options);
+
+	if (TYPE(rb_commit) == T_STRING) {
+		rb_commit = rugged_object_rev_parse(self, rb_commit, 1);
+	}
+	if (TYPE(rb_our_commit) == T_STRING) {
+		rb_our_commit = rugged_object_rev_parse(self, rb_our_commit, 1);
+	}
+
+	if (!rb_obj_is_kind_of(rb_commit, rb_cRuggedCommit)) {
+		rb_raise(rb_eArgError, "Expected a Rugged::Commit.");
+	}
+	if (!rb_obj_is_kind_of(rb_our_commit, rb_cRuggedCommit)) {
+		rb_raise(rb_eArgError, "Expected a Rugged::Commit.");
+	}
+
+	Data_Get_Struct(self, git_repository, repo);
+	Data_Get_Struct(rb_commit, git_commit, commit);
+	Data_Get_Struct(rb_our_commit, git_commit, our_commit);
+
+	rugged_parse_merge_options(&opts, rb_options);
+
+	mainline = NIL_P(rb_mainline) ? 0 : FIX2UINT(rb_mainline);
+	error = git_cherrypick_commit(&index, repo, commit, our_commit, mainline, &opts);
+	rugged_exception_check(error);
+
+	return rugged_index_new(rb_cRuggedIndex, self, index);
+}
+
 void Init_rugged_repo(void)
 {
 	id_call = rb_intern("call");
@@ -2603,6 +2658,7 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "checkout_head", rb_git_checkout_head, -1);
 
 	rb_define_method(rb_cRuggedRepo, "cherrypick", rb_git_repo_cherrypick, -1);
+	rb_define_method(rb_cRuggedRepo, "cherrypick_commit", rb_git_repo_cherrypick_commit, -1);
 	rb_define_method(rb_cRuggedRepo, "fetch_attributes", rb_git_repo_attributes, -1);
 
 	rb_cRuggedOdbObject = rb_define_class_under(rb_mRugged, "OdbObject", rb_cObject);
