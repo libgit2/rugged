@@ -1,5 +1,24 @@
 module Rugged
   class Tag < Rugged::Reference
+    GPG_SIGNATURE_PREFIX = "-----BEGIN PGP SIGNATURE-----".freeze
+
+    def self.extract_signature(repo, oid, prefix=GPG_SIGNATURE_PREFIX)
+      object = repo.read(oid)
+
+      unless object.type == :tag
+        raise GitRPC::InvalidObject, "Invalid object type #{object.type}, expected tag"
+      end
+
+      if index = object.data.index(prefix)
+        [
+          object.data.byteslice(index..-1),
+          object.data.byteslice(0...index)
+        ]
+      else
+        [nil, object.data]
+      end
+    end
+
     def name
       canonical_name.sub(%r{^refs/tags/}, "")
     end
