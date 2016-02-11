@@ -271,6 +271,8 @@ SIGNEDDATA
     signature, signed_data = Rugged::Commit.extract_signature(@repo, commit_sha)
     assert_equal exp_signature, signature
     assert_equal exp_signed_data, signed_data
+
+    assert_equal [nil, nil], Rugged::Commit.extract_signature(@repo, "8496071c1b46c854b31185ea97743be6a8774479")
   end
 end
 
