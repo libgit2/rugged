@@ -1934,7 +1934,7 @@ static int rugged__checkout_notify_cb(
 /**
  * The caller has to free the returned git_checkout_options paths strings array.
  */
-static void rugged_parse_checkout_options(git_checkout_options *opts, VALUE rb_options)
+void rugged_parse_checkout_options(git_checkout_options *opts, VALUE rb_options)
 {
 	VALUE rb_value;
 
