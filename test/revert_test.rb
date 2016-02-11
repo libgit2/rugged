@@ -61,4 +61,13 @@ class RevertTest < Rugged::TestCase
     index = @repo.revert_commit(revert, head)
     verify_index(index, expected)
   end
+
+  # GH-566
+  def test_reverted_index_does_not_cause_segfault_on_diff
+    head = Rugged::Commit.lookup(@repo,"39467716290f6df775a91cdb9a4eb39295018145")
+    revert = Rugged::Commit.lookup(@repo, "ebb03002cee5d66c7732dd06241119fe72ab96a5")
+
+    index = @repo.revert_commit(revert, head)
+    index.diff
+  end
 end
