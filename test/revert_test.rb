@@ -52,7 +52,7 @@ class RevertTest < Rugged::TestCase
   end
 
   def test_revert_orphan
-		expected = [
+    expected = [
       [0100644, "296a6d3be1dff05c5d1f631d2459389fa7b619eb", 0, "file-mainline.txt"]]
 
     head = Rugged::Commit.lookup(@repo,"39467716290f6df775a91cdb9a4eb39295018145")
