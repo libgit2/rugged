@@ -29,7 +29,7 @@ extern VALUE rb_cRuggedRepo;
 extern VALUE rb_eRuggedError;
 VALUE rb_cRuggedRemote;
 
-#define RUGGED_REMOTE_CALLBACKS_INIT {1, progress_cb, NULL, credentials_cb, certificate_check_cb, transfer_progress_cb, update_tips_cb, NULL, NULL, push_update_reference_cb, NULL}
+#define RUGGED_REMOTE_CALLBACKS_INIT {1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, push_update_reference_cb, NULL}
 
 static int progress_cb(const char *str, int len, void *data)
 {
@@ -184,6 +184,27 @@ static int credentials_cb(
 			rb_raise(rb_eArgError, "Expected a Proc or an object that responds to #call (:" name " )."); \
 	} while (0);
 
+static void setup_callbacks(git_remote_callbacks *callbacks, VALUE rb_options)
+{
+	if (NIL_P(rb_options))
+		return;
+
+	if (!NIL_P(rb_hash_aref(rb_options, CSTR2SYM("progress"))))
+		callbacks->sideband_progress = progress_cb;
+
+	if (!NIL_P(rb_hash_aref(rb_options, CSTR2SYM("credentials"))))
+		callbacks->credentials = credentials_cb;
+
+	if (!NIL_P(rb_hash_aref(rb_options, CSTR2SYM("certificate_check"))))
+		callbacks->certificate_check = certificate_check_cb;
+
+	if (!NIL_P(rb_hash_aref(rb_options, CSTR2SYM("transfer_progress"))))
+		callbacks->transfer_progress = transfer_progress_cb;
+
+	if (!NIL_P(rb_hash_aref(rb_options, CSTR2SYM("update_tips"))))
+		callbacks->update_tips = update_tips_cb;
+}
+
 void rugged_remote_init_callbacks_and_payload_from_options(
 	VALUE rb_options,
 	git_remote_callbacks *callbacks,
@@ -193,6 +214,7 @@ void rugged_remote_init_callbacks_and_payload_from_options(
 
 	prefilled.payload = payload;
 	memcpy(callbacks, &prefilled, sizeof(git_remote_callbacks));
+	setup_callbacks(callbacks, rb_options);
 
 	if (!NIL_P(rb_options)) {
 		CALLABLE_OR_RAISE(payload->certificate_check, rb_options, "certificate_check");
