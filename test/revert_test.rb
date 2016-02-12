@@ -52,7 +52,7 @@ class RevertTest < Rugged::TestCase
   end
 
   def test_revert_orphan
-		expected = [
+    expected = [
       [0100644, "296a6d3be1dff05c5d1f631d2459389fa7b619eb", 0, "file-mainline.txt"]]
 
     head = Rugged::Commit.lookup(@repo,"39467716290f6df775a91cdb9a4eb39295018145")
@@ -60,5 +60,14 @@ class RevertTest < Rugged::TestCase
 
     index = @repo.revert_commit(revert, head)
     verify_index(index, expected)
+  end
+
+  # GH-566
+  def test_reverted_index_does_not_cause_segfault_on_diff
+    head = Rugged::Commit.lookup(@repo,"39467716290f6df775a91cdb9a4eb39295018145")
+    revert = Rugged::Commit.lookup(@repo, "ebb03002cee5d66c7732dd06241119fe72ab96a5")
+
+    index = @repo.revert_commit(revert, head)
+    index.diff
   end
 end
