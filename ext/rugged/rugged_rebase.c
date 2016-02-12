@@ -29,9 +29,8 @@ extern VALUE rb_cRuggedIndex;
 extern VALUE rb_cRuggedRepo;
 
 VALUE rb_cRuggedRebase;
-VALUE rb_cRuggedRebaseOperation;
 
-VALUE ruged_rebase_operation_new(git_rebase_operation *operation, VALUE owner);
+static VALUE rebase_operation_type(git_rebase_operation *operation);
 
 static void parse_rebase_options(git_rebase_options *ret, VALUE rb_options)
 {
@@ -143,16 +142,35 @@ cleanup:
 
 /*
  *  call-seq:
- *    Rebase.next() -> RebaseOperation
+ *    Rebase.next() -> operation or nil
  *
- *  Perform the next step in the rebase. The returned operation gives
- *  its details.
+ *  Perform the next step in the rebase. The returned operation is a
+ *  Hash with its details or nil if there are no more operations to
+ *  perform. The Hash contains some of the following entries:
+ *
+ *  :type ::
+ *    The type of operation being done. Can be one of +:pick+,
+ *    +:reword+, +:edit+, +:squash+, +:fixup+ or +:exec+.
+ *
+ *  :id ::
+ *    The id of the commit being cherry-picked. Exists for all but
+ *    +:exec+ operations.
+ *
+ *  :index ::
+ *    If the rebase is +:inmemory+ this is in the resulting merge
+ *    index. It can be used to resolve merge conflicts during the
+ *    rebase.
+ *
+ *  :exec ::
+ *    If the operatin is +:exec+ this is what the user asked to be
+ *    executed.
  */
 static VALUE rb_git_rebase_next(VALUE self)
 {
 	int error;
 	git_rebase *rebase;
 	git_rebase_operation *operation;
+	VALUE hash, val;
 
 	Data_Get_Struct(self, git_rebase, rebase);
 	error = git_rebase_next(&operation, rebase);
@@ -161,7 +179,29 @@ static VALUE rb_git_rebase_next(VALUE self)
 
 	rugged_exception_check(error);
 
-	return ruged_rebase_operation_new(operation, self);
+	/* Create the operation hash out of the relevant details */
+	hash = rb_hash_new();
+
+	val = rebase_operation_type(operation);
+	rb_hash_aset(hash, CSTR2SYM("type"), val);
+
+	if (operation->type != GIT_REBASE_OPERATION_EXEC) {
+		val = rugged_create_oid(&operation->id);
+		rb_hash_aset(hash, CSTR2SYM("id"), val);
+	}
+
+	if (operation->index) {
+		val = Data_Wrap_Struct(rb_cRuggedIndex, NULL, NULL, operation->index);
+		rugged_set_owner(val, self);
+		rb_hash_aset(hash, CSTR2SYM("index"), val);
+	}
+
+	if (operation->exec) {
+		val = rb_str_new_utf8(operation->exec);
+		rb_hash_aset(hash, CSTR2SYM("exec"), val);
+	}
+
+	return hash;
 }
 
 /*
@@ -251,27 +291,9 @@ static VALUE rb_git_rebase_finish(VALUE self, VALUE rb_sig)
 	return Qnil;
 }
 
-VALUE ruged_rebase_operation_new(git_rebase_operation *operation, VALUE owner)
-{
-	VALUE rb_rebase = Data_Wrap_Struct(rb_cRuggedRebaseOperation, NULL, NULL, operation);
-	rugged_set_owner(rb_rebase, owner);
-
-	return rb_rebase;
-}
-
-/*
- *  call-seq:
- *    RebaseOperation.type -> symbol
- *
- *  The type of operation being done. Can be one of +:pick+,
- *  +:reword+, +:edit+, +:squash+, +:fixup+ or +:exec+.
- *
- */static VALUE rb_git_rebase_operation_type(VALUE self)
+static VALUE rebase_operation_type(git_rebase_operation *operation)
 {
 	VALUE rb_type;
-	git_rebase_operation *operation;
-
-	Data_Get_Struct(self, git_rebase_operation, operation);
 
 	switch (operation->type) {
 	case GIT_REBASE_OPERATION_PICK:
@@ -300,58 +322,6 @@ VALUE ruged_rebase_operation_new(git_rebase_operation *operation, VALUE owner)
 	return rb_type;
 }
 
-/*
- *  call-seq:
- *    RebaseOperation.id -> oid
- *
- *  The id of the commit being cherry-picked. Exists for all but
- *  +:exec+ operations.
- */
-static VALUE rb_git_rebase_operation_id(VALUE self)
-{
-	git_rebase_operation *operation;
-
-	Data_Get_Struct(self, git_rebase_operation, operation);
-
-	return rugged_create_oid(&operation->id);
-}
-
-/*
- *  call-seq:
- *    RebaseOperation.index -> Index
- *
- *  The index that is the result of an opration. Only valid for
- *  +:inmemory+ rebases.
- */
-static VALUE rb_git_rebase_operation_index(VALUE self)
-{
-	git_rebase_operation *operation;
-	VALUE rb_index;
-
-	Data_Get_Struct(self, git_rebase_operation, operation);
-
-	rb_index = Data_Wrap_Struct(rb_cRuggedIndex, NULL, NULL, operation->index);
-	rugged_set_owner(rb_index, self);
-
-	return rb_index;
-}
-
-/*
- *  call-seq:
- *    RebaseOperation.exec -> str
- *
- *  The executable the user has requested to run. Only exists for
- *  +:exec+ operations.
- */
-static VALUE rb_git_rebase_operation_exec(VALUE self)
-{
-	git_rebase_operation *operation;
-
-	Data_Get_Struct(self, git_rebase_operation, operation);
-
-	return rb_str_new_utf8(operation->exec ? operation->exec : "");
-}
-
 void Init_rugged_rebase(void)
 {
 	rb_cRuggedRebase = rb_define_class_under(rb_mRugged, "Rebase", rb_cObject);
@@ -361,12 +331,6 @@ void Init_rugged_rebase(void)
 	rb_define_method(rb_cRuggedRebase, "commit",  rb_git_rebase_commit,  -1);
 	rb_define_method(rb_cRuggedRebase, "abort",  rb_git_rebase_abort,  0);
 	rb_define_method(rb_cRuggedRebase, "finish",  rb_git_rebase_finish,  1);
-
-	rb_cRuggedRebaseOperation = rb_define_class_under(rb_mRugged, "RebaseOperation", rb_cObject);
-	rb_define_method(rb_cRuggedRebaseOperation, "type",  rb_git_rebase_operation_type,  0);
-	rb_define_method(rb_cRuggedRebaseOperation, "id",  rb_git_rebase_operation_id,  0);
-	rb_define_method(rb_cRuggedRebaseOperation, "index",  rb_git_rebase_operation_index,  0);
-	rb_define_method(rb_cRuggedRebaseOperation, "exec",  rb_git_rebase_operation_exec,  0);
 }
 
 

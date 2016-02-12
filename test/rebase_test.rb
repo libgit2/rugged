@@ -15,8 +15,8 @@ class TestRebase < Rugged::TestCase
     rebase = Rugged::Rebase.new(@repo, "refs/heads/beef", "refs/heads/master")
 
     op = rebase.next()
-    assert_equal :pick, op.type
-    assert_equal "da9c51a23d02d931a486f45ad18cda05cf5d2b94", op.id
+    assert_equal :pick, op[:type]
+    assert_equal "da9c51a23d02d931a486f45ad18cda05cf5d2b94", op[:id]
 
     statuses = []
     @repo.status do |file, status|
@@ -50,10 +50,11 @@ class TestRebase < Rugged::TestCase
     rebase = Rugged::Rebase.new(@repo, "refs/heads/asparagus", "refs/heads/master", inmemory: true)
 
     op = rebase.next()
-    idx = op.index
+    idx = op[:index]
 
-    assert_equal :pick, op.type
-    assert_equal "33f915f9e4dbd9f4b24430e48731a59b45b15500", op.id
+    assert idx
+    assert_equal :pick, op[:type]
+    assert_equal "33f915f9e4dbd9f4b24430e48731a59b45b15500", op[:id]
     assert !@repo.index.conflicts?
     assert idx.conflicts?
 
