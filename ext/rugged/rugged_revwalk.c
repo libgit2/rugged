@@ -192,6 +192,29 @@ static VALUE rb_git_walker_simplify_first_parent(VALUE self)
 
 /*
  *  call-seq:
+ *    walker.count -> Fixnum
+ *
+ *  Returns the amount of objects a walker iterated over.
+ */
+static VALUE rb_git_walker_count(VALUE self)
+{
+	git_revwalk *walk;
+	git_oid commit_oid;
+	int error = 0;
+	uint64_t count = 0;
+
+	Data_Get_Struct(self, git_revwalk, walk);
+
+	while (((error = git_revwalk_next(&commit_oid, walk)) == 0) && ++count != UINT64_MAX);
+
+	if (error != GIT_ITEROVER)
+		rugged_exception_check(error);
+
+	return ULONG2NUM(count);
+}
+
+/*
+ *  call-seq:
  *    walker.reset -> nil
  *
  *  Remove all pushed and hidden commits and reset the +walker+
@@ -492,4 +515,5 @@ void Init_rugged_revwalk(void)
 	rb_define_method(rb_cRuggedWalker, "reset", rb_git_walker_reset, 0);
 	rb_define_method(rb_cRuggedWalker, "sorting", rb_git_walker_sorting, 1);
 	rb_define_method(rb_cRuggedWalker, "simplify_first_parent", rb_git_walker_simplify_first_parent, 0);
+	rb_define_method(rb_cRuggedWalker, "count", rb_git_walker_count, 0);
 }

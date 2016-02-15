@@ -143,6 +143,12 @@ class WalkerTest < Rugged::TestCase
     oids = data.sort { |a, b| a.oid <=> b.oid }.map {|a| a.oid[0,5]}.join('.')
     assert_equal "4a202.5b5b0.84960.9fd73", oids
   end
+
+  def test_walk_count
+    @walker.push("9fd738e8f7967c078dceed8190330fc8648ee56a")
+    @walker.hide("5b5b025afb0b4c913b4c338a42934a3863bf3644")
+    assert_equal 2, @walker.count
+  end
 end
 
 # testrepo (the non-bare repo) is the one with non-linear history,
