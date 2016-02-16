@@ -41,6 +41,18 @@ VALUE rugged_ref_new(VALUE klass, VALUE owner, git_reference *ref)
 	return rb_ref;
 }
 
+
+const char * rugged_refname_from_string_or_ref(VALUE rb_name_or_ref)
+{
+	if (rb_obj_is_kind_of(rb_name_or_ref, rb_cRuggedReference))
+		rb_name_or_ref = rb_funcall(rb_name_or_ref, rb_intern("canonical_name"), 0);
+
+	if (TYPE(rb_name_or_ref) != T_STRING)
+		rb_raise(rb_eTypeError, "Expecting a String or Rugged::Reference instance");
+
+	return StringValueCStr(rb_name_or_ref);
+}
+
 /*
  *  call-seq:
  *    Reference.valid_name?(ref_name) -> true or false

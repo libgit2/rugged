@@ -75,6 +75,7 @@ void Init_rugged_diff_line(void);
 void Init_rugged_blame(void);
 void Init_rugged_cred(void);
 void Init_rugged_backend(void);
+void Init_rugged_rebase(void);
 
 VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE self);
 
@@ -98,6 +99,7 @@ VALUE rb_git_delta_file_fromC(const git_diff_file *file);
 
 void rugged_parse_diff_options(git_diff_options *opts, VALUE rb_options);
 void rugged_parse_merge_options(git_merge_options *opts, VALUE rb_options);
+void rugged_parse_checkout_options(git_checkout_options *opts, VALUE rb_options);
 
 void rugged_cred_extract(git_cred **cred, int allowed_types, VALUE rb_credential);
 
@@ -107,6 +109,7 @@ git_otype rugged_otype_get(VALUE rb_type);
 git_signature *rugged_signature_get(VALUE rb_person, git_repository *repo);
 git_object *rugged_object_get(git_repository *repo, VALUE object_value, git_otype type);
 int rugged_oid_get(git_oid *oid, git_repository *repo, VALUE p);
+const char * rugged_refname_from_string_or_ref(VALUE rb_name_or_ref);
 
 void rugged_rb_ary_to_strarray(VALUE rb_array, git_strarray *str_array);
 VALUE rugged_strarray_to_rb_ary(git_strarray *str_array);
