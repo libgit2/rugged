@@ -625,7 +625,7 @@ static VALUE rb_git_commit_header(VALUE self)
 static VALUE rb_git_commit_extract_signature(int argc, VALUE *argv, VALUE self)
 {
 	int error;
-	VALUE ret_arr;
+	VALUE ret;
 	git_oid commit_id;
 	const char *field;
 	git_repository *repo;
@@ -647,19 +647,19 @@ static VALUE rb_git_commit_extract_signature(int argc, VALUE *argv, VALUE self)
 		git_buf_free(&signed_data);
 	}
 
-	if (error == GIT_ENOTFOUND) {
-		ret_arr = rb_ary_new3(2, Qnil, Qnil);
+	if (error == GIT_ENOTFOUND && giterr_last()->klass == GITERR_OBJECT ) {
+		ret = Qnil;
 	} else {
 		rugged_exception_check(error);
 
-		ret_arr = rb_ary_new3(2, rb_str_new(signature.ptr, signature.size),
-				      rb_str_new(signed_data.ptr, signed_data.size));
+		ret = rb_ary_new3(2, rb_str_new(signature.ptr, signature.size),
+				     rb_str_new(signed_data.ptr, signed_data.size));
 	}
 
 	git_buf_free(&signature);
 	git_buf_free(&signed_data);
 
-	return ret_arr;
+	return ret;
 }
 
 void Init_rugged_commit(void)

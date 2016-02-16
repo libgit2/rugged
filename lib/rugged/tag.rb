@@ -15,7 +15,7 @@ module Rugged
           object.data.byteslice(0...index)
         ]
       else
-        [nil, object.data]
+        nil
       end
     end
 
