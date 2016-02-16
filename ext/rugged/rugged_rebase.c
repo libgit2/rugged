@@ -156,11 +156,6 @@ cleanup:
  *    The id of the commit being cherry-picked. Exists for all but
  *    +:exec+ operations.
  *
- *  :index ::
- *    If the rebase is +:inmemory+ this is in the resulting merge
- *    index. It can be used to resolve merge conflicts during the
- *    rebase.
- *
  *  :exec ::
  *    If the operatin is +:exec+ this is what the user asked to be
  *    executed.
@@ -190,18 +185,35 @@ static VALUE rb_git_rebase_next(VALUE self)
 		rb_hash_aset(hash, CSTR2SYM("id"), val);
 	}
 
-	if (operation->index) {
-		val = Data_Wrap_Struct(rb_cRuggedIndex, NULL, NULL, operation->index);
-		rugged_set_owner(val, self);
-		rb_hash_aset(hash, CSTR2SYM("index"), val);
-	}
-
 	if (operation->exec) {
 		val = rb_str_new_utf8(operation->exec);
 		rb_hash_aset(hash, CSTR2SYM("exec"), val);
 	}
 
 	return hash;
+}
+/*
+ *  call-seq:
+ *    Rebase.inmemory_index -> Index
+ *
+ *  Gets the index produced by the last operation, which is the result
+ *  of +next+ and which will be committed by the next invocation of
+ *  +commit+.  This is useful for resolving conflicts in an in-memory
+ *  rebase before committing them.
+ *
+ *  This is only applicable for in-memory rebases; for rebases within
+ *  a working directory, the changes were applied to the repository's
+ *  index.
+ */
+static VALUE rb_git_rebase_inmemory_index(VALUE self)
+{
+	git_rebase *rebase;
+	git_index *index;
+
+	Data_Get_Struct(self, git_rebase, rebase);
+	rugged_exception_check(git_rebase_inmemory_index(&index, rebase));
+
+	return rugged_index_new(rb_cRuggedIndex, self, index);
 }
 
 /*
@@ -328,6 +340,7 @@ void Init_rugged_rebase(void)
 
 	rb_define_singleton_method(rb_cRuggedRebase, "new", rb_git_rebase_new, -1);
 	rb_define_method(rb_cRuggedRebase, "next",  rb_git_rebase_next,  0);
+	rb_define_method(rb_cRuggedRebase, "inmemory_index",  rb_git_rebase_inmemory_index,  0);
 	rb_define_method(rb_cRuggedRebase, "commit",  rb_git_rebase_commit,  -1);
 	rb_define_method(rb_cRuggedRebase, "abort",  rb_git_rebase_abort,  0);
 	rb_define_method(rb_cRuggedRebase, "finish",  rb_git_rebase_finish,  1);

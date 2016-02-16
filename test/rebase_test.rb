@@ -50,7 +50,7 @@ class TestRebase < Rugged::TestCase
     rebase = Rugged::Rebase.new(@repo, "refs/heads/asparagus", "refs/heads/master", inmemory: true)
 
     op = rebase.next()
-    idx = op[:index]
+    idx = rebase.inmemory_index
 
     assert idx
     assert_equal :pick, op[:type]
