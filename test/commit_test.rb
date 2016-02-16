@@ -272,7 +272,7 @@ SIGNEDDATA
     assert_equal exp_signature, signature
     assert_equal exp_signed_data, signed_data
 
-    assert_equal [nil, nil], Rugged::Commit.extract_signature(@repo, "8496071c1b46c854b31185ea97743be6a8774479")
+    assert_nil Rugged::Commit.extract_signature(@repo, "8496071c1b46c854b31185ea97743be6a8774479")
 
     # Ask for a tree
     assert_raises(Rugged::InvalidError) { Rugged::Commit.extract_signature(@repo, "181037049a54a1eb5fab404658a3a250b44335d7") }
