@@ -194,14 +194,18 @@ static VALUE rb_git_walker_simplify_first_parent(VALUE self)
  *  call-seq:
  *    walker.count -> Fixnum
  *
- *  Returns the amount of objects a walker iterated over.
+ *  Returns the amount of objects a walker iterated over. If an argument or
+ *  block is given this method delegates to +Enumerable#count+.
  */
-static VALUE rb_git_walker_count(VALUE self)
+static VALUE rb_git_walker_count(int argc, VALUE *argv, VALUE self)
 {
 	git_revwalk *walk;
 	git_oid commit_oid;
 	int error = 0;
 	uint64_t count = 0;
+
+	if (argc > 0 || rb_block_given_p())
+		return rb_call_super(argc, argv);
 
 	Data_Get_Struct(self, git_revwalk, walk);
 
@@ -515,5 +519,5 @@ void Init_rugged_revwalk(void)
 	rb_define_method(rb_cRuggedWalker, "reset", rb_git_walker_reset, 0);
 	rb_define_method(rb_cRuggedWalker, "sorting", rb_git_walker_sorting, 1);
 	rb_define_method(rb_cRuggedWalker, "simplify_first_parent", rb_git_walker_simplify_first_parent, 0);
-	rb_define_method(rb_cRuggedWalker, "count", rb_git_walker_count, 0);
+	rb_define_method(rb_cRuggedWalker, "count", rb_git_walker_count, -1);
 }
