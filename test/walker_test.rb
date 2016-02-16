@@ -149,6 +149,24 @@ class WalkerTest < Rugged::TestCase
     @walker.hide("5b5b025afb0b4c913b4c338a42934a3863bf3644")
     assert_equal 2, @walker.count
   end
+
+  def test_walk_count_argument
+    @walker.push("9fd738e8f7967c078dceed8190330fc8648ee56a")
+    @walker.hide("5b5b025afb0b4c913b4c338a42934a3863bf3644")
+
+    assert_equal 0, @walker.count('foo')
+  end
+
+  def test_walk_count_with_block
+    @walker.push("9fd738e8f7967c078dceed8190330fc8648ee56a")
+    @walker.hide("5b5b025afb0b4c913b4c338a42934a3863bf3644")
+
+    amount = @walker.count do |commit|
+      commit.oid == "9fd738e8f7967c078dceed8190330fc8648ee56a"
+    end
+
+    assert_equal 1, amount
+  end
 end
 
 # testrepo (the non-bare repo) is the one with non-linear history,
