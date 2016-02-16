@@ -647,7 +647,7 @@ static VALUE rb_git_commit_extract_signature(int argc, VALUE *argv, VALUE self)
 		git_buf_free(&signed_data);
 	}
 
-	if (error == GIT_ENOTFOUND) {
+	if (error == GIT_ENOTFOUND && giterr_last()->klass == GITERR_OBJECT ) {
 		ret_arr = rb_ary_new3(2, Qnil, Qnil);
 	} else {
 		rugged_exception_check(error);
