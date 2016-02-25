@@ -12,6 +12,15 @@ rvm:
   - ruby-head
   - rbx-2
 
+env:
+  global:
+    # COVERITY_SCAN_TOKEN
+    - secure: "obDgAOA7J+j78ks0qmwJokIeHqvdvQRD+YEfOSOv+Xu8+a17xaX1z5SusqLAug4KTZQOoMiGq5mfVQVDTeIijqehVaNGXxnnATnKocJTcjuGiR/7JCdeJFKyQDG5Qn3udpPFQ/nqNq1URbdTGC68fUzMAwDNdvqfDhCG04yb5O8="
+    - COVERITY_SCAN_PROJECT_NAME="libgit2/rugged"
+    - COVERITY_SCAN_BRANCH_PATTERN="coverity_scan"
+    - COVERITY_SCAN_NOTIFICATION_EMAIL="schreiber.arthur@gmail.com"
+    - COVERITY_SCAN_BUILD_COMMAND="bundle exec rake compile"
+
 addons:
   apt:
     packages:
@@ -28,6 +37,9 @@ matrix:
     - rvm: rbx-2
     - rvm: ruby-head
   include:
+    - rvm: 2.3.0
+      env: COVERITY=1
+      os: linux
     - os: osx
       rvm: 2.0.0
     - os: osx
@@ -39,5 +51,6 @@ matrix:
 
 before_install:
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then ./vendor/libgit2/script/install-deps-osx.sh; fi
+  - if [ "$COVERITY" = "1" ]; then curl -s https://scan.coverity.com/scripts/travisci_build_coverity_scan.sh | bash; fi
 
-script: script/travisbuild
+script: if [ "$COVERITY" != 1 ]; then script/travisbuild; fi
