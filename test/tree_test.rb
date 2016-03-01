@@ -143,4 +143,29 @@ class TreeUpdateTest < Rugged::TestCase
     assert_equal builder.remove("nonexistent file"), false
   end
 
+  def test_treebuilder_add
+    builder = Rugged::Tree::Builder.new(@repo, @repo.head.target.tree)
+    builder << { :type => :blob, :name => "another-readme", :oid => "1385f264afb75a56a5bec74243be9b367ba4ca08", :filemode => 0100644 }
+    newtree = builder.write
+    assert_equal "71a3bbe701e60c1756edd23cfc0b207711dca1f2", newtree
+  end
+
+  def test_treebuilder_add_nonexistent_fails
+    builder = Rugged::Tree::Builder.new(@repo, @repo.head.target.tree)
+    assert_raises Rugged::TreeError do
+      builder << { :type => :blob, :name => "another-readme", :oid => "0000000000000000000000000000000000000000", :filemode => 0100644 }
+    end
+  end
+
+  def test_treebuilder_add_nonexistent_can_pass
+    begin
+      Rugged::Settings['strict_object_creation'] = false
+      builder = Rugged::Tree::Builder.new(@repo, @repo.head.target.tree)
+      builder << { :type => :blob, :name => "another-readme", :oid => "0000000000000000000000000000000000000000", :filemode => 0100644 }
+      newtree = builder.write
+      assert_equal "7c98360ac03064bb67c6f0949e6a354155ce1b04", newtree
+    ensure
+      Rugged::Settings['strict_object_creation'] = true
+    end
+  end
 end
