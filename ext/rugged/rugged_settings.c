@@ -98,6 +98,11 @@ static VALUE rb_git_set_option(VALUE self, VALUE option, VALUE value)
 		set_search_path(GIT_CONFIG_LEVEL_SYSTEM, value);
 	}
 
+	else if (strcmp(opt, "strict_object_creation") == 0) {
+		int strict = RTEST(value) ? 1 : 0;
+		git_libgit2_opts(GIT_OPT_ENABLE_STRICT_OBJECT_CREATION, strict);
+	}
+
 	else {
 		rb_raise(rb_eArgError, "Unknown option specified");
 	}
