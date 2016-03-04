@@ -157,6 +157,13 @@ class TreeUpdateTest < Rugged::TestCase
     end
   end
 
+  def test_treebuilder_add_submodules_always_succeeds
+    builder = Rugged::Tree::Builder.new(@repo, @repo.head.target.tree)
+    builder << { :type => :commit, :name => "submodule", :oid => "0000000000000000000000000000000000000000", :filemode => 0160000 }
+    newtree = builder.write
+    assert_equal "ce986db11f99880a0a087ba3220dba61e9afd918", newtree
+  end
+
   def test_treebuilder_add_nonexistent_can_pass
     begin
       Rugged::Settings['strict_object_creation'] = false
