@@ -1058,59 +1058,64 @@ static VALUE rb_git_repo_expand_oids(int argc, VALUE *argv, VALUE self)
 {
 	VALUE rb_result, rb_oids, rb_expected_type;
 
-	git_otype expected_type = GIT_OBJ_ANY;
-
 	git_repository *repo;
-	git_oid oid;
 	git_odb *odb;
-	int i, error;
+	git_odb_expand_id *expand;
+	long i, expand_count;
+	int error;
 
 	Data_Get_Struct(self, git_repository, repo);
-
 	rb_scan_args(argc, argv, "11", &rb_oids, &rb_expected_type);
 
 	Check_Type(rb_oids, T_ARRAY);
-	expected_type = rugged_otype_get(rb_expected_type);
+	expand_count = RARRAY_LEN(rb_oids);
+	expand = alloca(expand_count * sizeof(git_odb_expand_id));
+
+	for (i = 0; i < expand_count; ++i) {
+		VALUE rb_hex = rb_ary_entry(rb_oids, i);
+		Check_Type(rb_hex, T_STRING);
+
+		rugged_exception_check(
+			git_oid_fromstrn(&expand[i].id, RSTRING_PTR(rb_hex), RSTRING_LEN(rb_hex))
+		);
+		expand[i].length = RSTRING_LEN(rb_hex);
+	}
+
+	if (TYPE(rb_expected_type) == T_ARRAY) {
+		if (RARRAY_LEN(rb_expected_type) != expand_count)
+			rb_raise(rb_eRuntimeError,
+				"the `object_type` array must be the same length as the `oids` array");
+
+		for (i = 0; i < expand_count; ++i) {
+			VALUE rb_type = rb_ary_entry(rb_expected_type, i);
+			expand[i].type = rugged_otype_get(rb_type);
+		}
+	} else {
+		git_otype expected_type = GIT_OBJ_ANY;
+
+		if (!NIL_P(rb_expected_type))
+			expected_type = rugged_otype_get(rb_expected_type);
+
+		for (i = 0; i < expand_count; ++i)
+			expand[i].type = expected_type;
+	}
 
 	error = git_repository_odb(&odb, repo);
 	rugged_exception_check(error);
 
+	error = git_odb_expand_ids(odb, expand, (size_t)expand_count);
+	git_odb_free(odb);
+	rugged_exception_check(error);
+
 	rb_result = rb_hash_new();
 
-	for (i = 0; i < RARRAY_LEN(rb_oids); ++i) {
-		VALUE hex_oid = rb_ary_entry(rb_oids, i);
-		git_oid found_oid;
-
-		if (TYPE(hex_oid) != T_STRING) {
-			git_odb_free(odb);
-			rb_raise(rb_eTypeError, "Expected a SHA1 OID");
-		}
-
-		error = git_oid_fromstrn(&oid, RSTRING_PTR(hex_oid), RSTRING_LEN(hex_oid));
-		if (error < 0) {
-			git_odb_free(odb);
-			rugged_exception_check(error);
-		}
-
-		error = git_odb_exists_prefix(&found_oid, odb, &oid, RSTRING_LEN(hex_oid));
-
-		if (!error) {
-			if (expected_type != GIT_OBJ_ANY) {
-				size_t found_size;
-				git_otype found_type;
-
-				if (git_odb_read_header(&found_size, &found_type, odb, &found_oid) < 0)
-					continue;
-
-				if (found_type != expected_type)
-					continue;
-			}
-
-			rb_hash_aset(rb_result, hex_oid, rugged_create_oid(&found_oid));
+	for (i = 0; i < expand_count; ++i) {
+		if (expand[i].length) {
+			rb_hash_aset(rb_result,
+				rb_ary_entry(rb_oids, i), rugged_create_oid(&expand[i].id));
 		}
 	}
 
-	git_odb_free(odb);
 	return rb_result;
 }
 

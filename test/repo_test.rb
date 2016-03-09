@@ -256,6 +256,16 @@ class RepositoryTest < Rugged::TestCase
   def test_expand_and_filter_objects
     assert_equal 2, @repo.expand_oids(['a4a7dce8', '1385f264af']).size
     assert_equal 1, @repo.expand_oids(['a4a7dce8', '1385f264af'], :commit).size
+    assert_equal 2, @repo.expand_oids(['a4a7dce8', '1385f264af'], ['commit', 'blob']).size
+    assert_equal 1, @repo.expand_oids(['a4a7dce8', '1385f264af'], [:commit, :tag]).size
+
+    assert_raises RuntimeError do
+      @repo.expand_oids(['a4a7dce8', '1385f264af'], [:commit, :tag, :commit]).size
+    end
+
+    assert_raises RuntimeError do
+      @repo.expand_oids(['a4a7dce8', '1385f264af'], [:commit]).size
+    end
   end
 
   def test_descendant_of
