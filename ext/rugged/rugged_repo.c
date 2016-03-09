@@ -1945,7 +1945,7 @@ void rugged_parse_checkout_options(git_checkout_options *opts, VALUE rb_options)
 
 	rb_value = rb_hash_aref(rb_options, CSTR2SYM("progress"));
 	if (!NIL_P(rb_value)) {
-		struct rugged_cb_payload *payload = malloc(sizeof(struct rugged_cb_payload));
+		struct rugged_cb_payload *payload = xmalloc(sizeof(struct rugged_cb_payload));
 		payload->rb_data = rb_value;
 		payload->exception = 0;
 
@@ -1955,7 +1955,7 @@ void rugged_parse_checkout_options(git_checkout_options *opts, VALUE rb_options)
 
 	rb_value = rb_hash_aref(rb_options, CSTR2SYM("notify"));
 	if (!NIL_P(rb_value)) {
-		struct rugged_cb_payload *payload = malloc(sizeof(struct rugged_cb_payload));
+		struct rugged_cb_payload *payload = xmalloc(sizeof(struct rugged_cb_payload));
 		payload->rb_data = rb_value;
 		payload->exception = 0;
 
