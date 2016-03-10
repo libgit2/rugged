@@ -1045,10 +1045,13 @@ static VALUE rb_git_repo_read_header(VALUE self, VALUE hex)
 /**
  *  call-seq:
  *    repo.expand_oids([oid..], object_type = :any) -> hash
+ *    repo.expand_oids([oid..], object_type = [type..]) -> hash
  *
  *  Expand a list of short oids to their full value, assuming they exist
- *  in the repository. If `object_type` is passed, OIDs are expected to be
- *  of the given type.
+ *  in the repository. If `object_type` is passed and is an array, it must
+ *  be the same length as the OIDs array. If it's a single type name, all
+ *  OIDs will be expected to resolve to that object type. OIDs that don't
+ *  match the expected object types will not be expanded.
  *
  *  Returns a hash of `{ short_oid => full_oid }` for the short OIDs which
  *  exist in the repository and match the expected object type. Missing OIDs
