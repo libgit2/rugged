@@ -338,6 +338,107 @@ static VALUE rb_git_commit_amend(VALUE self, VALUE rb_data)
 	return rugged_create_oid(&commit_oid);
 }
 
+struct commit_data {
+	VALUE rb_err_obj;
+
+	const char *update_ref;
+	const char *message;
+	git_tree *tree;
+	git_signature *author;
+	git_signature *committer;
+	int parent_count;
+	const git_commit **parents;
+};
+
+/**
+ * Parse the commit options into something we can re-use
+ *
+ * Note that parents may be set even when the function errors, so make
+ * sure to free this data.
+ */
+static VALUE parse_commit_options(struct commit_data *out, git_repository *repo, VALUE rb_data)
+{
+	VALUE rb_message, rb_tree, rb_parents, rb_ref;
+	int error = 0, parent_count, i;
+
+	rb_ref = rb_hash_aref(rb_data, CSTR2SYM("update_ref"));
+	if (!NIL_P(rb_ref)) {
+		Check_Type(rb_ref, T_STRING);
+		out->update_ref = StringValueCStr(rb_ref);
+	}
+
+	rb_message = rb_hash_aref(rb_data, CSTR2SYM("message"));
+	Check_Type(rb_message, T_STRING);
+	out->message = StringValueCStr(rb_message);
+
+	out->committer = rugged_signature_get(
+		rb_hash_aref(rb_data, CSTR2SYM("committer")), repo
+	);
+
+	out->author = rugged_signature_get(
+		rb_hash_aref(rb_data, CSTR2SYM("author")), repo
+	);
+
+	rb_parents = rb_hash_aref(rb_data, CSTR2SYM("parents"));
+	Check_Type(rb_parents, T_ARRAY);
+
+	rb_tree = rb_hash_aref(rb_data, CSTR2SYM("tree"));
+	out->tree = (git_tree *)rugged_object_get(repo, rb_tree, GIT_OBJ_TREE);
+
+	out->parents = xcalloc(RARRAY_LEN(rb_parents), sizeof(void *));
+	parent_count = 0;
+
+	for (i = 0; i < (int)RARRAY_LEN(rb_parents); ++i) {
+		VALUE p = rb_ary_entry(rb_parents, i);
+		git_commit *parent = NULL;
+		git_commit *tmp = NULL;
+
+		if (NIL_P(p))
+			continue;
+
+		if (TYPE(p) == T_STRING) {
+			git_oid oid;
+
+			error = git_oid_fromstr(&oid, StringValueCStr(p));
+			if (error < GIT_OK)
+				goto out;
+
+			error = git_commit_lookup(&parent, repo, &oid);
+			if (error < GIT_OK)
+				goto out;
+		} else if (rb_obj_is_kind_of(p, rb_cRuggedCommit)) {
+			Data_Get_Struct(p, git_commit, tmp);
+			if ((error = git_object_dup((git_object **) &parent, (git_object *) tmp)) < 0)
+				goto out;
+		} else {
+			out->rb_err_obj = rb_exc_new2(rb_eTypeError, "Invalid type for parent object");
+			error = -1;
+			goto out;
+		}
+
+		out->parents[parent_count] = parent;
+		parent_count++;
+	}
+
+out:
+	out->parent_count = parent_count;
+	return error;
+}
+
+static void free_commit_options(struct commit_data *commit_data)
+{
+	int i;
+
+	git_signature_free(commit_data->author);
+	git_signature_free(commit_data->committer);
+
+	git_object_free((git_object *)commit_data->tree);
+
+	for (i = 0; i < commit_data->parent_count; ++i)
+		git_object_free((git_object *) commit_data->parents[i]);
+	xfree(commit_data->parents);
+}
+
 /*
  *  call-seq:
  *    Commit.create(repository, data = {}) -> oid
@@ -371,105 +472,35 @@ static VALUE rb_git_commit_amend(VALUE self, VALUE rb_data)
  */
 static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 {
-	VALUE rb_message, rb_tree, rb_parents, rb_ref;
-	VALUE rb_err_obj = Qnil;
-	int parent_count, i, error = 0;
-	const git_commit **parents = NULL;
-	git_commit **free_list = NULL;
-	git_tree *tree;
-	git_signature *author, *committer;
+	int error = 0;
+	struct commit_data commit_data = { Qnil };
 	git_oid commit_oid;
 	git_repository *repo;
-	const char *update_ref = NULL;
 
 	Check_Type(rb_data, T_HASH);
 
 	rugged_check_repo(rb_repo);
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
-	rb_ref = rb_hash_aref(rb_data, CSTR2SYM("update_ref"));
-	if (!NIL_P(rb_ref)) {
-		Check_Type(rb_ref, T_STRING);
-		update_ref = StringValueCStr(rb_ref);
-	}
-
-	rb_message = rb_hash_aref(rb_data, CSTR2SYM("message"));
-	Check_Type(rb_message, T_STRING);
-
-	committer = rugged_signature_get(
-		rb_hash_aref(rb_data, CSTR2SYM("committer")), repo
-	);
-
-	author = rugged_signature_get(
-		rb_hash_aref(rb_data, CSTR2SYM("author")), repo
-	);
-
-	rb_parents = rb_hash_aref(rb_data, CSTR2SYM("parents"));
-	Check_Type(rb_parents, T_ARRAY);
-
-	rb_tree = rb_hash_aref(rb_data, CSTR2SYM("tree"));
-	tree = (git_tree *)rugged_object_get(repo, rb_tree, GIT_OBJ_TREE);
-
-	parents = alloca(RARRAY_LEN(rb_parents) * sizeof(void *));
-	free_list = alloca(RARRAY_LEN(rb_parents) * sizeof(void *));
-	parent_count = 0;
-
-	for (i = 0; i < (int)RARRAY_LEN(rb_parents); ++i) {
-		VALUE p = rb_ary_entry(rb_parents, i);
-		git_commit *parent = NULL;
-		git_commit *free_ptr = NULL;
-
-		if (NIL_P(p))
-			continue;
-
-		if (TYPE(p) == T_STRING) {
-			git_oid oid;
-
-			error = git_oid_fromstr(&oid, StringValueCStr(p));
-			if (error < GIT_OK)
-				goto cleanup;
-
-			error = git_commit_lookup(&parent, repo, &oid);
-			if (error < GIT_OK)
-				goto cleanup;
-
-			free_ptr = parent;
-
-		} else if (rb_obj_is_kind_of(p, rb_cRuggedCommit)) {
-			Data_Get_Struct(p, git_commit, parent);
-		} else {
-			rb_err_obj = rb_exc_new2(rb_eTypeError, "Invalid type for parent object");
-			goto cleanup;
-		}
-
-		parents[parent_count] = parent;
-		free_list[parent_count] = free_ptr;
-		parent_count++;
-	}
+	if ((error = parse_commit_options(&commit_data, repo, rb_data)) < 0)
+		goto cleanup;
 
 	error = git_commit_create(
 		&commit_oid,
 		repo,
-		update_ref,
-		author,
-		committer,
+		commit_data.update_ref,
+		commit_data.author,
+		commit_data.committer,
 		NULL,
-		StringValueCStr(rb_message),
-		tree,
-		parent_count,
-		parents);
+		commit_data.message,
+		commit_data.tree,
+		commit_data.parent_count,
+		commit_data.parents);
 
 cleanup:
-	git_signature_free(author);
-	git_signature_free(committer);
-
-	git_object_free((git_object *)tree);
-
-	for (i = 0; i < parent_count; ++i)
-		git_object_free((git_object *)free_list[i]);
-
-	if (!NIL_P(rb_err_obj))
-		rb_exc_raise(rb_err_obj);
+	free_commit_options(&commit_data);
+	if (!NIL_P(commit_data.rb_err_obj))
+		rb_exc_raise(commit_data.rb_err_obj);
 
 	rugged_exception_check(error);
 
