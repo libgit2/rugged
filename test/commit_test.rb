@@ -369,6 +369,27 @@ class CommitWriteTest < Rugged::TestCase
       :tree => "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
     end
   end
+
+  def test_create_commit_to_s
+    person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
+
+    id = Rugged::Commit.create(@repo,
+      :message => "This is the commit message\n\nThis commit is created from Rugged",
+      :committer => person,
+      :author => person,
+      :parents => [@repo.head.target],
+      :tree => "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
+
+    buffer = Rugged::Commit.create_to_s(@repo,
+      :message => "This is the commit message\n\nThis commit is created from Rugged",
+      :committer => person,
+      :author => person,
+      :parents => [@repo.head.target],
+      :tree => "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
+
+    commit = @repo.lookup(id)
+    assert_equal buffer, commit.read_raw.data
+  end
 end
 
 class CommitToMboxTest < Rugged::TestCase

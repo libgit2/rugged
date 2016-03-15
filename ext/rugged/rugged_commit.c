@@ -693,11 +693,77 @@ static VALUE rb_git_commit_extract_signature(int argc, VALUE *argv, VALUE self)
 	return ret;
 }
 
+/*
+ *  call-seq:
+ *    Commit.create_to_s(repository, data = {}) -> str
+ *
+ *  Create a string with the contents of the commit, created with the
+ *  given +data+ arguments, passed as a +Hash+:
+ *
+ *  - +:message+: a string with the full text for the commit's message
+ *  - +:committer+ (optional): a hash with the signature for the committer,
+ *    defaults to the signature from the configuration
+ *  - +:author+ (optional): a hash with the signature for the author,
+ *    defaults to the signature from the configuration
+ *  - +:parents+: an +Array+ with zero or more parents for this commit,
+ *    represented as <tt>Rugged::Commit</tt> instances, or OID +String+.
+ *  - +:tree+: the tree for this commit, represented as a <tt>Rugged::Tree</tt>
+ *    instance or an OID +String+.
+ *
+ *    author = {:email=>"tanoku@gmail.com", :time=>Time.now, :name=>"Vicent Mart\303\255"}
+ *
+ *    Rugged::Commit.create(r,
+ *      :author => author,
+ *      :message => "Hello world\n\n",
+ *      :committer => author,
+ *      :parents => ["2cb831a8aea28b2c1b9c63385585b864e4d3bad1"],
+ *      :tree => some_tree) #=> "tree some_tree\nparent 2cb831...."
+ */
+static VALUE rb_git_commit_create_to_s(VALUE self, VALUE rb_repo, VALUE rb_data)
+{
+	int error = 0;
+	struct commit_data commit_data = { Qnil };
+	git_repository *repo;
+	git_buf buf = { 0 };
+
+	Check_Type(rb_data, T_HASH);
+
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	if ((error = parse_commit_options(&commit_data, repo, rb_data)) < 0)
+		goto cleanup;
+
+	error = git_commit_create_buffer(
+		&buf,
+		repo,
+		commit_data.author,
+		commit_data.committer,
+		NULL,
+		commit_data.message,
+		commit_data.tree,
+		commit_data.parent_count,
+		commit_data.parents);
+
+cleanup:
+	free_commit_options(&commit_data);
+	if (!NIL_P(commit_data.rb_err_obj))
+		rb_exc_raise(commit_data.rb_err_obj);
+
+	rugged_exception_check(error);
+
+	VALUE ret = rb_str_new_utf8(buf.ptr);
+	git_buf_free(&buf);
+
+	return ret;
+}
+
 void Init_rugged_commit(void)
 {
 	rb_cRuggedCommit = rb_define_class_under(rb_mRugged, "Commit", rb_cRuggedObject);
 
 	rb_define_singleton_method(rb_cRuggedCommit, "create", rb_git_commit_create, 2);
+	rb_define_singleton_method(rb_cRuggedCommit, "create_to_s", rb_git_commit_create_to_s, 2);
 	rb_define_singleton_method(rb_cRuggedCommit, "extract_signature", rb_git_commit_extract_signature, -1);
 
 	rb_define_method(rb_cRuggedCommit, "message", rb_git_commit_message_GET, 0);
