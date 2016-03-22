@@ -758,12 +758,51 @@ cleanup:
 	return ret;
 }
 
+/*
+ *  call-seq:
+ *    Rugged::Commit.create_with_signature(repo, content, signature, field_name = "gpgsig") -> oid
+ *
+ *  Create a commit from the +content+ string and the +signature+,
+ *  adding this data to the +field_name+ header field in the resulting
+ *  commit.
+ *
+ *  Returns the new commit's object id.
+ *
+ */
+static VALUE rb_git_commit_create_with_signature(int argc, VALUE *argv, VALUE self)
+{
+	int error;
+	git_oid id;
+	const char *field = NULL;
+	git_repository *repo;
+	VALUE rb_repo, rb_content, rb_signature, rb_field = Qnil;
+
+	rb_scan_args(argc, argv, "31", &rb_repo, &rb_content, &rb_signature, &rb_field);
+
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	Check_Type(rb_content, T_STRING);
+	Check_Type(rb_signature, T_STRING);
+
+	if (!NIL_P(rb_field)) {
+		Check_Type(rb_field, T_STRING);
+		field = StringValueCStr(rb_field);
+	}
+
+	error = git_commit_create_with_signature(&id, repo, StringValueCStr(rb_content), StringValueCStr(rb_signature), field);
+	rugged_exception_check(error);
+
+	return rugged_create_oid(&id);
+}
+
 void Init_rugged_commit(void)
 {
 	rb_cRuggedCommit = rb_define_class_under(rb_mRugged, "Commit", rb_cRuggedObject);
 
 	rb_define_singleton_method(rb_cRuggedCommit, "create", rb_git_commit_create, 2);
 	rb_define_singleton_method(rb_cRuggedCommit, "create_to_s", rb_git_commit_create_to_s, 2);
+	rb_define_singleton_method(rb_cRuggedCommit, "create_with_signature", rb_git_commit_create_with_signature, -1);
 	rb_define_singleton_method(rb_cRuggedCommit, "extract_signature", rb_git_commit_extract_signature, -1);
 
 	rb_define_method(rb_cRuggedCommit, "message", rb_git_commit_message_GET, 0);
