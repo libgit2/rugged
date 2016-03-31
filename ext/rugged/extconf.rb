@@ -67,7 +67,9 @@ else
     Dir.mkdir("build") if !Dir.exists?("build")
 
     Dir.chdir("build") do
-      sys("cmake .. -DBUILD_CLAR=OFF -DTHREADSAFE=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS=-fPIC -DCMAKE_BUILD_TYPE=RelWithDebInfo -G \"Unix Makefiles\"")
+      # On Windows, Ruby-DevKit is MSYS-based, so ensure to use MSYS Makefiles.
+      generator = "-G \"MSYS Makefiles\"" if windows?
+      sys("cmake .. -DBUILD_CLAR=OFF -DTHREADSAFE=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS=-fPIC -DCMAKE_BUILD_TYPE=RelWithDebInfo #{generator}")
       sys(MAKE)
 
       # "normal" libraries (and libgit2 builds) get all these when they build but we're doing it
