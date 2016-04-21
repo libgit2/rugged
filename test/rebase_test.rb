@@ -39,6 +39,26 @@ class TestRebase < Rugged::TestCase
     rebase.finish(@sig)
   end
 
+  def test_merge_commit_fails_without_options
+    rebase = Rugged::Rebase.new(@repo, "refs/heads/gravy", "refs/heads/veal")
+
+    rebase.next()
+
+    assert_raises TypeError do
+      rebase.commit()
+    end
+  end
+
+  def test_merge_commit_fails_with_nil_committer
+    rebase = Rugged::Rebase.new(@repo, "refs/heads/gravy", "refs/heads/veal")
+
+    rebase.next()
+
+    assert_raises ArgumentError do
+      rebase.commit(committer: nil)
+    end
+  end
+
   def test_merge_options
     rebase = Rugged::Rebase.new(@repo, "refs/heads/asparagus", "refs/heads/master",
                                 fail_on_conflict: true, skip_reuc: true)

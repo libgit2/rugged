@@ -237,6 +237,8 @@ static VALUE rb_git_rebase_commit(int argc, VALUE *argv, VALUE self)
 	Data_Get_Struct(self, git_rebase, rebase);
 	rb_scan_args(argc, argv, ":", &rb_options);
 
+	Check_Type(rb_options, T_HASH);
+
 	rb_author = rb_hash_aref(rb_options, CSTR2SYM("author"));
 	rb_committer = rb_hash_aref(rb_options, CSTR2SYM("committer"));
 	rb_message = rb_hash_aref(rb_options, CSTR2SYM("message"));
