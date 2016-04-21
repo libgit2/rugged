@@ -11,6 +11,48 @@ class TestRebase < Rugged::TestCase
     }
   end
 
+  def test_rebase_with_commits
+    branch = @repo.branches["beef"].target
+    upstream = @repo.branches["master"].target
+
+    rebase = Rugged::Rebase.new(@repo, branch, upstream)
+
+    assert_equal({
+      type: :pick,
+      id: "da9c51a23d02d931a486f45ad18cda05cf5d2b94"
+    }, rebase.next)
+
+    rebase.abort
+  end
+
+  def test_rebase_with_refs
+    branch = @repo.branches["beef"]
+    upstream = @repo.branches["master"]
+
+    rebase = Rugged::Rebase.new(@repo, branch, upstream)
+
+    assert_equal({
+      type: :pick,
+      id: "da9c51a23d02d931a486f45ad18cda05cf5d2b94"
+    }, rebase.next)
+
+    rebase.abort
+  end
+
+  def test_rebase_with_revparse
+    branch = @repo.branches["beef"].target.oid[0..8]
+    upstream = @repo.branches["master"].target.oid[0..8]
+
+    rebase = Rugged::Rebase.new(@repo, branch, upstream)
+
+    assert_equal({
+      type: :pick,
+      id: "da9c51a23d02d931a486f45ad18cda05cf5d2b94"
+    }, rebase.next)
+
+    rebase.abort
+  end
+
   def test_merge_next
     rebase = Rugged::Rebase.new(@repo, "refs/heads/beef", "refs/heads/master")
 
