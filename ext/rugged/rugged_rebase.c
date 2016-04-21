@@ -110,10 +110,10 @@ static VALUE rb_git_rebase_new(int argc, VALUE* argv, VALUE klass)
 
 	rb_scan_args(argc, argv, "31:", &rb_repo, &rb_branch, &rb_upstream, &rb_onto, &rb_options);
 	Data_Get_Struct(rb_repo, git_repository, repo);
+
 	str_branch = rugged_refname_from_string_or_ref(rb_branch);
 	str_upstream = rugged_refname_from_string_or_ref(rb_upstream);
-	Check_Type(rb_branch, T_STRING);
-	Check_Type(rb_upstream, T_STRING);
+
 	if (!NIL_P(rb_onto))
 		str_onto = rugged_refname_from_string_or_ref(rb_onto);
 
