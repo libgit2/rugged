@@ -102,7 +102,7 @@ static VALUE rb_git_rebase_new(int argc, VALUE* argv, VALUE klass)
 {
 	int error;
 	const char* str_branch = NULL, *str_upstream = NULL, *str_onto = NULL;
-	git_rebase *rebase;
+	git_rebase *rebase = NULL;
 	git_repository *repo;
 	git_annotated_commit *branch = NULL, *upstream = NULL, *onto = NULL;
 	VALUE rb_repo, rb_branch, rb_upstream, rb_onto, rb_options;
@@ -345,11 +345,3 @@ void Init_rugged_rebase(void)
 	rb_define_method(rb_cRuggedRebase, "abort",  rb_git_rebase_abort,  0);
 	rb_define_method(rb_cRuggedRebase, "finish",  rb_git_rebase_finish,  1);
 }
-
-
-
-
-
-
-
-
