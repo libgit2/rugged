@@ -291,7 +291,7 @@ static VALUE rb_git_remote_ls(int argc, VALUE *argv, VALUE self)
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &callbacks, &payload);
 	init_custom_headers(rb_options, &custom_headers);
 
-	if ((error = git_remote_connect(remote, GIT_DIRECTION_FETCH, &callbacks, &custom_headers)) ||
+	if ((error = git_remote_connect(remote, GIT_DIRECTION_FETCH, &callbacks, NULL, &custom_headers)) ||
 	    (error = git_remote_ls(&heads, &heads_len, remote)))
 		goto cleanup;
 
@@ -491,7 +491,7 @@ static VALUE rb_git_remote_check_connection(int argc, VALUE *argv, VALUE self)
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &callbacks, &payload);
 	init_custom_headers(rb_options, &custom_headers);
 
-	error = git_remote_connect(remote, direction, &callbacks, &custom_headers);
+	error = git_remote_connect(remote, direction, &callbacks, NULL, &custom_headers);
 	git_remote_disconnect(remote);
 
 	git_strarray_free(&custom_headers);

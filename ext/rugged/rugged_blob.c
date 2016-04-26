@@ -231,30 +231,6 @@ static VALUE rb_read_check(VALUE pointer) {
 	return rb_buffer;
 }
 
-static int cb_blob__get__chunk(char *content, size_t max_length, void *data)
-{
-	VALUE rb_buffer, rb_args[2];
-	size_t str_len, safe_len;
-	struct rugged_cb_payload *payload = data;
-
-	rb_args[0] = payload->rb_data;
-	rb_args[1] = INT2FIX(max_length);
-
-	rb_buffer = rb_protect(rb_read_check, (VALUE)rb_args, &payload->exception);
-
-	if (payload->exception)
-		return GIT_ERROR;
-
-	if (NIL_P(rb_buffer))
-		return 0;
-
-	str_len = (size_t)RSTRING_LEN(rb_buffer);
-	safe_len = str_len > max_length ? max_length : str_len;
-	memcpy(content, StringValuePtr(rb_buffer), safe_len);
-
-	return (int)safe_len;
-}
-
 /*
  *  call-seq:
  *    Blob.from_io(repository, io [, hint_path]) -> oid
@@ -282,11 +258,10 @@ static int cb_blob__get__chunk(char *content, size_t max_length, void *data)
  */
 static VALUE rb_git_blob_from_io(int argc, VALUE *argv, VALUE klass)
 {
-	VALUE rb_repo, rb_io, rb_hint_path;
-	struct rugged_cb_payload payload;
+	VALUE rb_repo, rb_io, rb_hint_path, rb_buffer, rb_read_args[2];
 	const char * hint_path = NULL;
-
-	int error;
+	git_writestream *stream;
+	int error = 0, exception = 0, max_length = 4096;
 	git_oid oid;
 	git_repository *repo;
 
@@ -300,18 +275,34 @@ static VALUE rb_git_blob_from_io(int argc, VALUE *argv, VALUE klass)
 		hint_path = StringValueCStr(rb_hint_path);
 	}
 
-	payload.exception = 0;
-	payload.rb_data = rb_io;
+	error = git_blob_create_fromstream(&stream, repo, hint_path);
+	if (error)
+		goto cleanup;
 
-	error = git_blob_create_fromchunks(
-			&oid,
-			repo,
-			hint_path,
-			cb_blob__get__chunk,
-			(void *)&payload);
+	rb_read_args[0] = rb_io;
+	rb_read_args[1] = INT2FIX(max_length);
 
-	if (payload.exception)
-		rb_jump_tag(payload.exception);
+	do {
+		rb_buffer = rb_protect(rb_read_check, (VALUE)rb_read_args, &exception);
+
+		if (exception)
+			goto cleanup;
+
+		if (NIL_P(rb_buffer))
+			break;
+
+		error = stream->write(stream, RSTRING_PTR(rb_buffer), RSTRING_LEN(rb_buffer));
+		if (error)
+			goto cleanup;
+	} while (RSTRING_LEN(rb_buffer) == max_length);
+
+	error = git_blob_create_fromstream_commit(&oid, stream);
+
+cleanup:
+
+	if (exception)
+		rb_jump_tag(exception);
+
 	rugged_exception_check(error);
 
 	return rugged_create_oid(&oid);
