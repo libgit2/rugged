@@ -725,6 +725,7 @@ static VALUE rb_git_commit_create_to_s(VALUE self, VALUE rb_repo, VALUE rb_data)
 	struct commit_data commit_data = { Qnil };
 	git_repository *repo;
 	git_buf buf = { 0 };
+	VALUE ret;
 
 	Check_Type(rb_data, T_HASH);
 
@@ -752,7 +753,7 @@ cleanup:
 
 	rugged_exception_check(error);
 
-	VALUE ret = rb_str_new_utf8(buf.ptr);
+	ret = rb_str_new_utf8(buf.ptr);
 	git_buf_free(&buf);
 
 	return ret;
