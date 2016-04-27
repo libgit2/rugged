@@ -103,6 +103,7 @@ struct extract_cred_args
 	const char *url;
 	const char *username_from_url;
 	unsigned int allowed_types;
+	unsigned int counter;
 };
 
 static VALUE allowed_types_to_rb_ary(int allowed_types) {
@@ -122,13 +123,14 @@ static VALUE allowed_types_to_rb_ary(int allowed_types) {
 
 static VALUE extract_cred(VALUE data) {
 	struct extract_cred_args *args = (struct extract_cred_args*)data;
-	VALUE rb_url, rb_username_from_url, rb_cred;
+	VALUE rb_url, rb_username_from_url, rb_cred, rb_counter;
 
 	rb_url = args->url ? rb_str_new2(args->url) : Qnil;
 	rb_username_from_url = args->username_from_url ? rb_str_new2(args->username_from_url) : Qnil;
+	rb_counter = UINT2NUM(args->counter);
 
-	rb_cred = rb_funcall(args->rb_callback, rb_intern("call"), 3,
-		rb_url, rb_username_from_url, allowed_types_to_rb_ary(args->allowed_types));
+	rb_cred = rb_funcall(args->rb_callback, rb_intern("call"), 4,
+		rb_url, rb_username_from_url, allowed_types_to_rb_ary(args->allowed_types), rb_counter);
 
 	rugged_cred_extract(args->cred, args->allowed_types, rb_cred);
 
@@ -144,7 +146,7 @@ static int credentials_cb(
 {
 	struct rugged_remote_cb_payload *payload = data;
 	struct extract_cred_args args = {
-		payload->credentials, cred, url, username_from_url, allowed_types
+		payload->credentials, cred, url, username_from_url, allowed_types, payload->credentials_counter++
 	};
 
 	if (NIL_P(payload->credentials))
@@ -274,7 +276,7 @@ static VALUE rb_git_remote_ls(int argc, VALUE *argv, VALUE self)
 	git_strarray custom_headers = {0};
 	const git_remote_head **heads;
 
-	struct rugged_remote_cb_payload payload = { Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, 0 };
+	struct rugged_remote_cb_payload payload = { Qnil, Qnil, Qnil, Qnil, Qnil, 0, Qnil, 0 };
 
 	VALUE rb_options;
 
@@ -471,7 +473,7 @@ static VALUE rb_git_remote_check_connection(int argc, VALUE *argv, VALUE self)
 	git_remote *remote;
 	git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
 	git_strarray custom_headers = {0};
-	struct rugged_remote_cb_payload payload = { Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, 0 };
+	struct rugged_remote_cb_payload payload = { Qnil, Qnil, Qnil, Qnil, Qnil, 0, Qnil, 0 };
 	VALUE rb_direction, rb_options;
 	ID id_direction;
 	int error, direction;
@@ -559,7 +561,7 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 	git_strarray refspecs;
 	git_fetch_options opts = GIT_FETCH_OPTIONS_INIT;
 	const git_transfer_progress *stats;
-	struct rugged_remote_cb_payload payload = { Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, 0 };
+	struct rugged_remote_cb_payload payload = { Qnil, Qnil, Qnil, Qnil, Qnil, 0, Qnil, 0 };
 
 	char *log_message = NULL;
 	int error;
@@ -650,7 +652,7 @@ static VALUE rb_git_remote_push(int argc, VALUE *argv, VALUE self)
 
 	int error = 0;
 
-	struct rugged_remote_cb_payload payload = { Qnil, Qnil, Qnil, Qnil, Qnil, rb_hash_new(), 0 };
+	struct rugged_remote_cb_payload payload = { Qnil, Qnil, Qnil, Qnil, Qnil, 0, rb_hash_new(), 0 };
 
 	rb_scan_args(argc, argv, "01:", &rb_refspecs, &rb_options);
 

@@ -6,7 +6,10 @@ module Rugged
         @username, @password = options[:username], options[:password]
       end
 
-      def call(url, username_from_url, allowed_types)
+      def call(url, username_from_url, allowed_types, counter)
+        if counter > 0
+          raise Rugged::CallbackError.new('Authentication failed')
+        end
         self
       end
     end
