@@ -11,6 +11,48 @@ class TestRebase < Rugged::TestCase
     }
   end
 
+  def test_rebase_inmemory_with_commits
+    branch = @repo.branches["beef"].target
+    upstream = @repo.branches["master"].target
+
+    rebase = Rugged::Rebase.new(@repo, branch, upstream, inmemory: true)
+
+    assert_equal({
+      type: :pick,
+      id: "da9c51a23d02d931a486f45ad18cda05cf5d2b94"
+    }, rebase.next)
+
+    rebase.abort
+  end
+
+  def test_rebase_inmemory_with_refs
+    branch = @repo.branches["beef"]
+    upstream = @repo.branches["master"]
+
+    rebase = Rugged::Rebase.new(@repo, branch, upstream, inmemory: true)
+
+    assert_equal({
+      type: :pick,
+      id: "da9c51a23d02d931a486f45ad18cda05cf5d2b94"
+    }, rebase.next)
+
+    rebase.abort
+  end
+
+  def test_rebase_inmemory_with_revparse
+    branch = @repo.branches["beef"].target.oid[0..8]
+    upstream = @repo.branches["master"].target.oid[0..8]
+
+    rebase = Rugged::Rebase.new(@repo, branch, upstream, inmemory: true)
+
+    assert_equal({
+      type: :pick,
+      id: "da9c51a23d02d931a486f45ad18cda05cf5d2b94"
+    }, rebase.next)
+
+    rebase.abort
+  end
+
   def test_merge_next
     rebase = Rugged::Rebase.new(@repo, "refs/heads/beef", "refs/heads/master")
 
@@ -37,6 +79,26 @@ class TestRebase < Rugged::TestCase
     assert_equal nil, op
 
     rebase.finish(@sig)
+  end
+
+  def test_merge_commit_fails_without_options
+    rebase = Rugged::Rebase.new(@repo, "refs/heads/gravy", "refs/heads/veal")
+
+    rebase.next()
+
+    assert_raises TypeError do
+      rebase.commit()
+    end
+  end
+
+  def test_merge_commit_fails_with_nil_committer
+    rebase = Rugged::Rebase.new(@repo, "refs/heads/gravy", "refs/heads/veal")
+
+    rebase.next()
+
+    assert_raises ArgumentError do
+      rebase.commit(committer: nil)
+    end
   end
 
   def test_merge_options
