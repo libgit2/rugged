@@ -11,11 +11,11 @@ class TestRebase < Rugged::TestCase
     }
   end
 
-  def test_rebase_with_commits
+  def test_rebase_inmemory_with_commits
     branch = @repo.branches["beef"].target
     upstream = @repo.branches["master"].target
 
-    rebase = Rugged::Rebase.new(@repo, branch, upstream)
+    rebase = Rugged::Rebase.new(@repo, branch, upstream, inmemory: true)
 
     assert_equal({
       type: :pick,
@@ -25,11 +25,11 @@ class TestRebase < Rugged::TestCase
     rebase.abort
   end
 
-  def test_rebase_with_refs
+  def test_rebase_inmemory_with_refs
     branch = @repo.branches["beef"]
     upstream = @repo.branches["master"]
 
-    rebase = Rugged::Rebase.new(@repo, branch, upstream)
+    rebase = Rugged::Rebase.new(@repo, branch, upstream, inmemory: true)
 
     assert_equal({
       type: :pick,
@@ -39,11 +39,11 @@ class TestRebase < Rugged::TestCase
     rebase.abort
   end
 
-  def test_rebase_with_revparse
+  def test_rebase_inmemory_with_revparse
     branch = @repo.branches["beef"].target.oid[0..8]
     upstream = @repo.branches["master"].target.oid[0..8]
 
-    rebase = Rugged::Rebase.new(@repo, branch, upstream)
+    rebase = Rugged::Rebase.new(@repo, branch, upstream, inmemory: true)
 
     assert_equal({
       type: :pick,
