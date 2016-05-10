@@ -176,7 +176,7 @@ static inline VALUE rugged_create_oid(const git_oid *oid)
 {
 	char out[40];
 	git_oid_fmt(out, oid);
-	return rb_str_new(out, 40);
+	return rb_usascii_str_new(out, 40);
 }
 
 
