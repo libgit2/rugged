@@ -189,11 +189,10 @@ cleanup:
 	git_annotated_commit_free(upstream);
 	git_annotated_commit_free(onto);
 
-	if (error) {
-		rugged_exception_check(error);
-	} else if (exception) {
+	if (exception)
 		rb_jump_tag(exception);
-	}
+
+	rugged_exception_check(error);
 
 	return rugged_rebase_new(klass, rb_repo, rebase);
 }
@@ -317,6 +316,11 @@ static VALUE rb_git_rebase_commit(int argc, VALUE *argv, VALUE self)
 	error = git_rebase_commit(&id, rebase, author, committer, NULL, message);
 	git_signature_free(author);
 	git_signature_free(committer);
+
+	if (error == GIT_EAPPLIED) {
+		giterr_clear();
+		return Qnil;
+	}
 
 	rugged_exception_check(error);
 

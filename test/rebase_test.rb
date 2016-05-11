@@ -130,5 +130,26 @@ class TestRebase < Rugged::TestCase
 
     commit_id = rebase.commit(committer: @sig)
     assert_equal "db7af47222181e548810da2ab5fec0e9357c5637", commit_id
+
+    # Make sure the next operation is what we expect
+    op = rebase.next()
+    assert_equal :pick, op[:type]
+    assert_equal "0f5f6d3353be1a9966fa5767b7d604b051798224", op[:id]
+  end
+
+  def test_inmemory_already_applied_patch
+    rebase = Rugged::Rebase.new(@repo, "refs/heads/asparagus", "refs/heads/master", inmemory: true)
+
+    rebase.next()
+
+    idx = rebase.inmemory_index
+    idx.read_tree(@repo.branches["master"].target.tree)
+
+    assert_nil rebase.commit(committer: @sig)
+
+    # Make sure the next operation is what we expect
+    op = rebase.next()
+    assert_equal :pick, op[:type]
+    assert_equal "0f5f6d3353be1a9966fa5767b7d604b051798224", op[:id]
   end
 end
