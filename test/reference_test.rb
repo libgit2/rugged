@@ -53,6 +53,12 @@ class ReferenceTest < Rugged::TestCase
     ], @repo.refs('refs/tags/*').map(&:name).sort
   end
 
+  def test_target_id_encoding
+    ref = @repo.references["refs/heads/master"]
+    assert_equal "099fabac3a9ea935598528c27f866e34089c2eff", ref.target_id
+    assert_equal Encoding::US_ASCII, ref.target_id.encoding
+  end
+
   def test_can_open_reference
     ref = @repo.references["refs/heads/master"]
     assert_equal "099fabac3a9ea935598528c27f866e34089c2eff", ref.target_id
