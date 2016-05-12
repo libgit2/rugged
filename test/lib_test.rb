@@ -61,6 +61,11 @@ class RuggedTest < Rugged::TestCase
     assert_equal raw1, raw2
   end
 
+  def test_hex_to_raw_encoding
+    raw = Rugged::hex_to_raw("ce08fe4884650f067bd5703b6a59a8b3b3c99a09")
+    assert_equal Encoding::ASCII_8BIT, raw.encoding
+  end
+
   def test_raw_to_hex
     raw = Base64.decode64("FqASNFZ4mrze9Ld1ITwjqL109eA=")
     hex = Rugged::raw_to_hex(raw)
@@ -70,6 +75,13 @@ class RuggedTest < Rugged::TestCase
     hex1 = Rugged::raw_to_hex(raw)
     hex2 = raw.unpack("H*")[0]
     assert_equal hex1, hex2
+  end
+
+  def test_raw_to_hex_encoding
+    raw = Base64.decode64("FqASNFZ4mrze9Ld1ITwjqL109eA=")
+    hex = Rugged::raw_to_hex(raw)
+    assert_equal "16a0123456789abcdef4b775213c23a8bd74f5e0", hex
+    assert_equal Encoding::US_ASCII, hex.encoding
   end
 
   def test_raw_to_hex_with_nulls
@@ -141,4 +153,3 @@ MESSAGE
     assert_equal clean_message, Rugged::prettify_message(message, true)
   end
 end
-

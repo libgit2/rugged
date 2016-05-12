@@ -181,7 +181,7 @@ static VALUE rb_git_raw_to_hex(VALUE self, VALUE raw)
 	git_oid_fromraw(&oid, (const unsigned char *)RSTRING_PTR(raw));
 	git_oid_fmt(out, &oid);
 
-	return rb_str_new(out, 40);
+	return rb_usascii_str_new(out, 40);
 }
 
 /*
