@@ -128,7 +128,7 @@ static int rugged_get_annotated_commit(
 
 /*
  *  call-seq:
- *    Rebase.new(repo, branch, upstream[, onto][, options]) -> Rebase
+ *    Rebase.new(repo, branch, upstream[, onto][, options]) -> new_rebase
  *
  *  Initialize a new rebase operation. This will put +repo+ in a
  *  rebase state.
@@ -148,8 +148,8 @@ static int rugged_get_annotated_commit(
  *
  *  :inmemory ::
  *    Do not put the repository in a rebase state but perform all the
- *    operations in-memory. In case of conflicts, the RebaseOperation
- *    returned by #next will contain the index which can be used to
+ *    operations in-memory. In case of conflicts, the rebase operation
+ *    Hash returned by #next will contain the index which can be used to
  *    resolve conflicts.
  *
  *  :rewrite_notes_ref ::
@@ -252,7 +252,7 @@ static VALUE rb_git_rebase_next(VALUE self)
 }
 /*
  *  call-seq:
- *    Rebase.inmemory_index -> Index
+ *    rebase.inmemory_index -> index
  *
  *  Gets the index produced by the last operation, which is the result
  *  of +next+ and which will be committed by the next invocation of
@@ -276,12 +276,15 @@ static VALUE rb_git_rebase_inmemory_index(VALUE self)
 
 /*
  *  call-seq:
- *    Rebase.commit(author = nil, committer, message = nil)
+ *    rebase.commit(author: nil, committer: committer, message: nil) -> oid or nil
  *
  *  Commit the current patch. Any conflicts must have been resolved.
  *
  *  If +author+ is +nil+, the existing author for the commit will be
  *  used. If +message+ is +nil+, the existing message will be used.
+ *
+ *  Returns a string containing the oid of the newly created commit,
+ *  or +nil+ if there are no changes to be committed.
  */
 static VALUE rb_git_rebase_commit(int argc, VALUE *argv, VALUE self)
 {
@@ -325,7 +328,7 @@ static VALUE rb_git_rebase_commit(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *    Rebase.abort()
+ *    rebase.abort -> nil
  *
  *  Abort the rebase currently in process, resetting the repository
  *  and working directory to their state before the rebase began.
@@ -342,7 +345,7 @@ static VALUE rb_git_rebase_abort(VALUE self)
 
 /*
  *  call-seq:
- *    Rebase.finish()
+ *    rebase.finish -> nil
  *
  *  Finish the rebase currently in progress once all patches have been
  *  applied.
