@@ -150,6 +150,45 @@ class TreeUpdateTest < Rugged::TestCase
     assert_equal "71a3bbe701e60c1756edd23cfc0b207711dca1f2", newtree
   end
 
+  def test_tree_updater_add
+    updates = [{:action => :upsert, :path => "another-readme", :oid => "1385f264afb75a56a5bec74243be9b367ba4ca08", :filemode => 0100644}]
+    newtree = Rugged::Tree.create_updated(@repo, @repo.head.target.tree, updates)
+    assert_equal "71a3bbe701e60c1756edd23cfc0b207711dca1f2", newtree
+  end
+
+  def test_tree_updater_add_deeper
+    baseline = @repo.head.target.tree
+    file_oid = "1385f264afb75a56a5bec74243be9b367ba4ca08"
+    file_mode = 0100644
+    file_path = "some/file"
+
+    idx = Rugged::Index.new
+    idx.read_tree(baseline)
+    idx.add({:oid => file_oid, :path => file_path, :stage => 0, :mode => file_mode})
+    indexer_tree_id = idx.write_tree(@repo)
+
+    updates = [{:action => :upsert, :path => file_path, :oid => file_oid, :filemode => file_mode}]
+    newtree = Rugged::Tree.create_updated(@repo, baseline, updates)
+
+    assert_equal indexer_tree_id, newtree
+  end
+
+  def test_tree_updater_remove
+    baseline = Rugged::Tree.lookup(@repo, 'c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b')
+
+    ["README", "subdir/README"].each do |file_path|
+      idx = Rugged::Index.new
+      idx.read_tree(baseline)
+      idx.remove(file_path)
+      indexer_tree_id = idx.write_tree(@repo)
+
+      updates = [{:action => :remove, :path => file_path}]
+      newtree = baseline.update(updates)
+
+      assert_equal indexer_tree_id, newtree
+    end
+  end
+
   def test_treebuilder_add_nonexistent_fails
     builder = Rugged::Tree::Builder.new(@repo, @repo.head.target.tree)
     assert_raises Rugged::TreeError do

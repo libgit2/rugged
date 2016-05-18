@@ -702,6 +702,125 @@ static VALUE rb_git_tree_merge(int argc, VALUE *argv, VALUE self)
 	return rugged_index_new(rb_cRuggedIndex, rb_repo, index);
 }
 
+/**
+ * Parse the updates and convert them into libgit2 ones. They will be
+ * heap-allocated and returned in 'out'. The strings will also be
+ * heap-allocated and will be stored in 'strings'.
+ */
+static void parse_tree_updates(git_tree_update **out, int *nupdates_out, VALUE rb_updates)
+{
+	int i, nupdates;
+	git_tree_update *updates;
+
+	Check_Type(rb_updates, T_ARRAY);
+	nupdates = RARRAY_LEN(rb_updates);
+	updates = xcalloc(nupdates, sizeof(git_tree_update));
+
+	for (i = 0; i < nupdates; i++) {
+		VALUE rb_update = rb_ary_entry(rb_updates, i);
+		VALUE rb_action, rb_oid, rb_filemode, rb_path;
+		ID action;
+		git_tree_update *update = &updates[i];
+
+		if (!RB_TYPE_P(rb_update, T_HASH))
+			goto on_error;
+
+		rb_action   = rb_hash_aref(rb_update, CSTR2SYM("action"));
+		rb_oid      = rb_hash_aref(rb_update, CSTR2SYM("oid"));
+		rb_filemode = rb_hash_aref(rb_update, CSTR2SYM("filemode"));
+		rb_path     = rb_hash_aref(rb_update, CSTR2SYM("path"));
+
+		if (!SYMBOL_P(rb_action) || !RB_TYPE_P(rb_path, T_STRING))
+			goto on_error;
+
+		update->path = StringValueCStr(rb_path);
+
+		action = SYM2ID(rb_action);
+
+		if (action == rb_intern("upsert")) {
+			if (!RB_TYPE_P(rb_oid, T_STRING) ||!RB_TYPE_P(rb_filemode, T_FIXNUM))
+				goto on_error;
+
+			update->action = GIT_TREE_UPDATE_UPSERT;
+			update->filemode = NUM2INT(rb_filemode);
+
+			if (git_oid_fromstr(&update->id, StringValueCStr(rb_oid)) < 0)
+				goto on_error;
+		} else if (action == rb_intern("remove")) {
+			update->action = GIT_TREE_UPDATE_REMOVE;
+		} else {
+			goto on_error;
+		}
+	}
+
+	*out = updates;
+	*nupdates_out = nupdates;
+
+	return;
+
+on_error:
+	xfree(updates);
+	rb_raise(rb_eTypeError, "Invalid type for tree update object");
+}
+
+/*
+ *  call-seq:
+ *    Tree.create_updated(repository, baseline, updates)
+ *
+ *  Create a new Rugged::Tree based on +baseline+ and applying the
+ *  changes described in +updates+.
+ *
+ *  If an optional +baseline+ is given, the returned Tree will be
+ *  based on that tree, otherwise the starting point will be the empty
+ *  tree.
+ *
+ *  The updates are given as a list of +Hash+ containing:
+ *
+ *  :action ::
+ *    +:upsert+ or +:remove+ to add/insert an entry, or to remove it resp.
+ *
+ *  :oid ::
+ *    The +oid+ of the entry. This is ignored for removals.
+ *
+ *  :filemode ::
+ *    The octal filemode for the entry. This is ignored for remvals.
+ *
+ *  :path ::
+ *    The path of the entry. This may contain slashes and the
+ *    intermediate trees will be created.
+ *
+ */
+static VALUE rb_git_tree_create_updated(VALUE self, VALUE rb_repo, VALUE rb_tree, VALUE rb_updates)
+{
+	git_repository *repo;
+	git_tree *tree = NULL;
+	git_tree_update *updates;
+	int nupdates, error;
+	git_oid id;
+
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	if (!NIL_P(rb_tree)) {
+		if (!rb_obj_is_kind_of(rb_tree, rb_cRuggedTree))
+			rb_raise(rb_eTypeError, "A Rugged::Tree instance is required");
+
+		Data_Get_Struct(rb_tree, git_tree, tree);
+	}
+
+	if (NIL_P(rb_updates))
+		rb_raise(rb_eTypeError, "The list of upates cannot be nil");
+
+	parse_tree_updates(&updates, &nupdates, rb_updates);
+
+	error = git_tree_create_updated(&id, repo, tree, nupdates, updates);
+	xfree(updates);
+
+	rugged_exception_check(error);
+
+	return rugged_create_oid(&id);
+}
+
 static void rb_git_treebuilder_free(git_treebuilder *bld)
 {
 	git_treebuilder_free(bld);
@@ -904,6 +1023,7 @@ void Init_rugged_tree(void)
 	rb_define_method(rb_cRuggedTree, "each", rb_git_tree_each, 0);
 	rb_define_method(rb_cRuggedTree, "walk", rb_git_tree_walk, 1);
 	rb_define_method(rb_cRuggedTree, "merge", rb_git_tree_merge, -1);
+	rb_define_singleton_method(rb_cRuggedTree, "create_updated", rb_git_tree_create_updated, 3);
 
 	rb_define_singleton_method(rb_cRuggedTree, "diff", rb_git_tree_diff_, -1);
 
