@@ -152,7 +152,7 @@ class TreeUpdateTest < Rugged::TestCase
 
   def test_tree_updater_add
     updates = [{:action => :upsert, :path => "another-readme", :oid => "1385f264afb75a56a5bec74243be9b367ba4ca08", :filemode => 0100644}]
-    newtree = Rugged::Tree.create_updated(@repo, @repo.head.target.tree, updates)
+    newtree = @repo.head.target.tree.update(updates)
     assert_equal "71a3bbe701e60c1756edd23cfc0b207711dca1f2", newtree
   end
 
@@ -168,7 +168,7 @@ class TreeUpdateTest < Rugged::TestCase
     indexer_tree_id = idx.write_tree(@repo)
 
     updates = [{:action => :upsert, :path => file_path, :oid => file_oid, :filemode => file_mode}]
-    newtree = Rugged::Tree.create_updated(@repo, baseline, updates)
+    newtree = baseline.update(updates)
 
     assert_equal indexer_tree_id, newtree
   end
@@ -212,6 +212,11 @@ class TreeUpdateTest < Rugged::TestCase
       assert_equal "7c98360ac03064bb67c6f0949e6a354155ce1b04", newtree
     ensure
       Rugged::Settings['strict_object_creation'] = true
+    end
+
+    def test_emtpy_tree_lookup
+      tree = Rugged::Tree.empty(@repo)
+      assert_equal 0, tree.count
     end
   end
 end

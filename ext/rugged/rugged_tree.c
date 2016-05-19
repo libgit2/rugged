@@ -702,6 +702,31 @@ static VALUE rb_git_tree_merge(int argc, VALUE *argv, VALUE self)
 	return rugged_index_new(rb_cRuggedIndex, rb_repo, index);
 }
 
+static git_oid empty_tree = {{ 0x4b, 0x82, 0x5d, 0xc6, 0x42, 0xcb, 0x6e, 0xb9, 0xa0, 0x60,
+			       0xe5, 0x4b, 0xf8, 0xd6, 0x92, 0x88, 0xfb, 0xee, 0x49, 0x04 }};
+
+/*
+ *  call-seq:
+ *    Tree.empty(repo) -> tree
+ *
+ *  Look up the empty tree in the given repository +repo+. The empty
+ *  tree's id is hard-coded to exist in a repository.
+ *
+ *  Returns a new instance of the empty tree.
+ */
+static VALUE rb_git_tree_empty(VALUE self, VALUE rb_repo)
+{
+	git_repository *repo;
+	git_tree *tree;
+
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	rugged_exception_check(git_tree_lookup(&tree, repo, &empty_tree));
+
+	return rugged_object_new(rb_repo, (git_object *) tree);
+}
+
 /**
  * Parse the updates and convert them into libgit2 ones. They will be
  * heap-allocated and returned in 'out'. The strings will also be
@@ -765,14 +790,10 @@ on_error:
 
 /*
  *  call-seq:
- *    Tree.create_updated(repository, baseline, updates)
+ *    tree.update(updates)
  *
- *  Create a new Rugged::Tree based on +baseline+ and applying the
+ *  Create a new Rugged::Tree based on the curent one by applying the
  *  changes described in +updates+.
- *
- *  If an optional +baseline+ is given, the returned Tree will be
- *  based on that tree, otherwise the starting point will be the empty
- *  tree.
  *
  *  The updates are given as a list of +Hash+ containing:
  *
@@ -790,7 +811,7 @@ on_error:
  *    intermediate trees will be created.
  *
  */
-static VALUE rb_git_tree_create_updated(VALUE self, VALUE rb_repo, VALUE rb_tree, VALUE rb_updates)
+static VALUE rb_git_tree_update(VALUE self, VALUE rb_updates)
 {
 	git_repository *repo;
 	git_tree *tree = NULL;
@@ -798,18 +819,8 @@ static VALUE rb_git_tree_create_updated(VALUE self, VALUE rb_repo, VALUE rb_tree
 	int nupdates, error;
 	git_oid id;
 
-	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
-
-	if (!NIL_P(rb_tree)) {
-		if (!rb_obj_is_kind_of(rb_tree, rb_cRuggedTree))
-			rb_raise(rb_eTypeError, "A Rugged::Tree instance is required");
-
-		Data_Get_Struct(rb_tree, git_tree, tree);
-	}
-
-	if (NIL_P(rb_updates))
-		rb_raise(rb_eTypeError, "The list of upates cannot be nil");
+	Data_Get_Struct(self, git_tree, tree);
+	repo = git_tree_owner(tree);
 
 	parse_tree_updates(&updates, &nupdates, rb_updates);
 
@@ -1023,7 +1034,8 @@ void Init_rugged_tree(void)
 	rb_define_method(rb_cRuggedTree, "each", rb_git_tree_each, 0);
 	rb_define_method(rb_cRuggedTree, "walk", rb_git_tree_walk, 1);
 	rb_define_method(rb_cRuggedTree, "merge", rb_git_tree_merge, -1);
-	rb_define_singleton_method(rb_cRuggedTree, "create_updated", rb_git_tree_create_updated, 3);
+	rb_define_method(rb_cRuggedTree, "update", rb_git_tree_update, 1);
+	rb_define_singleton_method(rb_cRuggedTree, "empty", rb_git_tree_empty, 1);
 
 	rb_define_singleton_method(rb_cRuggedTree, "diff", rb_git_tree_diff_, -1);
 
