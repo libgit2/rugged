@@ -702,6 +702,136 @@ static VALUE rb_git_tree_merge(int argc, VALUE *argv, VALUE self)
 	return rugged_index_new(rb_cRuggedIndex, rb_repo, index);
 }
 
+static git_oid empty_tree = {{ 0x4b, 0x82, 0x5d, 0xc6, 0x42, 0xcb, 0x6e, 0xb9, 0xa0, 0x60,
+			       0xe5, 0x4b, 0xf8, 0xd6, 0x92, 0x88, 0xfb, 0xee, 0x49, 0x04 }};
+
+/*
+ *  call-seq:
+ *    Tree.empty(repo) -> tree
+ *
+ *  Look up the empty tree in the given repository +repo+. The empty
+ *  tree's id is hard-coded to exist in a repository.
+ *
+ *  Returns a new instance of the empty tree.
+ */
+static VALUE rb_git_tree_empty(VALUE self, VALUE rb_repo)
+{
+	git_repository *repo;
+	git_tree *tree;
+
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	rugged_exception_check(git_tree_lookup(&tree, repo, &empty_tree));
+
+	return rugged_object_new(rb_repo, (git_object *) tree);
+}
+
+/**
+ * Parse the updates and convert them into libgit2 ones. They will be
+ * heap-allocated and returned in 'out'. The strings will also be
+ * heap-allocated and will be stored in 'strings'.
+ */
+static void parse_tree_updates(git_tree_update **out, int *nupdates_out, VALUE rb_updates)
+{
+	int i, nupdates;
+	git_tree_update *updates;
+
+	Check_Type(rb_updates, T_ARRAY);
+	nupdates = RARRAY_LEN(rb_updates);
+	updates = xcalloc(nupdates, sizeof(git_tree_update));
+
+	for (i = 0; i < nupdates; i++) {
+		VALUE rb_update = rb_ary_entry(rb_updates, i);
+		VALUE rb_action, rb_oid, rb_filemode, rb_path;
+		ID action;
+		git_tree_update *update = &updates[i];
+
+		if (!RB_TYPE_P(rb_update, T_HASH))
+			goto on_error;
+
+		rb_action   = rb_hash_aref(rb_update, CSTR2SYM("action"));
+		rb_oid      = rb_hash_aref(rb_update, CSTR2SYM("oid"));
+		rb_filemode = rb_hash_aref(rb_update, CSTR2SYM("filemode"));
+		rb_path     = rb_hash_aref(rb_update, CSTR2SYM("path"));
+
+		if (!SYMBOL_P(rb_action) || !RB_TYPE_P(rb_path, T_STRING))
+			goto on_error;
+
+		update->path = StringValueCStr(rb_path);
+
+		action = SYM2ID(rb_action);
+
+		if (action == rb_intern("upsert")) {
+			if (!RB_TYPE_P(rb_oid, T_STRING) ||!RB_TYPE_P(rb_filemode, T_FIXNUM))
+				goto on_error;
+
+			update->action = GIT_TREE_UPDATE_UPSERT;
+			update->filemode = NUM2INT(rb_filemode);
+
+			if (git_oid_fromstr(&update->id, StringValueCStr(rb_oid)) < 0)
+				goto on_error;
+		} else if (action == rb_intern("remove")) {
+			update->action = GIT_TREE_UPDATE_REMOVE;
+		} else {
+			goto on_error;
+		}
+	}
+
+	*out = updates;
+	*nupdates_out = nupdates;
+
+	return;
+
+on_error:
+	xfree(updates);
+	rb_raise(rb_eTypeError, "Invalid type for tree update object");
+}
+
+/*
+ *  call-seq:
+ *    tree.update(updates)
+ *
+ *  Create a new Rugged::Tree based on the curent one by applying the
+ *  changes described in +updates+.
+ *
+ *  The updates are given as a list of +Hash+ containing:
+ *
+ *  :action ::
+ *    +:upsert+ or +:remove+ to add/insert an entry, or to remove it resp.
+ *
+ *  :oid ::
+ *    The +oid+ of the entry. This is ignored for removals.
+ *
+ *  :filemode ::
+ *    The octal filemode for the entry. This is ignored for remvals.
+ *
+ *  :path ::
+ *    The path of the entry. This may contain slashes and the
+ *    intermediate trees will be created.
+ *
+ */
+static VALUE rb_git_tree_update(VALUE self, VALUE rb_updates)
+{
+	git_repository *repo;
+	git_tree *tree = NULL;
+	git_tree_update *updates;
+	int nupdates, error;
+	git_oid id;
+
+	Data_Get_Struct(self, git_tree, tree);
+	repo = git_tree_owner(tree);
+
+	parse_tree_updates(&updates, &nupdates, rb_updates);
+
+	error = git_tree_create_updated(&id, repo, tree, nupdates, updates);
+	xfree(updates);
+
+	rugged_exception_check(error);
+
+	return rugged_create_oid(&id);
+}
+
 static void rb_git_treebuilder_free(git_treebuilder *bld)
 {
 	git_treebuilder_free(bld);
@@ -904,6 +1034,8 @@ void Init_rugged_tree(void)
 	rb_define_method(rb_cRuggedTree, "each", rb_git_tree_each, 0);
 	rb_define_method(rb_cRuggedTree, "walk", rb_git_tree_walk, 1);
 	rb_define_method(rb_cRuggedTree, "merge", rb_git_tree_merge, -1);
+	rb_define_method(rb_cRuggedTree, "update", rb_git_tree_update, 1);
+	rb_define_singleton_method(rb_cRuggedTree, "empty", rb_git_tree_empty, 1);
 
 	rb_define_singleton_method(rb_cRuggedTree, "diff", rb_git_tree_diff_, -1);
 
