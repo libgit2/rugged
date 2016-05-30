@@ -153,6 +153,30 @@ class TestRebase < Rugged::TestCase
     assert_equal "0f5f6d3353be1a9966fa5767b7d604b051798224", op[:id]
   end
 
+  def test_rebase_does_not_lose_files
+    commit = Rugged::Commit.create(@repo, {
+      :author => { :email => "rebaser@rebaser.com", :time => Time.now, :name => "Rebaser" },
+      :message => "Add some files",
+      :parents => [ @repo.branches["gravy"].target_id ],
+      :update_ref => "refs/heads/gravy",
+      :tree => @repo.branches["gravy"].target.tree.update([
+        { :action => :upsert,
+          :path => "some/nested/file",
+          :oid => Rugged::Blob.from_buffer(@repo, "a new blob content"),
+          :filemode => 0100644
+        }
+      ])
+    })
+
+    rebase = Rugged::Rebase.new(@repo, "refs/heads/gravy", "refs/heads/veal")
+
+    rebase.next
+    assert rebase.commit({ committer: { :email => "rebaser@rebaser.com", :name => "Rebaser" } })
+
+    rebase.next
+    assert rebase.commit({ committer: { :email => "rebaser@rebaser.com", :name => "Rebaser" } })
+  end
+
   def test_inmemory_rebase_does_not_lose_files
     commit = Rugged::Commit.create(@repo, {
       :author => { :email => "rebaser@rebaser.com", :time => Time.now, :name => "Rebaser" },
