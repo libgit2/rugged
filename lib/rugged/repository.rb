@@ -140,7 +140,7 @@ module Rugged
 
     # All the tags in the repository.
     #
-    # Returns an TagCollection containing all the tags.
+    # Returns a TagCollection containing all the tags.
     def tags
       @tags ||= TagCollection.new(self)
     end
@@ -155,14 +155,14 @@ module Rugged
 
     # All the branches in the repository
     #
-    # Returns an BranchCollection containing Rugged::Branch objects
+    # Returns a BranchCollection containing Rugged::Branch objects
     def branches
       @branches ||= BranchCollection.new(self)
     end
 
     # All the submodules in the repository
     #
-    # Returns an SubmoduleCollection containing Rugged::Submodule objects
+    # Returns a SubmoduleCollection containing Rugged::Submodule objects
     def submodules
       @submodules ||= SubmoduleCollection.new(self)
     end
