@@ -18,7 +18,7 @@ class ConfigTest < Rugged::TestCase
 
   def test_read_global_config_file
     config = Rugged::Config.global
-    assert config['user.name'] != nil
+    refute_nil config['user.name']
     assert_nil config['core.bare']
   end
 
