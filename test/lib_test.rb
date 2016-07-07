@@ -34,8 +34,14 @@ class RuggedTest < Rugged::TestCase
              ['search_path_system', '/tmp/system']]
 
     paths.each do |opt, path|
+      before = Rugged::Settings[opt]
       Rugged::Settings[opt] = path
-      assert_equal(path, Rugged::Settings[opt])
+
+      begin
+        assert_equal(path, Rugged::Settings[opt])
+      ensure
+        Rugged::Settings[opt] = before
+      end
     end
   end
 
