@@ -156,7 +156,7 @@ static VALUE rb_git_reference_collection__each(int argc, VALUE *argv, VALUE self
 	if (only_names) {
 		const char *ref_name;
 		while (!exception && (error = git_reference_next_name(&ref_name, iter)) == GIT_OK) {
-			rb_protect(rb_yield, rb_str_new_utf8(ref_name), &exception);
+			rb_protect(rb_yield, rb_str_new2(ref_name), &exception);
 		}
 	} else {
 		git_reference *ref;

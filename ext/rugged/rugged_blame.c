@@ -39,12 +39,12 @@ static VALUE rb_git_blame_hunk_fromC(const git_blame_hunk *hunk)
 
 	rb_hash_aset(rb_hunk, CSTR2SYM("final_commit_id"), rugged_create_oid(&(hunk->final_commit_id)));
 	rb_hash_aset(rb_hunk, CSTR2SYM("final_start_line_number"), UINT2NUM(hunk->final_start_line_number));
-	rb_hash_aset(rb_hunk, CSTR2SYM("final_signature"), hunk->final_signature ? rugged_signature_new(hunk->final_signature, NULL) : Qnil);
+	rb_hash_aset(rb_hunk, CSTR2SYM("final_signature"), hunk->final_signature ? rugged_signature_new(hunk->final_signature) : Qnil);
 
 	rb_hash_aset(rb_hunk, CSTR2SYM("orig_commit_id"), rugged_create_oid(&(hunk->orig_commit_id)));
 	rb_hash_aset(rb_hunk, CSTR2SYM("orig_path"), hunk->orig_path ? rb_str_new2(hunk->orig_path) : Qnil);
 	rb_hash_aset(rb_hunk, CSTR2SYM("orig_start_line_number"), UINT2NUM(hunk->orig_start_line_number));
-	rb_hash_aset(rb_hunk, CSTR2SYM("orig_signature"), hunk->orig_signature ? rugged_signature_new(hunk->orig_signature, NULL) : Qnil);
+	rb_hash_aset(rb_hunk, CSTR2SYM("orig_signature"), hunk->orig_signature ? rugged_signature_new(hunk->orig_signature) : Qnil);
 
 	rb_hash_aset(rb_hunk, CSTR2SYM("boundary"), hunk->boundary ? Qtrue : Qfalse);
 

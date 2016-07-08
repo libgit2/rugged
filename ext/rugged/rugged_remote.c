@@ -73,7 +73,7 @@ static int push_update_reference_cb(const char *refname, const char *status, voi
 	struct rugged_remote_cb_payload *payload = data;
 
 	if (status != NULL)
-		rb_hash_aset(payload->result, rb_str_new_utf8(refname), rb_str_new_utf8(status));
+		rb_hash_aset(payload->result, rb_str_new2(refname), rb_str_new2(status));
 
 	return GIT_OK;
 }
@@ -87,7 +87,7 @@ static int update_tips_cb(const char *refname, const git_oid *src, const git_oid
 		return 0;
 
 	rb_ary_push(args, payload->update_tips);
-	rb_ary_push(args, rb_str_new_utf8(refname));
+	rb_ary_push(args, rb_str_new2(refname));
 	rb_ary_push(args, git_oid_iszero(src) ? Qnil : rugged_create_oid(src));
 	rb_ary_push(args, git_oid_iszero(dest) ? Qnil : rugged_create_oid(dest));
 
@@ -225,7 +225,7 @@ static VALUE rugged_rhead_new(const git_remote_head *head)
 	rb_hash_aset(rb_head, CSTR2SYM("oid"), rugged_create_oid(&head->oid));
 	rb_hash_aset(rb_head, CSTR2SYM("loid"),
 			git_oid_iszero(&head->loid) ? Qnil : rugged_create_oid(&head->loid));
-	rb_hash_aset(rb_head, CSTR2SYM("name"), rb_str_new_utf8(head->name));
+	rb_hash_aset(rb_head, CSTR2SYM("name"), rb_str_new2(head->name));
 
 	return rb_head;
 }
@@ -327,7 +327,7 @@ static VALUE rb_git_remote_name(VALUE self)
 
 	name = git_remote_name(remote);
 
-	return name ? rb_str_new_utf8(name) : Qnil;
+	return name ? rb_str_new2(name) : Qnil;
 }
 
 /*
@@ -343,7 +343,7 @@ static VALUE rb_git_remote_url(VALUE self)
 	git_remote *remote;
 	Data_Get_Struct(self, git_remote, remote);
 
-	return rb_str_new_utf8(git_remote_url(remote));
+	return rb_str_new2(git_remote_url(remote));
 }
 
 /*
@@ -363,7 +363,7 @@ static VALUE rb_git_remote_push_url(VALUE self)
 	Data_Get_Struct(self, git_remote, remote);
 
 	push_url = git_remote_pushurl(remote);
-	return push_url ? rb_str_new_utf8(push_url) : Qnil;
+	return push_url ? rb_str_new2(push_url) : Qnil;
 }
 
 /*

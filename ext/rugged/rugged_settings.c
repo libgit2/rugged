@@ -53,7 +53,7 @@ static VALUE get_search_path(int level)
 
 	rugged_exception_check(git_libgit2_opts(GIT_OPT_GET_SEARCH_PATH, level, &buf));
 
-	ret = rb_str_new_utf8(buf.ptr);
+	ret = rb_str_new(buf.ptr, buf.size);
 	git_buf_free(&buf);
 
 	return ret;

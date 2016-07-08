@@ -221,7 +221,7 @@ static VALUE each_branch(int argc, VALUE *argv, VALUE self, int branch_names_onl
 	if (branch_names_only) {
 		git_reference *branch;
 		while (!exception && (error = git_branch_next(&branch, &branch_type, iter)) == GIT_OK) {
-			rb_protect(rb_yield, rb_str_new_utf8(git_reference_shorthand(branch)), &exception);
+			rb_protect(rb_yield, rb_str_new2(git_reference_shorthand(branch)), &exception);
 		}
 	} else {
 		git_reference *branch;

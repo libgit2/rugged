@@ -24,13 +24,9 @@
 
 #include "rugged.h"
 
-VALUE rugged_signature_new(const git_signature *sig, const char *encoding_name)
+VALUE rugged_signature_new(const git_signature *sig)
 {
 	VALUE rb_sig, rb_time;
-	rb_encoding *encoding = rb_utf8_encoding();
-
-	if (encoding_name != NULL)
-		encoding = rb_enc_find(encoding_name);
 
 	rb_sig = rb_hash_new();
 
@@ -42,10 +38,10 @@ VALUE rugged_signature_new(const git_signature *sig, const char *encoding_name)
 	);
 
 	rb_hash_aset(rb_sig, CSTR2SYM("name"),
-		rb_enc_str_new(sig->name, strlen(sig->name), encoding));
+		rb_str_new(sig->name, strlen(sig->name)));
 
 	rb_hash_aset(rb_sig, CSTR2SYM("email"),
-		rb_enc_str_new(sig->email, strlen(sig->email), encoding));
+		rb_str_new(sig->email, strlen(sig->email)));
 
 	rb_hash_aset(rb_sig, CSTR2SYM("time"), rb_time);
 

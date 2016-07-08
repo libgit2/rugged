@@ -112,7 +112,7 @@ static VALUE rb_git_tag_annotation_name(VALUE self)
 	git_tag *tag;
 	Data_Get_Struct(self, git_tag, tag);
 
-	return rb_str_new_utf8(git_tag_name(tag));
+	return rb_str_new2(git_tag_name(tag));
 }
 
 /*
@@ -136,7 +136,7 @@ static VALUE rb_git_tag_annotation_tagger(VALUE self)
 	if (!tagger)
 		return Qnil;
 
-	return rugged_signature_new(tagger, NULL);
+	return rugged_signature_new(tagger);
 }
 
 /*
@@ -159,7 +159,7 @@ static VALUE rb_git_tag_annotation_message(VALUE self)
 	if (!message)
 		return Qnil;
 
-	return rb_str_new_utf8(message);
+	return rb_str_new2(message);
 }
 
 /*

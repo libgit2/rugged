@@ -47,7 +47,7 @@ VALUE rb_cRuggedCommit;
 static VALUE rb_git_commit_message_GET(VALUE self)
 {
 	git_commit *commit;
-	rb_encoding *encoding = rb_utf8_encoding();
+	rb_encoding *encoding = rb_ascii8bit_encoding();
 	const char *encoding_name;
 	const char *message;
 
@@ -82,9 +82,7 @@ static VALUE rb_git_commit_committer_GET(VALUE self)
 	git_commit *commit;
 	Data_Get_Struct(self, git_commit, commit);
 
-	return rugged_signature_new(
-		git_commit_committer(commit),
-		git_commit_message_encoding(commit));
+	return rugged_signature_new(git_commit_committer(commit));
 }
 
 /*
@@ -107,9 +105,7 @@ static VALUE rb_git_commit_author_GET(VALUE self)
 	git_commit *commit;
 	Data_Get_Struct(self, git_commit, commit);
 
-	return rugged_signature_new(
-		git_commit_author(commit),
-		git_commit_message_encoding(commit));
+	return rugged_signature_new(git_commit_author(commit));
 }
 
 /*
@@ -577,7 +573,7 @@ static VALUE rb_git_commit_to_mbox(int argc, VALUE *argv, VALUE self)
 
 	if (error) goto cleanup;
 
-	rb_email_patch = rb_enc_str_new(email_patch.ptr, email_patch.size, rb_utf8_encoding());
+	rb_email_patch = rb_str_new(email_patch.ptr, email_patch.size);
 
 	cleanup:
 
@@ -598,9 +594,6 @@ static VALUE rb_git_commit_header_field(VALUE self, VALUE rb_field)
 {
 	git_buf header_field = { 0 };
 	git_commit *commit = NULL;
-
-	const char *encoding_name;
-	rb_encoding *encoding = rb_utf8_encoding();
 	VALUE rb_result;
 
 	int error;
@@ -617,11 +610,7 @@ static VALUE rb_git_commit_header_field(VALUE self, VALUE rb_field)
 		rugged_exception_check(error);
 	}
 
-	encoding_name = git_commit_message_encoding(commit);
-	if (encoding_name != NULL)
-		encoding = rb_enc_find(encoding_name);
-
-	rb_result = rb_enc_str_new(header_field.ptr, header_field.size, encoding);
+	rb_result = rb_str_new(header_field.ptr, header_field.size);
 	git_buf_free(&header_field);
 	return rb_result;
 }
@@ -640,7 +629,7 @@ static VALUE rb_git_commit_header(VALUE self)
 	Data_Get_Struct(self, git_commit, commit);
 
 	raw_header = git_commit_raw_header(commit);
-	return rb_str_new_utf8(raw_header);
+	return rb_str_new2(raw_header);
 }
 
 /*
@@ -753,7 +742,7 @@ cleanup:
 
 	rugged_exception_check(error);
 
-	ret = rb_str_new_utf8(buf.ptr);
+	ret = rb_str_new(buf.ptr, buf.size);
 	git_buf_free(&buf);
 
 	return ret;

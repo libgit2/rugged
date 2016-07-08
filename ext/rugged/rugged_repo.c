@@ -654,11 +654,11 @@ static VALUE rb_git_repo_get_ident(VALUE self)
 	);
 
 	if (name) {
-		rb_hash_aset(rb_ident, CSTR2SYM("name"), rb_str_new_utf8(name));
+		rb_hash_aset(rb_ident, CSTR2SYM("name"), rb_str_new2(name));
 	}
 
 	if (email) {
-		rb_hash_aset(rb_ident, CSTR2SYM("email"), rb_str_new_utf8(email));
+		rb_hash_aset(rb_ident, CSTR2SYM("email"), rb_str_new2(email));
 	}
 
 	return rb_ident;
@@ -832,7 +832,7 @@ static VALUE rb_git_repo_merge_analysis(int argc, VALUE *argv, VALUE self)
 /*
  *  call-seq:
  *    repo.revert_commit(revert_commit, our_commit, options = {}) -> index
- *    
+ *
  *	Reverts the given commit against the given "our" commit, producing an
  *	index that reflects the result of the revert.
  */
@@ -1382,7 +1382,7 @@ static VALUE rb_git_repo_path(VALUE self)
 	Data_Get_Struct(self, git_repository, repo);
 	path = git_repository_path(repo);
 
-	return path ? rb_str_new_utf8(path) : Qnil;
+	return path ? rb_str_new2(path) : Qnil;
 }
 
 /*
@@ -1406,7 +1406,7 @@ static VALUE rb_git_repo_workdir(VALUE self)
 	Data_Get_Struct(self, git_repository, repo);
 	workdir = git_repository_workdir(repo);
 
-	return workdir ? rb_str_new_utf8(workdir) : Qnil;
+	return workdir ? rb_str_new2(workdir) : Qnil;
 }
 
 /*
@@ -1522,7 +1522,7 @@ static VALUE flags_to_rb(unsigned int flags)
 static int rugged__status_cb(const char *path, unsigned int flags, void *payload)
 {
 	rb_funcall((VALUE)payload, rb_intern("call"), 2,
-		rb_str_new_utf8(path), flags_to_rb(flags)
+		rb_str_new2(path), flags_to_rb(flags)
 	);
 
 	return GIT_OK;
@@ -1804,7 +1804,7 @@ static VALUE rb_git_repo_get_namespace(VALUE self)
 	Data_Get_Struct(self, git_repository, repo);
 
 	namespace = git_repository_get_namespace(repo);
-	return namespace ? rb_str_new_utf8(namespace) : Qnil;
+	return namespace ? rb_str_new2(namespace) : Qnil;
 }
 
 /*
@@ -1872,7 +1872,7 @@ static VALUE rb_git_repo_default_signature(VALUE self) {
 
 	rugged_exception_check(error);
 
-	rb_signature = rugged_signature_new(signature, NULL);
+	rb_signature = rugged_signature_new(signature);
 	git_signature_free(signature);
 	return rb_signature;
 }

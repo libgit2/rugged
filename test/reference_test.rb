@@ -179,8 +179,8 @@ class ReferenceWriteTest < Rugged::TestCase
     new_ref = @repo.references.create(ref_name, "5b5b025afb0b4c913b4c338a42934a3863bf3644")
     refute_nil new_ref
 
-    assert_equal ref_name, new_ref.name
-    assert_equal ref_name, new_ref.canonical_name
+    assert_equal ref_name.force_encoding("ascii-8bit"), new_ref.name
+    assert_equal ref_name.force_encoding("ascii-8bit"), new_ref.canonical_name
 
     refute_nil @repo.references[ref_name]
   end
@@ -197,8 +197,8 @@ class ReferenceWriteTest < Rugged::TestCase
       expected_name = ref_name
     end
 
-    assert_equal expected_name, new_ref.name
-    assert_equal expected_name, new_ref.canonical_name
+    assert_equal expected_name.force_encoding("ascii-8bit"), new_ref.name
+    assert_equal expected_name.force_encoding("ascii-8bit"), new_ref.canonical_name
 
     refute_nil @repo.references[ref_name]
     refute_nil @repo.references[expected_name]
@@ -217,8 +217,8 @@ class ReferenceWriteTest < Rugged::TestCase
       expected_name = ref_name
     end
 
-    assert_equal expected_name, new_ref.name
-    assert_equal expected_name, new_ref.canonical_name
+    assert_equal expected_name.force_encoding("ascii-8bit"), new_ref.name
+    assert_equal expected_name.force_encoding("ascii-8bit"), new_ref.canonical_name
 
     refute_nil @repo.references[ref_name]
     refute_nil @repo.references[expected_name]
@@ -273,8 +273,8 @@ class ReferenceWriteTest < Rugged::TestCase
     ref1 = @repo.references.create("refs/heads/Ångström", "refs/heads/master")
     ref2 = @repo.references.create("refs/heads/foobar", "refs/heads/Ångström")
 
-    assert_equal "refs/heads/Ångström", ref1.name
-    assert_equal "refs/heads/Ångström", ref2.target_id
+    assert_equal "refs/heads/Ångström".force_encoding("ascii-8bit"), ref1.name
+    assert_equal "refs/heads/Ångström".force_encoding("ascii-8bit"), ref2.target_id
   end
 end
 

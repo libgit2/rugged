@@ -225,7 +225,7 @@ static VALUE rb_git_prettify_message(int argc, VALUE *argv, VALUE self)
 				StringValueCStr(rb_message), strip_comments, comment_char);
 
 	if (!error)
-		result = rb_enc_str_new(message.ptr, message.size, rb_utf8_encoding());
+		result = rb_str_new(message.ptr, message.size);
 
 	git_buf_free(&message);
 	rugged_exception_check(error);
@@ -391,7 +391,7 @@ VALUE rugged_strarray_to_rb_ary(git_strarray *str_array)
 	size_t i;
 
 	for (i = 0; i < str_array->count; ++i) {
-		rb_ary_push(rb_array, rb_str_new_utf8(str_array->strings[i]));
+		rb_ary_push(rb_array, rb_str_new2(str_array->strings[i]));
 	}
 
 	return rb_array;

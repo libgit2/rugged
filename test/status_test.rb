@@ -18,7 +18,7 @@ class LibgitRepositoryStatusTest < Rugged::TestCase
     "subdir/deleted_file" => [:worktree_deleted],
     "subdir/modified_file" => [:worktree_modified],
     "subdir/new_file" => [:worktree_new],
-    "\xe8\xbf\x99" => [:worktree_new]
+    "\xe8\xbf\x99".force_encoding('ascii-8bit') => [:worktree_new]
   }
 
   STATUSES.each do |file,expected_statuses|

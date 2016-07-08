@@ -41,7 +41,6 @@
 #include <git2.h>
 #include <git2/odb_backend.h>
 
-#define rb_str_new_utf8(str) rb_enc_str_new(str, strlen(str), rb_utf8_encoding())
 #define CSTR2SYM(s) (ID2SYM(rb_intern((s))))
 
 /*
@@ -81,7 +80,7 @@ VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE self);
 
 VALUE rugged_raw_read(git_repository *repo, const git_oid *oid);
 
-VALUE rugged_signature_new(const git_signature *sig, const char *encoding_name);
+VALUE rugged_signature_new(const git_signature *sig);
 
 VALUE rugged_repo_new(VALUE klass, git_repository *repo);
 VALUE rugged_index_new(VALUE klass, VALUE owner, git_index *index);
