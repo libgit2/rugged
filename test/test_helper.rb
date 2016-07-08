@@ -5,7 +5,7 @@ require 'rugged'
 require 'pp'
 
 module Rugged
-  class TestCase < MiniTest::Unit::TestCase
+  class TestCase < Minitest::Test
     # Automatically clean up created fixture repos after each test run
     def after_teardown
       Rugged::TestCase::FixtureRepo.teardown
