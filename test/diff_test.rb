@@ -73,10 +73,12 @@ class RepoDiffTest < Rugged::TestCase
     patches = diff.patches
     hunks = patches.map(&:hunks).flatten
     lines = hunks.map(&:lines).flatten
+    bytesize = patches.inject(0) {|n, p| n += p.bytesize(include_context: true)}
 
     assert_equal 5, diff.size
     assert_equal 5, deltas.size
     assert_equal 5, patches.size
+    assert_equal 975, bytesize
 
     assert_equal 2, deltas.select(&:added?).size
     assert_equal 1, deltas.select(&:deleted?).size

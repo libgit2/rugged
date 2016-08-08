@@ -190,6 +190,36 @@ static VALUE rb_git_diff_patch_lines(VALUE self)
 	return INT2FIX(context + adds + dels);
 }
 
+static VALUE rb_git_diff_patch_bytesize(int argc, VALUE *argv, VALUE self)
+{
+	git_patch *patch;
+	size_t bytesize;
+	VALUE rb_options;
+	int options[3];
+	Data_Get_Struct(self, git_patch, patch);
+
+	memset(options, 0, sizeof(options));
+
+	rb_scan_args(argc, argv, "0:", &rb_options);
+	if (!NIL_P(rb_options)) {
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("include_context")))) {
+			options[0] = 1;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("include_hunk_headers")))) {
+			options[1] = 1;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("include_file_headers")))) {
+			options[2] = 1;
+		}
+	}
+
+	bytesize = git_patch_size(patch, options[0], options[1], options[2]);
+
+	return INT2FIX(bytesize);
+}
+
 static int patch_print_cb(
 	const git_diff_delta *delta,
 	const git_diff_hunk *hunk,
@@ -235,6 +265,7 @@ void Init_rugged_patch(void)
 
 	rb_define_method(rb_cRuggedPatch, "stat", rb_git_diff_patch_stat, 0);
 	rb_define_method(rb_cRuggedPatch, "lines", rb_git_diff_patch_lines, 0);
+	rb_define_method(rb_cRuggedPatch, "bytesize", rb_git_diff_patch_bytesize, -1);
 
 	rb_define_method(rb_cRuggedPatch, "delta", rb_git_diff_patch_delta, 0);
 
