@@ -191,7 +191,8 @@ static VALUE rb_git_diff_patch_stat(VALUE self)
  *    Boolean value specifying that deletion line counts should be excluded from
  *    the returned total.
  *
- *  Returns the total number of lines in the patch.
+ *  Returns the total number of lines in the patch, depending on the options
+ *  specified.
  */
 static VALUE rb_git_diff_patch_lines(int argc, VALUE *argv, VALUE self)
 {
