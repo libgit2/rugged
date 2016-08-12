@@ -226,7 +226,27 @@ static VALUE rb_git_diff_patch_lines(int argc, VALUE *argv, VALUE self)
 
 	return INT2FIX(total_out);
 }
-
+/*
+ *  call-seq:
+ *    patch.bytesize(options = {}) -> int
+ *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :include_context ::
+ *    Boolean value specifying that context lines should be included when
+ *    counting the number of bytes in the patch.
+ *
+ *  :include_hunk_headers ::
+ *    Boolean value specifying that hunk headers should be included when
+ *    counting the number of bytes in the patch.
+ *
+ *  :include_file_headers ::
+ *    Boolean value specifying that file headers should be included when
+ *    counting the number of bytes in the patch.
+ *
+ *  Returns the number of bytes in the patch, depending on which options are
+ *  specified.
+ */
 static VALUE rb_git_diff_patch_bytesize(int argc, VALUE *argv, VALUE self)
 {
 	git_patch *patch;
