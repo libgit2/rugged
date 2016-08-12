@@ -175,19 +175,56 @@ static VALUE rb_git_diff_patch_stat(VALUE self)
 
 /*
  *  call-seq:
- *    patch.lines -> int
+ *    patch.lines(options = {}) -> int
+ *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :exclude_context ::
+ *    Boolean value specifying that context line counts should be excluded from
+ *    the returned total.
+ *
+ *  :exclude_additions ::
+ *    Boolean value specifying that addition line counts should be excluded from
+ *    the returned total.
+ *
+ *  :exclude_deletions ::
+ *    Boolean value specifying that deletion line counts should be excluded from
+ *    the returned total.
  *
  *  Returns the total number of lines in the patch.
  */
-static VALUE rb_git_diff_patch_lines(VALUE self)
+static VALUE rb_git_diff_patch_lines(int argc, VALUE *argv, VALUE self)
 {
 	git_patch *patch;
-	size_t context, adds, dels;
+	size_t context_lines, additions, deletions;
+	size_t total_out;
+	VALUE rb_options;
 	Data_Get_Struct(self, git_patch, patch);
 
-	git_patch_line_stats(&context, &adds, &dels, patch);
+	context_lines = 0;
+	additions = 0;
+	deletions = 0;
 
-	return INT2FIX(context + adds + dels);
+	git_patch_line_stats(&context_lines, &additions, &deletions, patch);
+
+	total_out = context_lines + additions + deletions;
+
+	rb_scan_args(argc, argv, "0:", &rb_options);
+	if (!NIL_P(rb_options)) {
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("exclude_context")))) {
+			total_out -= context_lines;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("exclude_additions")))) {
+			total_out -= additions;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("exclude_deletions")))) {
+			total_out -= deletions;
+		}
+	}
+
+	return INT2FIX(total_out);
 }
 
 static VALUE rb_git_diff_patch_bytesize(int argc, VALUE *argv, VALUE self)
@@ -264,7 +301,7 @@ void Init_rugged_patch(void)
 	rb_define_singleton_method(rb_cRuggedPatch, "from_strings", rb_git_patch_from_strings, -1);
 
 	rb_define_method(rb_cRuggedPatch, "stat", rb_git_diff_patch_stat, 0);
-	rb_define_method(rb_cRuggedPatch, "lines", rb_git_diff_patch_lines, 0);
+	rb_define_method(rb_cRuggedPatch, "lines", rb_git_diff_patch_lines, -1);
 	rb_define_method(rb_cRuggedPatch, "bytesize", rb_git_diff_patch_bytesize, -1);
 
 	rb_define_method(rb_cRuggedPatch, "delta", rb_git_diff_patch_delta, 0);
