@@ -233,16 +233,16 @@ static VALUE rb_git_diff_patch_lines(int argc, VALUE *argv, VALUE self)
  *
  *  The following options can be passed in the +options+ Hash:
  *
- *  :include_context ::
- *    Boolean value specifying that context lines should be included when
+ *  :exclude_context ::
+ *    Boolean value specifying that context lines should be excluded when
  *    counting the number of bytes in the patch.
  *
- *  :include_hunk_headers ::
- *    Boolean value specifying that hunk headers should be included when
+ *  :exclude_hunk_headers ::
+ *    Boolean value specifying that hunk headers should be excluded when
  *    counting the number of bytes in the patch.
  *
- *  :include_file_headers ::
- *    Boolean value specifying that file headers should be included when
+ *  :exclude_file_headers ::
+ *    Boolean value specifying that file headers should be excluded when
  *    counting the number of bytes in the patch.
  *
  *  Returns the number of bytes in the patch, depending on which options are
@@ -253,27 +253,29 @@ static VALUE rb_git_diff_patch_bytesize(int argc, VALUE *argv, VALUE self)
 	git_patch *patch;
 	size_t bytesize;
 	VALUE rb_options;
-	int options[3];
+	int include_context, include_hunk_headers, include_file_headers;
 	Data_Get_Struct(self, git_patch, patch);
 
-	memset(options, 0, sizeof(options));
+	include_context = 1;
+	include_hunk_headers = 1;
+	include_file_headers = 1;
 
 	rb_scan_args(argc, argv, "0:", &rb_options);
 	if (!NIL_P(rb_options)) {
-		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("include_context")))) {
-			options[0] = 1;
+		if (rb_hash_aref(rb_options, CSTR2SYM("include_context")) == Qfalse) {
+			include_context = 0;
 		}
 
-		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("include_hunk_headers")))) {
-			options[1] = 1;
+		if (rb_hash_aref(rb_options, CSTR2SYM("include_hunk_headers")) == Qfalse) {
+			include_hunk_headers = 0;
 		}
 
-		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("include_file_headers")))) {
-			options[2] = 1;
+		if (rb_hash_aref(rb_options, CSTR2SYM("include_file_headers")) == Qfalse) {
+			include_file_headers = 0;
 		}
 	}
 
-	bytesize = git_patch_size(patch, options[0], options[1], options[2]);
+	bytesize = git_patch_size(patch, include_context, include_hunk_headers, include_file_headers);
 
 	return INT2FIX(bytesize);
 }
