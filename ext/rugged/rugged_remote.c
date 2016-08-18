@@ -152,6 +152,9 @@ static int credentials_cb(
 
 	rb_protect(extract_cred, (VALUE)&args, &payload->exception);
 
+	if (!*cred)
+		return GIT_PASSTHROUGH;
+
 	return payload->exception ? GIT_ERROR : GIT_OK;
 }
 
