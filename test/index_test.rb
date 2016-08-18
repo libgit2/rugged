@@ -282,6 +282,13 @@ class IndexMergeFileTest < Rugged::TestCase
     assert_equal merge_file_result[:data], "<<<<<<< conflicts-one.txt\nThis is most certainly a conflict!\n=======\nThis is a conflict!!!\n>>>>>>> conflicts-one.txt\n"
   end
 
+  def test_merge_file_with_labels
+    merge_file_result = @repo.index.merge_file("conflicts-one.txt", our_label: "ours", their_label: "theirs")
+
+    assert !merge_file_result[:automergeable]
+    assert_equal merge_file_result[:path], "conflicts-one.txt"
+    assert_equal merge_file_result[:data], "<<<<<<< ours\nThis is most certainly a conflict!\n=======\nThis is a conflict!!!\n>>>>>>> theirs\n"
+  end
 end
 
 class IndexRepositoryTest < Rugged::TestCase

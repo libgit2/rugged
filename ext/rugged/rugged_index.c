@@ -960,19 +960,19 @@ void rugged_parse_merge_file_options(git_merge_file_options *opts, VALUE rb_opti
 
 		rb_value = rb_hash_aref(rb_options, CSTR2SYM("ancestor_label"));
 		if (!NIL_P(rb_value)) {
-			Check_Type(rb_value, T_FIXNUM);
+			Check_Type(rb_value, T_STRING);
 			opts->ancestor_label = StringValueCStr(rb_value);
 		}
 
 		rb_value = rb_hash_aref(rb_options, CSTR2SYM("our_label"));
 		if (!NIL_P(rb_value)) {
-			Check_Type(rb_value, T_FIXNUM);
+			Check_Type(rb_value, T_STRING);
 			opts->our_label = StringValueCStr(rb_value);
 		}
 
 		rb_value = rb_hash_aref(rb_options, CSTR2SYM("their_label"));
 		if (!NIL_P(rb_value)) {
-			Check_Type(rb_value, T_FIXNUM);
+			Check_Type(rb_value, T_STRING);
 			opts->their_label = StringValueCStr(rb_value);
 		}
 

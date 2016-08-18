@@ -73,10 +73,12 @@ class RepoDiffTest < Rugged::TestCase
     patches = diff.patches
     hunks = patches.map(&:hunks).flatten
     lines = hunks.map(&:lines).flatten
+    bytesize = patches.inject(0) {|n, p| n += p.bytesize(include_context: false)}
 
     assert_equal 5, diff.size
     assert_equal 5, deltas.size
     assert_equal 5, patches.size
+    assert_equal 1589, bytesize
 
     assert_equal 2, deltas.select(&:added?).size
     assert_equal 1, deltas.select(&:deleted?).size
@@ -371,15 +373,15 @@ class TreeToWorkdirDiffTest < Rugged::TestCase
 
     # expected per-file values from the diff --stat output plus total lines
     expected_patch_stat = [
-      [ 0, 1, 1 ], [ 1, 0, 2 ], [ 1, 0, 2 ], [ 0, 1, 1 ], [ 2, 0, 3 ],
-      [ 0, 1, 1 ], [ 0, 1, 1 ], [ 1, 0, 1 ], [ 2, 0, 2 ], [ 0, 1, 1 ],
-      [ 1, 0, 2 ]
+      [ 0, 1, 1, 1 ], [ 1, 0, 2, 1 ], [ 1, 0, 2, 1 ], [ 0, 1, 1, 1 ], [ 2, 0, 3, 2 ],
+      [ 0, 1, 1, 1 ], [ 0, 1, 1, 1 ], [ 1, 0, 1, 1 ], [ 2, 0, 2, 2 ], [ 0, 1, 1, 1 ],
+      [ 1, 0, 2, 1 ]
     ]
 
     diff.each_patch do |patch|
       next if [:unmodified, :ignored, :untracked].include? patch.delta.status
 
-      expected_adds, expected_dels, expected_lines = expected_patch_stat.shift
+      expected_adds, expected_dels, expected_lines, lines_wo_context = expected_patch_stat.shift
 
       actual_adds, actual_dels = patch.stat
 
@@ -388,6 +390,7 @@ class TreeToWorkdirDiffTest < Rugged::TestCase
       assert_equal expected_adds + expected_dels, patch.changes
 
       assert_equal expected_lines, patch.lines
+      assert_equal lines_wo_context, patch.lines(exclude_context: true)
     end
   end
 end
