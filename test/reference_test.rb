@@ -174,51 +174,51 @@ class ReferenceWriteTest < Rugged::TestCase
   end
 
   def test_create_unicode_reference_nfc
-    ref_name = "refs/heads/\xC3\x85\x73\x74\x72\xC3\xB6\x6D"
+    ref_name = "refs/heads/\xC3\x85\x73\x74\x72\xC3\xB6\x6D".b
 
     new_ref = @repo.references.create(ref_name, "5b5b025afb0b4c913b4c338a42934a3863bf3644")
     refute_nil new_ref
 
-    assert_equal ref_name.force_encoding("ascii-8bit"), new_ref.name
-    assert_equal ref_name.force_encoding("ascii-8bit"), new_ref.canonical_name
+    assert_equal ref_name, new_ref.name
+    assert_equal ref_name, new_ref.canonical_name
 
     refute_nil @repo.references[ref_name]
   end
 
   def test_create_unicode_reference_nfd
-    ref_name = "refs/heads/\x41\xCC\x8A\x73\x74\x72\x6F\xCC\x88\x6D"
+    ref_name = "refs/heads/\x41\xCC\x8A\x73\x74\x72\x6F\xCC\x88\x6D".b
 
     new_ref = @repo.references.create(ref_name, "5b5b025afb0b4c913b4c338a42934a3863bf3644")
     refute_nil new_ref
 
     if @repo.config["core.precomposeunicode"] == "true"
-      expected_name = "refs/heads/\xC3\x85\x73\x74\x72\xC3\xB6\x6D"
+      expected_name = "refs/heads/\xC3\x85\x73\x74\x72\xC3\xB6\x6D".b
     else
       expected_name = ref_name
     end
 
-    assert_equal expected_name.force_encoding("ascii-8bit"), new_ref.name
-    assert_equal expected_name.force_encoding("ascii-8bit"), new_ref.canonical_name
+    assert_equal expected_name, new_ref.name
+    assert_equal expected_name, new_ref.canonical_name
 
     refute_nil @repo.references[ref_name]
     refute_nil @repo.references[expected_name]
   end
 
   def test_rename_unicode_reference_nfd
-    ref_name = "refs/heads/\x41\xCC\x8A\x73\x74\x72\x6F\xCC\x88\x6D"
+    ref_name = "refs/heads/\x41\xCC\x8A\x73\x74\x72\x6F\xCC\x88\x6D".b
 
     @repo.references.create("refs/heads/unit_test", "36060c58702ed4c2a40832c51758d5344201d89a")
     new_ref = @repo.references.rename("refs/heads/unit_test", ref_name)
     refute_nil new_ref
 
     if @repo.config["core.precomposeunicode"] == "true"
-      expected_name = "refs/heads/\xC3\x85\x73\x74\x72\xC3\xB6\x6D"
+      expected_name = "refs/heads/\xC3\x85\x73\x74\x72\xC3\xB6\x6D".b
     else
       expected_name = ref_name
     end
 
-    assert_equal expected_name.force_encoding("ascii-8bit"), new_ref.name
-    assert_equal expected_name.force_encoding("ascii-8bit"), new_ref.canonical_name
+    assert_equal expected_name, new_ref.name
+    assert_equal expected_name, new_ref.canonical_name
 
     refute_nil @repo.references[ref_name]
     refute_nil @repo.references[expected_name]
@@ -273,8 +273,8 @@ class ReferenceWriteTest < Rugged::TestCase
     ref1 = @repo.references.create("refs/heads/Ångström", "refs/heads/master")
     ref2 = @repo.references.create("refs/heads/foobar", "refs/heads/Ångström")
 
-    assert_equal "refs/heads/Ångström".force_encoding("ascii-8bit"), ref1.name
-    assert_equal "refs/heads/Ångström".force_encoding("ascii-8bit"), ref2.target_id
+    assert_equal "refs/heads/Ångström".b, ref1.name
+    assert_equal "refs/heads/Ångström".b, ref2.target_id
   end
 end
 

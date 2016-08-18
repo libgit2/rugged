@@ -116,8 +116,8 @@ class BranchTest < Rugged::TestCase
     new_branch = @repo.create_branch(branch_name, "5b5b025afb0b4c913b4c338a42934a3863bf3644")
     refute_nil new_branch
 
-    assert_equal branch_name.force_encoding("ascii-8bit"), new_branch.name
-    assert_equal "refs/heads/#{branch_name}".force_encoding("ascii-8bit"), new_branch.canonical_name
+    assert_equal branch_name.b, new_branch.name
+    assert_equal "refs/heads/#{branch_name}".b, new_branch.canonical_name
 
     refute_nil @repo.branches[branch_name]
   end
@@ -134,8 +134,8 @@ class BranchTest < Rugged::TestCase
       expected_name = branch_name
     end
 
-    assert_equal expected_name.force_encoding("ascii-8bit"), new_branch.name
-    assert_equal "refs/heads/#{expected_name}".force_encoding("ascii-8bit"), new_branch.canonical_name
+    assert_equal expected_name.b, new_branch.name
+    assert_equal "refs/heads/#{expected_name}".b, new_branch.canonical_name
 
     refute_nil @repo.branches[branch_name]
     refute_nil @repo.branches[expected_name]
