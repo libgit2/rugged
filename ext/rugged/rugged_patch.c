@@ -275,6 +275,7 @@ static VALUE rb_git_diff_patch_lines(int argc, VALUE *argv, VALUE self)
 
 	return INT2FIX(lines);
 }
+
 /*
  *  call-seq:
  *    patch.bytesize(options = {}) -> int
@@ -332,16 +333,16 @@ static int patch_print_cb(
 	const git_diff_line *line,
 	void *payload)
 {
-	VALUE rb_str = (VALUE)payload;
+	VALUE rb_buffer = (VALUE)payload;
 
 	switch (line->origin) {
 		case GIT_DIFF_LINE_CONTEXT:
 		case GIT_DIFF_LINE_ADDITION:
 		case GIT_DIFF_LINE_DELETION:
-			rb_str_cat(rb_str, &line->origin, 1);
+			rb_ary_push(rb_buffer, rb_str_new(&line->origin, 1));
 	}
 
-	rb_str_cat(rb_str, line->content, line->content_len);
+	rb_ary_push(rb_buffer, rb_str_new(line->content, line->content_len));
 
 	return GIT_OK;
 }
@@ -352,15 +353,14 @@ static int patch_print_header_cb(
 	const git_diff_line *line,
 	void *payload)
 {
-	VALUE rb_str = (VALUE)payload;
+	VALUE rb_buffer = (VALUE)payload;
 
 	if (line->origin == GIT_DIFF_LINE_FILE_HDR) {
-		rb_str_cat(rb_str, line->content, line->content_len);
+		rb_ary_push(rb_buffer, rb_str_new(line->content, line->content_len));
 	}
 
 	return GIT_OK;
 }
-
 
 /*
  *  call-seq:
@@ -371,12 +371,12 @@ static int patch_print_header_cb(
 static VALUE rb_git_diff_patch_to_s(VALUE self)
 {
 	git_patch *patch;
-	VALUE rb_str = rb_str_new(NULL, 0);
+	VALUE rb_buffer = rb_ary_new();
 	Data_Get_Struct(self, git_patch, patch);
 
-	rugged_exception_check(git_patch_print(patch, patch_print_cb, (void*)rb_str));
+	rugged_exception_check(git_patch_print(patch, patch_print_cb, (void*)rb_buffer));
 
-	return rb_str;
+	return rb_ary_join(rb_buffer, Qnil);
 }
 
 /*
@@ -388,12 +388,12 @@ static VALUE rb_git_diff_patch_to_s(VALUE self)
 static VALUE rb_git_diff_patch_header(VALUE self)
 {
 	git_patch *patch;
-	VALUE rb_str = rb_str_new(NULL, 0);
+	VALUE rb_buffer = rb_ary_new();
 	Data_Get_Struct(self, git_patch, patch);
 
-	rugged_exception_check(git_patch_print(patch, patch_print_header_cb, (void*)rb_str));
+	rugged_exception_check(git_patch_print(patch, patch_print_header_cb, (void*)rb_buffer));
 
-	return rb_str;
+	return rb_ary_join(rb_buffer, Qnil);
 }
 
 
