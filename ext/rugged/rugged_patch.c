@@ -357,9 +357,10 @@ static int patch_print_header_cb(
 
 	if (line->origin == GIT_DIFF_LINE_FILE_HDR) {
 		rb_ary_push(rb_buffer, rb_str_new(line->content, line->content_len));
+		return GIT_OK;
+	} else {
+		return GIT_ITEROVER;
 	}
-
-	return GIT_OK;
 }
 
 /*
@@ -388,10 +389,13 @@ static VALUE rb_git_diff_patch_to_s(VALUE self)
 static VALUE rb_git_diff_patch_header(VALUE self)
 {
 	git_patch *patch;
+	int error = 0;
 	VALUE rb_buffer = rb_ary_new();
 	Data_Get_Struct(self, git_patch, patch);
 
-	rugged_exception_check(git_patch_print(patch, patch_print_header_cb, (void*)rb_buffer));
+	error = git_patch_print(patch, patch_print_header_cb, (void*)rb_buffer);
+	if (error && error != GIT_ITEROVER)
+		rugged_exception_check(error);
 
 	return rb_ary_join(rb_buffer, Qnil);
 }
