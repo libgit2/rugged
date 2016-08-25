@@ -304,21 +304,19 @@ static VALUE rb_git_diff_patch_bytesize(int argc, VALUE *argv, VALUE self)
 	int include_context, include_hunk_headers, include_file_headers;
 	Data_Get_Struct(self, git_patch, patch);
 
-	include_context = 1;
-	include_hunk_headers = 1;
-	include_file_headers = 1;
+	include_context = include_hunk_headers = include_file_headers = 1;
 
 	rb_scan_args(argc, argv, "0:", &rb_options);
 	if (!NIL_P(rb_options)) {
-		if (rb_hash_aref(rb_options, CSTR2SYM("include_context")) == Qfalse) {
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("exclude_context")))) {
 			include_context = 0;
 		}
 
-		if (rb_hash_aref(rb_options, CSTR2SYM("include_hunk_headers")) == Qfalse) {
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("exclude_hunk_headers")))) {
 			include_hunk_headers = 0;
 		}
 
-		if (rb_hash_aref(rb_options, CSTR2SYM("include_file_headers")) == Qfalse) {
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("exclude_file_headers")))) {
 			include_file_headers = 0;
 		}
 	}
