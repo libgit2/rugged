@@ -1149,7 +1149,7 @@ EOS
       assert_equal expected_dels, actual_dels
       assert_equal expected_adds + expected_dels, patch.changes
 
-      assert_equal expected_lines, patch.lines
+      assert_equal expected_lines, patch.lines(exclude_eofnl: true)
     end
   end
 end
