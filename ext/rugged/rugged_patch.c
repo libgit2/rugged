@@ -346,6 +346,22 @@ static int patch_print_cb(
 	return GIT_OK;
 }
 
+static int patch_print_header_cb(
+	const git_diff_delta *delta,
+	const git_diff_hunk *hunk,
+	const git_diff_line *line,
+	void *payload)
+{
+	VALUE rb_str = (VALUE)payload;
+
+	if (line->origin == GIT_DIFF_LINE_FILE_HDR) {
+		rb_str_cat(rb_str, line->content, line->content_len);
+	}
+
+	return GIT_OK;
+}
+
+
 /*
  *  call-seq:
  *    patch.to_s -> str
@@ -363,6 +379,24 @@ static VALUE rb_git_diff_patch_to_s(VALUE self)
 	return rb_str;
 }
 
+/*
+ *  call-seq:
+ *    patch.header -> str
+ *
+ *  Returns only the header of the patch as a string.
+ */
+static VALUE rb_git_diff_patch_header(VALUE self)
+{
+	git_patch *patch;
+	VALUE rb_str = rb_str_new(NULL, 0);
+	Data_Get_Struct(self, git_patch, patch);
+
+	rugged_exception_check(git_patch_print(patch, patch_print_header_cb, (void*)rb_str));
+
+	return rb_str;
+}
+
+
 void Init_rugged_patch(void)
 {
 	rb_cRuggedPatch = rb_define_class_under(rb_mRugged, "Patch", rb_cObject);
@@ -375,6 +409,7 @@ void Init_rugged_patch(void)
 
 	rb_define_method(rb_cRuggedPatch, "delta", rb_git_diff_patch_delta, 0);
 
+	rb_define_method(rb_cRuggedPatch, "header", rb_git_diff_patch_header, 0);
 	rb_define_method(rb_cRuggedPatch, "to_s", rb_git_diff_patch_to_s, 0);
 
 	rb_define_method(rb_cRuggedPatch, "each_hunk", rb_git_diff_patch_each_hunk, 0);

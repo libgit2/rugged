@@ -76,4 +76,21 @@ EOS
 
     assert_equal 0, patch.lines(exclude_eofnl: true, exclude_additions: true, exclude_deletions: true, exclude_context: true)
   end
+
+  def test_header
+    repo = FixtureRepo.from_libgit2("diff")
+    repo.config['core.abbrev'] = 7
+
+    a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+    b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
+
+    diff = a.tree.diff(b.tree, :context_lines => 0)
+
+    assert_equal <<-DIFF, diff.patches[1].header
+diff --git a/readme.txt b/readme.txt
+index 7b808f7..29ab705 100644
+--- a/readme.txt
++++ b/readme.txt
+    DIFF
+  end
 end
