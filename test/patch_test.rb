@@ -53,4 +53,27 @@ index 7b808f7..29ab705 100644
 \\ No newline at end of file
 EOS
   end
+
+  def test_lines
+    repo = FixtureRepo.from_libgit2("diff")
+    repo.config['core.abbrev'] = 7
+
+    a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+    b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
+
+    diff = a.tree.diff(b.tree, :context_lines => 0)
+
+    patch = diff.patches[1]
+
+    assert_equal 12, patch.lines
+
+    assert_equal 12, patch.lines(exclude_context: true)
+    assert_equal 10, patch.lines(exclude_additions: true)
+    assert_equal 3, patch.lines(exclude_deletions: true)
+    assert_equal 11, patch.lines(exclude_eofnl: true)
+
+    assert_equal 1, patch.lines(exclude_additions: true, exclude_deletions: true)
+
+    assert_equal 0, patch.lines(exclude_eofnl: true, exclude_additions: true, exclude_deletions: true, exclude_context: true)
+  end
 end

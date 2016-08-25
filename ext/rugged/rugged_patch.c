@@ -173,6 +173,13 @@ static VALUE rb_git_diff_patch_stat(VALUE self)
 	return rb_ary_new3(2, INT2FIX(additions), INT2FIX(deletions));
 }
 
+enum {
+	EXCLUDE_CONTEXT   = (1u << 0),
+	EXCLUDE_ADDITIONS = (1u << 1),
+	EXCLUDE_DELETIONS = (1u << 2),
+	EXCLUDE_EOFNL     = (1u << 3)
+};
+
 /*
  *  call-seq:
  *    patch.lines(options = {}) -> int
@@ -191,41 +198,82 @@ static VALUE rb_git_diff_patch_stat(VALUE self)
  *    Boolean value specifying that deletion line counts should be excluded from
  *    the returned total.
  *
+ *  :exclude_eofnl ::
+ *    Boolean value specifying that end-of-file newline change lines should
+ *    be excluded from the returned total.
+ *
  *  Returns the total number of lines in the patch, depending on the options
  *  specified.
  */
 static VALUE rb_git_diff_patch_lines(int argc, VALUE *argv, VALUE self)
 {
 	git_patch *patch;
-	size_t context_lines, additions, deletions;
-	size_t total_out;
+	size_t lines = 0;
 	VALUE rb_options;
 	Data_Get_Struct(self, git_patch, patch);
 
-	context_lines = 0;
-	additions = 0;
-	deletions = 0;
-
-	git_patch_line_stats(&context_lines, &additions, &deletions, patch);
-
-	total_out = context_lines + additions + deletions;
+	int options = 0;
 
 	rb_scan_args(argc, argv, "0:", &rb_options);
 	if (!NIL_P(rb_options)) {
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("exclude_context")))) {
-			total_out -= context_lines;
+			options |= EXCLUDE_CONTEXT;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("exclude_additions")))) {
-			total_out -= additions;
+			options |= EXCLUDE_ADDITIONS;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("exclude_deletions")))) {
-			total_out -= deletions;
+			options |= EXCLUDE_DELETIONS;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("exclude_eofnl")))) {
+			options |= EXCLUDE_EOFNL;
 		}
 	}
 
-	return INT2FIX(total_out);
+	if (options == 0) {
+		size_t i = 0, hunks_count = git_patch_num_hunks(patch);
+		for (i = 0; i < hunks_count; ++i) {
+			lines += git_patch_num_lines_in_hunk(patch, i);
+		}
+	} else {
+		size_t i = 0, hunks_count = git_patch_num_hunks(patch);
+		for (i = 0; i < hunks_count; ++i) {
+			size_t lines_in_hunk = git_patch_num_lines_in_hunk(patch, i), l = 0;
+
+			for (l = 0; l < lines_in_hunk; ++l) {
+				const git_diff_line *line;
+				rugged_exception_check(
+					git_patch_get_line_in_hunk(&line, patch, i, l)
+				);
+
+				switch (line->origin) {
+				case GIT_DIFF_LINE_CONTEXT:
+					if (options & EXCLUDE_CONTEXT) continue;
+					break;
+
+				case GIT_DIFF_LINE_ADDITION:
+					if (options & EXCLUDE_ADDITIONS) continue;
+					break;
+
+				case GIT_DIFF_LINE_DELETION:
+					if (options & EXCLUDE_DELETIONS) continue;
+					break;
+
+				case GIT_DIFF_LINE_ADD_EOFNL:
+				case GIT_DIFF_LINE_DEL_EOFNL:
+					if (options & EXCLUDE_EOFNL) continue;
+					break;
+				}
+
+				lines += 1;
+			}
+		}
+	}
+
+	return INT2FIX(lines);
 }
 /*
  *  call-seq:
@@ -256,21 +304,19 @@ static VALUE rb_git_diff_patch_bytesize(int argc, VALUE *argv, VALUE self)
 	int include_context, include_hunk_headers, include_file_headers;
 	Data_Get_Struct(self, git_patch, patch);
 
-	include_context = 1;
-	include_hunk_headers = 1;
-	include_file_headers = 1;
+	include_context = include_hunk_headers = include_file_headers = 1;
 
 	rb_scan_args(argc, argv, "0:", &rb_options);
 	if (!NIL_P(rb_options)) {
-		if (rb_hash_aref(rb_options, CSTR2SYM("include_context")) == Qfalse) {
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("exclude_context")))) {
 			include_context = 0;
 		}
 
-		if (rb_hash_aref(rb_options, CSTR2SYM("include_hunk_headers")) == Qfalse) {
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("exclude_hunk_headers")))) {
 			include_hunk_headers = 0;
 		}
 
-		if (rb_hash_aref(rb_options, CSTR2SYM("include_file_headers")) == Qfalse) {
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("exclude_file_headers")))) {
 			include_file_headers = 0;
 		}
 	}
