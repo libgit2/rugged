@@ -1092,6 +1092,11 @@ static VALUE rb_git_merge_file(int argc, VALUE *argv, VALUE self)
 	else
 		rugged_exception_check(error);
 
+	if (ours == NULL)
+		rb_raise(rb_eRuntimeError, "The conflict does not have a stage 2 entry");
+	else if (theirs == NULL)
+		rb_raise(rb_eRuntimeError, "The conflict does not have a stage 3 entry");
+
 	error = git_merge_file_from_index(&merge_file_result, repo, ancestor, ours, theirs, &opts);
 	rugged_exception_check(error);
 
