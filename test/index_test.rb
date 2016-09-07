@@ -289,6 +289,31 @@ class IndexMergeFileTest < Rugged::TestCase
     assert_equal merge_file_result[:path], "conflicts-one.txt"
     assert_equal merge_file_result[:data], "<<<<<<< ours\nThis is most certainly a conflict!\n=======\nThis is a conflict!!!\n>>>>>>> theirs\n"
   end
+
+  def test_merge_file_without_ancestor
+    # remove the stage 1 (ancestor), this is now an add/add conflict
+    @repo.index.remove("conflicts-one.txt", 1)
+    merge_file_result = @repo.index.merge_file("conflicts-one.txt", our_label: "ours", their_label: "theirs")
+    assert !merge_file_result[:automergeable]
+    assert_equal merge_file_result[:path], "conflicts-one.txt"
+    assert_equal merge_file_result[:data], "<<<<<<< ours\nThis is most certainly a conflict!\n=======\nThis is a conflict!!!\n>>>>>>> theirs\n"
+  end
+
+  def test_merge_file_without_ours
+    # turn this into a modify/delete conflict
+    @repo.index.remove("conflicts-one.txt", 2)
+    assert_raises RuntimeError do
+      @repo.index.merge_file("conflicts-one.txt", our_label: "ours", their_label: "theirs")
+    end
+  end
+
+  def test_merge_file_without_theirs
+    # turn this into a modify/delete conflict
+    @repo.index.remove("conflicts-one.txt", 3)
+    assert_raises RuntimeError do
+      @repo.index.merge_file("conflicts-one.txt", our_label: "ours", their_label: "theirs")
+    end
+  end
 end
 
 class IndexRepositoryTest < Rugged::TestCase
