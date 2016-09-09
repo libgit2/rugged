@@ -23,9 +23,11 @@
  */
 
 #include "rugged.h"
+#include <sys/time.h>
 
 extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedDiffDelta;
+extern VALUE rb_eRuggedTimeoutError;
 VALUE rb_cRuggedPatch;
 
 /*
@@ -327,13 +329,20 @@ static VALUE rb_git_diff_patch_bytesize(int argc, VALUE *argv, VALUE self)
 	return INT2FIX(bytesize);
 }
 
+struct patch_print_payload {
+	VALUE rb_buffer;
+	double timeout;
+	struct timeval start;
+};
+
 static int patch_print_cb(
 	const git_diff_delta *delta,
 	const git_diff_hunk *hunk,
 	const git_diff_line *line,
 	void *payload)
 {
-	VALUE rb_buffer = (VALUE)payload;
+	struct patch_print_payload *print_payload = (struct patch_print_payload*)payload;
+	VALUE rb_buffer = print_payload->rb_buffer;
 
 	switch (line->origin) {
 		case GIT_DIFF_LINE_CONTEXT:
@@ -343,6 +352,18 @@ static int patch_print_cb(
 	}
 
 	rb_ary_push(rb_buffer, rb_str_new(line->content, line->content_len));
+
+	if (print_payload->timeout > 0) {
+		struct timeval finish;
+		gettimeofday(&finish, NULL);
+
+		double elapsed_time = finish.tv_sec - print_payload->start.tv_sec;
+		elapsed_time += (double) (finish.tv_usec - print_payload->start.tv_usec) / 1000000.0;
+
+		if (elapsed_time >= print_payload->timeout) {
+			return GIT_EUSER;
+		}
+	}
 
 	return GIT_OK;
 }
@@ -365,19 +386,46 @@ static int patch_print_header_cb(
 
 /*
  *  call-seq:
- *    patch.to_s -> str
+ *    patch.to_s(options = {}) -> str
+ *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :timeout ::
+ *    Number, in seconds, specifying how long should be spent generating the diff String. Zero or less
+ *    indicates no timeout.
  *
  *  Returns the contents of the patch as a single diff string.
+ *
+ *  Raises <tt>Rugged::TimeoutError</tt> if the timeout is exceeded.
  */
-static VALUE rb_git_diff_patch_to_s(VALUE self)
+static VALUE rb_git_diff_patch_to_s(int argc, VALUE *argv, VALUE self)
 {
 	git_patch *patch;
-	VALUE rb_buffer = rb_ary_new();
+	VALUE rb_options;
 	Data_Get_Struct(self, git_patch, patch);
 
-	rugged_exception_check(git_patch_print(patch, patch_print_cb, (void*)rb_buffer));
+	rb_scan_args(argc, argv, "0:", &rb_options);
+	double timeout = 0;
 
-	return rb_ary_join(rb_buffer, Qnil);
+	if (!NIL_P(rb_options)) {
+		VALUE rb_timeout = rb_hash_aref(rb_options, CSTR2SYM("timeout"));
+		if (!NIL_P(rb_timeout)) {
+			timeout = NUM2DBL(rb_timeout);
+		}
+	}
+
+	struct timeval start;
+	gettimeofday(&start, NULL);
+
+	struct patch_print_payload payload = { rb_ary_new(), timeout, start };
+
+	int rc = git_patch_print(patch, patch_print_cb, (void*)&payload);
+	if (rc == GIT_EUSER) {
+		rb_raise(rb_eRuggedTimeoutError, "Timeout generating patch string");
+	}
+	rugged_exception_check(rc);
+
+	return rb_ary_join(payload.rb_buffer, Qnil);
 }
 
 /*
@@ -414,7 +462,7 @@ void Init_rugged_patch(void)
 	rb_define_method(rb_cRuggedPatch, "delta", rb_git_diff_patch_delta, 0);
 
 	rb_define_method(rb_cRuggedPatch, "header", rb_git_diff_patch_header, 0);
-	rb_define_method(rb_cRuggedPatch, "to_s", rb_git_diff_patch_to_s, 0);
+	rb_define_method(rb_cRuggedPatch, "to_s", rb_git_diff_patch_to_s, -1);
 
 	rb_define_method(rb_cRuggedPatch, "each_hunk", rb_git_diff_patch_each_hunk, 0);
 	rb_define_method(rb_cRuggedPatch, "hunk_count", rb_git_diff_patch_hunk_count, 0);

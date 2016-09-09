@@ -52,6 +52,11 @@ index 7b808f7..29ab705 100644
 +it.!
 \\ No newline at end of file
 EOS
+
+    assert_raises(Rugged::TimeoutError) { diff.patches[1].to_s(timeout: 0.00000000001) }
+
+    # shouldn't raise anything here
+    diff.patches[1].to_s(timeout: 100)
   end
 
   def test_lines
