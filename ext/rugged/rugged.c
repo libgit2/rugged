@@ -63,6 +63,7 @@ const char *RUGGED_ERROR_NAMES[] = {
 VALUE rb_mRugged;
 VALUE rb_eRuggedError;
 VALUE rb_eRuggedErrors[RUGGED_ERROR_COUNT];
+VALUE rb_eRuggedTimeoutError;
 
 static VALUE rb_mShutdownHook;
 
@@ -437,6 +438,7 @@ void Init_rugged(void)
 		int i;
 
 		rb_eRuggedError = rb_define_class_under(rb_mRugged, "Error", rb_eStandardError);
+		rb_eRuggedTimeoutError = rb_define_class_under(rb_mRugged, "TimeoutError", rb_eRuggedError);
 
 		rb_eRuggedErrors[0] = Qnil; /* 0 return value -- no exception */
 		rb_eRuggedErrors[1] = rb_define_class_under(rb_mRugged, RUGGED_ERROR_NAMES[1], rb_eNoMemError);
