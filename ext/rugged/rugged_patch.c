@@ -355,7 +355,7 @@ static int patch_print_cb(
 	rb_ary_push(rb_buffer, rb_str_new(line->content, line->content_len));
 
 	if (print_payload->timeout > 0) {
-		current_time = git__timer();
+		current_time = rugged__timer();
 
 		if (current_time - print_payload->start_time >= print_payload->timeout) {
 			return GIT_EUSER;
@@ -412,7 +412,7 @@ static VALUE rb_git_diff_patch_to_s(int argc, VALUE *argv, VALUE self)
 		}
 	}
 
-	struct patch_print_payload payload = { rb_ary_new(), timeout, git__timer() };
+	struct patch_print_payload payload = { rb_ary_new(), timeout, rugged__timer() };
 
 	rc = git_patch_print(patch, patch_print_cb, (void*)&payload);
 	if (rc == GIT_EUSER) {

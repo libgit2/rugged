@@ -33,7 +33,7 @@
 
 #ifdef GIT_WIN32
 
-GIT_INLINE(double) git__timer(void)
+GIT_INLINE(double) rugged__timer(void)
 {
 	/* We need the initial tick count to detect if the tick
 	 * count has rolled over. */
@@ -57,7 +57,7 @@ GIT_INLINE(double) git__timer(void)
 
 #include <mach/mach_time.h>
 
-GIT_INLINE(double) git__timer(void)
+GIT_INLINE(double) rugged__timer(void)
 {
    uint64_t time = mach_absolute_time();
    static double scaling_factor = 0;
@@ -75,7 +75,7 @@ GIT_INLINE(double) git__timer(void)
 
 #include <proto/timer.h>
 
-GIT_INLINE(double) git__timer(void)
+GIT_INLINE(double) rugged__timer(void)
 {
 	struct TimeVal tv;
 	ITimer->GetUpTime(&tv);
@@ -86,7 +86,7 @@ GIT_INLINE(double) git__timer(void)
 
 #include <sys/time.h>
 
-GIT_INLINE(double) git__timer(void)
+GIT_INLINE(double) rugged__timer(void)
 {
 	struct timespec tp;
 
