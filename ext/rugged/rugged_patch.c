@@ -23,7 +23,7 @@
  */
 
 #include "rugged.h"
-#include "time.h"
+#include "rugged_time.h"
 
 extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedDiffDelta;
