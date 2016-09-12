@@ -25,39 +25,11 @@
  #ifndef __H_RUGGED_TIME__
  #define __H_RUGGED_TIME__
 
-#if defined(_MSC_VER)
-# define GIT_INLINE(type) static __inline type
-#else
-# define GIT_INLINE(type) static inline type
-#endif
-
-#ifdef GIT_WIN32
-
-GIT_INLINE(double) rugged__timer(void)
-{
-	/* We need the initial tick count to detect if the tick
-	 * count has rolled over. */
-	static DWORD initial_tick_count = 0;
-
-	/* GetTickCount returns the number of milliseconds that have
-	 * elapsed since the system was started. */
-	DWORD count = GetTickCount();
-
-	if(initial_tick_count == 0) {
-		initial_tick_count = count;
-	} else if (count < initial_tick_count) {
-		/* The tick count has rolled over - adjust for it. */
-		count = (0xFFFFFFFF - initial_tick_count) + count;
-	}
-
-	return (double) count / (double) 1000;
-}
-
-#elif __APPLE__
+#ifdef __APPLE__
 
 #include <mach/mach_time.h>
 
-GIT_INLINE(double) rugged__timer(void)
+static inline double rugged__timer(void)
 {
    uint64_t time = mach_absolute_time();
    static double scaling_factor = 0;
@@ -71,22 +43,11 @@ GIT_INLINE(double) rugged__timer(void)
    return (double)time * scaling_factor / 1.0E9;
 }
 
-#elif defined(AMIGA)
-
-#include <proto/timer.h>
-
-GIT_INLINE(double) rugged__timer(void)
-{
-	struct TimeVal tv;
-	ITimer->GetUpTime(&tv);
-	return (double)tv.Seconds + (double)tv.Microseconds / 1.0E6;
-}
-
 #else
 
 #include <sys/time.h>
 
-GIT_INLINE(double) rugged__timer(void)
+static inline double rugged__timer(void)
 {
 	struct timespec tp;
 
