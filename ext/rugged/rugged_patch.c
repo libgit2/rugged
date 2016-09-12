@@ -401,10 +401,10 @@ static VALUE rb_git_diff_patch_to_s(int argc, VALUE *argv, VALUE self)
 	VALUE rb_options;
 	Data_Get_Struct(self, git_patch, patch);
 	int rc = 0;
-
-	rb_scan_args(argc, argv, "0:", &rb_options);
+	struct patch_print_payload payload;
 	double timeout = 0;
 
+	rb_scan_args(argc, argv, "0:", &rb_options);
 	if (!NIL_P(rb_options)) {
 		VALUE rb_timeout = rb_hash_aref(rb_options, CSTR2SYM("timeout"));
 		if (!NIL_P(rb_timeout)) {
@@ -412,7 +412,9 @@ static VALUE rb_git_diff_patch_to_s(int argc, VALUE *argv, VALUE self)
 		}
 	}
 
-	struct patch_print_payload payload = { rb_ary_new(), timeout, rugged__timer() };
+	payload.rb_buffer = rb_ary_new();
+	payload.timeout = timeout;
+	payload.start_time = rugged__timer();
 
 	rc = git_patch_print(patch, patch_print_cb, (void*)&payload);
 	if (rc == GIT_EUSER) {
