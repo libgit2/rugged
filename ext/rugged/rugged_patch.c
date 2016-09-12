@@ -420,6 +420,7 @@ static int patch_print_cb(
 {
 	struct patch_print_payload *print_payload = (struct patch_print_payload*)payload;
 	VALUE rb_buffer = print_payload->rb_buffer;
+	double current_time = 0;
 
 	switch (line->origin) {
 		case GIT_DIFF_LINE_CONTEXT:
@@ -431,7 +432,7 @@ static int patch_print_cb(
 	rb_ary_push(rb_buffer, rb_str_new(line->content, line->content_len));
 
 	if (print_payload->timeout > 0) {
-		double current_time = git__timer();
+		current_time = git__timer();
 
 		if (current_time - print_payload->start_time >= print_payload->timeout) {
 			return GIT_EUSER;
@@ -476,6 +477,7 @@ static VALUE rb_git_diff_patch_to_s(int argc, VALUE *argv, VALUE self)
 	git_patch *patch;
 	VALUE rb_options;
 	Data_Get_Struct(self, git_patch, patch);
+	int rc = 0;
 
 	rb_scan_args(argc, argv, "0:", &rb_options);
 	double timeout = 0;
@@ -487,10 +489,9 @@ static VALUE rb_git_diff_patch_to_s(int argc, VALUE *argv, VALUE self)
 		}
 	}
 
-	double start_time = git__timer();
-	struct patch_print_payload payload = { rb_ary_new(), timeout, start_time };
+	struct patch_print_payload payload = { rb_ary_new(), timeout, git__timer() };
 
-	int rc = git_patch_print(patch, patch_print_cb, (void*)&payload);
+	rc = git_patch_print(patch, patch_print_cb, (void*)&payload);
 	if (rc == GIT_EUSER) {
 		rb_raise(rb_eRuggedTimeoutError, "Timeout generating patch string");
 	}
