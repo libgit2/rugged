@@ -23,7 +23,84 @@
  */
 
 #include "rugged.h"
+
+#if defined(_MSC_VER)
+# define GIT_INLINE(type) static __inline type
+#else
+# define GIT_INLINE(type) static inline type
+#endif
+
+#ifdef GIT_WIN32
+
+GIT_INLINE(double) git__timer(void)
+{
+	/* We need the initial tick count to detect if the tick
+	 * count has rolled over. */
+	static DWORD initial_tick_count = 0;
+
+	/* GetTickCount returns the number of milliseconds that have
+	 * elapsed since the system was started. */
+	DWORD count = GetTickCount();
+
+	if(initial_tick_count == 0) {
+		initial_tick_count = count;
+	} else if (count < initial_tick_count) {
+		/* The tick count has rolled over - adjust for it. */
+		count = (0xFFFFFFFF - initial_tick_count) + count;
+	}
+
+	return (double) count / (double) 1000;
+}
+
+#elif __APPLE__
+
+#include <mach/mach_time.h>
+
+GIT_INLINE(double) git__timer(void)
+{
+   uint64_t time = mach_absolute_time();
+   static double scaling_factor = 0;
+
+   if (scaling_factor == 0) {
+       mach_timebase_info_data_t info;
+       (void)mach_timebase_info(&info);
+       scaling_factor = (double)info.numer / (double)info.denom;
+   }
+
+   return (double)time * scaling_factor / 1.0E9;
+}
+
+#elif defined(AMIGA)
+
+#include <proto/timer.h>
+
+GIT_INLINE(double) git__timer(void)
+{
+	struct TimeVal tv;
+	ITimer->GetUpTime(&tv);
+	return (double)tv.Seconds + (double)tv.Microseconds / 1.0E6;
+}
+
+#else
+
 #include <sys/time.h>
+
+GIT_INLINE(double) git__timer(void)
+{
+	struct timespec tp;
+
+	if (clock_gettime(CLOCK_MONOTONIC, &tp) == 0) {
+		return (double) tp.tv_sec + (double) tp.tv_nsec / 1.0E9;
+	} else {
+		/* Fall back to using gettimeofday */
+		struct timeval tv;
+		struct timezone tz;
+		gettimeofday(&tv, &tz);
+		return (double)tv.tv_sec + (double)tv.tv_usec / 1.0E6;
+	}
+}
+
+#endif
 
 extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedDiffDelta;
@@ -332,7 +409,7 @@ static VALUE rb_git_diff_patch_bytesize(int argc, VALUE *argv, VALUE self)
 struct patch_print_payload {
 	VALUE rb_buffer;
 	double timeout;
-	struct timeval start;
+	double start_time;
 };
 
 static int patch_print_cb(
@@ -354,13 +431,9 @@ static int patch_print_cb(
 	rb_ary_push(rb_buffer, rb_str_new(line->content, line->content_len));
 
 	if (print_payload->timeout > 0) {
-		struct timeval finish;
-		gettimeofday(&finish, NULL);
+		double current_time = git__timer();
 
-		double elapsed_time = finish.tv_sec - print_payload->start.tv_sec;
-		elapsed_time += (double) (finish.tv_usec - print_payload->start.tv_usec) / 1000000.0;
-
-		if (elapsed_time >= print_payload->timeout) {
+		if (current_time - print_payload->start_time >= print_payload->timeout) {
 			return GIT_EUSER;
 		}
 	}
@@ -414,10 +487,8 @@ static VALUE rb_git_diff_patch_to_s(int argc, VALUE *argv, VALUE self)
 		}
 	}
 
-	struct timeval start;
-	gettimeofday(&start, NULL);
-
-	struct patch_print_payload payload = { rb_ary_new(), timeout, start };
+	double start_time = git__timer();
+	struct patch_print_payload payload = { rb_ary_new(), timeout, start_time };
 
 	int rc = git_patch_print(patch, patch_print_cb, (void*)&payload);
 	if (rc == GIT_EUSER) {
