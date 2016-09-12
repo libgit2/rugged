@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
- #ifndef __H_RUGGED_TIME__
- #define __H_RUGGED_TIME__
+#ifndef __H_RUGGED_TIME__
+#define __H_RUGGED_TIME__
 
 #ifdef __APPLE__
 
@@ -51,15 +51,9 @@ static inline double rugged__timer(void)
 {
 	struct timespec tp;
 
-	if (clock_gettime(CLOCK_MONOTONIC, &tp) == 0) {
-		return (double) tp.tv_sec + (double) tp.tv_nsec / 1.0E9;
-	} else {
-		/* Fall back to using gettimeofday */
-		struct timeval tv;
-		struct timezone tz;
-		gettimeofday(&tv, &tz);
-		return (double)tv.tv_sec + (double)tv.tv_usec / 1.0E6;
-	}
+	clock_gettime(CLOCK_MONOTONIC, &tp);
+
+	return (double) tp.tv_sec + (double) tp.tv_nsec / 1.0E9;
 }
 
 #endif
