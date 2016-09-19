@@ -6,7 +6,10 @@ module Rugged
         @username, @password = options[:username], options[:password]
       end
 
-      def call(url, username_from_url, allowed_types)
+      def call(url, username_from_url, allowed_types, counter)
+        if counter > 0
+          raise Rugged::CallbackError.new('Authentication failed')
+        end
         self
       end
     end
@@ -17,7 +20,7 @@ module Rugged
         @username, @publickey, @privatekey, @passphrase = options[:username], options[:publickey], options[:privatekey], options[:passphrase]
       end
 
-      def call(url, username_from_url, allowed_types)
+      def call(url, username_from_url, allowed_types, counter)
         self
       end
     end
@@ -27,7 +30,7 @@ module Rugged
         @username = options[:username]
       end
 
-      def call(url, username_from_url, allowed_types)
+      def call(url, username_from_url, allowed_types, counter)
         self
       end
     end
@@ -35,7 +38,7 @@ module Rugged
     # A "default" credential usable for Negotiate mechanisms like NTLM or
     # Kerberos authentication
     class Default
-      def call(url, username_from_url, allowed_types)
+      def call(url, username_from_url, allowed_types, counter)
         self
       end
     end
