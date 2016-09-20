@@ -428,6 +428,87 @@ void rugged_rb_ary_to_strarray(VALUE rb_array, git_strarray *str_array)
 	}
 }
 
+void rugged_parse_merge_file_options(git_merge_file_options *opts, VALUE rb_options)
+{
+	VALUE rb_value;
+
+	Check_Type(rb_options, T_HASH);
+
+	rb_value = rb_hash_aref(rb_options, CSTR2SYM("ancestor_label"));
+	if (!NIL_P(rb_value)) {
+		Check_Type(rb_value, T_STRING);
+		opts->ancestor_label = StringValueCStr(rb_value);
+	}
+
+	rb_value = rb_hash_aref(rb_options, CSTR2SYM("our_label"));
+	if (!NIL_P(rb_value)) {
+		Check_Type(rb_value, T_STRING);
+		opts->our_label = StringValueCStr(rb_value);
+	}
+
+	rb_value = rb_hash_aref(rb_options, CSTR2SYM("their_label"));
+	if (!NIL_P(rb_value)) {
+		Check_Type(rb_value, T_STRING);
+		opts->their_label = StringValueCStr(rb_value);
+	}
+
+	rb_value = rb_hash_aref(rb_options, CSTR2SYM("favor"));
+	if (!NIL_P(rb_value)) {
+		ID id_favor;
+
+		Check_Type(rb_value, T_SYMBOL);
+		id_favor = SYM2ID(rb_value);
+
+		if (id_favor == rb_intern("normal")) {
+			opts->favor = GIT_MERGE_FILE_FAVOR_NORMAL;
+		} else if (id_favor == rb_intern("ours")) {
+			opts->favor = GIT_MERGE_FILE_FAVOR_OURS;
+		} else if (id_favor == rb_intern("theirs")) {
+			opts->favor = GIT_MERGE_FILE_FAVOR_THEIRS;
+		} else if (id_favor == rb_intern("union")) {
+			opts->favor = GIT_MERGE_FILE_FAVOR_UNION;
+		} else {
+			rb_raise(rb_eTypeError,
+				"Invalid favor mode. Expected `:normal`, `:ours`, `:theirs` or `:union`");
+		}
+	}
+
+	rb_value = rb_hash_aref(rb_options, CSTR2SYM("style"));
+	if (!NIL_P(rb_value)) {
+		ID id_style;
+
+		Check_Type(rb_value, T_SYMBOL);
+		id_style = SYM2ID(rb_value);
+
+		if (id_style == rb_intern("standard")) {
+			opts->flags |= GIT_MERGE_FILE_STYLE_MERGE;
+		} else if (id_style == rb_intern("diff3")) {
+			opts->flags |= GIT_MERGE_FILE_STYLE_DIFF3;
+		} else {
+			rb_raise(rb_eTypeError,
+				"Invalid style mode. Expected `:standard`, or `:diff3`");
+		}
+	} else {
+		opts->flags |= GIT_MERGE_FILE_STYLE_MERGE;
+	}
+
+	if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("simplify")))) {
+		opts->flags |= GIT_MERGE_FILE_SIMPLIFY_ALNUM;
+	}
+}
+
+VALUE rb_merge_file_result_fromC(const git_merge_file_result *result)
+{
+	VALUE rb_result = rb_hash_new();
+
+	rb_hash_aset(rb_result, CSTR2SYM("automergeable"), result->automergeable ? Qtrue : Qfalse);
+	rb_hash_aset(rb_result, CSTR2SYM("path"),          result->path ? rb_str_new_utf8(result->path) : Qnil);
+	rb_hash_aset(rb_result, CSTR2SYM("filemode"),      INT2FIX(result->mode));
+	rb_hash_aset(rb_result, CSTR2SYM("data"),          rb_str_new(result->ptr, result->len));
+
+	return rb_result;
+}
+
 void Init_rugged(void)
 {
 	rb_mRugged = rb_define_module("Rugged");

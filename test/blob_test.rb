@@ -122,6 +122,29 @@ class BlobTest < Rugged::TestCase
     blob = @repo.lookup(oid)
     assert_equal Encoding::ASCII_8BIT, blob.text(0, Encoding::ASCII_8BIT).encoding
   end
+
+  def test_blob_merge_files
+    ancestor = { :content => "Common ancestor", :path => "file.txt",    :filemode => 0100644 }
+    ours =     { :content => "Ours side",       :path => "newfile.txt", :filemode => 0100644 }
+    theirs =   { :content => "Theirs side",     :path => "file.txt",    :filemode => 0100755 }
+
+    result = Rugged::Blob.merge_files(ancestor, ours, theirs,
+      { :ancestor_label => "ANCESTOR",
+        :our_label => "OURS",
+        :their_label => "THEIRS",
+        :style => :diff3 })
+
+    assert_equal false, result[:automergeable]
+    assert_equal "newfile.txt", result[:path]
+    assert_equal 0100755, result[:filemode]
+    assert_equal "<<<<<<< OURS\n" +
+      "Ours side\n" +
+      "||||||| ANCESTOR\n" +
+      "Common ancestor\n" +
+      "=======\n" +
+      "Theirs side\n" +
+      ">>>>>>> THEIRS\n", result[:data]
+  end
 end
 
 class BlobWriteTest < Rugged::TestCase

@@ -551,6 +551,58 @@ static VALUE rb_git_blob_to_buffer(int argc, VALUE *argv, VALUE self)
 	return rb_ret;
 }
 
+static void rugged_parse_merge_file_input(git_merge_file_input *input, VALUE rb_input)
+{
+	VALUE rb_value;
+
+	Check_Type(rb_input, T_HASH);
+
+	rb_value = rb_hash_aref(rb_input, CSTR2SYM("content"));
+	if (NIL_P(rb_value))
+		rb_raise(rb_eArgError, "File input must have `:content`.");
+
+	input->ptr = RSTRING_PTR(rb_value);
+	input->size = RSTRING_LEN(rb_value);
+
+	rb_value = rb_hash_aref(rb_input, CSTR2SYM("filemode"));
+	if (!NIL_P(rb_value))
+		input->mode = FIX2UINT(rb_value);
+
+	rb_value = rb_hash_aref(rb_input, CSTR2SYM("path"));
+	if (!NIL_P(rb_value)) {
+		Check_Type(rb_value, T_STRING);
+		input->path = RSTRING_PTR(rb_value);
+	}
+}
+
+static VALUE rb_git_blob_merge_files(int argc, VALUE *argv, VALUE klass)
+{
+	VALUE rb_ancestor, rb_ours, rb_theirs, rb_options, rb_result;
+
+	git_merge_file_input ancestor = GIT_MERGE_FILE_INPUT_INIT,
+		ours = GIT_MERGE_FILE_INPUT_INIT,
+		theirs = GIT_MERGE_FILE_INPUT_INIT;
+	git_merge_file_options opts = GIT_MERGE_FILE_OPTIONS_INIT;
+	git_merge_file_result result = {0};
+	int error;
+
+	rb_scan_args(argc, argv, "31", &rb_ancestor, &rb_ours, &rb_theirs, &rb_options);
+
+	rugged_parse_merge_file_input(&ancestor, rb_ancestor);
+	rugged_parse_merge_file_input(&ours, rb_ours);
+	rugged_parse_merge_file_input(&theirs, rb_theirs);
+
+	if (!NIL_P(rb_options))
+		rugged_parse_merge_file_options(&opts, rb_options);
+
+	rugged_exception_check(git_merge_file(&result, &ancestor, &ours, &theirs, &opts));
+
+	rb_result = rb_merge_file_result_fromC(&result);
+	git_merge_file_result_free(&result);
+
+	return rb_result;
+}
+
 static VALUE rb_git_blob_sig_new(int argc, VALUE *argv, VALUE klass)
 {
 	int error, opts = 0;
@@ -622,6 +674,7 @@ void Init_rugged_blob(void)
 	rb_define_singleton_method(rb_cRuggedBlob, "from_io", rb_git_blob_from_io, -1);
 
 	rb_define_singleton_method(rb_cRuggedBlob, "to_buffer", rb_git_blob_to_buffer, -1);
+	rb_define_singleton_method(rb_cRuggedBlob, "merge_files", rb_git_blob_merge_files, -1);
 
 	rb_cRuggedBlobSig = rb_define_class_under(rb_cRuggedBlob, "HashSignature", rb_cObject);
 	rb_define_singleton_method(rb_cRuggedBlobSig, "new", rb_git_blob_sig_new, -1);
