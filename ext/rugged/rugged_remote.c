@@ -29,8 +29,6 @@ extern VALUE rb_cRuggedRepo;
 extern VALUE rb_eRuggedError;
 VALUE rb_cRuggedRemote;
 
-#define RUGGED_REMOTE_CALLBACKS_INIT {1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, push_update_reference_cb, NULL}
-
 static int progress_cb(const char *str, int len, void *data)
 {
 	struct rugged_remote_cb_payload *payload = data;
@@ -176,52 +174,50 @@ static int credentials_cb(
 	return payload->exception ? GIT_ERROR : GIT_OK;
 }
 
-#define CALLABLE_OR_RAISE(ret, rb_options, name) \
-	do {							\
-		ret = rb_hash_aref(rb_options, CSTR2SYM(name)); \
-								\
-		if (!NIL_P(ret) && !rb_respond_to(ret, rb_intern("call"))) \
+#define CALLABLE_OR_RAISE(ret, name) \
+	do { \
+		if (!rb_respond_to(ret, rb_intern("call"))) \
 			rb_raise(rb_eArgError, "Expected a Proc or an object that responds to #call (:" name " )."); \
 	} while (0);
-
-static void setup_callbacks(git_remote_callbacks *callbacks, VALUE rb_options)
-{
-	if (NIL_P(rb_options))
-		return;
-
-	if (!NIL_P(rb_hash_aref(rb_options, CSTR2SYM("progress"))))
-		callbacks->sideband_progress = progress_cb;
-
-	if (!NIL_P(rb_hash_aref(rb_options, CSTR2SYM("credentials"))))
-		callbacks->credentials = credentials_cb;
-
-	if (!NIL_P(rb_hash_aref(rb_options, CSTR2SYM("certificate_check"))))
-		callbacks->certificate_check = certificate_check_cb;
-
-	if (!NIL_P(rb_hash_aref(rb_options, CSTR2SYM("transfer_progress"))))
-		callbacks->transfer_progress = transfer_progress_cb;
-
-	if (!NIL_P(rb_hash_aref(rb_options, CSTR2SYM("update_tips"))))
-		callbacks->update_tips = update_tips_cb;
-}
 
 void rugged_remote_init_callbacks_and_payload_from_options(
 	VALUE rb_options,
 	git_remote_callbacks *callbacks,
 	struct rugged_remote_cb_payload *payload)
 {
-	git_remote_callbacks prefilled = RUGGED_REMOTE_CALLBACKS_INIT;
-
-	prefilled.payload = payload;
-	memcpy(callbacks, &prefilled, sizeof(git_remote_callbacks));
-	setup_callbacks(callbacks, rb_options);
+	callbacks->payload = payload;
+	callbacks->push_update_reference = push_update_reference_cb;
 
 	if (!NIL_P(rb_options)) {
-		CALLABLE_OR_RAISE(payload->certificate_check, rb_options, "certificate_check");
-		CALLABLE_OR_RAISE(payload->update_tips, rb_options, "update_tips");
-		CALLABLE_OR_RAISE(payload->progress, rb_options, "progress");
-		CALLABLE_OR_RAISE(payload->transfer_progress, rb_options, "transfer_progress");
-		CALLABLE_OR_RAISE(payload->credentials, rb_options, "credentials");
+		payload->progress = rb_hash_aref(rb_options, CSTR2SYM("progress"));
+		if (!NIL_P(payload->progress)) {
+			CALLABLE_OR_RAISE(payload->progress, "progress");
+			callbacks->sideband_progress = progress_cb;
+		}
+
+		payload->credentials = rb_hash_aref(rb_options, CSTR2SYM("credentials"));
+		if (!NIL_P(payload->credentials)) {
+			CALLABLE_OR_RAISE(payload->credentials, "credentials");
+			callbacks->credentials = credentials_cb;
+		}
+
+		payload->certificate_check = rb_hash_aref(rb_options, CSTR2SYM("certificate_check"));
+		if (!NIL_P(payload->certificate_check)) {
+			CALLABLE_OR_RAISE(payload->certificate_check, "certificate_check");
+			callbacks->certificate_check = certificate_check_cb;
+		}
+
+		payload->transfer_progress = rb_hash_aref(rb_options, CSTR2SYM("transfer_progress"));
+		if (!NIL_P(payload->transfer_progress)) {
+			CALLABLE_OR_RAISE(payload->transfer_progress, "transfer_progress");
+			callbacks->transfer_progress = transfer_progress_cb;
+		}
+
+		payload->update_tips = rb_hash_aref(rb_options, CSTR2SYM("update_tips"));
+		if (!NIL_P(payload->update_tips)) {
+			CALLABLE_OR_RAISE(payload->update_tips, "update_tips");
+			callbacks->update_tips = update_tips_cb;
+		}
 	}
 }
 
