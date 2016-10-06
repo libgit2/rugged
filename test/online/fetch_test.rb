@@ -30,45 +30,44 @@ class OnlineFetchTest < Rugged::OnlineTestCase
     end
 
     def test_fetch_over_https_with_certificate_callback
-      result = {}
       @repo.remotes.create("origin", "https://github.com/libgit2/TestGitRepository.git")
 
+      args = {}
       @repo.fetch("origin", {
         certificate_check: lambda { |valid, host|
-         result[:valid] = valid
-         true
+          args[:valid] = valid
+          args[:host] = host
+
+          true
         }
       })
-      assert_equal result[:valid], 1
+
+      assert_equal({ valid: true, host: "github.com" }, args)
     end
 
     def test_fetch_over_https_with_certificate_callback_fail
-      result = {}
       @repo.remotes.create("origin", "https://github.com/libgit2/TestGitRepository.git")
 
       exception = assert_raises Rugged::NetworkError do
         @repo.fetch("origin", {
-          certificate_check: lambda { |valid, host|
-            result[:valid] = valid
-            false
-          }
+          certificate_check: lambda { |valid, host| false }
         })
       end
+
       assert_equal "user cancelled certificate check", exception.message
     end
 
     def test_fetch_over_https_with_certificate_callback_exception
-      result = {}
       @repo.remotes.create("origin", "https://github.com/libgit2/TestGitRepository.git")
 
       exception = assert_raises RuntimeError do
         @repo.fetch("origin", {
           certificate_check: lambda { |valid, host|
-            result[:valid] = valid
             raise "Exception from callback"
           }
         })
       end
+
       assert_equal "Exception from callback", exception.message
     end
   end

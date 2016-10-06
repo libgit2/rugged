@@ -104,7 +104,7 @@ static int certificate_check_cb(git_cert *cert, int valid, const char *host, voi
 		return valid ? 0 : GIT_ECERTIFICATE;
 
 	rb_ary_push(args, payload->certificate_check);
-	rb_ary_push(args, INT2FIX(valid));
+	rb_ary_push(args, valid ? Qtrue : Qfalse);
 	rb_ary_push(args, rb_str_new_utf8(host));
 
 	ret = rb_protect(rugged__block_yield_splat, args, &payload->exception);
