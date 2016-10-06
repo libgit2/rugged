@@ -124,6 +124,58 @@ class BlobTest < Rugged::TestCase
   end
 end
 
+class BlobMergeTest < Rugged::TestCase
+  def setup
+    @source_repo = FixtureRepo.from_rugged("testrepo.git")
+    @repo = FixtureRepo.clone(@source_repo)
+
+    @ancestor_content = "Common ancestor"
+    @our_content = "Ours side"
+    @their_content = "Theirs side"
+
+    @expected_data = "<<<<<<< OURS\nOurs side\n" +
+      "||||||| ANCESTOR\nCommon ancestor\n" +
+      "=======\n" +
+      "Theirs side\n>>>>>>> THEIRS\n"
+
+    @opts = {
+      :ancestor_label => "ANCESTOR",
+      :our_label => "OURS",
+      :their_label => "THEIRS",
+      :style => :diff3 }
+  end
+
+  def test_blob_merge_files
+    ancestor = { :content => @ancestor_content, :path => "file.txt",    :filemode => 0100644 }
+    ours =     { :content => @our_content,      :path => "newfile.txt", :filemode => 0100644 }
+    theirs =   { :content => @their_content,    :path => "file.txt",    :filemode => 0100755 }
+
+    result = Rugged::Blob.merge_files(nil, ancestor, ours, theirs, @opts)
+
+    assert_equal false, result[:automergeable]
+    assert_equal "newfile.txt", result[:path]
+    assert_equal 0100755, result[:filemode]
+    assert_equal @expected_data, result[:data]
+  end
+
+  def test_blob_merge_files_by_oid
+    ancestor_oid = Rugged::Blob.from_buffer(@repo, @ancestor_content)
+    our_oid = Rugged::Blob.from_buffer(@repo, @our_content)
+    their_oid = Rugged::Blob.from_buffer(@repo, @their_content)
+
+    ancestor = { :oid => ancestor_oid, :path => "file.txt",    :filemode => 0100644 }
+    ours =     { :oid => our_oid,      :path => "newfile.txt", :filemode => 0100644 }
+    theirs =   { :oid => their_oid,    :path => "file.txt",    :filemode => 0100755 }
+
+    result = Rugged::Blob.merge_files(@repo, ancestor, ours, theirs, @opts)
+
+    assert_equal false, result[:automergeable]
+    assert_equal "newfile.txt", result[:path]
+    assert_equal 0100755, result[:filemode]
+    assert_equal @expected_data, result[:data]
+  end
+end
+
 class BlobWriteTest < Rugged::TestCase
   def setup
     @source_repo = FixtureRepo.from_rugged("testrepo.git")

@@ -96,10 +96,12 @@ VALUE rugged_diff_hunk_new(VALUE owner, size_t hunk_idx, const git_diff_hunk *hu
 VALUE rugged_diff_line_new(const git_diff_line *line);
 VALUE rugged_remote_new(VALUE owner, git_remote *remote);
 VALUE rb_git_delta_file_fromC(const git_diff_file *file);
+VALUE rb_merge_file_result_fromC(const git_merge_file_result *results);
 
 void rugged_parse_diff_options(git_diff_options *opts, VALUE rb_options);
 void rugged_parse_merge_options(git_merge_options *opts, VALUE rb_options);
 void rugged_parse_checkout_options(git_checkout_options *opts, VALUE rb_options);
+void rugged_parse_merge_file_options(git_merge_file_options *opts, VALUE rb_options);
 
 void rugged_cred_extract(git_cred **cred, int allowed_types, VALUE rb_credential);
 
