@@ -485,7 +485,7 @@ static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
 {
 	VALUE url, local_path, rb_options_hash;
 	git_clone_options options = GIT_CLONE_OPTIONS_INIT;
-	struct rugged_remote_cb_payload remote_payload = { Qnil, Qnil, Qnil, Qnil, 0 };
+	struct rugged_remote_cb_payload remote_payload = { Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, 0 };
 	git_repository *repo;
 	int error;
 

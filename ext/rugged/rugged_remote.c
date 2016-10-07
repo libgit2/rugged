@@ -29,8 +29,6 @@ extern VALUE rb_cRuggedRepo;
 extern VALUE rb_eRuggedError;
 VALUE rb_cRuggedRemote;
 
-#define RUGGED_REMOTE_CALLBACKS_INIT {1, progress_cb, NULL, credentials_cb, NULL, transfer_progress_cb, update_tips_cb, NULL, NULL, push_update_reference_cb, NULL}
-
 static int progress_cb(const char *str, int len, void *data)
 {
 	struct rugged_remote_cb_payload *payload = data;
@@ -96,6 +94,27 @@ static int update_tips_cb(const char *refname, const git_oid *src, const git_oid
 	return payload->exception ? GIT_ERROR : GIT_OK;
 }
 
+static int certificate_check_cb(git_cert *cert, int valid, const char *host, void *data)
+{
+	struct rugged_remote_cb_payload *payload = data;
+	VALUE args = rb_ary_new2(3);
+	VALUE ret;
+
+	if (NIL_P(payload->certificate_check))
+		return valid ? 0 : GIT_ECERTIFICATE;
+
+	rb_ary_push(args, payload->certificate_check);
+	rb_ary_push(args, valid ? Qtrue : Qfalse);
+	rb_ary_push(args, rb_str_new_utf8(host));
+
+	ret = rb_protect(rugged__block_yield_splat, args, &payload->exception);
+
+	if (payload->exception)
+		return GIT_ERROR;
+
+	return rugged_parse_bool(ret) ? GIT_OK : GIT_ECERTIFICATE;
+}
+
 struct extract_cred_args
 {
 	VALUE rb_callback;
@@ -155,11 +174,9 @@ static int credentials_cb(
 	return payload->exception ? GIT_ERROR : GIT_OK;
 }
 
-#define CALLABLE_OR_RAISE(ret, rb_options, name) \
-	do {							\
-		ret = rb_hash_aref(rb_options, CSTR2SYM(name)); \
-								\
-		if (!NIL_P(ret) && !rb_respond_to(ret, rb_intern("call"))) \
+#define CALLABLE_OR_RAISE(ret, name) \
+	do { \
+		if (!rb_respond_to(ret, rb_intern("call"))) \
 			rb_raise(rb_eArgError, "Expected a Proc or an object that responds to #call (:" name " )."); \
 	} while (0);
 
@@ -168,16 +185,39 @@ void rugged_remote_init_callbacks_and_payload_from_options(
 	git_remote_callbacks *callbacks,
 	struct rugged_remote_cb_payload *payload)
 {
-	git_remote_callbacks prefilled = RUGGED_REMOTE_CALLBACKS_INIT;
-
-	prefilled.payload = payload;
-	memcpy(callbacks, &prefilled, sizeof(git_remote_callbacks));
+	callbacks->payload = payload;
+	callbacks->push_update_reference = push_update_reference_cb;
 
 	if (!NIL_P(rb_options)) {
-		CALLABLE_OR_RAISE(payload->update_tips, rb_options, "update_tips");
-		CALLABLE_OR_RAISE(payload->progress, rb_options, "progress");
-		CALLABLE_OR_RAISE(payload->transfer_progress, rb_options, "transfer_progress");
-		CALLABLE_OR_RAISE(payload->credentials, rb_options, "credentials");
+		payload->progress = rb_hash_aref(rb_options, CSTR2SYM("progress"));
+		if (!NIL_P(payload->progress)) {
+			CALLABLE_OR_RAISE(payload->progress, "progress");
+			callbacks->sideband_progress = progress_cb;
+		}
+
+		payload->credentials = rb_hash_aref(rb_options, CSTR2SYM("credentials"));
+		if (!NIL_P(payload->credentials)) {
+			CALLABLE_OR_RAISE(payload->credentials, "credentials");
+			callbacks->credentials = credentials_cb;
+		}
+
+		payload->certificate_check = rb_hash_aref(rb_options, CSTR2SYM("certificate_check"));
+		if (!NIL_P(payload->certificate_check)) {
+			CALLABLE_OR_RAISE(payload->certificate_check, "certificate_check");
+			callbacks->certificate_check = certificate_check_cb;
+		}
+
+		payload->transfer_progress = rb_hash_aref(rb_options, CSTR2SYM("transfer_progress"));
+		if (!NIL_P(payload->transfer_progress)) {
+			CALLABLE_OR_RAISE(payload->transfer_progress, "transfer_progress");
+			callbacks->transfer_progress = transfer_progress_cb;
+		}
+
+		payload->update_tips = rb_hash_aref(rb_options, CSTR2SYM("update_tips"));
+		if (!NIL_P(payload->update_tips)) {
+			CALLABLE_OR_RAISE(payload->update_tips, "update_tips");
+			callbacks->update_tips = update_tips_cb;
+		}
 	}
 }
 
@@ -274,7 +314,7 @@ static VALUE rb_git_remote_ls(int argc, VALUE *argv, VALUE self)
 	git_strarray custom_headers = {0};
 	const git_remote_head **heads;
 
-	struct rugged_remote_cb_payload payload = { Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, 0 };
+	struct rugged_remote_cb_payload payload = { Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, 0 };
 
 	VALUE rb_options;
 
@@ -471,7 +511,7 @@ static VALUE rb_git_remote_check_connection(int argc, VALUE *argv, VALUE self)
 	git_remote *remote;
 	git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
 	git_strarray custom_headers = {0};
-	struct rugged_remote_cb_payload payload = { Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, 0 };
+	struct rugged_remote_cb_payload payload = { Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, 0 };
 	VALUE rb_direction, rb_options;
 	ID id_direction;
 	int error, direction;
@@ -537,6 +577,11 @@ static VALUE rb_git_remote_check_connection(int argc, VALUE *argv, VALUE self)
  *    A callback that will be executed each time a reference is updated locally. It will be
  *    passed the +refname+, +old_oid+ and +new_oid+.
  *
+ *  :certificate_check ::
+ *    A callback that will be executed each time we validate a certificate using https. It
+ *    will be passed the +valid+, +host_name+ and the callback should return a true/false to
+ *    indicate if the certificate has been validated.
+ *
  *  :message ::
  *    The message to insert into the reflogs. Defaults to "fetch".
  *
@@ -559,7 +604,7 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 	git_strarray refspecs;
 	git_fetch_options opts = GIT_FETCH_OPTIONS_INIT;
 	const git_transfer_progress *stats;
-	struct rugged_remote_cb_payload payload = { Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, 0 };
+	struct rugged_remote_cb_payload payload = { Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, 0 };
 
 	char *log_message = NULL;
 	int error;
@@ -650,7 +695,7 @@ static VALUE rb_git_remote_push(int argc, VALUE *argv, VALUE self)
 
 	int error = 0;
 
-	struct rugged_remote_cb_payload payload = { Qnil, Qnil, Qnil, Qnil, Qnil, rb_hash_new(), 0 };
+	struct rugged_remote_cb_payload payload = { Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, rb_hash_new(), 0 };
 
 	rb_scan_args(argc, argv, "01:", &rb_refspecs, &rb_options);
 
