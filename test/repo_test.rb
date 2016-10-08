@@ -141,14 +141,14 @@ class RepositoryTest < Rugged::TestCase
   end
 
   def test_enumerate_all_objects
-    assert_equal 1687, @repo.each_id.count
+    assert_equal 1700, @repo.each_id.count
   end
 
   def test_loading_alternates
     alt_path = File.dirname(__FILE__) + '/fixtures/alternate/objects'
     repo = Rugged::Repository.new(@repo.path, :alternates => [alt_path])
 
-    assert_equal 1690, repo.each_id.count
+    assert_equal 1703, repo.each_id.count
     assert repo.read('146ae76773c91e3b1d00cf7a338ec55ae58297e2')
   end
 
