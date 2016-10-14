@@ -8,7 +8,11 @@ module Rugged
       if other.nil?
         diff_index_to_workdir options
       else
-        _diff other, options
+        if other.is_a? ::Rugged::Commit
+          _diff other.tree, options
+        else
+          _diff other, options
+        end
       end
     end
 
