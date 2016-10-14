@@ -102,7 +102,7 @@ module Rugged
     #   marked with a single entry in the diff. If this flag is set to true,
     #   all files under ignored directories will be included in the diff, too.
     def diff(*args)
-      options = args.pop if args.last.is_a?(Hash)
+      options = args.last.is_a?(Hash) ? args.pop : {}
       other   = args.shift
       if other.nil?
         diff_index_to_workdir options
