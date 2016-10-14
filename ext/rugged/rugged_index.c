@@ -810,14 +810,9 @@ static VALUE rb_git_index_diff(VALUE self, VALUE rb_other, VALUE rb_options)
 		// the "old file" side of the diff.
 		opts.flags ^= GIT_DIFF_REVERSE;
 
-		if (rb_obj_is_kind_of(rb_other, rb_cRuggedTree)) {
 			git_tree *other_tree;
 			Data_Get_Struct(rb_other, git_tree, other_tree);
 			error = git_diff_tree_to_index(&diff, repo, other_tree, index, &opts);
-		} else {
-			xfree(opts.pathspec.strings);
-			rb_raise(rb_eTypeError, "A Rugged::Commit or Rugged::Tree instance is required");
-		}
 
 	xfree(opts.pathspec.strings);
 	rugged_exception_check(error);

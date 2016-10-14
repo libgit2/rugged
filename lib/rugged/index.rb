@@ -11,7 +11,11 @@ module Rugged
         if other.is_a? ::Rugged::Commit
           _diff other.tree, options
         else
-          _diff other, options
+          if other.is_a? ::Rugged::Tree
+            _diff other, options
+          else
+            raise TypeError, "A Rugged::Commit or Rugged::Tree instance is required"
+          end
         end
       end
     end
