@@ -791,16 +791,15 @@ static VALUE rb_git_index_readtree(VALUE self, VALUE rb_tree)
  *    marked with a single entry in the diff. If this flag is set to true,
  *    all files under ignored directories will be included in the diff, too.
  */
-static VALUE rb_git_index_diff(int argc, VALUE *argv, VALUE self)
+static VALUE rb_git_index_diff(VALUE self, VALUE rb_other, VALUE rb_options)
 {
 	git_index *index;
 	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
 	git_repository *repo;
 	git_diff *diff = NULL;
-	VALUE owner, rb_other, rb_options;
+	VALUE owner;
 	int error;
 
-	rb_scan_args(argc, argv, "01:", &rb_other, &rb_options);
 	rugged_parse_diff_options(&opts, rb_options);
 
 	Data_Get_Struct(self, git_index, index);
@@ -1224,7 +1223,7 @@ void Init_rugged_index(void)
 	rb_define_method(rb_cRuggedIndex, "get", rb_git_index_get, -1);
 	rb_define_method(rb_cRuggedIndex, "[]", rb_git_index_get, -1);
 	rb_define_method(rb_cRuggedIndex, "each", rb_git_index_each, 0);
-	rb_define_method(rb_cRuggedIndex, "diff", rb_git_index_diff, -1);
+	rb_define_private_method(rb_cRuggedIndex, "_diff", rb_git_index_diff, 2);
 
 	rb_define_method(rb_cRuggedIndex, "conflicts?", rb_git_index_conflicts_p, 0);
 	rb_define_method(rb_cRuggedIndex, "conflicts", rb_git_index_conflicts, 0);
