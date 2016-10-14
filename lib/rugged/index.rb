@@ -9,10 +9,10 @@ module Rugged
         diff_index_to_workdir options
       else
         if other.is_a? ::Rugged::Commit
-          _diff other.tree, options
+          diff_tree_to_index other.tree, options
         else
           if other.is_a? ::Rugged::Tree
-            _diff other, options
+            diff_tree_to_index other, options
           else
             raise TypeError, "A Rugged::Commit or Rugged::Tree instance is required"
           end

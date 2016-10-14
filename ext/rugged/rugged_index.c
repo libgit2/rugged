@@ -791,7 +791,7 @@ static VALUE rb_git_index_readtree(VALUE self, VALUE rb_tree)
  *    marked with a single entry in the diff. If this flag is set to true,
  *    all files under ignored directories will be included in the diff, too.
  */
-static VALUE rb_git_index_diff(VALUE self, VALUE rb_other, VALUE rb_options)
+static VALUE rb_git_diff_tree_to_index(VALUE self, VALUE rb_other, VALUE rb_options)
 {
 	git_index *index;
 	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
@@ -806,13 +806,13 @@ static VALUE rb_git_index_diff(VALUE self, VALUE rb_other, VALUE rb_options)
 	owner = rugged_owner(self);
 	Data_Get_Struct(owner, git_repository, repo);
 
-		// Need to flip the reverse option, so that the index is by default
-		// the "old file" side of the diff.
-		opts.flags ^= GIT_DIFF_REVERSE;
+	// Need to flip the reverse option, so that the index is by default
+	// the "old file" side of the diff.
+	opts.flags ^= GIT_DIFF_REVERSE;
 
-			git_tree *other_tree;
-			Data_Get_Struct(rb_other, git_tree, other_tree);
-			error = git_diff_tree_to_index(&diff, repo, other_tree, index, &opts);
+	git_tree *other_tree;
+	Data_Get_Struct(rb_other, git_tree, other_tree);
+	error = git_diff_tree_to_index(&diff, repo, other_tree, index, &opts);
 
 	xfree(opts.pathspec.strings);
 	rugged_exception_check(error);
@@ -1229,7 +1229,7 @@ void Init_rugged_index(void)
 	rb_define_method(rb_cRuggedIndex, "get", rb_git_index_get, -1);
 	rb_define_method(rb_cRuggedIndex, "[]", rb_git_index_get, -1);
 	rb_define_method(rb_cRuggedIndex, "each", rb_git_index_each, 0);
-	rb_define_private_method(rb_cRuggedIndex, "_diff", rb_git_index_diff, 2);
+	rb_define_private_method(rb_cRuggedIndex, "diff_tree_to_index", rb_git_diff_tree_to_index, 2);
 	rb_define_private_method(rb_cRuggedIndex, "diff_index_to_workdir", rb_git_diff_index_to_workdir, 1);
 
 	rb_define_method(rb_cRuggedIndex, "conflicts?", rb_git_index_conflicts_p, 0);
