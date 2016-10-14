@@ -806,9 +806,6 @@ static VALUE rb_git_index_diff(VALUE self, VALUE rb_other, VALUE rb_options)
 	owner = rugged_owner(self);
 	Data_Get_Struct(owner, git_repository, repo);
 
-	if (NIL_P(rb_other)) {
-		error = git_diff_index_to_workdir(&diff, repo, index, &opts);
-	} else {
 		// Need to flip the reverse option, so that the index is by default
 		// the "old file" side of the diff.
 		opts.flags ^= GIT_DIFF_REVERSE;
@@ -829,7 +826,29 @@ static VALUE rb_git_index_diff(VALUE self, VALUE rb_other, VALUE rb_options)
 			xfree(opts.pathspec.strings);
 			rb_raise(rb_eTypeError, "A Rugged::Commit or Rugged::Tree instance is required");
 		}
-	}
+
+	xfree(opts.pathspec.strings);
+	rugged_exception_check(error);
+
+	return rugged_diff_new(rb_cRuggedDiff, owner, diff);
+}
+
+static VALUE rb_git_diff_index_to_workdir(VALUE self, VALUE rb_options)
+{
+	git_index *index;
+	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
+	git_repository *repo;
+	git_diff *diff = NULL;
+	VALUE owner;
+	int error;
+
+	rugged_parse_diff_options(&opts, rb_options);
+
+	Data_Get_Struct(self, git_index, index);
+	owner = rugged_owner(self);
+	Data_Get_Struct(owner, git_repository, repo);
+
+	error = git_diff_index_to_workdir(&diff, repo, index, &opts);
 
 	xfree(opts.pathspec.strings);
 	rugged_exception_check(error);
@@ -1224,6 +1243,7 @@ void Init_rugged_index(void)
 	rb_define_method(rb_cRuggedIndex, "[]", rb_git_index_get, -1);
 	rb_define_method(rb_cRuggedIndex, "each", rb_git_index_each, 0);
 	rb_define_private_method(rb_cRuggedIndex, "_diff", rb_git_index_diff, 2);
+	rb_define_private_method(rb_cRuggedIndex, "diff_index_to_workdir", rb_git_diff_index_to_workdir, 1);
 
 	rb_define_method(rb_cRuggedIndex, "conflicts?", rb_git_index_conflicts_p, 0);
 	rb_define_method(rb_cRuggedIndex, "conflicts", rb_git_index_conflicts, 0);

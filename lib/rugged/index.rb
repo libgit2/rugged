@@ -5,7 +5,11 @@ module Rugged
     def diff(*args)
       options = args.pop if args.last.is_a?(Hash)
       other   = args.shift
-      _diff other, options
+      if other.nil?
+        diff_index_to_workdir options
+      else
+        _diff other, options
+      end
     end
 
     def to_s
