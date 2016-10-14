@@ -699,6 +699,7 @@ static VALUE rb_git_diff_tree_to_index(VALUE self, VALUE rb_other, VALUE rb_opti
 	git_diff *diff = NULL;
 	VALUE owner;
 	int error;
+	git_tree *other_tree;
 
 	rugged_parse_diff_options(&opts, rb_options);
 
@@ -710,7 +711,6 @@ static VALUE rb_git_diff_tree_to_index(VALUE self, VALUE rb_other, VALUE rb_opti
 	// the "old file" side of the diff.
 	opts.flags ^= GIT_DIFF_REVERSE;
 
-	git_tree *other_tree;
 	Data_Get_Struct(rb_other, git_tree, other_tree);
 	error = git_diff_tree_to_index(&diff, repo, other_tree, index, &opts);
 
