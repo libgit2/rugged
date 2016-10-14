@@ -104,16 +104,16 @@ module Rugged
     def diff(*args)
       options = args.last.is_a?(Hash) ? args.pop : {}
       other   = args.shift
-      if other.nil?
+
+      case other
+      when nil
         diff_index_to_workdir options
+      when ::Rugged::Commit
+        diff_tree_to_index other.tree, options
+      when ::Rugged::Tree
+        diff_tree_to_index other, options
       else
-        if other.is_a? ::Rugged::Commit
-          diff_tree_to_index other.tree, options
-        elsif other.is_a? ::Rugged::Tree
-          diff_tree_to_index other, options
-        else
-          raise TypeError, "A Rugged::Commit or Rugged::Tree instance is required"
-        end
+        raise TypeError, "A Rugged::Commit or Rugged::Tree instance is required"
       end
     end
 
