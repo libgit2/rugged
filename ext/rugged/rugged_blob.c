@@ -607,7 +607,7 @@ static int rugged_load_merge_file_input(git_blob **out, git_repository *repo, ru
 
 static VALUE rb_git_blob_merge_files(int argc, VALUE *argv, VALUE klass)
 {
-	VALUE rb_repo, rb_ancestor, rb_ours, rb_theirs, rb_options, rb_result;
+	VALUE rb_repo, rb_ancestor, rb_ours, rb_theirs, rb_options, rb_result = Qnil;
 
 	git_repository *repo = NULL;
 	rugged_merge_file_input ancestor = RUGGED_MERGE_FILE_INPUT_INIT,

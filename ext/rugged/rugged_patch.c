@@ -209,10 +209,9 @@ static VALUE rb_git_diff_patch_lines(int argc, VALUE *argv, VALUE self)
 {
 	git_patch *patch;
 	size_t lines = 0;
+	int options = 0;
 	VALUE rb_options;
 	Data_Get_Struct(self, git_patch, patch);
-
-	int options = 0;
 
 	rb_scan_args(argc, argv, "0:", &rb_options);
 	if (!NIL_P(rb_options)) {
