@@ -484,9 +484,8 @@ static VALUE rb_git_tree_diff_(int argc, VALUE *argv, VALUE self)
 	int error;
 
 	rb_scan_args(argc, argv, "22", &rb_repo, &rb_self, &rb_other, &rb_options);
-	rugged_parse_diff_options(&opts, rb_options);
-
 	Data_Get_Struct(rb_repo, git_repository, repo);
+	rugged_parse_diff_options(&opts, rb_options);
 
 	if (!NIL_P(rb_self)) {
 		if (!rb_obj_is_kind_of(rb_self, rb_cRuggedTree))
