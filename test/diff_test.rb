@@ -1153,3 +1153,38 @@ EOS
     end
   end
 end
+
+class TreeDiffRegression < Rugged::TestCase
+  def test_nil_repo
+    assert_raises TypeError do
+      Rugged::Tree.diff nil, "foo"
+    end
+  end
+
+  def test_self_is_not_tree
+    repo = FixtureRepo.from_libgit2("diff")
+
+    ex = assert_raises TypeError do
+      Rugged::Tree.diff repo, "foo"
+    end
+    assert_equal "At least a Rugged::Tree object is required for diffing", ex.message
+  end
+
+  def test_self_or_other_must_be_present
+    repo = FixtureRepo.from_libgit2("diff")
+
+    ex = assert_raises TypeError do
+      Rugged::Tree.diff repo, nil, nil
+    end
+    assert_equal "Need 'old' or 'new' for diffing", ex.message
+  end
+
+  def test_other_is_wrong_type
+    repo = FixtureRepo.from_libgit2("diff")
+
+    ex = assert_raises TypeError do
+      Rugged::Tree.diff repo, nil, Object.new
+    end
+    assert_equal "A Rugged::Commit, Rugged::Tree or Rugged::Index instance is required", ex.message
+  end
+end
