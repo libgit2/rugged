@@ -519,7 +519,7 @@ Subject: [PATCH 1/2] Added file2.txt file3.txt
 ---
  file2.txt | 5 +++++
  file3.txt | 5 +++++
- 2 files changed, 10 insertions(+), 0 deletions(-)
+ 2 files changed, 10 insertions(+)
  create mode 100644 file2.txt
  create mode 100644 file3.txt
 
