@@ -122,29 +122,29 @@ module Rugged
     #   diff = tree.diff(other_tree)
     #
 
-    def self.diff(repo, _self, other = nil, options = {})
-      if _self && !_self.is_a?(Rugged::Tree)
+    def self.diff(repo, tree, other_tree = nil, options = {})
+      if tree && !tree.is_a?(Rugged::Tree)
         raise TypeError, "At least a Rugged::Tree object is required for diffing"
       end
 
-      if other.nil?
-        if _self.nil?
+      if other_tree.nil?
+        if tree.nil?
           raise TypeError, "Need 'old' or 'new' for diffing"
         else
-          diff_tree_to_tree repo, _self, nil, options
+          diff_tree_to_tree repo, tree, nil, options
         end
       else
-        if other.is_a?(::String)
-          other = Rugged::Object.rev_parse repo, other
+        if other_tree.is_a?(::String)
+          other_tree = Rugged::Object.rev_parse repo, other_tree
         end
 
-        case other
+        case other_tree
         when Rugged::Commit
-          diff_tree_to_tree repo, _self, other.tree, options
+          diff_tree_to_tree repo, tree, other_tree.tree, options
         when Rugged::Tree
-          diff_tree_to_tree repo, _self, other, options
+          diff_tree_to_tree repo, tree, other_tree, options
         when Rugged::Index
-          diff_tree_to_index repo, _self, other, options
+          diff_tree_to_index repo, tree, other_tree, options
         else
           raise TypeError, "A Rugged::Commit, Rugged::Tree or Rugged::Index instance is required"
         end
