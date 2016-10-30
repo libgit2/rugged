@@ -489,18 +489,7 @@ static VALUE rb_git_tree_diff_(VALUE self, VALUE rb_repo, VALUE rb_self, VALUE r
 		Data_Get_Struct(rb_self, git_tree, tree);
 	}
 
-		if (rb_obj_is_kind_of(rb_other, rb_cRuggedCommit)) {
-			git_tree *other_tree;
-			git_commit *commit;
-
-			Data_Get_Struct(rb_other, git_commit, commit);
-			error = git_commit_tree(&other_tree, commit);
-
-			if (!error) {
-				error = git_diff_tree_to_tree(&diff, repo, tree, other_tree, &opts);
-				git_tree_free(other_tree);
-			}
-		} else if (rb_obj_is_kind_of(rb_other, rb_cRuggedTree)) {
+		if (rb_obj_is_kind_of(rb_other, rb_cRuggedTree)) {
 			git_tree *other_tree;
 
 			Data_Get_Struct(rb_other, git_tree, other_tree);
@@ -520,8 +509,9 @@ static VALUE rb_git_tree_diff_(VALUE self, VALUE rb_repo, VALUE rb_self, VALUE r
 	return rugged_diff_new(rb_cRuggedDiff, rb_repo, diff);
 }
 
-static VALUE rb_git_diff_tree_to_tree(VALUE self, VALUE rb_repo, VALUE rb_tree, VALUE rb_options) {
+static VALUE rb_git_diff_tree_to_tree(VALUE self, VALUE rb_repo, VALUE rb_tree, VALUE rb_other_tree, VALUE rb_options) {
 	git_tree *tree = NULL;
+	git_tree *other_tree = NULL;
 	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
 	git_repository *repo = NULL;
 	git_diff *diff = NULL;
@@ -530,9 +520,12 @@ static VALUE rb_git_diff_tree_to_tree(VALUE self, VALUE rb_repo, VALUE rb_tree, 
 	Data_Get_Struct(rb_repo, git_repository, repo);
 	Data_Get_Struct(rb_tree, git_tree, tree);
 
+	if(RTEST(rb_other_tree))
+	    Data_Get_Struct(rb_other_tree, git_tree, other_tree);
+
 	rugged_parse_diff_options(&opts, rb_options);
 
-	error = git_diff_tree_to_tree(&diff, repo, tree, NULL, &opts);
+	error = git_diff_tree_to_tree(&diff, repo, tree, other_tree, &opts);
 
 	xfree(opts.pathspec.strings);
 	rugged_exception_check(error);
@@ -1039,7 +1032,7 @@ void Init_rugged_tree(void)
 	rb_define_singleton_method(rb_cRuggedTree, "empty", rb_git_tree_empty, 1);
 
 	rb_define_private_method(rb_singleton_class(rb_cRuggedTree), "_diff", rb_git_tree_diff_, 4);
-	rb_define_private_method(rb_singleton_class(rb_cRuggedTree), "diff_tree_to_tree", rb_git_diff_tree_to_tree, 3);
+	rb_define_private_method(rb_singleton_class(rb_cRuggedTree), "diff_tree_to_tree", rb_git_diff_tree_to_tree, 4);
 
 	rb_cRuggedTreeBuilder = rb_define_class_under(rb_cRuggedTree, "Builder", rb_cObject);
 	rb_define_singleton_method(rb_cRuggedTreeBuilder, "new", rb_git_treebuilder_new, -1);

@@ -9,14 +9,19 @@ module Rugged
         if _self.nil?
           raise TypeError, "Need 'old' or 'new' for diffing"
         else
-          diff_tree_to_tree repo, _self, options
+          diff_tree_to_tree repo, _self, nil, options
         end
       else
         if other.is_a?(::String)
           other = Rugged::Object.rev_parse repo, other
         end
 
-        _diff(repo, _self, other, options)
+        case other
+        when Rugged::Commit
+          diff_tree_to_tree repo, _self, other.tree, options
+        else
+          _diff(repo, _self, other, options)
+        end
       end
     end
 
