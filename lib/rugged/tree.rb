@@ -30,7 +30,7 @@ module Rugged
       self.each { |e| yield e if e[:type] == :blob }
     end
 
-    # Iterat over the subtrees in this tree
+    # Iterate over the subtrees in this tree
     def each_tree
       self.each { |e| yield e if e[:type] == :tree }
     end

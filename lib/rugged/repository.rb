@@ -190,7 +190,7 @@ module Rugged
     # revision - The String SHA1.
     # path     - The String file path.
     #
-    # Returns a String.
+    # Returns a Rugged::Blob object
     def blob_at(revision, path)
       tree = Rugged::Commit.lookup(self, revision).tree
       begin

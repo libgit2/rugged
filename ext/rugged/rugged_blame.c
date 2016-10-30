@@ -125,19 +125,19 @@ static void rugged_parse_blame_options(git_blame_options *opts, git_repository *
  *    The last line in the file to blame. Defaults to the last line in
  *    the file.
  *
- *  :track_copies_same_file
+ *  :track_copies_same_file ::
  *    If this value is +true+, lines that have moved within a file will be
  *    tracked (like `git blame -M`).
  *
- *  :track_copies_same_commit_moves
+ *  :track_copies_same_commit_moves ::
  *    If this value is +true+, lines that have moved across files in the same
  *    commit will be tracked (like `git blame -C`).
  *
- *  :track_copies_same_commit_copies
+ *  :track_copies_same_commit_copies ::
  *    If this value is +true+, lines that have been copied from another file
  *    that exists in the same commit will be tracked (like `git blame -CC`).
  *
- *  :track_copies_any_commit_copies
+ *  :track_copies_any_commit_copies ::
  *    If this value is +true+, lines that have been copied from another file
  *    that exists in *any* commit will be tracked (like `git blame -CCC`).
  *
