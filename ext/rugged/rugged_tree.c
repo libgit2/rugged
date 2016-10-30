@@ -489,14 +489,9 @@ static VALUE rb_git_tree_diff_(VALUE self, VALUE rb_repo, VALUE rb_self, VALUE r
 		Data_Get_Struct(rb_self, git_tree, tree);
 	}
 
-		if (rb_obj_is_kind_of(rb_other, rb_cRuggedIndex)) {
 			git_index *index;
 			Data_Get_Struct(rb_other, git_index, index);
 			error = git_diff_tree_to_index(&diff, repo, tree, index, &opts);
-		} else {
-			xfree(opts.pathspec.strings);
-			rb_raise(rb_eTypeError, "A Rugged::Commit, Rugged::Tree or Rugged::Index instance is required");
-		}
 
 	xfree(opts.pathspec.strings);
 	rugged_exception_check(error);
