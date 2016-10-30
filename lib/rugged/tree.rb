@@ -12,6 +12,10 @@ module Rugged
           diff_tree_to_tree repo, _self, options
         end
       else
+        if other.is_a?(::String)
+          other = Rugged::Object.rev_parse repo, other
+        end
+
         _diff(repo, _self, other, options)
       end
     end

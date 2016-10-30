@@ -489,9 +489,6 @@ static VALUE rb_git_tree_diff_(VALUE self, VALUE rb_repo, VALUE rb_self, VALUE r
 		Data_Get_Struct(rb_self, git_tree, tree);
 	}
 
-		if (TYPE(rb_other) == T_STRING)
-			rb_other = rugged_object_rev_parse(rb_repo, rb_other, 1);
-
 		if (rb_obj_is_kind_of(rb_other, rb_cRuggedCommit)) {
 			git_tree *other_tree;
 			git_commit *commit;
