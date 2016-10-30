@@ -19,6 +19,8 @@ module Rugged
         case other
         when Rugged::Commit
           diff_tree_to_tree repo, _self, other.tree, options
+        when Rugged::Tree
+          diff_tree_to_tree repo, _self, other, options
         else
           _diff(repo, _self, other, options)
         end
