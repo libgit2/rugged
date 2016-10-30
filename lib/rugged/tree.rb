@@ -1,6 +1,5 @@
 module Rugged
   class Tree
-
     ##
     # call-seq:
     #   Tree.diff(repo, tree, diffable[, options]) -> diff
