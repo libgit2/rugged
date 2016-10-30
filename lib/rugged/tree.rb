@@ -22,7 +22,7 @@ module Rugged
         when Rugged::Tree
           diff_tree_to_tree repo, _self, other, options
         when Rugged::Index
-          _diff(repo, _self, other, options)
+          diff_tree_to_index repo, _self, other, options
         else
           raise TypeError, "A Rugged::Commit, Rugged::Tree or Rugged::Index instance is required"
         end

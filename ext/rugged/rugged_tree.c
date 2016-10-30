@@ -474,24 +474,25 @@ static VALUE rb_git_tree_path(VALUE self, VALUE rb_path)
  *    other_tree = Rugged::Tree.lookup(repo, "7a9e0b02e63179929fed24f0a3e0f19168114d10")
  *    diff = tree.diff(other_tree)
  */
-static VALUE rb_git_tree_diff_(VALUE self, VALUE rb_repo, VALUE rb_self, VALUE rb_other, VALUE rb_options)
+static VALUE rb_git_diff_tree_to_index(VALUE self, VALUE rb_repo, VALUE rb_self, VALUE rb_other, VALUE rb_options)
 {
 	git_tree *tree = NULL;
 	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
 	git_repository *repo = NULL;
 	git_diff *diff = NULL;
+	git_index *index;
 	int error;
 
 	Data_Get_Struct(rb_repo, git_repository, repo);
+	Data_Get_Struct(rb_other, git_index, index);
+
 	rugged_parse_diff_options(&opts, rb_options);
 
-	if (!NIL_P(rb_self)) {
+	if (RTEST(rb_self)) {
 		Data_Get_Struct(rb_self, git_tree, tree);
 	}
 
-			git_index *index;
-			Data_Get_Struct(rb_other, git_index, index);
-			error = git_diff_tree_to_index(&diff, repo, tree, index, &opts);
+	error = git_diff_tree_to_index(&diff, repo, tree, index, &opts);
 
 	xfree(opts.pathspec.strings);
 	rugged_exception_check(error);
@@ -1021,7 +1022,7 @@ void Init_rugged_tree(void)
 	rb_define_method(rb_cRuggedTree, "update", rb_git_tree_update, 1);
 	rb_define_singleton_method(rb_cRuggedTree, "empty", rb_git_tree_empty, 1);
 
-	rb_define_private_method(rb_singleton_class(rb_cRuggedTree), "_diff", rb_git_tree_diff_, 4);
+	rb_define_private_method(rb_singleton_class(rb_cRuggedTree), "diff_tree_to_index", rb_git_diff_tree_to_index, 4);
 	rb_define_private_method(rb_singleton_class(rb_cRuggedTree), "diff_tree_to_tree", rb_git_diff_tree_to_tree, 4);
 
 	rb_cRuggedTreeBuilder = rb_define_class_under(rb_cRuggedTree, "Builder", rb_cObject);
