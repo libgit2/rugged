@@ -8,9 +8,12 @@ module Rugged
       if other.nil?
         if _self.nil?
           raise TypeError, "Need 'old' or 'new' for diffing"
+        else
+          diff_tree_to_tree repo, _self, options
         end
+      else
+        _diff(repo, _self, other, options)
       end
-      _diff(repo, _self, other, options)
     end
 
     include Enumerable

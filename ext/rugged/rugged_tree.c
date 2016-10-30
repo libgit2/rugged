@@ -489,9 +489,6 @@ static VALUE rb_git_tree_diff_(VALUE self, VALUE rb_repo, VALUE rb_self, VALUE r
 		Data_Get_Struct(rb_self, git_tree, tree);
 	}
 
-	if (NIL_P(rb_other)) {
-		error = git_diff_tree_to_tree(&diff, repo, tree, NULL, &opts);
-	} else {
 		if (TYPE(rb_other) == T_STRING)
 			rb_other = rugged_object_rev_parse(rb_repo, rb_other, 1);
 
@@ -519,7 +516,26 @@ static VALUE rb_git_tree_diff_(VALUE self, VALUE rb_repo, VALUE rb_self, VALUE r
 			xfree(opts.pathspec.strings);
 			rb_raise(rb_eTypeError, "A Rugged::Commit, Rugged::Tree or Rugged::Index instance is required");
 		}
-	}
+
+	xfree(opts.pathspec.strings);
+	rugged_exception_check(error);
+
+	return rugged_diff_new(rb_cRuggedDiff, rb_repo, diff);
+}
+
+static VALUE rb_git_diff_tree_to_tree(VALUE self, VALUE rb_repo, VALUE rb_tree, VALUE rb_options) {
+	git_tree *tree = NULL;
+	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
+	git_repository *repo = NULL;
+	git_diff *diff = NULL;
+	int error;
+
+	Data_Get_Struct(rb_repo, git_repository, repo);
+	Data_Get_Struct(rb_tree, git_tree, tree);
+
+	rugged_parse_diff_options(&opts, rb_options);
+
+	error = git_diff_tree_to_tree(&diff, repo, tree, NULL, &opts);
 
 	xfree(opts.pathspec.strings);
 	rugged_exception_check(error);
@@ -1026,6 +1042,7 @@ void Init_rugged_tree(void)
 	rb_define_singleton_method(rb_cRuggedTree, "empty", rb_git_tree_empty, 1);
 
 	rb_define_private_method(rb_singleton_class(rb_cRuggedTree), "_diff", rb_git_tree_diff_, 4);
+	rb_define_private_method(rb_singleton_class(rb_cRuggedTree), "diff_tree_to_tree", rb_git_diff_tree_to_tree, 3);
 
 	rb_cRuggedTreeBuilder = rb_define_class_under(rb_cRuggedTree, "Builder", rb_cObject);
 	rb_define_singleton_method(rb_cRuggedTreeBuilder, "new", rb_git_treebuilder_new, -1);
