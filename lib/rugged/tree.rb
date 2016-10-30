@@ -1,6 +1,9 @@
 module Rugged
   class Tree
     def self.diff(repo, _self, other = nil, options = {})
+      if _self && !_self.is_a?(Rugged::Tree)
+        raise TypeError, "At least a Rugged::Tree object is required for diffing"
+      end
       _diff(repo, _self, other, options)
     end
 
