@@ -490,11 +490,6 @@ static VALUE rb_git_tree_diff_(VALUE self, VALUE rb_repo, VALUE rb_self, VALUE r
 	}
 
 	if (NIL_P(rb_other)) {
-		if (tree == NULL) {
-			xfree(opts.pathspec.strings);
-			rb_raise(rb_eTypeError, "Need 'old' or 'new' for diffing");
-		}
-
 		error = git_diff_tree_to_tree(&diff, repo, tree, NULL, &opts);
 	} else {
 		if (TYPE(rb_other) == T_STRING)

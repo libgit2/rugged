@@ -4,6 +4,12 @@ module Rugged
       if _self && !_self.is_a?(Rugged::Tree)
         raise TypeError, "At least a Rugged::Tree object is required for diffing"
       end
+
+      if other.nil?
+        if _self.nil?
+          raise TypeError, "Need 'old' or 'new' for diffing"
+        end
+      end
       _diff(repo, _self, other, options)
     end
 
