@@ -1,5 +1,9 @@
 module Rugged
   class Tree
+    def self.diff(repo, _self, other = nil, options = {})
+      _diff(repo, _self, other, options)
+    end
+
     include Enumerable
 
     attr_reader :owner
