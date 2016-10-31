@@ -1187,4 +1187,12 @@ class TreeDiffRegression < Rugged::TestCase
     end
     assert_equal "A Rugged::Commit, Rugged::Tree or Rugged::Index instance is required", ex.message
   end
+
+  def test_other_tree_is_an_index_but_tree_is_nil
+    repo = FixtureRepo.from_libgit2("diff")
+
+    diff = Rugged::Tree.diff repo, nil, repo.index
+    assert_equal 2, diff.size
+    assert_equal 2, diff.deltas.size
+  end
 end

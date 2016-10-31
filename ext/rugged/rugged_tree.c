@@ -354,183 +354,49 @@ static VALUE rb_git_tree_path(VALUE self, VALUE rb_path)
 	return rb_entry;
 }
 
-/*
- *  call-seq:
- *    Tree.diff(repo, tree, diffable[, options]) -> diff
- *
- *  Returns a diff between the `tree` and the diffable object that was given.
- *  +diffable+ can either be a +Rugged::Commit+, a +Rugged::Tree+, a +Rugged::Index+,
- *  or +nil+.
- *
- *  The +tree+ object will be used as the "old file" side of the diff, while the
- *  parent tree or the +diffable+ object will be used for the "new file" side.
- *
- *  If +tree+ or +diffable+ are nil, they will be treated as an empty tree. Passing
- *  both as `nil` will raise an exception.
- *
- *  The following options can be passed in the +options+ Hash:
- *
- *  :paths ::
- *    An array of paths / fnmatch patterns to constrain the diff to a specific
- *    set of files. Also see +:disable_pathspec_match+.
- *
- *  :max_size ::
- *    An integer specifying the maximum byte size of a file before a it will
- *    be treated as binary. The default value is 512MB.
- *
- *  :context_lines ::
- *    The number of unchanged lines that define the boundary of a hunk (and
- *    to display before and after the actual changes). The default is 3.
- *
- *  :interhunk_lines ::
- *    The maximum number of unchanged lines between hunk boundaries before the hunks
- *    will be merged into a one. The default is 0.
- *
- *  :old_prefix ::
- *    The virtual "directory" to prefix to old filenames in hunk headers.
- *    The default is "a".
- *
- *  :new_prefix ::
- *    The virtual "directory" to prefix to new filenames in hunk headers.
- *    The default is "b".
- *
- *  :reverse ::
- *    If true, the sides of the diff will be reversed.
- *
- *  :force_text ::
- *    If true, all files will be treated as text, disabling binary attributes & detection.
- *
- *  :ignore_whitespace ::
- *    If true, all whitespace will be ignored.
- *
- *  :ignore_whitespace_change ::
- *    If true, changes in amount of whitespace will be ignored.
- *
- *  :ignore_whitespace_eol ::
- *    If true, whitespace at end of line will be ignored.
- *
- *  :ignore_submodules ::
- *    if true, submodules will be excluded from the diff completely.
- *
- *  :patience ::
- *    If true, the "patience diff" algorithm will be used (currenlty unimplemented).
- *
- *  :include_ignored ::
- *    If true, ignored files will be included in the diff.
- *
- *  :include_untracked ::
- *   If true, untracked files will be included in the diff.
- *
- *  :include_unmodified ::
- *    If true, unmodified files will be included in the diff.
- *
- *  :recurse_untracked_dirs ::
- *    Even if +:include_untracked+ is true, untracked directories will only be
- *    marked with a single entry in the diff. If this flag is set to true,
- *    all files under ignored directories will be included in the diff, too.
- *
- *  :disable_pathspec_match ::
- *    If true, the given +:paths+ will be applied as exact matches, instead of
- *    as fnmatch patterns.
- *
- *  :deltas_are_icase ::
- *    If true, filename comparisons will be made with case-insensitivity.
- *
- *  :include_untracked_content ::
- *    if true, untracked content will be contained in the the diff patch text.
- *
- *  :skip_binary_check ::
- *    If true, diff deltas will be generated without spending time on binary
- *    detection. This is useful to improve performance in cases where the actual
- *    file content difference is not needed.
- *
- *  :include_typechange ::
- *    If true, type changes for files will not be interpreted as deletion of
- *    the "old file" and addition of the "new file", but will generate
- *    typechange records.
- *
- *  :include_typechange_trees ::
- *    Even if +:include_typechange+ is true, blob -> tree changes will still
- *    usually be handled as a deletion of the blob. If this flag is set to true,
- *    blob -> tree changes will be marked as typechanges.
- *
- *  :ignore_filemode ::
- *    If true, file mode changes will be ignored.
- *
- *  :recurse_ignored_dirs ::
- *    Even if +:include_ignored+ is true, ignored directories will only be
- *    marked with a single entry in the diff. If this flag is set to true,
- *    all files under ignored directories will be included in the diff, too.
- *
- *  Examples:
- *
- *    # Emulating `git diff <treeish>`
- *    tree = Rugged::Tree.lookup(repo, "d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
- *    diff = tree.diff(repo.index)
- *    diff.merge!(tree.diff)
- *
- *    # Tree-to-Tree Diff
- *    tree = Rugged::Tree.lookup(repo, "d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
- *    other_tree = Rugged::Tree.lookup(repo, "7a9e0b02e63179929fed24f0a3e0f19168114d10")
- *    diff = tree.diff(other_tree)
- */
-static VALUE rb_git_tree_diff_(int argc, VALUE *argv, VALUE self)
+static VALUE rb_git_diff_tree_to_index(VALUE self, VALUE rb_repo, VALUE rb_self, VALUE rb_other, VALUE rb_options)
 {
 	git_tree *tree = NULL;
 	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
 	git_repository *repo = NULL;
 	git_diff *diff = NULL;
-	VALUE rb_self, rb_repo, rb_other, rb_options;
+	git_index *index;
 	int error;
 
-	rb_scan_args(argc, argv, "22", &rb_repo, &rb_self, &rb_other, &rb_options);
 	Data_Get_Struct(rb_repo, git_repository, repo);
+	Data_Get_Struct(rb_other, git_index, index);
+
 	rugged_parse_diff_options(&opts, rb_options);
 
-	if (!NIL_P(rb_self)) {
-		if (!rb_obj_is_kind_of(rb_self, rb_cRuggedTree))
-			rb_raise(rb_eTypeError,
-				"At least a Rugged::Tree object is required for diffing");
-
+	if (RTEST(rb_self)) {
 		Data_Get_Struct(rb_self, git_tree, tree);
 	}
 
-	if (NIL_P(rb_other)) {
-		if (tree == NULL) {
-			xfree(opts.pathspec.strings);
-			rb_raise(rb_eTypeError, "Need 'old' or 'new' for diffing");
-		}
+	error = git_diff_tree_to_index(&diff, repo, tree, index, &opts);
 
-		error = git_diff_tree_to_tree(&diff, repo, tree, NULL, &opts);
-	} else {
-		if (TYPE(rb_other) == T_STRING)
-			rb_other = rugged_object_rev_parse(rb_repo, rb_other, 1);
+	xfree(opts.pathspec.strings);
+	rugged_exception_check(error);
 
-		if (rb_obj_is_kind_of(rb_other, rb_cRuggedCommit)) {
-			git_tree *other_tree;
-			git_commit *commit;
+	return rugged_diff_new(rb_cRuggedDiff, rb_repo, diff);
+}
 
-			Data_Get_Struct(rb_other, git_commit, commit);
-			error = git_commit_tree(&other_tree, commit);
+static VALUE rb_git_diff_tree_to_tree(VALUE self, VALUE rb_repo, VALUE rb_tree, VALUE rb_other_tree, VALUE rb_options) {
+	git_tree *tree = NULL;
+	git_tree *other_tree = NULL;
+	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
+	git_repository *repo = NULL;
+	git_diff *diff = NULL;
+	int error;
 
-			if (!error) {
-				error = git_diff_tree_to_tree(&diff, repo, tree, other_tree, &opts);
-				git_tree_free(other_tree);
-			}
-		} else if (rb_obj_is_kind_of(rb_other, rb_cRuggedTree)) {
-			git_tree *other_tree;
+	Data_Get_Struct(rb_repo, git_repository, repo);
+	Data_Get_Struct(rb_tree, git_tree, tree);
 
-			Data_Get_Struct(rb_other, git_tree, other_tree);
-			error = git_diff_tree_to_tree(&diff, repo, tree, other_tree, &opts);
-		} else if (rb_obj_is_kind_of(rb_other, rb_cRuggedIndex)) {
-			git_index *index;
-			Data_Get_Struct(rb_other, git_index, index);
-			error = git_diff_tree_to_index(&diff, repo, tree, index, &opts);
-		} else {
-			xfree(opts.pathspec.strings);
-			rb_raise(rb_eTypeError, "A Rugged::Commit, Rugged::Tree or Rugged::Index instance is required");
-		}
-	}
+	if(RTEST(rb_other_tree))
+	    Data_Get_Struct(rb_other_tree, git_tree, other_tree);
+
+	rugged_parse_diff_options(&opts, rb_options);
+
+	error = git_diff_tree_to_tree(&diff, repo, tree, other_tree, &opts);
 
 	xfree(opts.pathspec.strings);
 	rugged_exception_check(error);
@@ -1036,7 +902,8 @@ void Init_rugged_tree(void)
 	rb_define_method(rb_cRuggedTree, "update", rb_git_tree_update, 1);
 	rb_define_singleton_method(rb_cRuggedTree, "empty", rb_git_tree_empty, 1);
 
-	rb_define_singleton_method(rb_cRuggedTree, "diff", rb_git_tree_diff_, -1);
+	rb_define_private_method(rb_singleton_class(rb_cRuggedTree), "diff_tree_to_index", rb_git_diff_tree_to_index, 4);
+	rb_define_private_method(rb_singleton_class(rb_cRuggedTree), "diff_tree_to_tree", rb_git_diff_tree_to_tree, 4);
 
 	rb_cRuggedTreeBuilder = rb_define_class_under(rb_cRuggedTree, "Builder", rb_cObject);
 	rb_define_singleton_method(rb_cRuggedTreeBuilder, "new", rb_git_treebuilder_new, -1);
