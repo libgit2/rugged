@@ -23,6 +23,7 @@
  */
 
 #include "rugged.h"
+#include <ruby/thread.h>
 
 extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedObject;
@@ -380,13 +381,31 @@ static VALUE rb_git_diff_tree_to_index(VALUE self, VALUE rb_repo, VALUE rb_self,
 	return rugged_diff_new(rb_cRuggedDiff, rb_repo, diff);
 }
 
+struct nogvl_diff_args {
+	git_repository * repo;
+	git_tree * tree;
+	git_tree * other_tree;
+	git_diff_options * opts;
+	int error;
+};
+
+static void * rb_git_diff_tree_to_tree_nogvl(void * _args)
+{
+	struct nogvl_diff_args * args;
+	git_diff *diff = NULL;
+
+	args = (struct nogvl_diff_args *)_args;
+	args->error = git_diff_tree_to_tree(&diff, args->repo, args->tree, args->other_tree, args->opts);
+	return diff;
+}
+
 static VALUE rb_git_diff_tree_to_tree(VALUE self, VALUE rb_repo, VALUE rb_tree, VALUE rb_other_tree, VALUE rb_options) {
 	git_tree *tree = NULL;
 	git_tree *other_tree = NULL;
 	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
 	git_repository *repo = NULL;
 	git_diff *diff = NULL;
-	int error;
+	struct nogvl_diff_args args;
 
 	Data_Get_Struct(rb_repo, git_repository, repo);
 	Data_Get_Struct(rb_tree, git_tree, tree);
@@ -396,10 +415,15 @@ static VALUE rb_git_diff_tree_to_tree(VALUE self, VALUE rb_repo, VALUE rb_tree, 
 
 	rugged_parse_diff_options(&opts, rb_options);
 
-	error = git_diff_tree_to_tree(&diff, repo, tree, other_tree, &opts);
+	args.repo = repo;
+	args.tree = tree;
+	args.other_tree = other_tree;
+	args.opts = &opts;
+
+	diff = rb_thread_call_without_gvl(rb_git_diff_tree_to_tree_nogvl, &args, RUBY_UBF_PROCESS, NULL);
 
 	xfree(opts.pathspec.strings);
-	rugged_exception_check(error);
+	rugged_exception_check(args.error);
 
 	return rugged_diff_new(rb_cRuggedDiff, rb_repo, diff);
 }
