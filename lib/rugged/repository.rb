@@ -1,3 +1,8 @@
+# Copyright (C) the Rugged contributors.  All rights reserved.
+#
+# This file is part of Rugged, distributed under the MIT license.
+# For full terms see the included LICENSE file.
+
 module Rugged
   # Repository is an interface into a Git repository on-disk. It's the primary
   # interface between your app and the main Git objects Rugged makes available
@@ -190,7 +195,7 @@ module Rugged
     # revision - The String SHA1.
     # path     - The String file path.
     #
-    # Returns a String.
+    # Returns a Rugged::Blob object
     def blob_at(revision, path)
       tree = Rugged::Commit.lookup(self, revision).tree
       begin
