@@ -369,6 +369,7 @@ struct nogvl_diff_args {
 	git_tree * tree;
 	git_tree * other_tree;
 	git_diff_options * opts;
+	git_cancellation *cancellation;
 	int error;
 };
 
@@ -378,11 +379,16 @@ static void * rb_git_diff_tree_to_tree_nogvl(void * _args)
 	git_diff *diff = NULL;
 
 	args = (struct nogvl_diff_args *)_args;
+
+	if (args->cancellation)
+		git_cancellation_activate(args->cancellation);
+
 	args->error = git_diff_tree_to_tree(&diff, args->repo, args->tree, args->other_tree, args->opts);
+	git_cancellation_deactivate();
 	return diff;
 }
 
-static VALUE rb_git_diff_tree_to_tree(VALUE self, VALUE rb_repo, VALUE rb_tree, VALUE rb_other_tree, VALUE rb_options) {
+static VALUE rb_git_diff_tree_to_tree(VALUE self, VALUE rb_repo, VALUE rb_tree, VALUE rb_other_tree, VALUE rb_cancellation, VALUE rb_options) {
 	git_tree *tree = NULL;
 	git_tree *other_tree = NULL;
 	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
@@ -402,6 +408,11 @@ static VALUE rb_git_diff_tree_to_tree(VALUE self, VALUE rb_repo, VALUE rb_tree, 
 	args.tree = tree;
 	args.other_tree = other_tree;
 	args.opts = &opts;
+	args.cancellation = NULL;
+
+	if (RTEST(rb_cancellation))
+		Data_Get_Struct(rb_cancellation, git_cancellation, args.cancellation);
+
 
 	diff = rb_thread_call_without_gvl(rb_git_diff_tree_to_tree_nogvl, &args, RUBY_UBF_PROCESS, NULL);
 
@@ -910,7 +921,7 @@ void Init_rugged_tree(void)
 	rb_define_singleton_method(rb_cRuggedTree, "empty", rb_git_tree_empty, 1);
 
 	rb_define_private_method(rb_singleton_class(rb_cRuggedTree), "diff_tree_to_index", rb_git_diff_tree_to_index, 4);
-	rb_define_private_method(rb_singleton_class(rb_cRuggedTree), "diff_tree_to_tree", rb_git_diff_tree_to_tree, 4);
+	rb_define_private_method(rb_singleton_class(rb_cRuggedTree), "diff_tree_to_tree", rb_git_diff_tree_to_tree, 5);
 
 	rb_cRuggedTreeBuilder = rb_define_class_under(rb_cRuggedTree, "Builder", rb_cObject);
 	rb_define_singleton_method(rb_cRuggedTreeBuilder, "new", rb_git_treebuilder_new, -1);

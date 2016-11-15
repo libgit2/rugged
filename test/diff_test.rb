@@ -1152,6 +1152,20 @@ EOS
       assert_equal expected_lines, patch.lines(exclude_eofnl: true)
     end
   end
+
+  def test_cancellation_already_canceled
+    repo = FixtureRepo.from_libgit2("diff")
+
+    a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+    b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
+
+    cancellation = Rugged::Cancellation.new
+    cancellation.request
+
+    assert_raises(Rugged::CancellationError) do
+      a.tree.diff(b.tree, cancellation: cancellation)
+    end
+  end
 end
 
 class TreeDiffRegression < Rugged::TestCase

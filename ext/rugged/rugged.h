@@ -59,6 +59,7 @@ void Init_rugged_blame(void);
 void Init_rugged_cred(void);
 void Init_rugged_backend(void);
 void Init_rugged_rebase(void);
+void Init_rugged_cancellation(void);
 
 VALUE rb_git_object_init(git_otype type, int argc, VALUE *argv, VALUE self);
 

@@ -39,6 +39,8 @@ const char *RUGGED_ERROR_NAMES[] = {
 	"DescribeError",   /* GITERR_DESCRIBE */
 	"RebaseError",     /* GITERR_REBASE */
 	"FilesystemError", /* GITERR_FILESYSTEM */
+	"PatchError",      /* GITERR_PATCH */
+	"CancellationError", /*GITERR_CANCELLATION */
 };
 
 #define RUGGED_ERROR_COUNT (int)((sizeof(RUGGED_ERROR_NAMES)/sizeof(RUGGED_ERROR_NAMES[0])))
@@ -552,6 +554,7 @@ void Init_rugged(void)
 	Init_rugged_cred();
 	Init_rugged_backend();
 	Init_rugged_rebase();
+	Init_rugged_cancellation();
 
 	/*
 	 * Sort the repository contents in no particular ordering;

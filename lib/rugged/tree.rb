@@ -131,11 +131,18 @@ module Rugged
         raise TypeError, "At least a Rugged::Tree object is required for diffing"
       end
 
+      cancellation =
+        if options
+          options.fetch(:cancellation, nil)
+        else
+          nil
+        end
+
       if other_tree.nil?
         if tree.nil?
           raise TypeError, "Need 'old' or 'new' for diffing"
         else
-          diff_tree_to_tree repo, tree, nil, options
+          diff_tree_to_tree repo, tree, nil, cancellation, options
         end
       else
         if other_tree.is_a?(::String)
@@ -144,9 +151,9 @@ module Rugged
 
         case other_tree
         when Rugged::Commit
-          diff_tree_to_tree repo, tree, other_tree.tree, options
+          diff_tree_to_tree repo, tree, other_tree.tree, cancellation, options
         when Rugged::Tree
-          diff_tree_to_tree repo, tree, other_tree, options
+          diff_tree_to_tree repo, tree, other_tree, cancellation, options
         when Rugged::Index
           diff_tree_to_index repo, tree, other_tree, options
         else
