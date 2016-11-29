@@ -19,7 +19,7 @@ VALUE rb_cRuggedCommit;
  *    commit.message -> msg
  *
  *  Return the message of this commit. This includes the full body of the
- *  message, with the short description, detailed descritpion, and any
+ *  message, with the short description, detailed description, and any
  *  optional footers or signatures after it.
  *
  *  In Ruby 1.9+, the returned string will be encoded with the encoding
