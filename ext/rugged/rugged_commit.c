@@ -628,7 +628,7 @@ static VALUE rb_git_commit_header(VALUE self)
 
 /*
  *  call-seq:
- *    Rugged::Commit.extract_signature(repo, commit, field_name) -> [str, str]
+ *    Commit.extract_signature(repo, commit, field_name) -> [str, str]
  *
  *  Returns +commit+'s signature in 'field' and the signed data
  *
@@ -744,7 +744,7 @@ cleanup:
 
 /*
  *  call-seq:
- *    Rugged::Commit.create_with_signature(repo, content, signature, field_name = "gpgsig") -> oid
+ *    Commit.create_with_signature(repo, content, signature, field_name = "gpgsig") -> oid
  *
  *  Create a commit from the +content+ string and the +signature+,
  *  adding this data to the +field_name+ header field in the resulting
