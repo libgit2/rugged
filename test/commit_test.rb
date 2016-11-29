@@ -348,6 +348,20 @@ SIGNEDDATA
     raw_commit = Rugged::Commit::lookup(@repo, id1).read_raw.data
     assert_equal signed_commit, raw_commit
   end
+
+  def test_commit_summary
+    person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
+
+    commit_id = Rugged::Commit.create(@repo,
+      :message => "This is the commit message\n\nThis commit is created from Rugged",
+      :committer => person,
+      :author => person,
+      :parents => [@repo.head.target],
+      :tree => "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
+
+    commit = Rugged::Commit.lookup(@repo, commit_id)
+    assert_equal "This is the commit message", commit.summary
+  end
 end
 
 class CommitWriteTest < Rugged::TestCase
