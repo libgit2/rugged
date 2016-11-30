@@ -19,7 +19,7 @@ VALUE rb_cRuggedCommit;
  *    commit.message -> msg
  *
  *  Return the message of this commit. This includes the full body of the
- *  message, with the short description, detailed descritpion, and any
+ *  message, with the short description, detailed description, and any
  *  optional footers or signatures after it.
  *
  *  In Ruby 1.9+, the returned string will be encoded with the encoding
@@ -42,6 +42,35 @@ static VALUE rb_git_commit_message_GET(VALUE self)
 		encoding = rb_enc_find(encoding_name);
 
 	return rb_enc_str_new(message, strlen(message), encoding);
+}
+
+/*
+ *  call-seq:
+ *    commit.summary -> summary
+ *
+ *  Return the short summary message of this commit.
+ *
+ *  In Ruby 1.9+, the returned string will be encoded with the encoding
+ *  specified in the +Encoding+ header of the commit, if available.
+ *
+ *    commit.message #=> "add a lot of RDoc docs\n\nthis includes docs for commit and blob"
+ *    commit.summary #=> "add a lot of RDoc docs"
+ */
+static VALUE rb_git_commit_summary_GET(VALUE self)
+{
+	git_commit *commit;
+	rb_encoding *encoding = rb_utf8_encoding();
+	const char *encoding_name;
+	const char *summary;
+
+	Data_Get_Struct(self, git_commit, commit);
+
+	summary = git_commit_summary(commit);
+	encoding_name = git_commit_message_encoding(commit);
+	if (encoding_name != NULL)
+		encoding = rb_enc_find(encoding_name);
+
+	return rb_enc_str_new(summary, strlen(summary), encoding);
 }
 
 /*
@@ -790,6 +819,7 @@ void Init_rugged_commit(void)
 	rb_define_singleton_method(rb_cRuggedCommit, "extract_signature", rb_git_commit_extract_signature, -1);
 
 	rb_define_method(rb_cRuggedCommit, "message", rb_git_commit_message_GET, 0);
+	rb_define_method(rb_cRuggedCommit, "summary", rb_git_commit_summary_GET, 0);
 	rb_define_method(rb_cRuggedCommit, "epoch_time", rb_git_commit_epoch_time_GET, 0);
 	rb_define_method(rb_cRuggedCommit, "committer", rb_git_commit_committer_GET, 0);
 	rb_define_method(rb_cRuggedCommit, "author", rb_git_commit_author_GET, 0);
