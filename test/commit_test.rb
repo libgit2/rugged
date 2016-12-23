@@ -181,7 +181,7 @@ class TestCommit < Rugged::TestCase
 
     expected_header_field = "Scott Chacon <schacon@gmail.com> 1273360386 -0700"
     assert_equal expected_header_field, obj.header_field("author")
-    assert_equal nil, obj.header_field("foobar")
+    assert_nil   obj.header_field("foobar")
   end
 
   def test_header_field?

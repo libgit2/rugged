@@ -241,12 +241,11 @@ class RemoteWriteTest < Rugged::TestCase
   def test_remote_set_push_url
     remote = @repo.remotes['origin']
 
-    old_url = remote.push_url
     new_url = 'git://github.com/l?#!@#$ibgit2/TestGitRepository.git'
 
     @repo.remotes.set_push_url(remote, new_url)
 
-    assert_equal old_url, remote.push_url
+    assert_nil   remote.push_url
     assert_equal new_url, @repo.remotes['origin'].push_url
   end
 

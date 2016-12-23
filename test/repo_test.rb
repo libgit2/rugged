@@ -386,15 +386,15 @@ class RepositoryWriteTest < Rugged::TestCase
   end
 
   def test_ident
-    assert_equal(nil, @repo.ident[:name])
-    assert_equal(nil, @repo.ident[:email])
+    assert_nil(@repo.ident[:name])
+    assert_nil(@repo.ident[:email])
 
     @repo.ident = { name: "Other User" }
     assert_equal("Other User", @repo.ident[:name])
-    assert_equal(nil, @repo.ident[:email])
+    assert_nil(@repo.ident[:email])
 
     @repo.ident = { email: "other@example.com" }
-    assert_equal(nil, @repo.ident[:name])
+    assert_nil(@repo.ident[:name])
     assert_equal("other@example.com", @repo.ident[:email])
 
     @repo.ident = { name: "Other User", email: "other@example.com" }
@@ -402,13 +402,13 @@ class RepositoryWriteTest < Rugged::TestCase
     assert_equal("other@example.com", @repo.ident[:email])
 
     @repo.ident = {}
-    assert_equal(nil, @repo.ident[:name])
-    assert_equal(nil, @repo.ident[:email])
+    assert_nil(@repo.ident[:name])
+    assert_nil(@repo.ident[:email])
 
     @repo.ident = { name: "Other User", email: "other@example.com" }
     @repo.ident = nil
-    assert_equal(nil, @repo.ident[:name])
-    assert_equal(nil, @repo.ident[:email])
+    assert_nil(@repo.ident[:name])
+    assert_nil(@repo.ident[:email])
   end
 end
 
@@ -635,7 +635,7 @@ class RepositoryNamespaceTest < Rugged::TestCase
     assert_equal "foo/bar", @repo.namespace
 
     @repo.namespace = nil
-    assert_equal nil, @repo.namespace
+    assert_nil @repo.namespace
   end
 
   def test_refs_in_namespaces
@@ -714,7 +714,7 @@ ATTR
     assert_equal 'text', @repo.fetch_attributes('new.txt', 'linguist-lang')
     assert_equal 'this', @repo.fetch_attributes('new.txt', 'other-attr')
     assert_equal true, @repo.fetch_attributes('README', 'is_readme')
-    assert_equal nil, @repo.fetch_attributes('README', 'linguist-lang')
+    assert_nil   @repo.fetch_attributes('README', 'linguist-lang')
   end
 
   def test_read_attributes_internal_multi
@@ -743,7 +743,7 @@ ATTR
 
     atr = @repo.attributes('branch_file.txt')
     assert_equal 'text', atr['linguist-lang']
-    assert_equal nil, atr['other-attr']
+    assert_nil   atr['other-attr']
 
     atr.each do |key, value|
       assert key.instance_of? String
@@ -751,8 +751,8 @@ ATTR
     end
 
     atr = @repo.attributes('new.txt', :priority => [:index])
-    assert_equal nil, atr['linguist-lang']
-    assert_equal nil, atr['linguist-lang']
+    assert_nil atr['linguist-lang']
+    assert_nil atr['linguist-lang']
   end
 end
 
