@@ -1,4 +1,4 @@
-# encoding: UTF-8
+# encoding: utf-8
 require "test_helper"
 
 class ReferenceTest < Rugged::TestCase
@@ -81,7 +81,7 @@ class ReferenceTest < Rugged::TestCase
 
   def test_looking_up_missing_ref_returns_nil
     ref = @repo.references["lol/wut"]
-    assert_equal nil, ref
+    assert_nil ref
   end
 
   def test_reference_exists
@@ -303,7 +303,7 @@ class ReflogTest < Rugged::TestCase
 
     assert_equal '0000000000000000000000000000000000000000', reflog[0][:id_old]
     assert_equal 'a65fedf39aefe402d3bb6e24df4d4f5fe4547750', reflog[0][:id_new]
-    assert_equal nil, reflog[0][:message]
+    assert_nil   reflog[0][:message]
     assert_equal @ident[:name], reflog[0][:committer][:name]
     assert_equal @ident[:email], reflog[0][:committer][:email]
     assert_kind_of Time, reflog[0][:committer][:time]
@@ -323,7 +323,7 @@ class ReflogTest < Rugged::TestCase
 
     assert_equal '0000000000000000000000000000000000000000', reflog[0][:id_old]
     assert_equal 'a65fedf39aefe402d3bb6e24df4d4f5fe4547750', reflog[0][:id_new]
-    assert_equal nil, reflog[0][:message]
+    assert_nil   reflog[0][:message]
     assert_equal 'Other User', reflog[0][:committer][:name]
     assert_equal 'other@example.com', reflog[0][:committer][:email]
     assert_kind_of Time, reflog[0][:committer][:time]
@@ -378,7 +378,7 @@ class ReflogTest < Rugged::TestCase
 
     assert_equal 'a65fedf39aefe402d3bb6e24df4d4f5fe4547750', reflog[1][:id_old]
     assert_equal '5b5b025afb0b4c913b4c338a42934a3863bf3644', reflog[1][:id_new]
-    assert_equal nil, reflog[1][:message]
+    assert_nil   reflog[1][:message]
     assert_equal @ident[:name], reflog[1][:committer][:name]
     assert_equal @ident[:email], reflog[1][:committer][:email]
     assert_kind_of Time, reflog[1][:committer][:time]
@@ -397,7 +397,7 @@ class ReflogTest < Rugged::TestCase
 
     assert_equal 'a65fedf39aefe402d3bb6e24df4d4f5fe4547750', reflog[1][:id_old]
     assert_equal '5b5b025afb0b4c913b4c338a42934a3863bf3644', reflog[1][:id_new]
-    assert_equal nil, reflog[1][:message]
+    assert_nil   reflog[1][:message]
     assert_equal "Other User", reflog[1][:committer][:name]
     assert_equal "other@exmaple.com", reflog[1][:committer][:email]
     assert_kind_of Time, reflog[1][:committer][:time]

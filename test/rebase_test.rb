@@ -76,7 +76,7 @@ class TestRebase < Rugged::TestCase
     rebase.commit(committer: @sig)
 
     op = rebase.next()
-    assert_equal nil, op
+    assert_nil op
 
     rebase.finish(@sig)
   end

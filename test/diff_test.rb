@@ -854,7 +854,7 @@ EOS
 
     assert_equal(:context, lines[2].line_origin)
     assert_equal("Git is fast. With Git, nearly all operations are performed locally, giving\n", lines[2].content)
-    assert_equal(nil, lines[2].content_offset)
+    assert_nil(lines[2].content_offset)
     assert_equal(1, lines[2].old_lineno)
     assert_equal(1, lines[2].new_lineno)
 

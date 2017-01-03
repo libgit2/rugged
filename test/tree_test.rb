@@ -77,7 +77,7 @@ class TreeTest < Rugged::TestCase
 
   def test_get_entry_by_oid_returns_nil_if_no_oid
     nada = @tree.get_entry_by_oid("1385f264afb75a56a5bec74243be9b367ba4ca07")
-    assert_equal nil, nada
+    assert_nil nada
   end
 
   def test_get_entry_by_oid_throws_error_if_wrong_type
