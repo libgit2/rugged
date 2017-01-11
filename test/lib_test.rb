@@ -14,7 +14,7 @@ class RuggedTest < Rugged::TestCase
     version = Rugged::libgit2_version
     assert_equal version.length, 3
     version.each do |i|
-      assert i.is_a? Fixnum
+      assert i.is_a? Integer
     end
   end
 
