@@ -81,6 +81,88 @@ class TestRebase < Rugged::TestCase
     rebase.finish(@sig)
   end
 
+  def test_rebase_onto_empty_commit
+    base_id = Rugged::Commit.create(@repo, {
+      message: "Add Readme",
+      committer: @sig,
+      author: @sig,
+      parents: [],
+      tree: Rugged::Tree.empty(@repo).update([
+        { action: :upsert,
+          oid: Rugged::Blob.from_buffer(@repo, "# README"),
+          filemode: 0100644,
+          path: "README.md"
+        }
+      ])
+    })
+    assert_equal "a8dc4354f25fb9187158daea19b1c3a9a55fff1d", base_id
+    base = @repo.lookup(base_id)
+
+    empty_id = Rugged::Commit.create(@repo, {
+      message: "Add Readme",
+      committer: @sig,
+      author: @sig,
+      parents: [ base ],
+      tree: base.tree
+    })
+    assert_equal "912fb4d9110912bac7ebbdb6668bbd6bf9e049ac", empty_id
+    empty = @repo.lookup(empty_id)
+    assert_equal [ base_id ], empty.parent_ids
+
+    changes_id = Rugged::Commit.create(@repo, {
+      message: "Add License",
+      committer: @sig,
+      author: @sig,
+      parents: [ base ],
+      tree: base.tree.update([
+        { action: :upsert,
+          oid: Rugged::Blob.from_buffer(@repo, "# LICENSE"),
+          filemode: 0100644,
+          path: "LICENSE.md"
+        }
+      ])
+    })
+    assert_equal "eb4d5d00a6fb39c7270b8cc852ef3f245d82f2ff", changes_id
+    changes = @repo.lookup(changes_id)
+    assert_equal [ base_id ], changes.parent_ids
+
+    rebase = Rugged::Rebase.new(@repo, changes, empty, inmemory: true)
+
+    assert rebase.next
+
+    rebased_commit_id = rebase.commit(committer: @sig)
+    assert_equal "15ad95ba0acfa47f9e0694712c56bbfe3dbdddb8", rebased_commit_id
+
+    rebased_commit = @repo.lookup(rebased_commit_id)
+    assert_equal [ empty_id ], rebased_commit.parent_ids
+
+    refute rebase.next
+
+    rebase.finish(@sig)
+  end
+
+  def test_rebase_does_not_create_new_commits
+    rebase = Rugged::Rebase.new(@repo, "refs/heads/gravy", "refs/heads/veal")
+
+    op = rebase.next()
+    first_commit_id = rebase.commit(committer: @sig)
+
+    op = rebase.next()
+    assert_nil op
+
+    rebase.finish(@sig)
+
+    rebase = Rugged::Rebase.new(@repo, "refs/heads/gravy", "refs/heads/veal")
+
+    op = rebase.next()
+    assert_equal first_commit_id, rebase.commit(committer: @sig)
+
+    op = rebase.next()
+    assert_nil op
+
+    rebase.finish(@sig)
+  end
+
   def test_merge_commit_fails_without_options
     rebase = Rugged::Rebase.new(@repo, "refs/heads/gravy", "refs/heads/veal")
 
