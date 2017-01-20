@@ -81,7 +81,7 @@ class TestRebase < Rugged::TestCase
     rebase.finish(@sig)
   end
 
-  def test_rebase_onto_empty_commit
+  def test_rebase_treesame_onto_empty_commit
     base_id = Rugged::Commit.create(@repo, {
       message: "Add Readme",
       committer: @sig,
@@ -141,24 +141,48 @@ class TestRebase < Rugged::TestCase
     rebase.finish(@sig)
   end
 
-  def test_rebase_does_not_create_new_commits
-    rebase = Rugged::Rebase.new(@repo, "refs/heads/gravy", "refs/heads/veal")
+  def test_rebase_treesame_does_not_create_new_commits
+    base_id = Rugged::Commit.create(@repo, {
+      message: "Add Readme",
+      committer: @sig,
+      author: @sig,
+      parents: [],
+      tree: Rugged::Tree.empty(@repo).update([
+        { action: :upsert,
+          oid: Rugged::Blob.from_buffer(@repo, "# README"),
+          filemode: 0100644,
+          path: "README.md"
+        }
+      ])
+    })
+    assert_equal "a8dc4354f25fb9187158daea19b1c3a9a55fff1d", base_id
+    base = @repo.lookup(base_id)
 
-    op = rebase.next()
-    first_commit_id = rebase.commit(committer: @sig)
+    changes_id = Rugged::Commit.create(@repo, {
+      message: "Add License",
+      committer: @sig,
+      author: @sig,
+      parents: [ base ],
+      tree: base.tree.update([
+        { action: :upsert,
+          oid: Rugged::Blob.from_buffer(@repo, "# LICENSE"),
+          filemode: 0100644,
+          path: "LICENSE.md"
+        }
+      ])
+    })
+    assert_equal "eb4d5d00a6fb39c7270b8cc852ef3f245d82f2ff", changes_id
+    changes = @repo.lookup(changes_id)
+    assert_equal [ base_id ], changes.parent_ids
 
-    op = rebase.next()
-    assert_nil op
+    rebase = Rugged::Rebase.new(@repo, changes, base, inmemory: true)
 
-    rebase.finish(@sig)
+    assert rebase.next
 
-    rebase = Rugged::Rebase.new(@repo, "refs/heads/gravy", "refs/heads/veal")
+    rebased_commit_id = rebase.commit(committer: @sig)
+    assert_equal "eb4d5d00a6fb39c7270b8cc852ef3f245d82f2ff", rebased_commit_id
 
-    op = rebase.next()
-    assert_equal first_commit_id, rebase.commit(committer: @sig)
-
-    op = rebase.next()
-    assert_nil op
+    refute rebase.next
 
     rebase.finish(@sig)
   end
