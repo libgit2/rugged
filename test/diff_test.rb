@@ -1188,6 +1188,50 @@ class TreeDiffRegression < Rugged::TestCase
     assert_equal "A Rugged::Commit, Rugged::Tree or Rugged::Index instance is required", ex.message
   end
 
+  def test_self_is_nil_other_is_tree_does_not_fail
+    repo = FixtureRepo.from_libgit2("diff")
+
+    a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+
+    diff = Rugged::Tree.diff(repo, nil, a.tree)
+    assert_equal 2, diff.size
+    assert_equal 2, diff.deltas.size
+
+    delta = diff.deltas[0]
+    assert_equal({
+      oid: "0000000000000000000000000000000000000000",
+      path: "another.txt",
+      size: 0,
+      flags: 4,
+      mode: 0
+    }, delta.old_file)
+
+    assert_equal({
+      oid: "3e5bcbad2a68e5bc60a53b8388eea53a1a7ab847",
+      path: "another.txt",
+      size: 0,
+      flags: 12,
+      mode: 0100644
+    }, delta.new_file)
+
+    delta = diff.deltas[1]
+    assert_equal({
+      oid: "0000000000000000000000000000000000000000",
+      path: "readme.txt",
+      size: 0,
+      flags: 4,
+      mode: 0
+    }, delta.old_file)
+
+    assert_equal({
+      oid: "7b808f723a8ca90df319682c221187235af76693",
+      path: "readme.txt",
+      size: 0,
+      flags: 12,
+      mode: 0100644
+    }, delta.new_file)
+  end
+
   def test_other_tree_is_an_index_but_tree_is_nil
     repo = FixtureRepo.from_libgit2("diff")
 
