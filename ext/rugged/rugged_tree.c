@@ -391,7 +391,9 @@ static VALUE rb_git_diff_tree_to_tree(VALUE self, VALUE rb_repo, VALUE rb_tree, 
 	struct nogvl_diff_args args;
 
 	Data_Get_Struct(rb_repo, git_repository, repo);
-	Data_Get_Struct(rb_tree, git_tree, tree);
+
+	if(RTEST(rb_tree))
+	    Data_Get_Struct(rb_tree, git_tree, tree);
 
 	if(RTEST(rb_other_tree))
 	    Data_Get_Struct(rb_other_tree, git_tree, other_tree);
