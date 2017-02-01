@@ -554,17 +554,15 @@ void Init_rugged(void)
 	Init_rugged_rebase();
 
 	/*
-	 * Sort the repository contents in no particular ordering;
-	 * this sorting is arbitrary, implementation-specific
-	 * and subject to change at any time.
+	 * Sort the output with the same default time-order method from git.
 	 * This is the default sorting for new walkers.
 	 */
 	rb_define_const(rb_mRugged, "SORT_NONE", INT2FIX(GIT_SORT_NONE));
 
 	/*
-	 * Sort the repository contents in topological order
-	 * (parents before children); this sorting mode
-	 * can be combined with time sorting.
+	 * Sort the repository contents in topological order (parents before
+	 * children); this sorting mode can be combined with time sorting to
+	 * produce git's "time-order".
 	 */
 	rb_define_const(rb_mRugged, "SORT_TOPO", INT2FIX(GIT_SORT_TOPOLOGICAL));
 
