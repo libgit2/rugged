@@ -428,13 +428,13 @@ static VALUE rb_git_walk_with_opts(int argc, VALUE *argv, VALUE self, int oid_on
 /*
  *  call-seq:
  *    walker.each { |commit| block }
- *    walker.each -> Iterator
+ *    walker.each -> Enumerator
  *
  *  Perform the walk through the repository, yielding each
  *  one of the commits found as a <tt>Rugged::Commit</tt> instance
  *  to +block+.
  *
- *  If no +block+ is given, an +Iterator+ will be returned.
+ *  If no +block+ is given, an +Enumerator+ will be returned.
  *
  *  The walker must have been previously set-up before a walk can be performed
  *  (i.e. at least one commit must have been pushed).
@@ -458,13 +458,13 @@ static VALUE rb_git_walker_each(int argc, VALUE *argv, VALUE self)
 /*
  *  call-seq:
  *    walker.each_oid { |commit| block }
- *    walker.each_oid -> Iterator
+ *    walker.each_oid -> Enumerator
  *
  *  Perform the walk through the repository, yielding each
  *  one of the commit oids found as a <tt>String</tt>
  *  to +block+.
  *
- *  If no +block+ is given, an +Iterator+ will be returned.
+ *  If no +block+ is given, an +Enumerator+ will be returned.
  *
  *  The walker must have been previously set-up before a walk can be performed
  *  (i.e. at least one commit must have been pushed).

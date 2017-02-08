@@ -260,7 +260,7 @@ static int rugged__treewalk_cb(const char *root, const git_tree_entry *entry, vo
 /*
  *  call-seq:
  *    tree.walk(mode) { |root, entry| block }
- *    tree.walk(mode) -> Iterator
+ *    tree.walk(mode) -> Enumerator
  *
  *  Walk +tree+ with the given mode (either +:preorder+ or +:postorder+) and yield
  *  to +block+ every entry in +tree+ and all its subtrees, as a +Hash+. The +block+
@@ -270,7 +270,7 @@ static int rugged__treewalk_cb(const char *root, const git_tree_entry *entry, vo
  *  If the +block+ returns a falsy value, that entry and its sub-entries (in the case
  *  of a folder) will be skipped for the iteration.
  *
- *  If no +block+ is given, an +Iterator+ is returned instead.
+ *  If no +block+ is given, an +Enumerator+ is returned instead.
  *
  *    tree.walk(:postorder) { |root, entry| puts "#{root}#{entry[:name]} [#{entry[:oid]}]" }
  *
