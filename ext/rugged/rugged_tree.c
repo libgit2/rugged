@@ -487,8 +487,8 @@ void rugged_parse_merge_options(git_merge_options *opts, VALUE rb_options)
 			}
 		}
 
-		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("renames")))) {
-			opts->flags |= GIT_MERGE_FIND_RENAMES;
+		if (rb_hash_aref(rb_options, CSTR2SYM("renames")) == Qfalse) {
+			opts->flags &= ~GIT_MERGE_FIND_RENAMES;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("fail_on_conflict")))) {
@@ -515,7 +515,8 @@ void rugged_parse_merge_options(git_merge_options *opts, VALUE rb_options)
  *  The following options can be passed in the +options+ Hash:
  *
  *  :renames ::
- *    If true, looking for renames will be enabled (`--find-renames`).
+ *    If true, looking for renames will be enabled (`--find-renames`),
+ *    set to false to disable (default true).
  *
  *  :rename_threshold ::
  *    An integer specifying the minimum similarity of a file to be
