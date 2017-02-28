@@ -15,7 +15,14 @@ def sys(cmd)
   ret
 end
 
-if !(MAKE = find_executable('gmake') || find_executable('make'))
+MAKE = if Gem.win_platform?
+  # On Windows, Ruby-DevKit only has 'make'.
+  find_executable('make')
+else
+  find_executable('gmake') || find_executable('make')
+end
+
+if !MAKE
   abort "ERROR: GNU make is required to build Rugged."
 end
 
