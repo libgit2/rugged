@@ -15,10 +15,6 @@ def sys(cmd)
   ret
 end
 
-def windows?
-  RbConfig::CONFIG['host_os'] =~ /mswin|mingw/
-end
-
 if !(MAKE = find_executable('gmake') || find_executable('make'))
   abort "ERROR: GNU make is required to build Rugged."
 end
@@ -59,7 +55,7 @@ else
     abort "ERROR: CMake is required to build Rugged."
   end
 
-  if !windows? && !find_executable('pkg-config')
+  if !Gem.win_platform? && !find_executable('pkg-config')
     abort "ERROR: pkg-config is required to build Rugged."
   end
 
@@ -68,14 +64,14 @@ else
 
     Dir.chdir("build") do
       # On Windows, Ruby-DevKit is MSYS-based, so ensure to use MSYS Makefiles.
-      generator = "-G \"MSYS Makefiles\"" if windows?
+      generator = "-G \"MSYS Makefiles\"" if Gem.win_platform?
       sys("cmake .. -DBUILD_CLAR=OFF -DTHREADSAFE=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS=-fPIC -DCMAKE_BUILD_TYPE=RelWithDebInfo #{generator}")
       sys(MAKE)
 
       # "normal" libraries (and libgit2 builds) get all these when they build but we're doing it
       # statically so we put the libraries in by hand. It's important that we put the libraries themselves
       # in $LIBS or the final linking stage won't pick them up
-      if windows?
+      if Gem.win_platform?
         $LDFLAGS << " " + "-L#{Dir.pwd}/deps/winhttp"
         $LIBS << " -lwinhttp -lcrypt32 -lrpcrt4 -lole32"
       else
