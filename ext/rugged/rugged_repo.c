@@ -1589,7 +1589,7 @@ static int rugged__each_id_cb(const git_oid *id, void *payload)
 /*
  *  call-seq:
  *    repo.each_id { |id| block }
- *    repo.each_id -> Iterator
+ *    repo.each_id -> Enumerator
  *
  *  Call the given +block+ once with every object ID found in +repo+
  *  and all its alternates. Object IDs are passed as 40-character
