@@ -158,7 +158,7 @@ module Rugged
         username:   ENV["GITTEST_REMOTE_SSH_USER"],
         publickey:  ENV["GITTEST_REMOTE_SSH_PUBKEY"],
         privatekey: ENV["GITTEST_REMOTE_SSH_KEY"],
-        passphrase: ENV["GITTEST_REMOTE_SSH_PASSPHASE"],
+        passphrase: ENV["GITTEST_REMOTE_SSH_PASSPHRASE"],
       })
     end
 
