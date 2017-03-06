@@ -10,6 +10,20 @@ rescue LoadError
 error
 end
 
+if !ENV['MAKE']
+  require 'mkmf'
+
+  MAKE = if Gem.win_platform?
+    # On Windows, Ruby-DevKit only has 'make'.
+    find_executable('make')
+  else
+    find_executable('gmake') || find_executable('make')
+  end
+
+  # Make rake-compiler pick up the right make tool.
+  ENV['MAKE'] = MAKE unless MAKE.nil?
+end
+
 gemspec = Gem::Specification::load(File.expand_path('../rugged.gemspec', __FILE__))
 
 Gem::PackageTask.new(gemspec) do |pkg|

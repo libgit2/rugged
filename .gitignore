@@ -1,6 +1,7 @@
 *.bundle
 *.swp
 Gemfile.lock
+mkmf.log
 tmp/
 test/fixtures/testrepo.git
 ext/rugged/vendor/libgit2-dist/
