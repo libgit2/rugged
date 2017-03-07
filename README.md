@@ -22,6 +22,8 @@ You need to have CMake and `pkg-config` installed on your system to be able to b
 $ brew install cmake
 ```
 
+Please follow the above in case installation of the gem fails with `ERROR: CMake is required to build Rugged.`.
+
 If you want to build Rugged with HTTPS and SSH support, check out the list of optional [libgit2 dependencies](https://github.com/libgit2/libgit2#optional-dependencies).
 
 If you're using bundler and want to bundle `libgit2` with Rugged, you can use the `:submodules` option:
