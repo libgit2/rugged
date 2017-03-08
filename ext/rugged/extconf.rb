@@ -7,6 +7,9 @@ $CFLAGS << " -g"
 $CFLAGS << " -O3" unless $CFLAGS[/-O\d/]
 $CFLAGS << " -Wall -Wno-comment"
 
+cmake_flags = [ ENV["CMAKE_FLAGS"] ]
+cmake_flags << "-DUSE_SHA1DC=ON" if with_config("sha1dc")
+
 def sys(cmd)
   puts " -- #{cmd}"
   unless ret = xsystem(cmd)
@@ -67,7 +70,7 @@ else
     Dir.mkdir("build") if !Dir.exists?("build")
 
     Dir.chdir("build") do
-      sys("cmake .. -DBUILD_CLAR=OFF -DTHREADSAFE=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS=-fPIC -DCMAKE_BUILD_TYPE=RelWithDebInfo #{ENV['CMAKE_FLAGS']} -G \"Unix Makefiles\"")
+      sys("cmake .. -DBUILD_CLAR=OFF -DTHREADSAFE=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS=-fPIC -DCMAKE_BUILD_TYPE=RelWithDebInfo #{cmake_flags.join(' ')} -G \"Unix Makefiles\"")
       sys(MAKE)
 
       # "normal" libraries (and libgit2 builds) get all these when they build but we're doing it
