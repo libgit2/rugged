@@ -91,7 +91,7 @@ else
         $LIBS << " -lwinhttp -lcrypt32 -lrpcrt4 -lole32 -lz"
       else
         pcfile = File.join(LIBGIT2_DIR, "build", "libgit2.pc")
-        $LDFLAGS << " " + `pkg-config --libs --static #{pcfile}`.strip
+        $LDFLAGS << " " + `pkg-config --libs-only-l --static #{pcfile}`.strip
       end
     end
   end
