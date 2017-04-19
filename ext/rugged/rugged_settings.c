@@ -135,9 +135,37 @@ static VALUE rb_git_get_option(VALUE self, VALUE option)
 	}
 }
 
+/*
+ *  call-seq:
+ *    Rugged::Settings.max_cache_size -> max cache size
+ *
+ *  Returns the maximum amount of memory the cache will consume.
+ */
+static VALUE rb_git_get_max_cache_size(VALUE mod) {
+    size_t val;
+    size_t max;
+    git_libgit2_opts(GIT_OPT_GET_CACHED_MEMORY, &val, &max);
+    return SIZET2NUM(max);
+}
+
+/*
+ *  call-seq:
+ *    Rugged::Settings.used_cache_size -> used cache size
+ *
+ *  Returns the amount of memory the cache is currently consuming.
+ */
+static VALUE rb_git_get_used_cache_size(VALUE mod) {
+    size_t val;
+    size_t max;
+    git_libgit2_opts(GIT_OPT_GET_CACHED_MEMORY, &val, &max);
+    return SIZET2NUM(val);
+}
+
 void Init_rugged_settings(void)
 {
 	VALUE rb_cRuggedSettings = rb_define_class_under(rb_mRugged, "Settings", rb_cObject);
 	rb_define_module_function(rb_cRuggedSettings, "[]=", rb_git_set_option, 2);
 	rb_define_module_function(rb_cRuggedSettings, "[]", rb_git_get_option, 1);
+	rb_define_module_function(rb_cRuggedSettings, "max_cache_size", rb_git_get_max_cache_size, 0);
+	rb_define_module_function(rb_cRuggedSettings, "used_cache_size", rb_git_get_used_cache_size, 0);
 }
