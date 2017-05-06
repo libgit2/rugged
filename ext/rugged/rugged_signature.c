@@ -50,8 +50,8 @@ git_signature *rugged_signature_get(VALUE rb_sig, git_repository *repo)
 
 	Check_Type(rb_sig, T_HASH);
 
-	rb_name = rb_hash_aref(rb_sig, CSTR2SYM("name"));
-	rb_email = rb_hash_aref(rb_sig, CSTR2SYM("email"));
+	rb_name = rb_hash_fetch(rb_sig, CSTR2SYM("name"));
+	rb_email = rb_hash_fetch(rb_sig, CSTR2SYM("email"));
 	rb_time = rb_hash_aref(rb_sig, CSTR2SYM("time"));
 	rb_time_offset = rb_hash_aref(rb_sig, CSTR2SYM("time_offset"));
 
