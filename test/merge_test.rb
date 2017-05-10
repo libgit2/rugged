@@ -25,6 +25,7 @@ class TrivialMergeTest < Rugged::TestCase
     base = repo.rev_parse(repo.merge_base(ours, theirs))
 
     index = ours.tree.merge(theirs.tree, base.tree)
+    index.diff
 
     assert index.conflicts?
     assert 2, index.count { |entry| entry[:stage] > 0 }
