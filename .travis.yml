@@ -38,7 +38,11 @@ matrix:
     - os: osx
       rvm: rbx-2
 
+git:
+  submodules: false
+
 before_install:
+  - git submodule update --init
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then ./vendor/libgit2/script/install-deps-osx.sh; fi
 
 script: script/travisbuild
