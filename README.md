@@ -571,7 +571,7 @@ Rugged.raw_to_hex("\277\336Y\315\320\337\254\035\211(\024\366j\225d\032\275\212\
 
 ---
 
-### Alternative backends
+### Alternative backends
 
 You can store bare repositories in alternative backends instead of storing on disk. (see
 `redbadger/rugged-redis` for an example of how a rugged backend works).
