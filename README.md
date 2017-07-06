@@ -1,4 +1,4 @@
-# Rugged
+# Rugged [![Build Status](https://travis-ci.org/libgit2/rugged.svg?branch=master)](https://travis-ci.org/libgit2/rugged)
 **libgit2 bindings in Ruby**
 
 Rugged is a library for accessing [libgit2](https://github.com/libgit2/libgit2) in Ruby. It gives you the speed and
