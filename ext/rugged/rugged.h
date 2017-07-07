@@ -96,6 +96,8 @@ git_object *rugged_object_get(git_repository *repo, VALUE object_value, git_otyp
 int rugged_oid_get(git_oid *oid, git_repository *repo, VALUE p);
 const char * rugged_refname_from_string_or_ref(VALUE rb_name_or_ref);
 
+VALUE rugged_signature_from_buffer(const char *buffer, const char *encoding_name);
+
 void rugged_rb_ary_to_strarray(VALUE rb_array, git_strarray *str_array);
 VALUE rugged_strarray_to_rb_ary(git_strarray *str_array);
 
