@@ -368,6 +368,29 @@ static VALUE rb_git_cache_usage(VALUE self)
 	return rb_ary_new3(2, LL2NUM(used), LL2NUM(max));
 }
 
+/*
+ *  call-seq:
+ *    Rugged.signature_from_buffer(buffer[, encoding_name]) -> signature
+ *
+ * Parse the signature from the given buffer. If an encoding is given, the
+ * strings will be tagged with that encoding.
+ *
+ *    commit.author #=> {:email=>"tanoku@gmail.com", :time=>Tue Jan 24 05:42:45 UTC 2012, :name=>"Vicent Mart\303\255"}
+ */
+static VALUE rb_git_signature_from_buffer(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_buffer, rb_encoding_name;
+	const char *buffer, *encoding_name = NULL;
+
+	rb_scan_args(argc, argv, "11", &rb_buffer, &rb_encoding_name);
+
+	buffer = StringValueCStr(rb_buffer);
+	if (!NIL_P(rb_encoding_name))
+		encoding_name = StringValueCStr(rb_encoding_name);
+
+	return rugged_signature_from_buffer(buffer, encoding_name);
+}
+
 VALUE rugged_strarray_to_rb_ary(git_strarray *str_array)
 {
 	VALUE rb_array = rb_ary_new2(str_array->count);
@@ -520,6 +543,7 @@ void Init_rugged(void)
 	rb_define_module_function(rb_mRugged, "minimize_oid", rb_git_minimize_oid, -1);
 	rb_define_module_function(rb_mRugged, "prettify_message", rb_git_prettify_message, -1);
 	rb_define_module_function(rb_mRugged, "__cache_usage__", rb_git_cache_usage, 0);
+	rb_define_module_function(rb_mRugged, "signature_from_buffer", rb_git_signature_from_buffer, -1);
 
 	Init_rugged_reference();
 	Init_rugged_reference_collection();

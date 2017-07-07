@@ -35,6 +35,19 @@ VALUE rugged_signature_new(const git_signature *sig, const char *encoding_name)
 	return rb_sig;
 }
 
+VALUE rugged_signature_from_buffer(const char *buffer, const char *encoding_name)
+{
+	git_signature *sig;
+	VALUE rb_ret;
+
+	rugged_exception_check(git_signature_from_buffer(&sig, buffer));
+
+	rb_ret = rugged_signature_new(sig, encoding_name);
+	git_signature_free(sig);
+
+	return rb_ret;
+}
+
 git_signature *rugged_signature_get(VALUE rb_sig, git_repository *repo)
 {
 	int error;
