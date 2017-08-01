@@ -1504,11 +1504,12 @@ static VALUE flags_to_rb(unsigned int flags)
 
 static int rugged__status_cb(const char *path, unsigned int flags, void *payload)
 {
-	rb_funcall((VALUE)payload, rb_intern("call"), 2,
-		rb_str_new_utf8(path), flags_to_rb(flags)
-	);
+	int exception = GIT_OK;
 
-	return GIT_OK;
+	rb_protect(rb_yield, rb_ary_new3(2, rb_str_new_utf8(path),
+		    flags_to_rb(flags)), &exception);
+
+	return exception;
 }
 
 /*
@@ -1575,7 +1576,12 @@ static VALUE rb_git_repo_status(int argc, VALUE *argv, VALUE self)
 		(void *)rb_block_proc()
 	);
 
-	rugged_exception_check(error);
+	if (error > 0) {
+	    rb_jump_tag(error);
+	} else {
+	    rugged_exception_check(error);
+	}
+
 	return Qnil;
 }
 
