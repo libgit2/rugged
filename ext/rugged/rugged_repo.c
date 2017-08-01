@@ -1511,58 +1511,26 @@ static int rugged__status_cb(const char *path, unsigned int flags, void *payload
 	return GIT_OK;
 }
 
-/*
- *  call-seq:
- *    repo.status { |file, status_data| block }
- *    repo.status(path) -> status_data
- *
- *  Returns the status for one or more files in the working directory
- *  of the repository. This is equivalent to the +git status+ command.
- *
- *  The returned +status_data+ is always an array containing one or more
- *  status flags as Ruby symbols. Possible flags are:
- *
- *  - +:index_new+: the file is new in the index
- *  - +:index_modified+: the file has been modified in the index
- *  - +:index_deleted+: the file has been deleted from the index
- *  - +:worktree_new+: the file is new in the working directory
- *  - +:worktree_modified+: the file has been modified in the working directory
- *  - +:worktree_deleted+: the file has been deleted from the working directory
- *
- *  If a +block+ is given, status information will be gathered for every
- *  single file on the working dir. The +block+ will be called with the
- *  status data for each file.
- *
- *    repo.status { |file, status_data| puts "#{file} has status: #{status_data.inspect}" }
- *
- *  results in, for example:
- *
- *    src/diff.c has status: [:index_new, :worktree_new]
- *    README has status: [:worktree_modified]
- *
- *  If a +path+ is given instead, the function will return the +status_data+ for
- *  the file pointed to by path, or raise an exception if the path doesn't exist.
- *
- *  +path+ must be relative to the repository's working directory.
- *
- *    repo.status('src/diff.c') #=> [:index_new, :worktree_new]
- */
-static VALUE rb_git_repo_status(int argc, VALUE *argv, VALUE self)
+static VALUE rb_git_repo_file_status(VALUE self, VALUE rb_path)
 {
+	unsigned int flags;
 	int error;
-	VALUE rb_path;
 	git_repository *repo;
 
 	Data_Get_Struct(self, git_repository, repo);
+	Check_Type(rb_path, T_STRING);
+	error = git_status_file(&flags, repo, StringValueCStr(rb_path));
+	rugged_exception_check(error);
 
-	if (rb_scan_args(argc, argv, "01", &rb_path) == 1) {
-		unsigned int flags;
-		Check_Type(rb_path, T_STRING);
-		error = git_status_file(&flags, repo, StringValueCStr(rb_path));
-		rugged_exception_check(error);
+	return flags_to_rb(flags);
+}
 
-		return flags_to_rb(flags);
-	}
+static VALUE rb_git_repo_file_each_status(VALUE self)
+{
+	int error;
+	git_repository *repo;
+
+	Data_Get_Struct(self, git_repository, repo);
 
 	if (!rb_block_given_p())
 		rb_raise(rb_eRuntimeError,
@@ -2605,7 +2573,8 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "path",  rb_git_repo_path, 0);
 	rb_define_method(rb_cRuggedRepo, "workdir",  rb_git_repo_workdir, 0);
 	rb_define_method(rb_cRuggedRepo, "workdir=",  rb_git_repo_set_workdir, 1);
-	rb_define_method(rb_cRuggedRepo, "status",  rb_git_repo_status,  -1);
+	rb_define_private_method(rb_cRuggedRepo, "file_status",  rb_git_repo_file_status, 1);
+	rb_define_private_method(rb_cRuggedRepo, "each_status",  rb_git_repo_file_each_status, 0);
 
 	rb_define_method(rb_cRuggedRepo, "index",  rb_git_repo_get_index,  0);
 	rb_define_method(rb_cRuggedRepo, "index=",  rb_git_repo_set_index,  1);
