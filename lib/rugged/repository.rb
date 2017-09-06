@@ -53,6 +53,49 @@ module Rugged
       end
     end
 
+    ###
+    #  call-seq:
+    #    repo.status { |file, status_data| block }
+    #    repo.status(path) -> status_data
+    #
+    #  Returns the status for one or more files in the working directory
+    #  of the repository. This is equivalent to the +git status+ command.
+    #
+    #  The returned +status_data+ is always an array containing one or more
+    #  status flags as Ruby symbols. Possible flags are:
+    #
+    #  - +:index_new+: the file is new in the index
+    #  - +:index_modified+: the file has been modified in the index
+    #  - +:index_deleted+: the file has been deleted from the index
+    #  - +:worktree_new+: the file is new in the working directory
+    #  - +:worktree_modified+: the file has been modified in the working directory
+    #  - +:worktree_deleted+: the file has been deleted from the working directory
+    #
+    #  If a +block+ is given, status information will be gathered for every
+    #  single file on the working dir. The +block+ will be called with the
+    #  status data for each file.
+    #
+    #    repo.status { |file, status_data| puts "#{file} has status: #{status_data.inspect}" }
+    #
+    #  results in, for example:
+    #
+    #    src/diff.c has status: [:index_new, :worktree_new]
+    #    README has status: [:worktree_modified]
+    #
+    #  If a +path+ is given instead, the function will return the +status_data+ for
+    #  the file pointed to by path, or raise an exception if the path doesn't exist.
+    #
+    #  +path+ must be relative to the repository's working directory.
+    #
+    #    repo.status('src/diff.c') #=> [:index_new, :worktree_new]
+    def status(file = nil, &block)
+      if file
+        file_status file
+      else
+        each_status(&block)
+      end
+    end
+
     def diff(left, right, opts = {})
       left = rev_parse(left) if left.kind_of?(String)
       right = rev_parse(right) if right.kind_of?(String)
