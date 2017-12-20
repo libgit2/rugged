@@ -699,4 +699,31 @@ libgit2 #{Rugged.libgit2_version.join('.')}
 EOS
   end
 
+  class TrailersTest < Rugged::TestCase
+    def setup
+      @source_repo = FixtureRepo.from_rugged("testrepo.git")
+      @repo = FixtureRepo.clone(@source_repo)
+      @repo.config['core.abbrev'] = 7
+    end
+
+    def test_can_parse_trailers
+      person = {:name => 'Brian', :email => 'brian@gmail.com', :time => Time.now }
+
+      commit_oid = Rugged::Commit.create(@repo,
+        :message => "This is the commit message\n\nCo-authored-by: Charles <charliesome@github.com>\nSigned-off-by: Arthur Schreiber <arthurschreiber@github.com>",
+        :committer => person,
+        :author => person,
+        :parents => [@repo.head.target],
+        :tree => @repo.head.target.tree_oid)
+
+      commit = @repo.lookup(commit_oid)
+
+      expected = [
+        ["Co-authored-by", "Charles <charliesome@github.com>"],
+        ["Signed-off-by", "Arthur Schreiber <arthurschreiber@github.com>"]
+      ]
+
+      assert_equal expected, commit.trailers
+    end
+  end
 end
