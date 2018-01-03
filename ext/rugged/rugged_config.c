@@ -198,7 +198,7 @@ static int cb_config__to_hash(const git_config_entry *entry, void *opaque)
 /*
  *  call-seq:
  *    cfg.each_key { |key| block }
- *    cfg.each_key -> enumarator
+ *    cfg.each_key -> enumerator
  *
  *  Call the given block once for each key in the config file. If no block
  *  is given, an enumerator is returned.
