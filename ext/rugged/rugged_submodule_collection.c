@@ -124,12 +124,11 @@ static VALUE rb_git_submodule_collection_each(VALUE self)
 	git_repository *repo;
 	int error;
 	struct rugged_cb_payload payload;
+	VALUE rb_repo;
 
-	VALUE rb_repo = rugged_owner(self);
+	RETURN_ENUMERATOR(self, 0, 0);
+	rb_repo = rugged_owner(self);
 	Data_Get_Struct(rb_repo, git_repository, repo);
-
-	if (!rb_block_given_p())
-		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each"));
 
 	payload.exception = 0;
 	payload.rb_data = rb_repo;

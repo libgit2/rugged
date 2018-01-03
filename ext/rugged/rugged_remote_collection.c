@@ -139,12 +139,7 @@ static VALUE rb_git_remote_collection__each(VALUE self, int only_names)
 
 	VALUE rb_repo;
 
-	if (!rb_block_given_p()) {
-		if (only_names)
-			return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_name"));
-		else
-			return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each"));
-	}
+	RETURN_ENUMERATOR(self, 0, 0);
 
 	rb_repo = rugged_owner(self);
 	rugged_check_repo(rb_repo);

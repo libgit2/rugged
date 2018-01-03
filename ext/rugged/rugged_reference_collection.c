@@ -114,14 +114,8 @@ static VALUE rb_git_reference_collection__each(int argc, VALUE *argv, VALUE self
 	git_reference_iterator *iter;
 	int error, exception = 0;
 
+	RETURN_ENUMERATOR(self, argc, argv);
 	rb_scan_args(argc, argv, "01", &rb_glob);
-
-	if (!rb_block_given_p()) {
-		return rb_funcall(self,
-			rb_intern("to_enum"), 2,
-			only_names ? CSTR2SYM("each_name") : CSTR2SYM("each"),
-			rb_glob);
-	}
 
 	rugged_check_repo(rb_repo);
 

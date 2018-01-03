@@ -42,9 +42,7 @@ static VALUE rb_git_diff_hunk_each_line(VALUE self)
 	git_patch *patch;
 	int error = 0, l, lines_count, hunk_idx;
 
-	if (!rb_block_given_p()) {
-		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_line"), self);
-	}
+	RETURN_ENUMERATOR(self, 0, 0);
 
 	Data_Get_Struct(rugged_owner(self), git_patch, patch);
 

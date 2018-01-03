@@ -447,10 +447,7 @@ static VALUE rb_git_diff_each_patch(VALUE self)
 	int error = 0;
 	size_t d, delta_count;
 
-	if (!rb_block_given_p()) {
-		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_patch"), self);
-	}
-
+	RETURN_ENUMERATOR(self, 0, 0);
 	Data_Get_Struct(self, git_diff, diff);
 
 	delta_count = git_diff_num_deltas(diff);
@@ -484,10 +481,7 @@ static VALUE rb_git_diff_each_delta(VALUE self)
 	int error = 0;
 	size_t d, delta_count;
 
-	if (!rb_block_given_p()) {
-		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_delta"), self);
-	}
-
+	RETURN_ENUMERATOR(self, 0, 0);
 	Data_Get_Struct(self, git_diff, diff);
 
 	delta_count = git_diff_num_deltas(diff);
@@ -524,6 +518,7 @@ static VALUE rb_git_diff_each_line(int argc, VALUE *argv, VALUE self)
 	git_diff_format_t format;
 	int exception = 0, error;
 
+	RETURN_ENUMERATOR(self, argc, argv);
 	Data_Get_Struct(self, git_diff, diff);
 
 	if (rb_scan_args(argc, argv, "01", &rb_format) == 1) {
@@ -531,9 +526,6 @@ static VALUE rb_git_diff_each_line(int argc, VALUE *argv, VALUE self)
 	} else {
 		rb_format = CSTR2SYM("patch");
 	}
-
-	if (!rb_block_given_p())
-		return rb_funcall(self, rb_intern("to_enum"), 2, CSTR2SYM("each_line"), rb_format);
 
 	if (SYM2ID(rb_format) == rb_intern("patch")) {
 		format = GIT_DIFF_FORMAT_PATCH;
