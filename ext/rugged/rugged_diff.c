@@ -478,7 +478,6 @@ static VALUE rb_git_diff_each_delta(VALUE self)
 {
 	git_diff *diff;
 	const git_diff_delta *delta;
-	int error = 0;
 	size_t d, delta_count;
 
 	RETURN_ENUMERATOR(self, 0, 0);
@@ -489,8 +488,6 @@ static VALUE rb_git_diff_each_delta(VALUE self)
 		delta = git_diff_get_delta(diff, d);
 		rb_yield(rugged_diff_delta_new(self, delta));
 	}
-
-	rugged_exception_check(error);
 
 	return self;
 }
