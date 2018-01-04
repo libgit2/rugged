@@ -149,6 +149,14 @@ struct rugged_remote_cb_payload
 	int exception;
 };
 
+struct rugged_git_remote_fetch_arg
+{
+    git_remote *remote;
+    git_strarray *refspecs;
+    git_fetch_options *opts;
+    char *log_message;
+};
+
 void rugged_remote_init_callbacks_and_payload_from_options(
 	VALUE rb_options,
 	git_remote_callbacks *callbacks,

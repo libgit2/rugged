@@ -6,6 +6,7 @@
  */
 
 #include "rugged.h"
+#include <ruby/thread.h>
 
 extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedRepo;
@@ -638,6 +639,80 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 	return rb_result;
 }
 
+static void *git_remote_fetch_wrapper(void *data)
+{
+    int error;
+
+    struct rugged_git_remote_fetch_arg *arg = data;
+    error = git_remote_fetch(arg->remote, arg->refspecs, arg->opts, arg->log_message);
+
+    return (void *)(intptr_t) error;
+}
+
+static VALUE rb_git_remote_fetch_without_gvl(int argc, VALUE *argv, VALUE self)
+{
+    struct rugged_git_remote_fetch_arg arg;
+	git_remote *remote;
+	git_strarray refspecs;
+	git_fetch_options opts = GIT_FETCH_OPTIONS_INIT;
+	const git_transfer_progress *stats;
+	struct rugged_remote_cb_payload payload = { Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, 0 };
+
+	char *log_message = NULL;
+	int error;
+
+	VALUE rb_options, rb_refspecs, rb_result = Qnil;
+
+	rb_scan_args(argc, argv, "01:", &rb_refspecs, &rb_options);
+
+	rugged_rb_ary_to_strarray(rb_refspecs, &refspecs);
+
+	Data_Get_Struct(self, git_remote, remote);
+
+	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &opts.callbacks, &payload);
+	init_custom_headers(rb_options, &opts.custom_headers);
+
+	if (!NIL_P(rb_options)) {
+		VALUE rb_prune_type;
+		VALUE rb_val = rb_hash_aref(rb_options, CSTR2SYM("message"));
+
+		if (!NIL_P(rb_val))
+			log_message = StringValueCStr(rb_val);
+
+		rb_prune_type = rb_hash_aref(rb_options, CSTR2SYM("prune"));
+		opts.prune = parse_prune_type(rb_prune_type);
+	}
+
+    arg.remote = remote;
+    arg.refspecs = &refspecs;
+    arg.opts = &opts;
+    arg.log_message = log_message;
+    error = (intptr_t) rb_thread_call_without_gvl2(git_remote_fetch_wrapper, &arg,
+                                              RUBY_UBF_PROCESS, NULL);
+    rb_thread_check_ints();
+
+	xfree(refspecs.strings);
+	git_strarray_free(&opts.custom_headers);
+
+	if (payload.exception)
+		rb_jump_tag(payload.exception);
+
+	rugged_exception_check(error);
+
+	stats = git_remote_stats(remote);
+
+	rb_result = rb_hash_new();
+	rb_hash_aset(rb_result, CSTR2SYM("total_objects"),    UINT2NUM(stats->total_objects));
+	rb_hash_aset(rb_result, CSTR2SYM("indexed_objects"),  UINT2NUM(stats->indexed_objects));
+	rb_hash_aset(rb_result, CSTR2SYM("received_objects"), UINT2NUM(stats->received_objects));
+	rb_hash_aset(rb_result, CSTR2SYM("local_objects"),    UINT2NUM(stats->local_objects));
+	rb_hash_aset(rb_result, CSTR2SYM("total_deltas"),     UINT2NUM(stats->total_deltas));
+	rb_hash_aset(rb_result, CSTR2SYM("indexed_deltas"),   UINT2NUM(stats->indexed_deltas));
+	rb_hash_aset(rb_result, CSTR2SYM("received_bytes"),   INT2FIX(stats->received_bytes));
+
+	return rb_result;
+}
+
 /*
  *  call-seq:
  *    remote.push(refspecs = nil, options = {}) -> hash
@@ -715,5 +790,6 @@ void Init_rugged_remote(void)
 	rb_define_method(rb_cRuggedRemote, "ls", rb_git_remote_ls, -1);
 	rb_define_method(rb_cRuggedRemote, "check_connection", rb_git_remote_check_connection, -1);
 	rb_define_method(rb_cRuggedRemote, "fetch", rb_git_remote_fetch, -1);
+	rb_define_method(rb_cRuggedRemote, "fetch2", rb_git_remote_fetch_without_gvl, -1);
 	rb_define_method(rb_cRuggedRemote, "push", rb_git_remote_push, -1);
 }
