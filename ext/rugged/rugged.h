@@ -149,6 +149,14 @@ struct rugged_remote_cb_payload
 	int exception;
 };
 
+struct rugged_git_clone_arg
+{
+    git_repository *repo;
+    char *url;
+    char *local_path;
+    git_clone_options *options;
+};
+
 struct rugged_git_remote_fetch_arg
 {
     git_remote *remote;

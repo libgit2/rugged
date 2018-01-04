@@ -487,6 +487,48 @@ static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
 	return rugged_repo_new(klass, repo);
 }
 
+
+static void *git_clone_wrapper(void *data)
+{
+    struct rugged_git_clone_arg *arg = data;
+    int error;
+
+    error = git_clone(arg->repo, arg->url, arg->local_path, arg->options);
+
+    return (void *)(intptr_t) error;
+}
+
+static VALUE rb_git_repo_clone_at_without_gvl(int argc, VALUE *argv, VALUE klass)
+{
+    struct rugged_git_clone_arg arg;
+	VALUE url, local_path, rb_options_hash;
+	git_clone_options options = GIT_CLONE_OPTIONS_INIT;
+	struct rugged_remote_cb_payload remote_payload = { Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, 0 };
+	git_repository *repo;
+	int error;
+
+	rb_scan_args(argc, argv, "21", &url, &local_path, &rb_options_hash);
+	Check_Type(url, T_STRING);
+	Check_Type(local_path, T_STRING);
+
+	parse_clone_options(&options, rb_options_hash, &remote_payload);
+
+
+    arg.repo = &repo;
+    arg.url = StringValueCStr(url);
+    arg.local_path = StringValueCStr(local_path);
+    arg.options = &options;
+    error = (intptr_t) rb_thread_call_without_gvl2(git_clone_wrapper, &arg,
+                                                   RUBY_UBF_PROCESS, NULL);
+    rb_thread_check_ints();
+
+	if (RTEST(remote_payload.exception))
+		rb_jump_tag(remote_payload.exception);
+	rugged_exception_check(error);
+
+	return rugged_repo_new(klass, repo);
+}
+
 #define RB_GIT_REPO_OWNED_GET(_klass, _object) \
 	VALUE rb_data = rb_iv_get(self, "@" #_object); \
 	if (NIL_P(rb_data)) { \
@@ -2557,6 +2599,7 @@ void Init_rugged_repo(void)
 	rb_define_singleton_method(rb_cRuggedRepo, "init_at", rb_git_repo_init_at, -1);
 	rb_define_singleton_method(rb_cRuggedRepo, "discover", rb_git_repo_discover, -1);
 	rb_define_singleton_method(rb_cRuggedRepo, "clone_at", rb_git_repo_clone_at, -1);
+	rb_define_singleton_method(rb_cRuggedRepo, "clone_at2", rb_git_repo_clone_at_without_gvl, -1);
 
 	rb_define_method(rb_cRuggedRepo, "close", rb_git_repo_close, 0);
 
