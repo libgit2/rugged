@@ -10,6 +10,7 @@
 #include <git2/sys/odb_backend.h>
 #include <git2/sys/refdb_backend.h>
 #include <git2/refs.h>
+#include <ruby/thread.h>
 
 extern VALUE rb_mRugged;
 extern VALUE rb_eRuggedError;
@@ -493,7 +494,7 @@ static void *git_clone_wrapper(void *data)
     struct rugged_git_clone_arg *arg = data;
     int error;
 
-    error = git_clone(arg->repo, arg->url, arg->local_path, arg->options);
+    error = git_clone(&arg->repo, arg->url, arg->local_path, arg->options);
 
     return (void *)(intptr_t) error;
 }
@@ -514,13 +515,13 @@ static VALUE rb_git_repo_clone_at_without_gvl(int argc, VALUE *argv, VALUE klass
 	parse_clone_options(&options, rb_options_hash, &remote_payload);
 
 
-    arg.repo = &repo;
     arg.url = StringValueCStr(url);
     arg.local_path = StringValueCStr(local_path);
     arg.options = &options;
     error = (intptr_t) rb_thread_call_without_gvl2(git_clone_wrapper, &arg,
                                                    RUBY_UBF_PROCESS, NULL);
     rb_thread_check_ints();
+    repo = arg.repo;
 
 	if (RTEST(remote_payload.exception))
 		rb_jump_tag(remote_payload.exception);
