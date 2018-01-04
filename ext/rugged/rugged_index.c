@@ -607,8 +607,6 @@ static void rb_git_indexentry_toC(git_index_entry *entry, VALUE rb_entry)
 		entry->flags &= ~GIT_IDXENTRY_VALID;
 		if (rugged_parse_bool(val))
 			entry->flags |= GIT_IDXENTRY_VALID;
-	} else {
-		entry->flags |= GIT_IDXENTRY_VALID;
 	}
 }
 

@@ -325,7 +325,7 @@ static VALUE rb_git_remote_ls(int argc, VALUE *argv, VALUE self)
 	cleanup:
 
 	git_remote_disconnect(remote);
-	git_strarray_free(&custom_headers);
+	xfree(custom_headers.strings);
 
 	if (payload.exception)
 		rb_jump_tag(payload.exception);
@@ -518,7 +518,7 @@ static VALUE rb_git_remote_check_connection(int argc, VALUE *argv, VALUE self)
 	error = git_remote_connect(remote, direction, &callbacks, NULL, &custom_headers);
 	git_remote_disconnect(remote);
 
-	git_strarray_free(&custom_headers);
+	xfree(custom_headers.strings);
 
 	if (payload.exception)
 		rb_jump_tag(payload.exception);
@@ -618,7 +618,7 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 	error = git_remote_fetch(remote, &refspecs, &opts, log_message);
 
 	xfree(refspecs.strings);
-	git_strarray_free(&opts.custom_headers);
+	xfree(opts.custom_headers.strings);
 
 	if (payload.exception)
 		rb_jump_tag(payload.exception);
@@ -767,7 +767,7 @@ static VALUE rb_git_remote_push(int argc, VALUE *argv, VALUE self)
 	error = git_remote_push(remote, &refspecs, &opts);
 
 	xfree(refspecs.strings);
-	git_strarray_free(&opts.custom_headers);
+	xfree(opts.custom_headers.strings);
 
 	if (payload.exception)
 		rb_jump_tag(payload.exception);

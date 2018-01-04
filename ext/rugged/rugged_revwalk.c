@@ -345,11 +345,11 @@ static VALUE do_walk(VALUE _payload)
  *	Example:
  *
  *    Rugged::Walker.walk(repo,
- *		show: "92b22bbcb37caf4f6f53d30292169e84f5e4283b",
- *		sort: Rugged::SORT_DATE|Rugged::SORT_TOPO,
- *		oid_only: true) do |commit_oid|
- *			puts commit_oid
- *		end
+ *            show: "92b22bbcb37caf4f6f53d30292169e84f5e4283b",
+ *            sort: Rugged::SORT_DATE|Rugged::SORT_TOPO,
+ *            oid_only: true) do |commit_oid|
+ *        puts commit_oid
+ *    end
  *
  *  generates:
  *
