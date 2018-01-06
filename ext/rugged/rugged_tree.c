@@ -220,10 +220,9 @@ static VALUE rb_git_tree_each(VALUE self)
 {
 	git_tree *tree;
 	size_t i, count;
-	Data_Get_Struct(self, git_tree, tree);
 
-	if (!rb_block_given_p())
-		return rb_funcall(self, rb_intern("to_enum"), 0);
+	RETURN_ENUMERATOR(self, 0, 0);
+	Data_Get_Struct(self, git_tree, tree);
 
 	count = git_tree_entrycount(tree);
 

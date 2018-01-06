@@ -304,12 +304,9 @@ static VALUE rb_git_remote_ls(int argc, VALUE *argv, VALUE self)
 	int error;
 	size_t heads_len, i;
 
+	RETURN_ENUMERATOR(self, argc, argv);
 	Data_Get_Struct(self, git_remote, remote);
-
 	rb_scan_args(argc, argv, ":", &rb_options);
-
-	if (!rb_block_given_p())
-		return rb_funcall(self, rb_intern("to_enum"), 2, CSTR2SYM("ls"), rb_options);
 
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &callbacks, &payload);
 	init_custom_headers(rb_options, &custom_headers);

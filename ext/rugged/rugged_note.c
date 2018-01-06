@@ -297,11 +297,8 @@ static VALUE rb_git_note_each(int argc, VALUE *argv, VALUE self)
 	struct rugged_cb_payload payload = { self, 0 };
 	VALUE rb_notes_ref;
 
+	RETURN_ENUMERATOR(self, argc, argv);
 	rb_scan_args(argc, argv, "01", &rb_notes_ref);
-
-	if (!rb_block_given_p()) {
-		return rb_funcall(self, rb_intern("to_enum"), 3, CSTR2SYM("each_note"), self, rb_notes_ref);
-	}
 
 	if (!NIL_P(rb_notes_ref)) {
 		Check_Type(rb_notes_ref, T_STRING);

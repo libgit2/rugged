@@ -93,10 +93,7 @@ static VALUE rb_git_diff_patch_each_hunk(VALUE self)
 	int error = 0;
 	size_t hunks_count, h;
 
-	if (!rb_block_given_p()) {
-		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_hunk"), self);
-	}
-
+	RETURN_ENUMERATOR(self, 0, 0);
 	Data_Get_Struct(self, git_patch, patch);
 
 	hunks_count = git_patch_num_hunks(patch);

@@ -188,6 +188,11 @@ static VALUE rb_git_blame_count(VALUE self)
 	return UINT2NUM(git_blame_get_hunk_count(blame));
 }
 
+static VALUE rugged_blame_enum_size(VALUE rb_blame, VALUE rb_args, VALUE rb_eobj)
+{
+	return rb_git_blame_count(rb_blame);
+}
+
 /*
  *  call-seq:
  *    blame[index] -> hunk
@@ -242,9 +247,7 @@ static VALUE rb_git_blame_each(VALUE self)
 	git_blame *blame;
 	uint32_t i, blame_count;
 
-	if (!rb_block_given_p()) {
-		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each"), self);
-	}
+	RETURN_SIZED_ENUMERATOR(self, 0, 0, rugged_blame_enum_size);
 
 	Data_Get_Struct(self, git_blame, blame);
 

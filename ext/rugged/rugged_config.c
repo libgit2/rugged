@@ -198,7 +198,7 @@ static int cb_config__to_hash(const git_config_entry *entry, void *opaque)
 /*
  *  call-seq:
  *    cfg.each_key { |key| block }
- *    cfg.each_key -> enumarator
+ *    cfg.each_key -> enumerator
  *
  *  Call the given block once for each key in the config file. If no block
  *  is given, an enumerator is returned.
@@ -212,10 +212,8 @@ static VALUE rb_git_config_each_key(VALUE self)
 	git_config *config;
 	int error;
 
+	RETURN_ENUMERATOR(self, 0, 0);
 	Data_Get_Struct(self, git_config, config);
-
-	if (!rb_block_given_p())
-		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_key"));
 
 	error = git_config_foreach(config, &cb_config__each_key, (void *)rb_block_proc());
 	rugged_exception_check(error);
@@ -240,11 +238,9 @@ static VALUE rb_git_config_each_pair(VALUE self)
 {
 	git_config *config;
 	int error;
-
+	
+	RETURN_ENUMERATOR(self, 0, 0);
 	Data_Get_Struct(self, git_config, config);
-
-	if (!rb_block_given_p())
-		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_pair"));
 
 	error = git_config_foreach(config, &cb_config__each_pair, (void *)rb_block_proc());
 	rugged_exception_check(error);

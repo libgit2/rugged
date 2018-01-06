@@ -1569,8 +1569,7 @@ static VALUE rb_git_repo_each_id(VALUE self)
 	git_odb *odb;
 	int error, exception = 0;
 
-	if (!rb_block_given_p())
-		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_id"));
+	RETURN_ENUMERATOR(self, 0, 0);
 
 	Data_Get_Struct(self, git_repository, repo);
 
