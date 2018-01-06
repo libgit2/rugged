@@ -26,6 +26,7 @@ sudo: required
 matrix:
   fast_finish: true
   allow_failures:
+    - rvm: 2.5.0
     - rvm: rbx-2
     - rvm: ruby-head
 
