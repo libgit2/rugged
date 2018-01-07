@@ -172,20 +172,13 @@ static int credentials_without_gvl_cb(
 	void *data)
 {
     struct rugged_remote_cb_payload_without_gvl *payload = data;
-    int type;
 
     if (payload->credentials == NULL) {
         return GIT_PASSTHROUGH;
     }
 
-    type = payload->credentials_type;
-    if (type & GIT_CREDTYPE_DEFAULT) {
+    if (payload->credentials_type & allowed_types) {
         *cred = payload->credentials;
-    } else if(allowed_types & GIT_CREDTYPE_USERNAME){
-        type &= ~GIT_CREDTYPE_USERNAME;
-        if (allowed_types & type) {
-            *cred = payload->credentials;
-        }
     }
 
     return GIT_OK;

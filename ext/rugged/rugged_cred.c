@@ -84,50 +84,60 @@ void rugged_cred_extract(git_cred **cred, int *cred_type, int allowed_types, VAL
 	if (rb_obj_is_kind_of(rb_credential, rb_cRuggedCredUserPassword)) {
 		if (allowed_types & GIT_CREDTYPE_USERNAME) {
 			rugged_cred_extract_username(cred, rb_credential);
+            if (cred_type) {
+                *cred_type = GIT_CREDTYPE_USERNAME;
+            }
 			return;
 		}
 
 		if (!(allowed_types & GIT_CREDTYPE_USERPASS_PLAINTEXT))
 			rb_raise(rb_eArgError, "Invalid credential type");
 
-        if(cred_type) {
-            *cred_type = GIT_CREDTYPE_USERPASS_PLAINTEXT | GIT_CREDTYPE_USERNAME;
-        }
         rugged_cred_extract_userpass(cred, rb_credential);
+        if(cred_type) {
+            *cred_type = GIT_CREDTYPE_USERPASS_PLAINTEXT;
+        }
 	} else if (rb_obj_is_kind_of(rb_credential, rb_cRuggedCredSshKey)) {
 		if (allowed_types & GIT_CREDTYPE_USERNAME) {
 			rugged_cred_extract_username(cred, rb_credential);
-			return;
+            if (cred_type) {
+                *cred_type = GIT_CREDTYPE_USERNAME;
+            }
+            return;
 		}
 
 		if (!(allowed_types & GIT_CREDTYPE_SSH_KEY))
 			rb_raise(rb_eArgError, "Invalid credential type");
 
-        if (cred_type) {
-            *cred_type = GIT_CREDTYPE_USERNAME | GIT_CREDTYPE_SSH_KEY;
-        }
         rugged_cred_extract_ssh_key(cred, rb_credential);
-	} else if (rb_obj_is_kind_of(rb_credential, rb_cRuggedCredSshKeyFromAgent)) {
+        if (cred_type) {
+            *cred_type = GIT_CREDTYPE_SSH_KEY;
+        }
+    } else if (rb_obj_is_kind_of(rb_credential, rb_cRuggedCredSshKeyFromAgent)) {
 		if (allowed_types & GIT_CREDTYPE_USERNAME) {
 			rugged_cred_extract_username(cred, rb_credential);
+            if (cred_type) {
+                *cred_type = GIT_CREDTYPE_USERNAME;
+            }
 			return;
 		}
 
 		if (!(allowed_types & GIT_CREDTYPE_SSH_KEY))
 			rb_raise(rb_eArgError, "Invalid credential type");
 
+        rugged_credential_extract_ssh_key_from_agent(cred, rb_credential);
         if (cred_type) {
-            *cred_type = GIT_CREDTYPE_USERNAME | GIT_CREDTYPE_SSH_KEY;
+            *cred_type = GIT_CREDTYPE_SSH_KEY;
         }
-		rugged_credential_extract_ssh_key_from_agent(cred, rb_credential);
-	} else if (rb_obj_is_kind_of(rb_credential, rb_cRuggedCredDefault)) {
+
+    } else if (rb_obj_is_kind_of(rb_credential, rb_cRuggedCredDefault)) {
 		if (!(allowed_types & GIT_CREDTYPE_DEFAULT))
 			rb_raise(rb_eArgError, "Invalid credential type");
 
+        rugged_cred_extract_default(cred, rb_credential);
         if (cred_type) {
             *cred_type = GIT_CREDTYPE_DEFAULT;
         }
-		rugged_cred_extract_default(cred, rb_credential);
 	}
 }
 
