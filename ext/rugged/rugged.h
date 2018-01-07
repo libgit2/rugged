@@ -143,7 +143,9 @@ struct rugged_cb_payload
 
 struct rugged_remote_cb_payload_without_gvl
 {
+    int no_credentials;
     git_cred *credentials;
+    git_cred *credentials_username;
     int credentials_type;
     int certificate_check;
     khash_t(map_charptr_to_charptr) *result;

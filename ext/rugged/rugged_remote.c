@@ -12,6 +12,7 @@ extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedRepo;
 extern VALUE rb_eRuggedError;
 VALUE rb_cRuggedRemote;
+VALUE rb_cRuggedCredDefault;
 
 static int progress_cb(const char *str, int len, void *data)
 {
@@ -173,11 +174,13 @@ static int credentials_without_gvl_cb(
 {
     struct rugged_remote_cb_payload_without_gvl *payload = data;
 
-    if (payload->credentials == NULL) {
+    if (payload->no_credentials) {
         return GIT_PASSTHROUGH;
     }
 
-    if (payload->credentials_type & allowed_types) {
+    if (allowed_types & GIT_CREDTYPE_USERNAME) {
+        *cred = payload->credentials_username;
+    } else if (allowed_types & payload->credentials_type) {
         *cred = payload->credentials;
     }
 
@@ -218,10 +221,15 @@ void rugged_remote_init_callbacks_and_payload_from_options_without_gvl(
     if (!NIL_P(rb_options)) {
         credentials = rb_hash_aref(rb_options, CSTR2SYM("credentials"));
         if (!NIL_P(credentials)) {
+            if (!rb_obj_is_kind_of(credentials, rb_cRuggedCredDefault)) {
+                rugged_cred_extract(&payload->credentials_username, NULL, GIT_CREDTYPE_USERNAME, credentials);
+            }
             rugged_cred_extract(&payload->credentials, &payload->credentials_type,
-                GIT_CREDTYPE_USERNAME | GIT_CREDTYPE_USERPASS_PLAINTEXT | \
-                                GIT_CREDTYPE_SSH_KEY | GIT_CREDTYPE_DEFAULT, credentials);
+                                GIT_CREDTYPE_USERPASS_PLAINTEXT | GIT_CREDTYPE_SSH_KEY | GIT_CREDTYPE_DEFAULT,
+                                credentials);
             callbacks->credentials = credentials_without_gvl_cb;
+        } else {
+            payload->no_credentials = 1;
         }
 
         certificate_check = rb_hash_aref(rb_options, CSTR2SYM("certificate_check"));
@@ -761,7 +769,7 @@ static VALUE rb_git_remote_fetch_without_gvl(int argc, VALUE *argv, VALUE self)
 	git_strarray refspecs;
 	git_fetch_options opts = GIT_FETCH_OPTIONS_INIT;
 	const git_transfer_progress *stats;
-    struct rugged_remote_cb_payload_without_gvl payload = { NULL, 0, 0, NULL };
+    struct rugged_remote_cb_payload_without_gvl payload = { 0, NULL, NULL, 0, 0, NULL };
 
 	char *log_message = NULL;
 	int error;
