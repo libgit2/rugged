@@ -24,6 +24,10 @@
 #include <git2.h>
 #include <git2/odb_backend.h>
 
+#include "khash.h"
+
+KHASH_MAP_INIT_STR(map_charptr_to_charptr, char *)
+
 #define rb_str_new_utf8(str) rb_enc_str_new(str, strlen(str), rb_utf8_encoding())
 #define CSTR2SYM(s) (ID2SYM(rb_intern((s))))
 
@@ -86,7 +90,7 @@ void rugged_parse_merge_options(git_merge_options *opts, VALUE rb_options);
 void rugged_parse_checkout_options(git_checkout_options *opts, VALUE rb_options);
 void rugged_parse_merge_file_options(git_merge_file_options *opts, VALUE rb_options);
 
-void rugged_cred_extract(git_cred **cred, int allowed_types, VALUE rb_credential);
+void rugged_cred_extract(git_cred **cred, int *cred_type, int allowed_types, VALUE rb_credential);
 
 VALUE rugged_otype_new(git_otype t);
 git_otype rugged_otype_get(VALUE rb_type);
@@ -137,6 +141,14 @@ struct rugged_cb_payload
     int exception;
 };
 
+struct rugged_remote_cb_payload_without_gvl
+{
+    git_cred *credentials;
+    int credentials_type;
+    int certificate_check;
+    khash_t(map_charptr_to_charptr) *result;
+};
+
 struct rugged_remote_cb_payload
 {
 	VALUE progress;
@@ -169,6 +181,11 @@ void rugged_remote_init_callbacks_and_payload_from_options(
 	VALUE rb_options,
 	git_remote_callbacks *callbacks,
 	struct rugged_remote_cb_payload *payload);
+
+void rugged_remote_init_callbacks_and_payload_from_options_without_gvl(
+	VALUE rb_options,
+	git_remote_callbacks *callbacks,
+	struct rugged_remote_cb_payload_without_gvl *payload);
 
 static inline void rugged_check_repo(VALUE rb_repo)
 {

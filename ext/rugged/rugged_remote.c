@@ -51,6 +51,25 @@ static int transfer_progress_cb(const git_transfer_progress *stats, void *data)
 	return payload->exception ? GIT_ERROR : GIT_OK;
 }
 
+static int push_update_reference_without_gvl_cb(const char *refname, const char *status, void *data)
+{
+    struct rugged_remote_cb_payload_without_gvl *payload = data;
+    khiter_t key;
+    int rc;
+
+    if (status != NULL) {
+        key = kh_put(map_charptr_to_charptr, payload->result, refname, &rc);
+        if (rc == -1 || rc == 0 || rc == 2) {
+            return GIT_ERROR;
+        } else if (rc == 1) {
+            kh_key(payload->result, key) = strdup(refname);
+            kh_val(payload->result, key) = strdup(status);
+        }
+    }
+
+    return GIT_OK;
+}
+
 static int push_update_reference_cb(const char *refname, const char *status, void *data) {
 	struct rugged_remote_cb_payload *payload = data;
 
@@ -76,6 +95,13 @@ static int update_tips_cb(const char *refname, const git_oid *src, const git_oid
 	rb_protect(rugged__block_yield_splat, args, &payload->exception);
 
 	return payload->exception ? GIT_ERROR : GIT_OK;
+}
+
+static int certificate_check_without_gvl_cb(git_cert *cert, int valid, const char *host, void *data)
+{
+    struct rugged_remote_cb_payload_without_gvl *payload = data;
+
+    return payload->certificate_check ? GIT_OK : GIT_ECERTIFICATE;
 }
 
 static int certificate_check_cb(git_cert *cert, int valid, const char *host, void *data)
@@ -133,9 +159,36 @@ static VALUE extract_cred(VALUE data) {
 	rb_cred = rb_funcall(args->rb_callback, rb_intern("call"), 3,
 		rb_url, rb_username_from_url, allowed_types_to_rb_ary(args->allowed_types));
 
-	rugged_cred_extract(args->cred, args->allowed_types, rb_cred);
+	rugged_cred_extract(args->cred, NULL, args->allowed_types, rb_cred);
 
 	return Qnil;
+}
+
+static int credentials_without_gvl_cb(
+	git_cred **cred,
+	const char *url,
+	const char *username_from_url,
+	unsigned int allowed_types,
+	void *data)
+{
+    struct rugged_remote_cb_payload_without_gvl *payload = data;
+    int type;
+
+    if (payload->credentials == NULL) {
+        return GIT_PASSTHROUGH;
+    }
+
+    type = payload->credentials_type;
+    if (type & GIT_CREDTYPE_DEFAULT) {
+        *cred = payload->credentials;
+    } else if(allowed_types & GIT_CREDTYPE_USERNAME){
+        type &= ~GIT_CREDTYPE_USERNAME;
+        if (allowed_types & type) {
+            *cred = payload->credentials;
+        }
+    }
+
+    return GIT_OK;
 }
 
 static int credentials_cb(
@@ -156,6 +209,34 @@ static int credentials_cb(
 	rb_protect(extract_cred, (VALUE)&args, &payload->exception);
 
 	return payload->exception ? GIT_ERROR : GIT_OK;
+}
+
+void rugged_remote_init_callbacks_and_payload_from_options_without_gvl(
+    VALUE rb_options,
+    git_remote_callbacks *callbacks,
+    struct rugged_remote_cb_payload_without_gvl *payload)
+{
+    VALUE credentials;
+    VALUE certificate_check;
+
+    callbacks->payload = payload;
+    callbacks->push_update_reference = push_update_reference_without_gvl_cb;
+
+    if (!NIL_P(rb_options)) {
+        credentials = rb_hash_aref(rb_options, CSTR2SYM("credentials"));
+        if (!NIL_P(credentials)) {
+            rugged_cred_extract(&payload->credentials, &payload->credentials_type,
+                GIT_CREDTYPE_USERNAME | GIT_CREDTYPE_USERPASS_PLAINTEXT | \
+                                GIT_CREDTYPE_SSH_KEY | GIT_CREDTYPE_DEFAULT, credentials);
+            callbacks->credentials = credentials_without_gvl_cb;
+        }
+
+        certificate_check = rb_hash_aref(rb_options, CSTR2SYM("certificate_check"));
+        if (!NIL_P(certificate_check)) {
+            payload->certificate_check = INT2FIX(certificate_check);
+            callbacks->certificate_check = certificate_check_without_gvl_cb;
+        }
+    }
 }
 
 #define CALLABLE_OR_RAISE(ret, name) \
@@ -639,6 +720,37 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 	return rb_result;
 }
 
+/*
+ *  call-seq:
+ *    remote.fetch2(refspecs = nil, options = {}) -> hash
+ *
+ *  Downloads new data from the remote for the given +refspecs+.
+ *
+ *  You can optionally pass in a single or multiple alternative +refspecs+ to use instead of the fetch
+ *  refspecs already configured for +remote+.
+ *
+ *  Returns a hash containing statistics for the fetch operation.
+ *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :credentials ::
+ *    The credentials to use for the fetch operation. Can be either an instance of one
+ *    of the Rugged::Credentials types.
+ *
+ *  :headers ::
+ *    Extra HTTP headers to include with the request (only applies to http:// or https:// remotes)
+ *
+ *  :certificate_check ::
+ *    If cert verification fails, this will let the user make the final decision of whether
+ *    to allow the connection to procesd. 1 to allow the connection, 0 to disallow it.
+ *
+ *  :message ::
+ *    The message to insert into the reflogs. Defaults to "fetch".
+ *
+ *  :prune ::
+ *    Specifies the prune mode for the fetch. +true+ remove any remote-tracking references that
+ *    no longer exist, +false+ do not prune, +nil+ use configured settings Defaults to "nil".
+ */
 static void *git_remote_fetch_wrapper(void *data)
 {
     int error;
@@ -656,7 +768,7 @@ static VALUE rb_git_remote_fetch_without_gvl(int argc, VALUE *argv, VALUE self)
 	git_strarray refspecs;
 	git_fetch_options opts = GIT_FETCH_OPTIONS_INIT;
 	const git_transfer_progress *stats;
-	struct rugged_remote_cb_payload payload = { Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, 0 };
+    struct rugged_remote_cb_payload_without_gvl payload = { NULL, 0, 0, NULL };
 
 	char *log_message = NULL;
 	int error;
@@ -669,7 +781,7 @@ static VALUE rb_git_remote_fetch_without_gvl(int argc, VALUE *argv, VALUE self)
 
 	Data_Get_Struct(self, git_remote, remote);
 
-	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &opts.callbacks, &payload);
+	rugged_remote_init_callbacks_and_payload_from_options_without_gvl(rb_options, &opts.callbacks, &payload);
 	init_custom_headers(rb_options, &opts.custom_headers);
 
 	if (!NIL_P(rb_options)) {
@@ -693,9 +805,6 @@ static VALUE rb_git_remote_fetch_without_gvl(int argc, VALUE *argv, VALUE self)
 
 	xfree(refspecs.strings);
 	git_strarray_free(&opts.custom_headers);
-
-	if (payload.exception)
-		rb_jump_tag(payload.exception);
 
 	rugged_exception_check(error);
 
