@@ -6,6 +6,7 @@
  */
 
 #include <gcrypt.h>
+#include <gpg-error.h>
 #include "rugged.h"
 
 const char *RUGGED_ERROR_NAMES[] = {
@@ -518,6 +519,12 @@ VALUE rb_merge_file_result_fromC(const git_merge_file_result *result)
 
 void init_gcrypt(void)
 {
+    int rc;
+
+    GCRY_THREAD_OPTION_PTHREAD_IMPL;
+    if ((rc = gcry_control(GCRYCTL_SET_THREAD_CBS, &gcry_threads_pthread)) != GPG_ERR_NO_ERROR) {
+        rb_raise(rb_eRuntimeError, "gcry_control thread callbacks failed: %s\n", gpg_strerror(rc));
+    }
     if (!gcry_check_version(GCRYPT_VERSION)) {
         rb_raise(rb_eRuntimeError, "gcry_check_version failed\n");
     }
