@@ -517,11 +517,18 @@ VALUE rb_merge_file_result_fromC(const git_merge_file_result *result)
 	return rb_result;
 }
 
+#if GCRYPT_VERSION_NUMBER < 0x010600
+    GCRY_THREAD_OPTION_PTHREAD_IMPL;
+#endif
+
 void init_gcrypt(void)
 {
     int rc;
 
+#if GCRYPT_VERSION_NUMBER >= 0x010600
     GCRY_THREAD_OPTION_PTHREAD_IMPL;
+#endif
+
     if ((rc = gcry_control(GCRYCTL_SET_THREAD_CBS, &gcry_threads_pthread)) != GPG_ERR_NO_ERROR) {
         rb_raise(rb_eRuntimeError, "gcry_control thread callbacks failed: %s\n", gpg_strerror(rc));
     }
