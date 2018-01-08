@@ -518,6 +518,8 @@ VALUE rb_merge_file_result_fromC(const git_merge_file_result *result)
 }
 
 #if GCRYPT_VERSION_NUMBER < 0x010600
+#include <pthread.h>
+#include <errno.h>
     GCRY_THREAD_OPTION_PTHREAD_IMPL;
 #endif
 
