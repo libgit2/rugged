@@ -178,19 +178,16 @@ static VALUE rb_git_branch_collection_aref(VALUE self, VALUE rb_name) {
 
 static VALUE each_branch(int argc, VALUE *argv, VALUE self, int branch_names_only)
 {
-	VALUE rb_repo = rugged_owner(self), rb_filter;
+	VALUE rb_repo, rb_filter;
 	git_repository *repo;
 	git_branch_iterator *iter;
 	int error, exception = 0;
 	git_branch_t filter = (GIT_BRANCH_LOCAL | GIT_BRANCH_REMOTE), branch_type;
 
+	RETURN_ENUMERATOR(self, argc, argv);
 	rb_scan_args(argc, argv, "01", &rb_filter);
 
-	if (!rb_block_given_p()) {
-		VALUE symbol = branch_names_only ? CSTR2SYM("each_name") : CSTR2SYM("each");
-		return rb_funcall(self, rb_intern("to_enum"), 2, symbol, rb_filter);
-	}
-
+	rb_repo = rugged_owner(self);
 	rugged_check_repo(rb_repo);
 
 	if (!NIL_P(rb_filter))

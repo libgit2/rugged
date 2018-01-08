@@ -236,12 +236,8 @@ static VALUE each_tag(int argc, VALUE *argv, VALUE self, int tag_names_only)
 	VALUE rb_repo = rugged_owner(self), rb_pattern;
 	const char *pattern = NULL;
 
+	RETURN_ENUMERATOR(self, argc, argv);
 	rb_scan_args(argc, argv, "01", &rb_pattern);
-
-	if (!rb_block_given_p()) {
-		VALUE symbol = tag_names_only ? CSTR2SYM("each_name") : CSTR2SYM("each");
-		return rb_funcall(self, rb_intern("to_enum"), 2, symbol, rb_pattern);
-	}
 
 	if (!NIL_P(rb_pattern)) {
 		Check_Type(rb_pattern, T_STRING);

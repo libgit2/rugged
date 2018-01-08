@@ -190,10 +190,8 @@ static VALUE rb_git_index_each(VALUE self)
 	git_index *index;
 	unsigned int i, count;
 
+	RETURN_ENUMERATOR(self, 0, 0);
 	Data_Get_Struct(self, git_index, index);
-
-	if (!rb_block_given_p())
-		return rb_funcall(self, rb_intern("to_enum"), 0);
 
 	count = (unsigned int)git_index_entrycount(index);
 	for (i = 0; i < count; ++i) {

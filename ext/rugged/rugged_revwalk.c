@@ -365,13 +365,8 @@ static VALUE rb_git_walk(int argc, VALUE *argv, VALUE self)
 	struct walk_options w;
 	int exception = 0;
 
+	RETURN_ENUMERATOR(self, argc, argv);
 	rb_scan_args(argc, argv, "10:", &rb_repo, &rb_options);
-
-	if (!rb_block_given_p()) {
-		ID iter_method = ID2SYM(rb_intern("walk"));
-		return rb_funcall(self, rb_intern("to_enum"), 3,
-			iter_method, rb_repo, rb_options);
-	}
 
 	Data_Get_Struct(rb_repo, git_repository, w.repo);
 	rugged_exception_check(git_revwalk_new(&w.walk, w.repo));
@@ -402,12 +397,8 @@ static VALUE rb_git_walk_with_opts(int argc, VALUE *argv, VALUE self, int oid_on
 	VALUE rb_options;
 	struct walk_options w;
 
+	RETURN_ENUMERATOR(self, argc, argv);
 	rb_scan_args(argc, argv, "01", &rb_options);
-
-	if (!rb_block_given_p()) {
-		ID iter_method = ID2SYM(rb_intern(oid_only ? "each_oid" : "each"));
-		return rb_funcall(self, rb_intern("to_enum"), 2, iter_method, rb_options);
-	}
 
 	Data_Get_Struct(self, git_revwalk, w.walk);
 	w.repo = git_revwalk_repository(w.walk);
