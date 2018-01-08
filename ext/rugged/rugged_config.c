@@ -43,7 +43,7 @@ static VALUE rb_git_config_new(VALUE klass, VALUE rb_path)
 		for (i = 0; i < RARRAY_LEN(rb_path) && !error; ++i) {
 			VALUE f = rb_ary_entry(rb_path, i);
 			Check_Type(f, T_STRING);
-			error = git_config_add_file_ondisk(config, StringValueCStr(f), i + 1, 1);
+			error = git_config_add_file_ondisk(config, StringValueCStr(f), i + 1, NULL, 1);
 		}
 
 		if (error) {
