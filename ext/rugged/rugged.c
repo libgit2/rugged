@@ -5,6 +5,7 @@
  * For full terms see the included LICENSE file.
  */
 
+#include <gcrypt.h>
 #include "rugged.h"
 
 const char *RUGGED_ERROR_NAMES[] = {
@@ -515,8 +516,16 @@ VALUE rb_merge_file_result_fromC(const git_merge_file_result *result)
 	return rb_result;
 }
 
+void init_gcrypt(void)
+{
+    if (!gcry_check_version(GCRYPT_VERSION)) {
+        rb_raise(rb_eRuntimeError, "gcry_check_version failed\n");
+    }
+}
+
 void Init_rugged(void)
 {
+    init_gcrypt();
 	rb_mRugged = rb_define_module("Rugged");
 
 	/* Initialize the Error classes */
