@@ -160,7 +160,7 @@ static VALUE extract_cred(VALUE data) {
 	rb_cred = rb_funcall(args->rb_callback, rb_intern("call"), 3,
 		rb_url, rb_username_from_url, allowed_types_to_rb_ary(args->allowed_types));
 
-	rugged_cred_extract(args->cred, NULL, args->allowed_types, rb_cred);
+	rugged_cred_extract(args->cred, args->allowed_types, rb_cred);
 
 	return Qnil;
 }
@@ -174,14 +174,16 @@ static int credentials_without_gvl_cb(
 {
     struct rugged_remote_cb_payload_without_gvl *payload = data;
 
-    if (payload->no_credentials) {
+    if (payload->credentials_passthrough) {
         return GIT_PASSTHROUGH;
     }
 
     if (allowed_types & GIT_CREDTYPE_USERNAME) {
         *cred = payload->credentials_username;
-    } else if (allowed_types & payload->credentials_type) {
+    } else if (allowed_types & payload->credentials->credtype) {
         *cred = payload->credentials;
+    } else {
+        return GIT_ERROR;
     }
 
     return GIT_OK;
@@ -222,14 +224,15 @@ void rugged_remote_init_callbacks_and_payload_from_options_without_gvl(
         credentials = rb_hash_aref(rb_options, CSTR2SYM("credentials"));
         if (!NIL_P(credentials)) {
             if (!rb_obj_is_kind_of(credentials, rb_cRuggedCredDefault)) {
-                rugged_cred_extract(&payload->credentials_username, NULL, GIT_CREDTYPE_USERNAME, credentials);
+                rugged_cred_extract(&payload->credentials_username, GIT_CREDTYPE_USERNAME, credentials);
             }
-            rugged_cred_extract(&payload->credentials, &payload->credentials_type,
-                                GIT_CREDTYPE_USERPASS_PLAINTEXT | GIT_CREDTYPE_SSH_KEY | GIT_CREDTYPE_DEFAULT,
-                                credentials);
+            rugged_cred_extract(
+                &payload->credentials,
+                GIT_CREDTYPE_USERPASS_PLAINTEXT | GIT_CREDTYPE_SSH_KEY | GIT_CREDTYPE_DEFAULT,
+                credentials);
             callbacks->credentials = credentials_without_gvl_cb;
         } else {
-            payload->no_credentials = 1;
+            payload->credentials_passthrough = 1;
         }
 
         certificate_check = rb_hash_aref(rb_options, CSTR2SYM("certificate_check"));
@@ -769,7 +772,7 @@ static VALUE rb_git_remote_fetch_without_gvl(int argc, VALUE *argv, VALUE self)
 	git_strarray refspecs;
 	git_fetch_options opts = GIT_FETCH_OPTIONS_INIT;
 	const git_transfer_progress *stats;
-    struct rugged_remote_cb_payload_without_gvl payload = { 0, NULL, NULL, 0, 0, NULL };
+    struct rugged_remote_cb_payload_without_gvl payload = { 0, NULL, NULL, 0, NULL };
 
 	char *log_message = NULL;
 	int error;

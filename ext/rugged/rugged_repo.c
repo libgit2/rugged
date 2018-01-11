@@ -550,7 +550,7 @@ static VALUE rb_git_repo_clone_at_without_gvl(int argc, VALUE *argv, VALUE klass
     struct rugged_git_clone_arg arg;
 	VALUE url, local_path, rb_options_hash;
 	git_clone_options options = GIT_CLONE_OPTIONS_INIT;
-    struct rugged_remote_cb_payload_without_gvl remote_payload = {0, NULL, NULL, 0, 0, NULL};
+    struct rugged_remote_cb_payload_without_gvl remote_payload = {0, NULL, NULL, 0, NULL};
 	git_repository *repo;
 	int error;
 

@@ -90,7 +90,7 @@ void rugged_parse_merge_options(git_merge_options *opts, VALUE rb_options);
 void rugged_parse_checkout_options(git_checkout_options *opts, VALUE rb_options);
 void rugged_parse_merge_file_options(git_merge_file_options *opts, VALUE rb_options);
 
-void rugged_cred_extract(git_cred **cred, int *cred_type, int allowed_types, VALUE rb_credential);
+void rugged_cred_extract(git_cred **cred, int allowed_types, VALUE rb_credential);
 
 VALUE rugged_otype_new(git_otype t);
 git_otype rugged_otype_get(VALUE rb_type);
@@ -143,10 +143,9 @@ struct rugged_cb_payload
 
 struct rugged_remote_cb_payload_without_gvl
 {
-    int no_credentials;
+    int credentials_passthrough;
     git_cred *credentials;
     git_cred *credentials_username;
-    int credentials_type;
     int certificate_check;
     khash_t(map_charptr_to_charptr) *result;
 };
