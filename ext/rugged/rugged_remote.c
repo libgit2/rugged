@@ -178,10 +178,12 @@ static int credentials_without_gvl_cb(
         return GIT_PASSTHROUGH;
     }
 
-    if (allowed_types & GIT_CREDTYPE_USERNAME) {
+    if (payload->credentials_username && (allowed_types & GIT_CREDTYPE_USERNAME)) {
         *cred = payload->credentials_username;
-    } else if (allowed_types & payload->credentials->credtype) {
+        payload->credentials_username = NULL;
+    } else if (payload->credentials && (payload->credentials->credtype & allowed_types)) {
         *cred = payload->credentials;
+        payload->credentials = NULL;
     } else {
         return GIT_ERROR;
     }
