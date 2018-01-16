@@ -45,29 +45,6 @@ static VALUE rb_git_commit_message_GET(VALUE self)
 	return rb_enc_str_new(message, strlen(message), encoding);
 }
 
-struct trailer_cb_info {
-	VALUE trailers;
-	rb_encoding *encoding;
-};
-
-static int rb_each_trailer(const char *key, const char *value, void *payload)
-{
-	struct trailer_cb_info *cb_info = (struct trailer_cb_info *)payload;
-
-	VALUE pair = rb_ary_new();
-
-	// trailer key
-	rb_ary_push(pair, rb_enc_str_new(key, strlen(key), cb_info->encoding));
-
-	// trailer value
-	rb_ary_push(pair, rb_enc_str_new(value, strlen(value), cb_info->encoding));
-
-	// add it to the list
-	rb_ary_push(cb_info->trailers, pair);
-
-	return GIT_OK;
-}
-
 /*
  *  call-seq:
  *    commit.trailers -> [["Trailer-name", "trailer value"], ...]
@@ -86,6 +63,7 @@ static VALUE rb_git_commit_trailers_GET(VALUE self)
 	const char *message;
 	rb_encoding *encoding = rb_utf8_encoding();
 	const char *encoding_name;
+	git_message_trailer_array arr;
 	VALUE trailers = rb_ary_new();
 	int error;
 
@@ -95,15 +73,27 @@ static VALUE rb_git_commit_trailers_GET(VALUE self)
 	if (encoding_name != NULL)
 		encoding = rb_enc_find(encoding_name);
 
-	struct trailer_cb_info cb_info = {
-		.trailers = trailers,
-		.encoding = encoding,
-	};
-
 	message = git_commit_message(commit);
 
-	error = git_message_trailers(message, rb_each_trailer, &cb_info);
+	error = git_message_trailers(&arr, message);
 	rugged_exception_check(error);
+
+	for(size_t i=0; i<arr.count; i++) {
+		VALUE pair = rb_ary_new();
+		const char *key = arr.trailers[i].key;
+		const char *value = arr.trailers[i].value;
+
+		// trailer key
+		rb_ary_push(pair, rb_enc_str_new(key, strlen(key), encoding));
+
+		// trailer value
+		rb_ary_push(pair, rb_enc_str_new(value, strlen(value), encoding));
+
+		// add it to the list
+		rb_ary_push(trailers, pair);
+	}
+
+	git_message_trailer_array_free(&arr);
 
 	return trailers;
 }
