@@ -66,6 +66,7 @@ static VALUE rb_git_commit_trailers_GET(VALUE self)
 	git_message_trailer_array arr;
 	VALUE trailers = rb_ary_new();
 	int error;
+	size_t i;
 
 	Data_Get_Struct(self, git_commit, commit);
 
@@ -78,7 +79,7 @@ static VALUE rb_git_commit_trailers_GET(VALUE self)
 	error = git_message_trailers(&arr, message);
 	rugged_exception_check(error);
 
-	for(size_t i=0; i<arr.count; i++) {
+	for(i = 0; i < arr.count; i++) {
 		VALUE pair = rb_ary_new();
 		const char *key = arr.trailers[i].key;
 		const char *value = arr.trailers[i].value;
