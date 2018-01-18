@@ -7,6 +7,7 @@
 
 #include "rugged.h"
 #include "git2/commit.h"
+#include "git2/message.h"
 
 extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedObject;
@@ -42,6 +43,60 @@ static VALUE rb_git_commit_message_GET(VALUE self)
 		encoding = rb_enc_find(encoding_name);
 
 	return rb_enc_str_new(message, strlen(message), encoding);
+}
+
+/*
+ *  call-seq:
+ *    commit.trailers -> [["Trailer-name", "trailer value"], ...]
+ *
+ *  Return an array of arrays, each of which is a key/value pair representing a
+ *  commit message trailer. Both the keys and values will be strings. An array
+ *  is used to preserve the order the trailers were found.
+ *
+ *  In Ruby 1.9+, the returned strings will be encoded with the encoding
+ *  specified in the +Encoding+ header of the commit, if available.
+ *
+ */
+static VALUE rb_git_commit_trailers_GET(VALUE self)
+{
+	git_commit *commit;
+	const char *message;
+	rb_encoding *encoding = rb_utf8_encoding();
+	const char *encoding_name;
+	git_message_trailer_array arr;
+	VALUE trailers = rb_ary_new();
+	int error;
+	size_t i;
+
+	Data_Get_Struct(self, git_commit, commit);
+
+	encoding_name = git_commit_message_encoding(commit);
+	if (encoding_name != NULL)
+		encoding = rb_enc_find(encoding_name);
+
+	message = git_commit_message(commit);
+
+	error = git_message_trailers(&arr, message);
+	rugged_exception_check(error);
+
+	for(i = 0; i < arr.count; i++) {
+		VALUE pair = rb_ary_new();
+		const char *key = arr.trailers[i].key;
+		const char *value = arr.trailers[i].value;
+
+		// trailer key
+		rb_ary_push(pair, rb_enc_str_new(key, strlen(key), encoding));
+
+		// trailer value
+		rb_ary_push(pair, rb_enc_str_new(value, strlen(value), encoding));
+
+		// add it to the list
+		rb_ary_push(trailers, pair);
+	}
+
+	git_message_trailer_array_free(&arr);
+
+	return trailers;
 }
 
 /*
@@ -819,6 +874,7 @@ void Init_rugged_commit(void)
 	rb_define_singleton_method(rb_cRuggedCommit, "extract_signature", rb_git_commit_extract_signature, -1);
 
 	rb_define_method(rb_cRuggedCommit, "message", rb_git_commit_message_GET, 0);
+	rb_define_method(rb_cRuggedCommit, "trailers", rb_git_commit_trailers_GET, 0);
 	rb_define_method(rb_cRuggedCommit, "summary", rb_git_commit_summary_GET, 0);
 	rb_define_method(rb_cRuggedCommit, "epoch_time", rb_git_commit_epoch_time_GET, 0);
 	rb_define_method(rb_cRuggedCommit, "committer", rb_git_commit_committer_GET, 0);
