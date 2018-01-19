@@ -354,6 +354,44 @@ static VALUE rb_git_config_transaction(VALUE self)
 	return rb_result;
 }
 
+static int each_config_value(const git_config_entry * entry, void *ctx)
+{
+	VALUE list = (VALUE)ctx;
+	rb_ary_push(list, rb_str_new_utf8(entry->value));
+	return 0;
+}
+
+/*
+ *  call-seq:
+ *    cfg.get_all(key) -> [value1, value2, ...]
+ *
+ *  Get a list of values for the given config +key+. Values are always
+ *  returned as an +Array+ of +String+, or +nil+ if the given key doesn't exist
+ *  in the Config file.
+ *
+ *    cfg['apply.whitespace'] #=> ['fix']
+ *    cfg['diff.renames'] #=> ['true']
+ *    cfg['remote.origin.fetch'] #=> ["+refs/heads/*:refs/remotes/origin/*", "+refs/heads/*:refs/lolol/origin/*"]
+ */
+static VALUE rb_git_config_get_all(VALUE self, VALUE key)
+{
+	git_config *config;
+	VALUE list;
+	int error;
+
+	Data_Get_Struct(self, git_config, config);
+
+	list = rb_ary_new();
+	error = git_config_get_multivar_foreach(
+		config, StringValueCStr(key), NULL, each_config_value, (void *)list);
+
+	if (error == GIT_ENOTFOUND)
+		return Qnil;
+
+	rugged_exception_check(error);
+	return list;
+}
+
 void Init_rugged_config(void)
 {
 	/*
@@ -372,6 +410,7 @@ void Init_rugged_config(void)
 
 	rb_define_method(rb_cRuggedConfig, "get", rb_git_config_get, 1);
 	rb_define_method(rb_cRuggedConfig, "[]", rb_git_config_get, 1);
+	rb_define_method(rb_cRuggedConfig, "get_all", rb_git_config_get_all, 1);
 
 	rb_define_method(rb_cRuggedConfig, "each_key", rb_git_config_each_key, 0);
 	rb_define_method(rb_cRuggedConfig, "each_pair", rb_git_config_each_pair, 0);

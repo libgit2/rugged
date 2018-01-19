@@ -11,3 +11,6 @@
 	pushurl = git://github.com/libgit2/TestEmptyRepository.git
 	fetch = +refs/heads/*:refs/remotes/test_remote/*
 	push = refs/heads/*:refs/heads/testing/*
+[remote "test_multiple_fetches"]
+	fetch = +refs/heads/*:refs/remotes/test_remote/*
+	fetch = +refs/heads/*:refs/remotes/hello_remote/*

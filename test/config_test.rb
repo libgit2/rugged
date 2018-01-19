@@ -5,6 +5,13 @@ class ConfigTest < Rugged::TestCase
     @repo = FixtureRepo.from_rugged("testrepo.git")
   end
 
+  def test_multi_fetch
+    config = @repo.config
+    fetches = ["+refs/heads/*:refs/remotes/test_remote/*",
+               "+refs/heads/*:refs/remotes/hello_remote/*"]
+    assert_equal fetches, config.get_all("remote.test_multiple_fetches.fetch")
+  end
+
   def test_read_config_file
     config = @repo.config
     assert_equal 'false', config['core.bare']
