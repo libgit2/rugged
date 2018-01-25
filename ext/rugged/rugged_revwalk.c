@@ -348,6 +348,8 @@ static VALUE do_walk(VALUE _payload)
 			break;
 	}
 
+	xfree(w.author_names);
+
 	if (error != GIT_ITEROVER)
 		rugged_exception_check(error);
 
@@ -428,7 +430,6 @@ static VALUE rb_git_walk(int argc, VALUE *argv, VALUE self)
 	if (!exception)
 		rb_protect(do_walk, (VALUE)&w, &exception);
 
-	xfree(w.author_names);
 	git_revwalk_free(w.walk);
 
 	if (exception)
