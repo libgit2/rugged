@@ -328,6 +328,10 @@ static VALUE do_walk(VALUE _payload)
 		}
 
 		if (w->oid_only) {
+			if (commit != NULL) {
+				git_commit_free(commit);
+			}
+
 			rb_yield(rugged_create_oid(&commit_oid));
 		} else {
 			if (commit == NULL) {
