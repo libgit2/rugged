@@ -223,6 +223,9 @@ struct walk_options {
 	git_revwalk *walk;
 	int oid_only;
 	uint64_t offset, limit;
+
+	char **author_names;
+	size_t author_names_count;
 };
 
 static void load_walk_limits(struct walk_options *w, VALUE rb_options)
@@ -237,6 +240,20 @@ static void load_walk_limits(struct walk_options *w, VALUE rb_options)
 	if (!NIL_P(rb_value)) {
 		Check_Type(rb_value, T_FIXNUM);
 		w->limit = FIX2ULONG(rb_value);
+	}
+
+	rb_value = rb_hash_lookup(rb_options, CSTR2SYM("authors"));
+	if (!NIL_P(rb_value)) {
+		size_t i;
+
+		Check_Type(rb_value, T_ARRAY);
+		for (i = 0; i < RARRAY_LEN(rb_value); ++i)
+			Check_Type(rb_ary_entry(rb_value, i), T_STRING);
+
+		w->author_names = xmalloc(RARRAY_LEN(rb_value) * sizeof(char *));
+		for (i = 0; i < RARRAY_LEN(rb_value); ++i)
+			w->author_names[i] = RSTRING_PTR(rb_ary_entry(rb_value, i));
+		w->author_names_count = i;
 	}
 }
 
@@ -284,6 +301,27 @@ static VALUE do_walk(VALUE _payload)
 	git_oid commit_oid;
 
 	while ((error = git_revwalk_next(&commit_oid, w->walk)) == 0) {
+		git_commit *commit = NULL;
+
+		if (w->author_names_count) {
+			const git_signature *sig;
+			int found = 0;
+			size_t i = 0;
+
+			error = git_commit_lookup(&commit, w->repo, &commit_oid);
+			rugged_exception_check(error);
+
+			sig = git_commit_author(commit);
+
+			for (i = 0; !found && i < w->author_names_count; ++i) {
+				if (strcmp(w->author_names[i], sig->name) == 0)
+					found = 1;
+			}
+
+			if (found == 0)
+				continue;
+		}
+
 		if (w->offset > 0) {
 			w->offset--;
 			continue;
@@ -292,10 +330,10 @@ static VALUE do_walk(VALUE _payload)
 		if (w->oid_only) {
 			rb_yield(rugged_create_oid(&commit_oid));
 		} else {
-			git_commit *commit;
-
-			error = git_commit_lookup(&commit, w->repo, &commit_oid);
-			rugged_exception_check(error);
+			if (commit == NULL) {
+				error = git_commit_lookup(&commit, w->repo, &commit_oid);
+				rugged_exception_check(error);
+			}
 
 			rb_yield(
 				rugged_object_new(w->rb_owner, (git_object *)commit)
@@ -374,6 +412,8 @@ static VALUE rb_git_walk(int argc, VALUE *argv, VALUE self)
 	w.rb_owner = rb_repo;
 	w.rb_options = rb_options;
 
+	w.author_names = NULL;
+	w.author_names_count = 0;
 	w.oid_only = 0;
 	w.offset = 0;
 	w.limit = UINT64_MAX;
@@ -406,6 +446,8 @@ static VALUE rb_git_walk_with_opts(int argc, VALUE *argv, VALUE self, int oid_on
 	w.rb_owner = rugged_owner(self);
 	w.rb_options = Qnil;
 
+	w.author_names = NULL;
+	w.author_names_count = 0;
 	w.oid_only = oid_only;
 	w.offset = 0;
 	w.limit = UINT64_MAX;
