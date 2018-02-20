@@ -88,7 +88,7 @@ static VALUE rb_git_ref_peel(VALUE self)
 	} else {
 		git_oid_tostr(oid, sizeof(oid), git_object_id(object));
 		git_object_free(object);
-		return rb_str_new_utf8(oid);
+		return rb_str_new2(oid);
 	}
 }
 
@@ -160,7 +160,7 @@ static VALUE rb_git_ref_target_id(VALUE self)
 	if (git_reference_type(ref) == GIT_REF_OID) {
 		return rugged_create_oid(git_reference_target(ref));
 	} else {
-		return rb_str_new_utf8(git_reference_symbolic_target(ref));
+		return rb_str_new2(git_reference_symbolic_target(ref));
 	}
 }
 
@@ -202,7 +202,7 @@ static VALUE rb_git_ref_name(VALUE self)
 {
 	git_reference *ref;
 	Data_Get_Struct(self, git_reference, ref);
-	return rb_str_new_utf8(git_reference_name(ref));
+	return rb_str_new2(git_reference_name(ref));
 }
 
 /*
@@ -249,11 +249,11 @@ static VALUE reflog_entry_new(const git_reflog_entry *entry)
 
 	rb_hash_aset(rb_entry,
 		CSTR2SYM("committer"),
-		rugged_signature_new(git_reflog_entry_committer(entry), NULL)
+		rugged_signature_new(git_reflog_entry_committer(entry))
 	);
 
 	if ((message = git_reflog_entry_message(entry)) != NULL) {
-		rb_hash_aset(rb_entry, CSTR2SYM("message"), rb_str_new_utf8(message));
+		rb_hash_aset(rb_entry, CSTR2SYM("message"), rb_str_new2(message));
 	}
 
 	return rb_entry;

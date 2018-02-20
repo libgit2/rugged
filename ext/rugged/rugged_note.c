@@ -12,14 +12,7 @@ extern VALUE rb_cRuggedObject;
 
 static VALUE rugged_git_note_message(const git_note *note)
 {
-	const char *message;
-	message = git_note_message(note);
-
-	/*
-	 * assume the note message is utf8 compatible, because that's
-	 * the sensible thing to do.
-	 */
-	return rb_str_new_utf8(message);
+	return rb_str_new2(git_note_message(note));
 }
 
 static VALUE rugged_git_note_oid(const git_note* note)
@@ -338,7 +331,7 @@ static VALUE rb_git_note_default_ref_GET(VALUE self)
 		git_note_default_ref(&ref_name, repo)
 	);
 
-	rb_result = rb_enc_str_new(ref_name.ptr, ref_name.size, rb_utf8_encoding());
+	rb_result = rb_str_new(ref_name.ptr, ref_name.size);
 
 	git_buf_free(&ref_name);
 

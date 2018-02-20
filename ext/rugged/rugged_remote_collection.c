@@ -150,7 +150,7 @@ static VALUE rb_git_remote_collection__each(VALUE self, int only_names)
 
 	if (only_names) {
 		for (i = 0; !exception && i < remotes.count; ++i) {
-			rb_protect(rb_yield, rb_str_new_utf8(remotes.strings[i]), &exception);
+			rb_protect(rb_yield, rb_str_new2(remotes.strings[i]), &exception);
 		}
 	} else {
 		for (i = 0; !exception && !error && i < remotes.count; ++i) {
@@ -250,7 +250,7 @@ static VALUE rb_git_remote_collection_rename(VALUE self, VALUE rb_name_or_remote
 	rugged_exception_check(error);
 
 	for (i = exception = 0; !exception && i < problems.count; ++i) {
-		rb_protect(rb_yield, rb_str_new_utf8(problems.strings[i]), &exception);
+		rb_protect(rb_yield, rb_str_new2(problems.strings[i]), &exception);
 	}
 
 	git_strarray_free(&problems);

@@ -518,7 +518,7 @@ static VALUE rb_git_submodule_name(VALUE self)
 
 	name = git_submodule_name(submodule);
 
-	return rb_str_new_utf8(name);
+	return rb_str_new2(name);
 }
 
 /*
@@ -537,7 +537,7 @@ static VALUE rb_git_submodule_url(VALUE self)
 
 	url = git_submodule_url(submodule);
 
-	return url ? rb_str_new_utf8(url) : Qnil;
+	return url ? rb_str_new2(url) : Qnil;
 }
 
 /*
@@ -558,7 +558,7 @@ static VALUE rb_git_submodule_path(VALUE self)
 
 	path = git_submodule_path(submodule);
 
-	return rb_str_new_utf8(path);
+	return rb_str_new2(path);
 }
 
 #define RB_GIT_OID_GETTER(_klass, _attribute) \

@@ -511,7 +511,7 @@ static VALUE rb_git_indexentry_fromC(const git_index_entry *entry)
 
 	rb_entry = rb_hash_new();
 
-	rb_hash_aset(rb_entry, CSTR2SYM("path"), rb_str_new_utf8(entry->path));
+	rb_hash_aset(rb_entry, CSTR2SYM("path"), rb_str_new2(entry->path));
 	rb_hash_aset(rb_entry, CSTR2SYM("oid"), rugged_create_oid(&entry->id));
 
 	rb_hash_aset(rb_entry, CSTR2SYM("dev"), INT2FIX(entry->dev));

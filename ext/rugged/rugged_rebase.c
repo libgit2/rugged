@@ -226,7 +226,7 @@ static VALUE rb_git_rebase_next(VALUE self)
 	}
 
 	if (operation->exec) {
-		val = rb_str_new_utf8(operation->exec);
+		val = rb_str_new2(operation->exec);
 		rb_hash_aset(hash, CSTR2SYM("exec"), val);
 	}
 

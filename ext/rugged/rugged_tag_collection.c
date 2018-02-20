@@ -252,11 +252,11 @@ static VALUE each_tag(int argc, VALUE *argv, VALUE self, int tag_names_only)
 
 	if (tag_names_only) {
 		for (i = 0; !exception && i < tags.count; ++i)
-			rb_protect(rb_yield, rb_str_new_utf8(tags.strings[i]), &exception);
+			rb_protect(rb_yield, rb_str_new2(tags.strings[i]), &exception);
 	} else {
 		for (i = 0; !exception && i < tags.count; ++i) {
 			rb_protect(rb_yield, rb_git_tag_collection_aref(self,
-				rb_str_new_utf8(tags.strings[i])), &exception);
+				rb_str_new2(tags.strings[i])), &exception);
 		}
 	}
 
