@@ -24,6 +24,10 @@
 #include <git2.h>
 #include <git2/odb_backend.h>
 
+#include "khash.h"
+
+KHASH_MAP_INIT_STR(map_charptr_to_charptr, char *)
+
 #define rb_str_new_utf8(str) rb_enc_str_new(str, strlen(str), rb_utf8_encoding())
 #define CSTR2SYM(s) (ID2SYM(rb_intern((s))))
 
@@ -137,6 +141,15 @@ struct rugged_cb_payload
     int exception;
 };
 
+struct rugged_remote_cb_payload_without_gvl
+{
+    int credentials_passthrough;
+    git_cred *credentials;
+    git_cred *credentials_username;
+    int certificate_check;
+    khash_t(map_charptr_to_charptr) *result;
+};
+
 struct rugged_remote_cb_payload
 {
 	VALUE progress;
@@ -149,10 +162,31 @@ struct rugged_remote_cb_payload
 	int exception;
 };
 
+struct rugged_git_clone_arg
+{
+    git_repository *repo;
+    char *url;
+    char *local_path;
+    git_clone_options *options;
+};
+
+struct rugged_git_remote_fetch_arg
+{
+    git_remote *remote;
+    git_strarray *refspecs;
+    git_fetch_options *opts;
+    char *log_message;
+};
+
 void rugged_remote_init_callbacks_and_payload_from_options(
 	VALUE rb_options,
 	git_remote_callbacks *callbacks,
 	struct rugged_remote_cb_payload *payload);
+
+void rugged_remote_init_callbacks_and_payload_from_options_without_gvl(
+	VALUE rb_options,
+	git_remote_callbacks *callbacks,
+	struct rugged_remote_cb_payload_without_gvl *payload);
 
 static inline void rugged_check_repo(VALUE rb_repo)
 {

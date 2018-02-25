@@ -10,6 +10,7 @@
 #include <git2/sys/odb_backend.h>
 #include <git2/sys/refdb_backend.h>
 #include <git2/refs.h>
+#include <ruby/thread.h>
 
 extern VALUE rb_mRugged;
 extern VALUE rb_eRuggedError;
@@ -416,6 +417,28 @@ static void parse_clone_options(git_clone_options *ret, VALUE rb_options, struct
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &ret->fetch_opts.callbacks, remote_payload);
 }
 
+static void parse_clone_options_without_gvl(git_clone_options *ret, VALUE rb_options,
+                                            struct rugged_remote_cb_payload_without_gvl *remote_payload)
+{
+	VALUE val;
+
+	if (NIL_P(rb_options))
+		return;
+
+	val = rb_hash_aref(rb_options, CSTR2SYM("bare"));
+	if (RTEST(val))
+		ret->bare = 1;
+
+	val = rb_hash_aref(rb_options, CSTR2SYM("checkout_branch"));
+	if (!NIL_P(val)) {
+		Check_Type(val, T_STRING);
+		ret->checkout_branch = StringValueCStr(val);
+	}
+
+	rugged_remote_init_callbacks_and_payload_from_options_without_gvl(rb_options,
+                                                                      &ret->fetch_opts.callbacks, remote_payload);
+}
+
 /*
  *  call-seq:
  *    Repository.clone_at(url, local_path[, options]) -> repository
@@ -482,6 +505,70 @@ static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
 
 	if (RTEST(remote_payload.exception))
 		rb_jump_tag(remote_payload.exception);
+	rugged_exception_check(error);
+
+	return rugged_repo_new(klass, repo);
+}
+
+/*
+ *  call-seq:
+ *    Repository.clone_at2(url, local_path[, options]) -> repository
+ *
+ *  Clone a repository from +url+ to +local_path+.
+ *
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :bare ::
+ *    If +true+, the clone will be created as a bare repository.
+ *    Defaults to +false+.
+ *
+ *  :checkout_branch ::
+ *    The name of a branch to checkout. Defaults to the remote's +HEAD+.
+ *
+ *  :remote ::
+ *    The name to give to the "origin" remote. Defaults to <tt>"origin"</tt>.
+ *
+ *  :ignore_cert_errors ::
+ *    If set to +true+, errors while validating the remote's host certificate will be ignored.
+ *
+ *  :credentials ::
+ *    The credentials to use for the fetch operation. Can be either an instance of one
+ *    of the Rugged::Credentials types.
+ */
+static void *git_clone_wrapper(void *data)
+{
+    struct rugged_git_clone_arg *arg = data;
+    int error;
+
+    error = git_clone(&arg->repo, arg->url, arg->local_path, arg->options);
+
+    return (void *)(intptr_t) error;
+}
+
+static VALUE rb_git_repo_clone_at_without_gvl(int argc, VALUE *argv, VALUE klass)
+{
+    struct rugged_git_clone_arg arg;
+	VALUE url, local_path, rb_options_hash;
+	git_clone_options options = GIT_CLONE_OPTIONS_INIT;
+    struct rugged_remote_cb_payload_without_gvl remote_payload = {0, NULL, NULL, 0, NULL};
+	git_repository *repo;
+	int error;
+
+	rb_scan_args(argc, argv, "21", &url, &local_path, &rb_options_hash);
+	Check_Type(url, T_STRING);
+	Check_Type(local_path, T_STRING);
+
+	parse_clone_options_without_gvl(&options, rb_options_hash, &remote_payload);
+
+
+    arg.url = StringValueCStr(url);
+    arg.local_path = StringValueCStr(local_path);
+    arg.options = &options;
+    error = (intptr_t) rb_thread_call_without_gvl2(git_clone_wrapper, &arg,
+                                                   RUBY_UBF_PROCESS, NULL);
+    rb_thread_check_ints();
+    repo = arg.repo;
+
 	rugged_exception_check(error);
 
 	return rugged_repo_new(klass, repo);
@@ -2556,6 +2643,7 @@ void Init_rugged_repo(void)
 	rb_define_singleton_method(rb_cRuggedRepo, "init_at", rb_git_repo_init_at, -1);
 	rb_define_singleton_method(rb_cRuggedRepo, "discover", rb_git_repo_discover, -1);
 	rb_define_singleton_method(rb_cRuggedRepo, "clone_at", rb_git_repo_clone_at, -1);
+	rb_define_singleton_method(rb_cRuggedRepo, "clone_at2", rb_git_repo_clone_at_without_gvl, -1);
 
 	rb_define_method(rb_cRuggedRepo, "close", rb_git_repo_close, 0);
 
