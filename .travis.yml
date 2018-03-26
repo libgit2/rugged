@@ -15,6 +15,9 @@ rvm:
 
 addons:
   apt:
+    sources:
+     - sourceline: 'deb https://dl.bintray.com/libgit2/ci-dependencies trusty libgit2deps'
+       key_url: 'https://bintray.com/user/downloadSubjectPublicKey?username=bintray'
     packages:
     - cmake
     - libssh2-1-dev
