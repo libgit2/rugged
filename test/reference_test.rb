@@ -26,6 +26,7 @@ class ReferenceTest < Rugged::TestCase
     assert_equal [
       "refs/heads/br2",
       "refs/heads/dir",
+      "refs/heads/executable",
       "refs/heads/ident",
       "refs/heads/long-file-name",
       "refs/heads/master",
