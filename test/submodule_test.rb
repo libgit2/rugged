@@ -316,4 +316,17 @@ class SubmoduleTest < Rugged::TestCase
     assert submodule.repository.branches['master']
     assert_equal 'origin/master', submodule.repository.branches['master'].upstream.name
   end
+
+  def test_submodule_valid_name?
+    assert Rugged::Submodule.valid_name?("mysubmodule")
+    assert Rugged::Submodule.valid_name?("mysubmodule/.git/foo")
+
+    refute Rugged::Submodule.valid_name?("../mysubmodule")
+    refute Rugged::Submodule.valid_name?("my/../submodule")
+
+    # I'm not sure this is the right behaviour, but document it as such. The
+    # input must thus be canonicalised into forward slashes.
+    assert Rugged::Submodule.valid_name?("..\\mysubmodule")
+    assert Rugged::Submodule.valid_name?("my\\..\\submodule")
+  end
 end

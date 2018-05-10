@@ -778,6 +778,26 @@ static VALUE rb_git_submodule_finalize_add(VALUE self)
 	return self;
 }
 
+/*
+ *  call-seq:
+ *    Submdule.valid_name? -> bool
+ *
+ *  Check whether the given name is a valid name for a submdule i.e. check that
+ *  it's not trying to escape from its directory.
+ *
+ *  The path must the canonicalised into slashes as directory separators.
+ */
+static VALUE rb_git_submodule_name_is_valid(VALUE klass, VALUE rb_name)
+{
+	int valid;
+
+	Check_Type(rb_name, T_STRING);
+
+	valid = git_submodule_name_is_valid(NULL, StringValueCStr(rb_name), 0);
+
+	return valid ? Qtrue : Qfalse;
+}
+
 void Init_rugged_submodule(void)
 {
 	init_status_list();
@@ -832,4 +852,6 @@ void Init_rugged_submodule(void)
 	rb_define_method(rb_cRuggedSubmodule, "reload", rb_git_submodule_reload, 0);
 	rb_define_method(rb_cRuggedSubmodule, "sync", rb_git_submodule_sync, 0);
 	rb_define_method(rb_cRuggedSubmodule, "init", rb_git_submodule_init, -1);
+
+	rb_define_singleton_method(rb_cRuggedSubmodule, "valid_name?", rb_git_submodule_name_is_valid, 1);
 }
