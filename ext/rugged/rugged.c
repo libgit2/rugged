@@ -515,6 +515,48 @@ VALUE rb_merge_file_result_fromC(const git_merge_file_result *result)
 	return rb_result;
 }
 
+static VALUE rb_git_path_is_dotgit_modules(VALUE self, VALUE rb_path)
+{
+	const char *path;
+	int is_dotgit;
+
+	Check_Type(rb_path, T_STRING);
+
+	path = StringValueCStr(rb_path);
+
+	is_dotgit = git_path_is_gitfile(path, strlen(path), GIT_PATH_GITFILE_GITMODULES, GIT_PATH_FS_GENERIC);
+
+	return is_dotgit ? Qtrue : Qfalse;
+}
+
+static VALUE rb_git_path_is_dotgit_ignore(VALUE self, VALUE rb_path)
+{
+	const char *path;
+	int is_dotgit;
+
+	Check_Type(rb_path, T_STRING);
+
+	path = StringValueCStr(rb_path);
+
+	is_dotgit = git_path_is_gitfile(path, strlen(path), GIT_PATH_GITFILE_GITIGNORE, GIT_PATH_FS_GENERIC);
+
+	return is_dotgit ? Qtrue : Qfalse;
+}
+
+static VALUE rb_git_path_is_dotgit_attributes(VALUE self, VALUE rb_path)
+{
+	const char *path;
+	int is_dotgit;
+
+	Check_Type(rb_path, T_STRING);
+
+	path = StringValueCStr(rb_path);
+
+	is_dotgit = git_path_is_gitfile(path, strlen(path), GIT_PATH_GITFILE_GITATTRIBUTES, GIT_PATH_FS_GENERIC);
+
+	return is_dotgit ? Qtrue : Qfalse;
+}
+
 void Init_rugged(void)
 {
 	rb_mRugged = rb_define_module("Rugged");
@@ -544,6 +586,9 @@ void Init_rugged(void)
 	rb_define_module_function(rb_mRugged, "prettify_message", rb_git_prettify_message, -1);
 	rb_define_module_function(rb_mRugged, "__cache_usage__", rb_git_cache_usage, 0);
 	rb_define_module_function(rb_mRugged, "signature_from_buffer", rb_git_signature_from_buffer, -1);
+	rb_define_module_function(rb_mRugged, "dotgit_modules?", rb_git_path_is_dotgit_modules, 1);
+	rb_define_module_function(rb_mRugged, "dotgit_ignore?", rb_git_path_is_dotgit_ignore, 1);
+	rb_define_module_function(rb_mRugged, "dotgit_attributes?", rb_git_path_is_dotgit_attributes, 1);
 
 	Init_rugged_reference();
 	Init_rugged_reference_collection();
