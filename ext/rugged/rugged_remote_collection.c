@@ -1,25 +1,8 @@
 /*
- * The MIT License
+ * Copyright (C) the Rugged contributors.  All rights reserved.
  *
- * Copyright (c) 2014 GitHub, Inc
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * This file is part of Rugged, distributed under the MIT license.
+ * For full terms see the included LICENSE file.
  */
 
 #include "rugged.h"
@@ -69,8 +52,7 @@ static VALUE rb_git_remote_collection_create_anonymous(VALUE self, VALUE rb_url)
 	error = git_remote_create_anonymous(
 			&remote,
 			repo,
-			StringValueCStr(rb_url),
-			NULL);
+			StringValueCStr(rb_url));
 
 	rugged_exception_check(error);
 
@@ -157,12 +139,7 @@ static VALUE rb_git_remote_collection__each(VALUE self, int only_names)
 
 	VALUE rb_repo;
 
-	if (!rb_block_given_p()) {		
-		if (only_names)
-			return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_name"));
-		else
-			return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each"));
-	}
+	RETURN_ENUMERATOR(self, 0, 0);
 
 	rb_repo = rugged_owner(self);
 	rugged_check_repo(rb_repo);
@@ -298,7 +275,6 @@ static VALUE rb_git_remote_collection_delete(VALUE self, VALUE rb_name_or_remote
 {
 	VALUE rb_repo = rugged_owner(self);
 	git_repository *repo;
-	int error;
 
 	if (rb_obj_is_kind_of(rb_name_or_remote, rb_cRuggedRemote))
 		rb_name_or_remote = rb_funcall(rb_name_or_remote, rb_intern("name"), 0);
@@ -309,10 +285,128 @@ static VALUE rb_git_remote_collection_delete(VALUE self, VALUE rb_name_or_remote
 	rugged_check_repo(rb_repo);
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
-	error = git_remote_delete(repo, StringValueCStr(rb_name_or_remote));
+	rugged_exception_check(
+		git_remote_delete(repo, StringValueCStr(rb_name_or_remote))
+	);
+
+	return Qnil;
+}
+
+/*
+ *  call-seq:
+ *    remotes.set_url(remote, url) -> nil
+ *    remotes.set_url(name, url) -> nil
+ *
+ *  Sets the remote's url in the configuration.
+ *  Rugged::Remote objects already in memory will not be affected.
+ *
+ *    repo.remotes.set_url("origin", 'git://github.com/libgit2/rugged.git')
+ */
+static VALUE rb_git_remote_collection_set_url(VALUE self, VALUE rb_name_or_remote, VALUE rb_url)
+{
+	VALUE rb_repo = rugged_owner(self);
+	git_repository *repo;
+
+	if (rb_obj_is_kind_of(rb_name_or_remote, rb_cRuggedRemote))
+		rb_name_or_remote = rb_funcall(rb_name_or_remote, rb_intern("name"), 0);
+
+	if (TYPE(rb_name_or_remote) != T_STRING)
+		rb_raise(rb_eTypeError, "Expecting a String or Rugged::Remote instance");
+
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	Check_Type(rb_url, T_STRING);
+
+	rugged_exception_check(
+		git_remote_set_url(repo, StringValueCStr(rb_name_or_remote), StringValueCStr(rb_url))
+	);
+
+	return Qnil;
+}
+
+/*
+ *  call-seq:
+ *    remotes.set_push_url(remote, url) -> nil
+ *    remotes.set_push_url(name, url) -> nil
+ *
+ *  Sets the remote's url for pushing in the configuration.
+ *  Rugged::Remote objects already in memory will not be affected.
+ *
+ *    repo.remotes.set_push_url("origin", 'git://github.com/libgit2/rugged.git')
+ */
+static VALUE rb_git_remote_collection_set_push_url(VALUE self, VALUE rb_name_or_remote, VALUE rb_url)
+{
+	VALUE rb_repo = rugged_owner(self);
+	git_repository *repo;
+
+	if (rb_obj_is_kind_of(rb_name_or_remote, rb_cRuggedRemote))
+		rb_name_or_remote = rb_funcall(rb_name_or_remote, rb_intern("name"), 0);
+
+	if (TYPE(rb_name_or_remote) != T_STRING)
+		rb_raise(rb_eTypeError, "Expecting a String or Rugged::Remote instance");
+
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	Check_Type(rb_url, T_STRING);
+
+	rugged_exception_check(
+		git_remote_set_pushurl(repo, StringValueCStr(rb_name_or_remote), StringValueCStr(rb_url))
+	);
+
+	return Qnil;
+}
+
+static VALUE rb_git_remote_collection_add_refspec(VALUE self, VALUE rb_name_or_remote, VALUE rb_refspec, git_direction direction)
+{
+	VALUE rb_repo = rugged_owner(self);
+	git_repository *repo;
+	int error = 0;
+
+	if (rb_obj_is_kind_of(rb_name_or_remote, rb_cRuggedRemote))
+		rb_name_or_remote = rb_funcall(rb_name_or_remote, rb_intern("name"), 0);
+
+	if (TYPE(rb_name_or_remote) != T_STRING)
+		rb_raise(rb_eTypeError, "Expecting a String or Rugged::Remote instance");
+
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	Check_Type(rb_refspec, T_STRING);
+
+	if (direction == GIT_DIRECTION_FETCH)
+		error = git_remote_add_fetch(repo, StringValueCStr(rb_name_or_remote), StringValueCStr(rb_refspec));
+	else
+		error = git_remote_add_push(repo, StringValueCStr(rb_name_or_remote), StringValueCStr(rb_refspec));
+
 	rugged_exception_check(error);
 
 	return Qnil;
+}
+
+/*
+ *  call-seq:
+ *    remotes.add_fetch_refspec(remote, refspec) -> nil
+ *    remotes.add_fetch_refspec(name, refspec) -> nil
+ *
+ *  Add a fetch refspec to the remote.
+ */
+static VALUE rb_git_remote_collection_add_fetch_refspec(VALUE self, VALUE rb_name_or_remote, VALUE rb_refspec)
+{
+	return rb_git_remote_collection_add_refspec(self, rb_name_or_remote, rb_refspec, GIT_DIRECTION_FETCH);
+}
+
+/*
+ *  call-seq:
+ *    remotes.add_push_refspec(remote, refspec) -> nil
+ *    remotes.add_push_refspec(name, refspec) -> nil
+ *
+ *  Add a push refspec to the remote.
+ */
+static VALUE rb_git_remote_collection_add_push_refspec(VALUE self, VALUE rb_name_or_remote, VALUE rb_refspec)
+{
+	return rb_git_remote_collection_add_refspec(self, rb_name_or_remote, rb_refspec, GIT_DIRECTION_PUSH);
 }
 
 void Init_rugged_remote_collection(void)
@@ -320,16 +414,22 @@ void Init_rugged_remote_collection(void)
 	rb_cRuggedRemoteCollection = rb_define_class_under(rb_mRugged, "RemoteCollection", rb_cObject);
 	rb_include_module(rb_cRuggedRemoteCollection, rb_mEnumerable);
 
-	rb_define_method(rb_cRuggedRemoteCollection, "initialize",       rb_git_remote_collection_initialize, 1);
+	rb_define_method(rb_cRuggedRemoteCollection, "initialize",        rb_git_remote_collection_initialize, 1);
 
-	rb_define_method(rb_cRuggedRemoteCollection, "[]",               rb_git_remote_collection_aref, 1);
+	rb_define_method(rb_cRuggedRemoteCollection, "[]",                rb_git_remote_collection_aref, 1);
 
-	rb_define_method(rb_cRuggedRemoteCollection, "create",           rb_git_remote_collection_create, 2);
-	rb_define_method(rb_cRuggedRemoteCollection, "create_anonymous", rb_git_remote_collection_create_anonymous, 1);
+	rb_define_method(rb_cRuggedRemoteCollection, "create",            rb_git_remote_collection_create, 2);
+	rb_define_method(rb_cRuggedRemoteCollection, "create_anonymous",  rb_git_remote_collection_create_anonymous, 1);
 
-	rb_define_method(rb_cRuggedRemoteCollection, "each",             rb_git_remote_collection_each, 0);
-	rb_define_method(rb_cRuggedRemoteCollection, "each_name",        rb_git_remote_collection_each_name, 0);
+	rb_define_method(rb_cRuggedRemoteCollection, "each",              rb_git_remote_collection_each, 0);
+	rb_define_method(rb_cRuggedRemoteCollection, "each_name",         rb_git_remote_collection_each_name, 0);
 
-	rb_define_method(rb_cRuggedRemoteCollection, "rename",           rb_git_remote_collection_rename, 2);
-	rb_define_method(rb_cRuggedRemoteCollection, "delete",           rb_git_remote_collection_delete, 1);
+	rb_define_method(rb_cRuggedRemoteCollection, "set_url",           rb_git_remote_collection_set_url, 2);
+	rb_define_method(rb_cRuggedRemoteCollection, "set_push_url",      rb_git_remote_collection_set_push_url, 2);
+
+	rb_define_method(rb_cRuggedRemoteCollection, "add_push_refspec",  rb_git_remote_collection_add_push_refspec, 2);
+	rb_define_method(rb_cRuggedRemoteCollection, "add_fetch_refspec", rb_git_remote_collection_add_fetch_refspec, 2);
+
+	rb_define_method(rb_cRuggedRemoteCollection, "rename",            rb_git_remote_collection_rename, 2);
+	rb_define_method(rb_cRuggedRemoteCollection, "delete",            rb_git_remote_collection_delete, 1);
 }

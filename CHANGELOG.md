@@ -1,3 +1,69 @@
+*   Add `Rugged::Repository#checkout_index`.
+
+    This allows to perform checkout from a given GIT index.
+    It might be handy in case of manual merge conflicts resolution with user intervention.
+
+    *Dmytro Milinevskyy*
+
+*   Add accessors for the Repository ident.
+
+    Added `Repository#ident` and `Repository#ident=` to read and set the
+    identity that is used when writing reflog entries.
+
+    *Arthur Schreiber*
+
+*   `Rugged::Remote` instances are now immutable.
+
+    * `Remote#clear_refspecs` and `Remote#save` were removed without
+      replacement.
+
+    * `Remote#url=` and `Remote#push_url=` were removed and replaced by
+      `RemoteCollection#set_url` and `RemoteCollection#set_push_url`.
+
+    * `Remote#add_push` and `Remote#add_fetch` were removed and replaced by
+      `RemoteCollection#add_push_refspec` and
+      `RemoteCollection#add_fetch_refspec`.
+
+    *Arthur Schreiber*
+
+*   Update bundled libgit2 to 9042693e283f65d9afb4906ed693a862a250664b.
+
+    *Arthur Schreiber*
+
+*   Updated the API of reflog modifying methods.
+
+    This removes both the optional `:message` as well as `:signature` options from
+    the following methods:
+
+    * `BranchCollection#create`, `BranchCollection#move`, `BranchCollection#rename`
+    * `ReferenceCollection#create`, `ReferenceCollection#rename`
+    * `Remote#push`
+    * `Repository#reset`
+
+    Additionally, the `:signature` option from `Remote#fetch` was removed as well.
+
+    The reflog message is now automatically generated and committed with the
+    the identity that is set in the Repository's configuration.
+
+    *Arthur Schreiber*
+
+*   The `:safe_create` flag was removed from `Repository#checkout_tree`.
+
+    You can use `:create` in combination with `:recreate_missing` instead.
+
+    *Arthur Schreiber*
+
+
+## Rugged 0.22.2 (May 17, 2015) ##
+
+*   Update bundled libgit2 to 0.22.2.
+
+    See https://github.com/libgit2/libgit2/releases/tag/v0.22.0,
+    https://github.com/libgit2/libgit2/releases/tag/v0.22.1 and
+    https://github.com/libgit2/libgit2/releases/tag/v0.22.2 for a list
+    of fixed issues and new features.
+
+    *Arthur Schreiber*
 
 *   Add `Rugged::Tree#count_recursive`.
 
@@ -8,14 +74,6 @@
     Fixes #464.
 
     *Andy Delcambre*
-
-*   Update bundled libgit2 to 0.22.1.
-
-    See https://github.com/libgit2/libgit2/releases/tag/v0.22.0 and
-    https://github.com/libgit2/libgit2/releases/tag/v0.22.1 for a list
-    of fixed issues and new features.
-
-    *Arthur Schreiber*
 
 *   Add missing handling of libgit2 errors in `Rugged::BranchCollection#each`
     and `Rugged::BranchCollection#each_name`.

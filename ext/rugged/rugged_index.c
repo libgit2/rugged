@@ -1,25 +1,8 @@
 /*
- * The MIT License
+ * Copyright (C) the Rugged contributors.  All rights reserved.
  *
- * Copyright (c) 2014 GitHub, Inc
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * This file is part of Rugged, distributed under the MIT license.
+ * For full terms see the included LICENSE file.
  */
 
 #include "rugged.h"
@@ -207,10 +190,8 @@ static VALUE rb_git_index_each(VALUE self)
 	git_index *index;
 	unsigned int i, count;
 
+	RETURN_ENUMERATOR(self, 0, 0);
 	Data_Get_Struct(self, git_index, index);
-
-	if (!rb_block_given_p())
-		return rb_funcall(self, rb_intern("to_enum"), 0);
 
 	count = (unsigned int)git_index_entrycount(index);
 	for (i = 0; i < count; ++i) {
@@ -555,7 +536,7 @@ static VALUE rb_git_indexentry_fromC(const git_index_entry *entry)
 	return rb_entry;
 }
 
-static inline unsigned int
+static inline uint32_t
 default_entry_value(VALUE rb_entry, const char *key)
 {
 	VALUE val = rb_hash_aref(rb_entry, CSTR2SYM(key));
@@ -587,7 +568,7 @@ static void rb_git_indexentry_toC(git_index_entry *entry, VALUE rb_entry)
 	entry->mode = default_entry_value(rb_entry, "mode");
 	entry->gid = default_entry_value(rb_entry, "gid");
 	entry->uid = default_entry_value(rb_entry, "uid");
-	entry->file_size = (git_off_t)default_entry_value(rb_entry, "file_size");
+	entry->file_size = default_entry_value(rb_entry, "file_size");
 
 	if ((val = rb_hash_aref(rb_entry, CSTR2SYM("mtime"))) != Qnil) {
 		if (!rb_obj_is_kind_of(val, rb_cTime))
@@ -624,8 +605,6 @@ static void rb_git_indexentry_toC(git_index_entry *entry, VALUE rb_entry)
 		entry->flags &= ~GIT_IDXENTRY_VALID;
 		if (rugged_parse_bool(val))
 			entry->flags |= GIT_IDXENTRY_VALID;
-	} else {
-		entry->flags |= GIT_IDXENTRY_VALID;
 	}
 }
 
@@ -691,146 +670,51 @@ static VALUE rb_git_index_readtree(VALUE self, VALUE rb_tree)
 	return Qnil;
 }
 
-/*
- *  call-seq:
- *    index.diff([options]) -> diff
- *    index.diff(diffable[, options]) -> diff
- *
- *  The first form returns a diff between the index and the current working
- *  directory.
- *
- *  The second form returns a diff between the index and the given diffable object.
- *  +diffable+ can either be a +Rugged::Commit+ or a +Rugged::Tree+.
- *
- *  The index will be used as the "old file" side of the diff, while the working
- *  directory or the +diffable+ will be used for the "new file" side.
- *
- *  The following options can be passed in the +options+ Hash:
- *
- *  :paths ::
- *    An array of paths / fnmatch patterns to constrain the diff to a specific
- *    set of files. Also see +:disable_pathspec_match+.
- *
- *  :max_size ::
- *    An integer specifying the maximum byte size of a file before a it will
- *    be treated as binary. The default value is 512MB.
- *
- *  :context_lines ::
- *    The number of unchanged lines that define the boundary of a hunk (and
- *    to display before and after the actual changes). The default is 3.
- *
- *  :interhunk_lines ::
- *    The maximum number of unchanged lines between hunk boundaries before the hunks
- *    will be merged into a one. The default is 0.
- *
- *  :reverse ::
- *    If true, the sides of the diff will be reversed.
- *
- *  :force_text ::
- *    If true, all files will be treated as text, disabling binary attributes & detection.
- *
- *  :ignore_whitespace ::
- *    If true, all whitespace will be ignored.
- *
- *  :ignore_whitespace_change ::
- *    If true, changes in amount of whitespace will be ignored.
- *
- *  :ignore_whitespace_eol ::
- *    If true, whitespace at end of line will be ignored.
- *
- *  :ignore_submodules ::
- *    if true, submodules will be excluded from the diff completely.
- *
- *  :patience ::
- *    If true, the "patience diff" algorithm will be used (currenlty unimplemented).
- *
- *  :include_ignored ::
- *    If true, ignored files will be included in the diff.
- *
- *  :include_untracked ::
- *   If true, untracked files will be included in the diff.
- *
- *  :include_unmodified ::
- *    If true, unmodified files will be included in the diff.
- *
- *  :recurse_untracked_dirs ::
- *    Even if +:include_untracked+ is true, untracked directories will only be
- *    marked with a single entry in the diff. If this flag is set to true,
- *    all files under ignored directories will be included in the diff, too.
- *
- *  :disable_pathspec_match ::
- *    If true, the given +:paths+ will be applied as exact matches, instead of
- *    as fnmatch patterns.
- *
- *  :deltas_are_icase ::
- *    If true, filename comparisons will be made with case-insensitivity.
- *
- *  :include_untracked_content ::
- *    if true, untracked content will be contained in the the diff patch text.
- *
- *  :skip_binary_check ::
- *    If true, diff deltas will be generated without spending time on binary
- *    detection. This is useful to improve performance in cases where the actual
- *    file content difference is not needed.
- *
- *  :include_typechange ::
- *    If true, type changes for files will not be interpreted as deletion of
- *    the "old file" and addition of the "new file", but will generate
- *    typechange records.
- *
- *  :include_typechange_trees ::
- *    Even if +:include_typechange+ is true, blob -> tree changes will still
- *    usually be handled as a deletion of the blob. If this flag is set to true,
- *    blob -> tree changes will be marked as typechanges.
- *
- *  :ignore_filemode ::
- *    If true, file mode changes will be ignored.
- *
- *  :recurse_ignored_dirs ::
- *    Even if +:include_ignored+ is true, ignored directories will only be
- *    marked with a single entry in the diff. If this flag is set to true,
- *    all files under ignored directories will be included in the diff, too.
- */
-static VALUE rb_git_index_diff(int argc, VALUE *argv, VALUE self)
+static VALUE rb_git_diff_tree_to_index(VALUE self, VALUE rb_other, VALUE rb_options)
 {
 	git_index *index;
 	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
 	git_repository *repo;
 	git_diff *diff = NULL;
-	VALUE owner, rb_other, rb_options;
+	VALUE owner;
 	int error;
+	git_tree *other_tree;
 
-	rb_scan_args(argc, argv, "01:", &rb_other, &rb_options);
 	rugged_parse_diff_options(&opts, rb_options);
 
 	Data_Get_Struct(self, git_index, index);
 	owner = rugged_owner(self);
 	Data_Get_Struct(owner, git_repository, repo);
 
-	if (NIL_P(rb_other)) {
-		error = git_diff_index_to_workdir(&diff, repo, index, &opts);
-	} else {
-		// Need to flip the reverse option, so that the index is by default
-		// the "old file" side of the diff.
-		opts.flags ^= GIT_DIFF_REVERSE;
+	// Need to flip the reverse option, so that the index is by default
+	// the "old file" side of the diff.
+	opts.flags ^= GIT_DIFF_REVERSE;
 
-		if (rb_obj_is_kind_of(rb_other, rb_cRuggedCommit)) {
-			git_tree *other_tree;
-			git_commit *commit;
-			Data_Get_Struct(rb_other, git_commit, commit);
-			error = git_commit_tree(&other_tree, commit);
+	Data_Get_Struct(rb_other, git_tree, other_tree);
+	error = git_diff_tree_to_index(&diff, repo, other_tree, index, &opts);
 
-			if (!error)
-				error = git_diff_tree_to_index(&diff, repo, other_tree, index, &opts);
-		} else if (rb_obj_is_kind_of(rb_other, rb_cRuggedTree)) {
-			git_tree *other_tree;
-			Data_Get_Struct(rb_other, git_tree, other_tree);
-			error = git_diff_tree_to_index(&diff, repo, other_tree, index, &opts);
-		} else {
-			xfree(opts.pathspec.strings);
-			rb_raise(rb_eTypeError, "A Rugged::Commit or Rugged::Tree instance is required");
-		}
-	}
+	xfree(opts.pathspec.strings);
+	rugged_exception_check(error);
+
+	return rugged_diff_new(rb_cRuggedDiff, owner, diff);
+}
+
+static VALUE rb_git_diff_index_to_workdir(VALUE self, VALUE rb_options)
+{
+	git_index *index;
+	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
+	git_repository *repo;
+	git_diff *diff = NULL;
+	VALUE owner;
+	int error;
+
+	rugged_parse_diff_options(&opts, rb_options);
+
+	Data_Get_Struct(self, git_index, index);
+	owner = rugged_owner(self);
+	Data_Get_Struct(owner, git_repository, repo);
+
+	error = git_diff_index_to_workdir(&diff, repo, index, &opts);
 
 	xfree(opts.pathspec.strings);
 	rugged_exception_check(error);
@@ -952,76 +836,6 @@ static VALUE rb_git_conflict_get(VALUE self, VALUE rb_path)
 	return rb_result;
 }
 
-void rugged_parse_merge_file_options(git_merge_file_options *opts, VALUE rb_options)
-{
-	if (!NIL_P(rb_options)) {
-		VALUE rb_value;
-		Check_Type(rb_options, T_HASH);
-
-		rb_value = rb_hash_aref(rb_options, CSTR2SYM("ancestor_label"));
-		if (!NIL_P(rb_value)) {
-			Check_Type(rb_value, T_FIXNUM);
-			opts->ancestor_label = StringValueCStr(rb_value);
-		}
-
-		rb_value = rb_hash_aref(rb_options, CSTR2SYM("our_label"));
-		if (!NIL_P(rb_value)) {
-			Check_Type(rb_value, T_FIXNUM);
-			opts->our_label = StringValueCStr(rb_value);
-		}
-
-		rb_value = rb_hash_aref(rb_options, CSTR2SYM("their_label"));
-		if (!NIL_P(rb_value)) {
-			Check_Type(rb_value, T_FIXNUM);
-			opts->their_label = StringValueCStr(rb_value);
-		}
-
-		rb_value = rb_hash_aref(rb_options, CSTR2SYM("favor"));
-		if (!NIL_P(rb_value)) {
-			ID id_favor;
-
-			Check_Type(rb_value, T_SYMBOL);
-			id_favor = SYM2ID(rb_value);
-
-			if (id_favor == rb_intern("normal")) {
-				opts->favor = GIT_MERGE_FILE_FAVOR_NORMAL;
-			} else if (id_favor == rb_intern("ours")) {
-				opts->favor = GIT_MERGE_FILE_FAVOR_OURS;
-			} else if (id_favor == rb_intern("theirs")) {
-				opts->favor = GIT_MERGE_FILE_FAVOR_THEIRS;
-			} else if (id_favor == rb_intern("union")) {
-				opts->favor = GIT_MERGE_FILE_FAVOR_UNION;
-			} else {
-				rb_raise(rb_eTypeError,
-					"Invalid favor mode. Expected `:normal`, `:ours`, `:theirs` or `:union`");
-			}
-		}
-
-		rb_value = rb_hash_aref(rb_options, CSTR2SYM("style"));
-		if (!NIL_P(rb_value)) {
-			ID id_style;
-
-			Check_Type(rb_value, T_SYMBOL);
-			id_style = SYM2ID(rb_value);
-
-			if (id_style == rb_intern("standard")) {
-				opts->flags |= GIT_MERGE_FILE_STYLE_MERGE;
-			} else if (id_style == rb_intern("diff3")) {
-				opts->flags |= GIT_MERGE_FILE_STYLE_DIFF3;
-			} else {
-				rb_raise(rb_eTypeError,
-					"Invalid style mode. Expected `:standard`, or `:diff3`");
-			}
-		} else {
-			opts->flags |= GIT_MERGE_FILE_STYLE_MERGE;
-		}
-
-		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("simplify")))) {
-			opts->flags |= GIT_MERGE_FILE_SIMPLIFY_ALNUM;
-		}
-	}
-}
-
 /*
  *  call-seq:
  *    index.merge_file(path[, options]) -> merge_file or nil
@@ -1061,8 +875,7 @@ void rugged_parse_merge_file_options(git_merge_file_options *opts, VALUE rb_opti
 
 static VALUE rb_git_merge_file(int argc, VALUE *argv, VALUE self)
 {
-	VALUE rb_path, rb_options;
-	VALUE rb_result = rb_hash_new();
+	VALUE rb_path, rb_options, rb_result;
 	VALUE rb_repo = rugged_owner(self);
 
 	git_repository *repo;
@@ -1074,10 +887,8 @@ static VALUE rb_git_merge_file(int argc, VALUE *argv, VALUE self)
 
 	rb_scan_args(argc, argv, "1:", &rb_path, &rb_options);
 
-	if (!NIL_P(rb_options)) {
-		Check_Type(rb_options, T_HASH);
+	if (!NIL_P(rb_options))
 		rugged_parse_merge_file_options(&opts, rb_options);
-	}
 
 	Check_Type(rb_path, T_STRING);
 
@@ -1092,14 +903,15 @@ static VALUE rb_git_merge_file(int argc, VALUE *argv, VALUE self)
 	else
 		rugged_exception_check(error);
 
+	if (ours == NULL)
+		rb_raise(rb_eRuntimeError, "The conflict does not have a stage 2 entry");
+	else if (theirs == NULL)
+		rb_raise(rb_eRuntimeError, "The conflict does not have a stage 3 entry");
+
 	error = git_merge_file_from_index(&merge_file_result, repo, ancestor, ours, theirs, &opts);
 	rugged_exception_check(error);
 
-	rb_hash_aset(rb_result, CSTR2SYM("automergeable"), merge_file_result.automergeable ? Qtrue : Qfalse);
-	rb_hash_aset(rb_result, CSTR2SYM("path"),         rb_path);
-	rb_hash_aset(rb_result, CSTR2SYM("filemode"),     INT2FIX(merge_file_result.mode));
-	rb_hash_aset(rb_result, CSTR2SYM("data"),         rb_str_new(merge_file_result.ptr, merge_file_result.len));
-
+	rb_result = rb_merge_file_result_fromC(&merge_file_result);
 	git_merge_file_result_free(&merge_file_result);
 
 	return rb_result;
@@ -1224,7 +1036,8 @@ void Init_rugged_index(void)
 	rb_define_method(rb_cRuggedIndex, "get", rb_git_index_get, -1);
 	rb_define_method(rb_cRuggedIndex, "[]", rb_git_index_get, -1);
 	rb_define_method(rb_cRuggedIndex, "each", rb_git_index_each, 0);
-	rb_define_method(rb_cRuggedIndex, "diff", rb_git_index_diff, -1);
+	rb_define_private_method(rb_cRuggedIndex, "diff_tree_to_index", rb_git_diff_tree_to_index, 2);
+	rb_define_private_method(rb_cRuggedIndex, "diff_index_to_workdir", rb_git_diff_index_to_workdir, 1);
 
 	rb_define_method(rb_cRuggedIndex, "conflicts?", rb_git_index_conflicts_p, 0);
 	rb_define_method(rb_cRuggedIndex, "conflicts", rb_git_index_conflicts, 0);

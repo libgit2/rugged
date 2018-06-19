@@ -2,7 +2,10 @@
 require "test_helper"
 
 class BranchTest < Rugged::TestCase
-  include Rugged::TempRepositoryAccess
+  def setup
+    @source_repo = FixtureRepo.from_rugged("testrepo.git")
+    @repo = FixtureRepo.clone(@source_repo)
+  end
 
   def test_list_all_names
     assert_equal [

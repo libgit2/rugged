@@ -1,9 +1,20 @@
 require 'test_helper'
 
-class SubmoduleTest < Rugged::SubmoduleTestCase
+class SubmoduleTest < Rugged::TestCase
   def setup
-    super
-    @repo = setup_submodule
+    @repo = FixtureRepo.from_libgit2('submod2').tap do |repo|
+      Dir.chdir(repo.workdir) do
+        File.rename(
+          File.join('not-submodule', '.gitted'),
+          File.join('not-submodule', '.git')
+        )
+
+        File.rename(
+          File.join('not', '.gitted'),
+          File.join('not', '.git')
+        )
+      end
+    end
   end
 
   class TestException < StandardError
@@ -41,7 +52,7 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
 
     assert :none, submodule.ignore_rule
     assert submodule.path.end_with?('sm_unchanged')
-    assert submodule.url.end_with?('submod2_target')
+    #assert submodule.url.end_with?('submod2_target')
     assert_equal 'sm_unchanged', submodule.name
 
     assert_equal oid, submodule.head_oid
@@ -141,7 +152,6 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
     # now mkdir sm_unchanged to test uninitialized
     FileUtils.mkdir(sm_unchanged_path, :mode => 0755)
     submodule = @repo.submodules['sm_unchanged']
-    submodule.reload
     assert_includes submodule.status, :uninitialized
     assert submodule.uninitialized?
 
@@ -157,62 +167,48 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
     index.write
 
     submodule = @repo.submodules['sm_changed_head']
-    submodule.reload
     assert_includes submodule.status, :deleted_from_index
     assert submodule.deleted_from_index?
   end
 
-  def test_submodule_ignore_rule
+  def test_submodule_update_ignore_rule
     sm_unchanged_path = File.join(@repo.workdir, 'sm_unchanged')
     # removed sm_unchanged for deleted workdir
     FileUtils.remove_entry_secure(sm_unchanged_path)
 
     # untracked
+    @repo.submodules.update('sm_changed_untracked_file', ignore_rule: :untracked)
     submodule = @repo.submodules['sm_changed_untracked_file']
-
-    submodule.ignore_rule = :untracked
 
     assert submodule.unmodified?
     refute submodule.untracked_files_in_workdir?
 
-    submodule.reset_ignore_rule
-
-    refute submodule.unmodified?
-    assert submodule.untracked_files_in_workdir?
-
     #dirty
+    @repo.submodules.update('sm_changed_file', ignore_rule: :dirty)
     submodule = @repo.submodules['sm_changed_file']
-    submodule.ignore_rule = :dirty
 
     refute submodule.modified_files_in_workdir?
 
-    submodule.reset_ignore_rule
-
-    assert submodule.modified_files_in_workdir?
-
     #all
+    @repo.submodules.update('sm_added_and_uncommited', ignore_rule: :all)
     submodule = @repo.submodules['sm_added_and_uncommited']
-    submodule.ignore_rule = :all
 
     assert submodule.unmodified?
     refute submodule.added_to_index?
-
-    submodule.reset_ignore_rule
-
-    assert submodule.added_to_index?
-    refute submodule.unmodified?
   end
 
-  def test_submodule_modify
+  def test_submodule_update
     url = 'https://github.com/libgit2/libgit2.git'
     submodule = @repo.submodules['sm_changed_head']
 
-    submodule.ignore_rule = :untracked
-    submodule.url = url
     refute submodule.fetch_recurse_submodules?
-    submodule.fetch_recurse_submodules = true
 
-    submodule.save
+    @repo.submodules.update(submodule, {
+      url: url,
+      ignore_rule: :untracked,
+      fetch_recurse_submodules: true
+    })
+
     submodule.reload
 
     assert_equal :untracked, submodule.ignore_rule
@@ -220,22 +216,21 @@ class SubmoduleTest < Rugged::SubmoduleTestCase
     assert submodule.fetch_recurse_submodules?
   end
 
-  def test_submodule_update_rule
+  def test_submodule_update_update_rule
     submodule = @repo.submodules['sm_unchanged']
     assert_equal :checkout, submodule.update_rule
 
-    submodule.update_rule = :rebase
+    @repo.submodules.update('sm_unchanged', update_rule: :rebase)
+    submodule.reload
     assert_equal :rebase, submodule.update_rule
 
-    submodule.update_rule = :merge
+    @repo.submodules.update('sm_unchanged', update_rule: :merge)
+    submodule.reload
     assert_equal :merge, submodule.update_rule
 
-    submodule.update_rule = :none
+    @repo.submodules.update('sm_unchanged', update_rule: :none)
+    submodule.reload
     assert_equal :none, submodule.update_rule
-
-    # reset
-    submodule.reset_update_rule
-    assert_equal :checkout, submodule.update_rule
   end
 
   def test_submodule_sync

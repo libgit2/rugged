@@ -1,10 +1,13 @@
 require "test_helper"
 
 class RepositoryResetTest < Rugged::TestCase
-  include Rugged::TempRepositoryAccess
+  def setup
+    @source_repo = FixtureRepo.from_rugged("testrepo.git")
+    @repo = FixtureRepo.clone(@source_repo)
+  end
 
   def repo_file_path; File.join('subdir', 'README') end
-  def file_path;      File.join(@path, 'subdir', 'README') end
+  def file_path;      File.join(@repo.workdir, 'subdir', 'README') end
 
   def test_reset_with_rugged_tag
     tag = @repo.lookup('0c37a5391bbff43c37f0d0371823a5509eed5b1d')

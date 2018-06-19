@@ -1,25 +1,8 @@
 /*
- * The MIT License
+ * Copyright (C) the Rugged contributors.  All rights reserved.
  *
- * Copyright (c) 2014 GitHub, Inc
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * This file is part of Rugged, distributed under the MIT license.
+ * For full terms see the included LICENSE file.
  */
 
 #include "rugged.h"
@@ -253,12 +236,8 @@ static VALUE each_tag(int argc, VALUE *argv, VALUE self, int tag_names_only)
 	VALUE rb_repo = rugged_owner(self), rb_pattern;
 	const char *pattern = NULL;
 
+	RETURN_ENUMERATOR(self, argc, argv);
 	rb_scan_args(argc, argv, "01", &rb_pattern);
-
-	if (!rb_block_given_p()) {
-		VALUE symbol = tag_names_only ? CSTR2SYM("each_name") : CSTR2SYM("each");
-		return rb_funcall(self, rb_intern("to_enum"), 2, symbol, rb_pattern);
-	}
 
 	if (!NIL_P(rb_pattern)) {
 		Check_Type(rb_pattern, T_STRING);

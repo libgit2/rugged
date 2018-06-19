@@ -1,25 +1,8 @@
 /*
- * The MIT License
+ * Copyright (C) the Rugged contributors.  All rights reserved.
  *
- * Copyright (c) 2014 GitHub, Inc
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * This file is part of Rugged, distributed under the MIT license.
+ * For full terms see the included LICENSE file.
  */
 
 #include "rugged.h"
@@ -78,7 +61,7 @@ static VALUE rb_git_set_option(VALUE self, VALUE option, VALUE value)
 		val = NUM2SIZET(value);
 		git_libgit2_opts(GIT_OPT_SET_MWINDOW_SIZE, val);
 	}
-	
+
 	else if (strcmp(opt, "mwindow_mapped_limit") == 0) {
 		size_t val;
 		Check_Type(value, T_FIXNUM);
@@ -96,6 +79,11 @@ static VALUE rb_git_set_option(VALUE self, VALUE option, VALUE value)
 
 	else if (strcmp(opt, "search_path_system") == 0) {
 		set_search_path(GIT_CONFIG_LEVEL_SYSTEM, value);
+	}
+
+	else if (strcmp(opt, "strict_object_creation") == 0) {
+		int strict = RTEST(value) ? 1 : 0;
+		git_libgit2_opts(GIT_OPT_ENABLE_STRICT_OBJECT_CREATION, strict);
 	}
 
 	else {
@@ -123,13 +111,13 @@ static VALUE rb_git_get_option(VALUE self, VALUE option)
 		git_libgit2_opts(GIT_OPT_GET_MWINDOW_SIZE, &val);
 		return SIZET2NUM(val);
 	}
-	
+
 	else if (strcmp(opt, "mwindow_mapped_limit") == 0) {
 		size_t val;
 		git_libgit2_opts(GIT_OPT_GET_MWINDOW_MAPPED_LIMIT, &val);
 		return SIZET2NUM(val);
 	}
-	
+
 	else if (strcmp(opt, "search_path_global") == 0) {
 		return get_search_path(GIT_CONFIG_LEVEL_GLOBAL);
 	}
@@ -147,9 +135,37 @@ static VALUE rb_git_get_option(VALUE self, VALUE option)
 	}
 }
 
+/*
+ *  call-seq:
+ *    Rugged::Settings.max_cache_size -> max cache size
+ *
+ *  Returns the maximum amount of memory the cache will consume.
+ */
+static VALUE rb_git_get_max_cache_size(VALUE mod) {
+    size_t val;
+    size_t max;
+    git_libgit2_opts(GIT_OPT_GET_CACHED_MEMORY, &val, &max);
+    return SIZET2NUM(max);
+}
+
+/*
+ *  call-seq:
+ *    Rugged::Settings.used_cache_size -> used cache size
+ *
+ *  Returns the amount of memory the cache is currently consuming.
+ */
+static VALUE rb_git_get_used_cache_size(VALUE mod) {
+    size_t val;
+    size_t max;
+    git_libgit2_opts(GIT_OPT_GET_CACHED_MEMORY, &val, &max);
+    return SIZET2NUM(val);
+}
+
 void Init_rugged_settings(void)
 {
 	VALUE rb_cRuggedSettings = rb_define_class_under(rb_mRugged, "Settings", rb_cObject);
 	rb_define_module_function(rb_cRuggedSettings, "[]=", rb_git_set_option, 2);
 	rb_define_module_function(rb_cRuggedSettings, "[]", rb_git_get_option, 1);
+	rb_define_module_function(rb_cRuggedSettings, "max_cache_size", rb_git_get_max_cache_size, 0);
+	rb_define_module_function(rb_cRuggedSettings, "used_cache_size", rb_git_get_used_cache_size, 0);
 }

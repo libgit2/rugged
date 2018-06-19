@@ -1,17 +1,9 @@
 require 'test_helper'
 require 'base64'
 
-class RepositoryTest < Rugged::SandboxedTestCase
+class RepositoryTest < Rugged::TestCase
   def setup
-    super
-
-    @repo = sandbox_init "testrepo.git"
-  end
-
-  def teardown
-    @repo.close
-
-    super
+    @repo = FixtureRepo.from_libgit2 "testrepo.git"
   end
 
   def test_last_commit
@@ -149,18 +141,15 @@ class RepositoryTest < Rugged::SandboxedTestCase
   end
 
   def test_enumerate_all_objects
-    assert_equal 1687, @repo.each_id.count
+    assert_equal 1700, @repo.each_id.count
   end
 
   def test_loading_alternates
     alt_path = File.dirname(__FILE__) + '/fixtures/alternate/objects'
     repo = Rugged::Repository.new(@repo.path, :alternates => [alt_path])
-    begin
-      assert_equal 1690, repo.each_id.count
-      assert repo.read('146ae76773c91e3b1d00cf7a338ec55ae58297e2')
-    ensure
-      repo.close
-    end
+
+    assert_equal 1703, repo.each_id.count
+    assert repo.read('146ae76773c91e3b1d00cf7a338ec55ae58297e2')
   end
 
   def test_alternates_with_invalid_path_type
@@ -267,6 +256,16 @@ class RepositoryTest < Rugged::SandboxedTestCase
   def test_expand_and_filter_objects
     assert_equal 2, @repo.expand_oids(['a4a7dce8', '1385f264af']).size
     assert_equal 1, @repo.expand_oids(['a4a7dce8', '1385f264af'], :commit).size
+    assert_equal 2, @repo.expand_oids(['a4a7dce8', '1385f264af'], ['commit', 'blob']).size
+    assert_equal 1, @repo.expand_oids(['a4a7dce8', '1385f264af'], [:commit, :tag]).size
+
+    assert_raises RuntimeError do
+      @repo.expand_oids(['a4a7dce8', '1385f264af'], [:commit, :tag, :commit]).size
+    end
+
+    assert_raises RuntimeError do
+      @repo.expand_oids(['a4a7dce8', '1385f264af'], [:commit]).size
+    end
   end
 
   def test_descendant_of
@@ -305,15 +304,9 @@ class RepositoryTest < Rugged::SandboxedTestCase
   end
 end
 
-class MergeCommitsRepositoryTest < Rugged::SandboxedTestCase
+class MergeCommitsRepositoryTest < Rugged::TestCase
   def setup
-    super
-
-    @repo = sandbox_init("merge-resolve")
-  end
-
-  def teardown
-    @repo.close
+    @repo = FixtureRepo.from_libgit2("merge-resolve")
   end
 
   def test_merge_commits
@@ -339,19 +332,10 @@ class MergeCommitsRepositoryTest < Rugged::SandboxedTestCase
   end
 end
 
-class ShallowRepositoryTest < Rugged::SandboxedTestCase
+class ShallowRepositoryTest < Rugged::TestCase
   def setup
-    super
-
-    @repo = sandbox_init("testrepo.git")
-    @shallow_repo = sandbox_init("shallow.git")
-  end
-
-  def teardown
-    @repo.close
-    @shallow_repo.close
-
-    super
+    @repo = FixtureRepo.from_libgit2("testrepo.git")
+    @shallow_repo = FixtureRepo.from_libgit2("shallow.git")
   end
 
   def test_is_shallow
@@ -361,7 +345,10 @@ class ShallowRepositoryTest < Rugged::SandboxedTestCase
 end
 
 class RepositoryWriteTest < Rugged::TestCase
-  include Rugged::TempRepositoryAccess
+  def setup
+    @source_repo = FixtureRepo.from_rugged("testrepo.git")
+    @repo = FixtureRepo.clone(@source_repo)
+  end
 
   TEST_CONTENT = "my test data\n"
   TEST_CONTENT_TYPE = 'blob'
@@ -396,6 +383,32 @@ class RepositoryWriteTest < Rugged::TestCase
     @repo.config['user.email'] = email
     assert_equal name, @repo.default_signature[:name]
     assert_equal email, @repo.default_signature[:email]
+  end
+
+  def test_ident
+    assert_nil(@repo.ident[:name])
+    assert_nil(@repo.ident[:email])
+
+    @repo.ident = { name: "Other User" }
+    assert_equal("Other User", @repo.ident[:name])
+    assert_nil(@repo.ident[:email])
+
+    @repo.ident = { email: "other@example.com" }
+    assert_nil(@repo.ident[:name])
+    assert_equal("other@example.com", @repo.ident[:email])
+
+    @repo.ident = { name: "Other User", email: "other@example.com" }
+    assert_equal("Other User", @repo.ident[:name])
+    assert_equal("other@example.com", @repo.ident[:email])
+
+    @repo.ident = {}
+    assert_nil(@repo.ident[:name])
+    assert_nil(@repo.ident[:email])
+
+    @repo.ident = { name: "Other User", email: "other@example.com" }
+    @repo.ident = nil
+    assert_nil(@repo.ident[:name])
+    assert_nil(@repo.ident[:email])
   end
 end
 
@@ -602,17 +615,9 @@ class RepositoryCloneTest < Rugged::TestCase
   end
 end
 
-class RepositoryNamespaceTest < Rugged::SandboxedTestCase
+class RepositoryNamespaceTest < Rugged::TestCase
   def setup
-    super
-
-    @repo = sandbox_init("testrepo.git")
-  end
-
-  def teardown
-    @repo.close
-
-    super
+    @repo = FixtureRepo.from_libgit2("testrepo.git")
   end
 
   def test_no_namespace
@@ -630,7 +635,7 @@ class RepositoryNamespaceTest < Rugged::SandboxedTestCase
     assert_equal "foo/bar", @repo.namespace
 
     @repo.namespace = nil
-    assert_equal nil, @repo.namespace
+    assert_nil @repo.namespace
   end
 
   def test_refs_in_namespaces
@@ -639,23 +644,15 @@ class RepositoryNamespaceTest < Rugged::SandboxedTestCase
   end
 end
 
-class RepositoryPushTest < Rugged::SandboxedTestCase
+class RepositoryPushTest < Rugged::TestCase
   def setup
-    super
-    @remote_repo = sandbox_init("testrepo.git")
+    @remote_repo = FixtureRepo.from_libgit2("testrepo.git")
     # We can only push to bare repos
     @remote_repo.config['core.bare'] = 'true'
 
-    @repo = sandbox_clone("testrepo.git", "testrepo")
+    @repo = FixtureRepo.clone(@remote_repo)
     @repo.references.create("refs/heads/unit_test",
       "8496071c1b46c854b31185ea97743be6a8774479")
-  end
-
-  def teardown
-    @repo.close
-    @remote_repo.close
-
-    super
   end
 
   def test_push_single_ref
@@ -678,7 +675,7 @@ class RepositoryPushTest < Rugged::SandboxedTestCase
       @repo.push("origin", ["refs/heads/master"])
     end
 
-    assert_equal "Local push doesn't (yet) support pushing to non-bare repos.", exception.message
+    assert_equal "local push doesn't (yet) support pushing to non-bare repos.", exception.message
   end
 
   def test_push_non_forward_raise_error
@@ -686,7 +683,7 @@ class RepositoryPushTest < Rugged::SandboxedTestCase
       @repo.push("origin", ["refs/heads/unit_test:refs/heads/master"])
     end
 
-    assert_equal "Cannot push non-fastforwardable reference", exception.message
+    assert_equal "cannot push non-fastforwardable reference", exception.message
     assert_equal "a65fedf39aefe402d3bb6e24df4d4f5fe4547750", @remote_repo.ref("refs/heads/master").target_id
   end
 
@@ -698,7 +695,7 @@ class RepositoryPushTest < Rugged::SandboxedTestCase
   end
 end
 
-class RepositoryAttributesTest < Rugged::SandboxedTestCase
+class RepositoryAttributesTest < Rugged::TestCase
 
   ATTRIBUTES = <<-ATTR
 *.txt linguist-lang=text
@@ -707,15 +704,9 @@ README is_readme
 ATTR
 
   def setup
-    super
-    @repo = sandbox_init("testrepo")
+    @repo = FixtureRepo.from_libgit2("testrepo")
     @repo.checkout_tree(@repo.rev_parse("refs/heads/dir"), :strategy => :force)
     IO.write(File.join(@repo.workdir, ".gitattributes"), ATTRIBUTES)
-  end
-
-  def teardown
-    @repo.close
-    super
   end
 
   def test_read_attributes_internal
@@ -723,7 +714,7 @@ ATTR
     assert_equal 'text', @repo.fetch_attributes('new.txt', 'linguist-lang')
     assert_equal 'this', @repo.fetch_attributes('new.txt', 'other-attr')
     assert_equal true, @repo.fetch_attributes('README', 'is_readme')
-    assert_equal nil, @repo.fetch_attributes('README', 'linguist-lang')
+    assert_nil   @repo.fetch_attributes('README', 'linguist-lang')
   end
 
   def test_read_attributes_internal_multi
@@ -752,7 +743,7 @@ ATTR
 
     atr = @repo.attributes('branch_file.txt')
     assert_equal 'text', atr['linguist-lang']
-    assert_equal nil, atr['other-attr']
+    assert_nil   atr['other-attr']
 
     atr.each do |key, value|
       assert key.instance_of? String
@@ -760,45 +751,31 @@ ATTR
     end
 
     atr = @repo.attributes('new.txt', :priority => [:index])
-    assert_equal nil, atr['linguist-lang']
-    assert_equal nil, atr['linguist-lang']
+    assert_nil atr['linguist-lang']
+    assert_nil atr['linguist-lang']
   end
 end
 
-class RepositoryCheckoutTest < Rugged::SandboxedTestCase
+class RepositoryCheckoutTest < Rugged::TestCase
   def setup
-    super
+    @repo = FixtureRepo.from_libgit2("testrepo")
+    @clone = FixtureRepo.clone(@repo)
 
-    @repo = sandbox_init("testrepo")
-    @clone = sandbox_clone("testrepo", "cloned_testrepo")
-
-    _bare = sandbox_init("testrepo.git")
+    _bare = FixtureRepo.from_libgit2("testrepo.git")
     @bare = Rugged::Repository.bare(_bare.path)
     _bare.close
   end
 
-  def teardown
-    @bare.close
-    @clone.close
-    @repo.close
-
-    super
-  end
-
-  def test_checkout_tree_with_commit
-    @repo.checkout_tree(@repo.rev_parse("refs/heads/dir"), :strategy => :force)
-    @repo.head = "refs/heads/dir"
-
+  def verify_dir
     assert File.exist?(File.join(@repo.workdir, "README"))
     assert File.exist?(File.join(@repo.workdir, "branch_file.txt"))
     assert File.exist?(File.join(@repo.workdir, "new.txt"))
     assert File.exist?(File.join(@repo.workdir, "a/b.txt"))
 
     refute File.exist?(File.join(@repo.workdir, "ab"))
+  end
 
-    @repo.checkout_tree(@repo.rev_parse("refs/heads/subtrees"), :strategy => :safe)
-    @repo.head = "refs/heads/subtrees"
-
+  def verify_subtrees
     assert File.exist?(File.join(@repo.workdir, "README"))
     assert File.exist?(File.join(@repo.workdir, "branch_file.txt"))
     assert File.exist?(File.join(@repo.workdir, "new.txt"))
@@ -810,16 +787,29 @@ class RepositoryCheckoutTest < Rugged::SandboxedTestCase
     refute File.exist?(File.join(@repo.workdir, "a"))
   end
 
+  def test_checkout_tree_with_commit
+    @repo.checkout_tree(@repo.rev_parse("refs/heads/dir"), :strategy => :force)
+    @repo.head = "refs/heads/dir"
+    verify_dir
+
+    @repo.checkout_tree(@repo.rev_parse("refs/heads/subtrees"), :strategy => :safe)
+    @repo.head = "refs/heads/subtrees"
+    verify_subtrees
+  end
+
   def test_checkout_with_revspec_string
     @repo.checkout_tree("refs/heads/dir", :strategy => :force)
     @repo.head = "refs/heads/dir"
+    verify_dir
+  end
 
-    assert File.exist?(File.join(@repo.workdir, "README"))
-    assert File.exist?(File.join(@repo.workdir, "branch_file.txt"))
-    assert File.exist?(File.join(@repo.workdir, "new.txt"))
-    assert File.exist?(File.join(@repo.workdir, "a/b.txt"))
-
-    refute File.exist?(File.join(@repo.workdir, "ab"))
+  def test_checkout_tree_with_index
+    index = @repo.index
+    head = @repo.references["refs/heads/dir"]
+    index.read_tree head.target.tree
+    @repo.checkout_index(index, :strategy => :force)
+    @repo.head = "refs/heads/dir"
+    verify_dir
   end
 
   def test_checkout_tree_raises_errors_in_notify_cb
@@ -863,13 +853,13 @@ class RepositoryCheckoutTest < Rugged::SandboxedTestCase
 
   def test_checkout_tree_raises_with_bare_repo
     assert_raises Rugged::RepositoryError do
-      @bare.checkout_tree("HEAD", :strategy => :safe_create)
+      @bare.checkout_tree("HEAD", :strategy => :safe)
     end
   end
 
   def test_checkout_tree_works_with_bare_repo_and_target_directory
     Dir.mktmpdir("alternative") do |dir|
-      @bare.checkout_tree("HEAD", :strategy => :safe_create, :target_directory => dir)
+      @bare.checkout_tree("HEAD", :strategy => [:safe, :recreate_missing], :target_directory => dir)
 
       assert File.exist?(File.join(dir, "README"))
       assert File.exist?(File.join(dir, "new.txt"))

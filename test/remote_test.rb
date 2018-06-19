@@ -2,7 +2,9 @@ require "test_helper"
 require 'net/http'
 
 class RemoteNetworkTest < Rugged::TestCase
-  include Rugged::RepositoryAccess
+  def setup
+    @repo = FixtureRepo.from_rugged("testrepo.git")
+  end
 
   def skip_if_unreachable
     begin
@@ -44,15 +46,9 @@ class RemoteNetworkTest < Rugged::TestCase
   end
 end
 
-class RemoteTest < Rugged::SandboxedTestCase
+class RemoteTest < Rugged::TestCase
   def setup
-    super
-    @repo = sandbox_init("testrepo.git")
-  end
-
-  def teardown
-    @repo.close
-    super
+    @repo = FixtureRepo.from_libgit2("testrepo.git")
   end
 
   class TestException < StandardError
@@ -90,37 +86,11 @@ class RemoteTest < Rugged::SandboxedTestCase
     assert_nil @repo.remotes["test"]
   end
 
-  def test_url_set
-    new_url = 'git://github.com/libgit2/TestGitRepository.git'
-    remote = @repo.remotes.create_anonymous('git://github.com/libgit2/libgit2.git')
-    remote.url = new_url
-    assert_equal new_url, remote.url
-  end
-
-  def test_url_set_invalid
-    remote = @repo.remotes.create_anonymous('git://github.com/libgit2/libgit2.git')
-    remote.url = 'upstream'
-  end
-
   def test_push_url
     assert_equal 'git://github.com/libgit2/pushlibgit2',
       @repo.remotes['test_with_pushurl'].push_url
 
     assert_nil @repo.remotes['joshaber'].push_url
-  end
-
-  def test_push_url_set
-    new_url = 'git://github.com/libgit2/TestGitRepository.git'
-    remote = @repo.remotes.create_anonymous('git://github.com/libgit2/libgit2.git')
-
-    assert_nil remote.push_url
-    remote.push_url = new_url
-    assert_equal new_url, remote.push_url
-  end
-
-  def test_push_url_set_invalid
-    remote = @repo.remotes.create_anonymous('git://github.com/libgit2/libgit2.git')
-    remote.push_url = 'upstream'
   end
 
   def test_fetch_refspecs
@@ -133,32 +103,6 @@ class RemoteTest < Rugged::SandboxedTestCase
   def test_push_refspecs
     remote = @repo.remotes['test']
     assert_empty remote.push_refspecs
-
-    remote.add_push('refs/heads/*:refs/heads/testing/*')
-    assert_equal ['refs/heads/*:refs/heads/testing/*'], remote.push_refspecs
-
-    assert_empty @repo.remotes['joshaber'].push_refspecs
-  end
-
-  def test_add_fetch
-    remote = @repo.remotes.create_anonymous('git://github.com/libgit2/libgit2.git')
-    assert_nil remote.add_fetch('+refs/heads/*:refs/remotes/test/*')
-    assert_equal ['+refs/heads/*:refs/remotes/test/*'], remote.fetch_refspecs
-  end
-
-  def test_add_push
-    remote = @repo.remotes.create_anonymous('git://github.com/libgit2/libgit2.git')
-    assert_nil remote.add_push('refs/heads/*:refs/heads/test/*')
-    assert_equal ['refs/heads/*:refs/heads/test/*'], remote.push_refspecs
-  end
-
-  def test_clear_refspecs
-    remote = @repo.remotes['test']
-
-    remote.clear_refspecs
-
-    assert_empty remote.push_refspecs
-    assert_empty remote.fetch_refspecs
   end
 
   def test_remote_lookup
@@ -178,25 +122,17 @@ class RemoteTest < Rugged::SandboxedTestCase
   end
 end
 
-class RemotePushTest < Rugged::SandboxedTestCase
+class RemotePushTest < Rugged::TestCase
   def setup
-    super
-    @remote_repo = sandbox_init("testrepo.git")
+    @remote_repo = FixtureRepo.from_libgit2("testrepo.git")
     # We can only push to bare repos
     @remote_repo.config['core.bare'] = 'true'
 
-    @repo = sandbox_clone("testrepo.git", "testrepo")
+    @repo = FixtureRepo.clone(@remote_repo)
     @repo.references.create("refs/heads/unit_test",
       "8496071c1b46c854b31185ea97743be6a8774479")
 
     @remote = @repo.remotes['origin']
-  end
-
-  def teardown
-    @repo.close
-    @remote_repo.close
-
-    super
   end
 
   def test_push_single_ref
@@ -214,7 +150,7 @@ class RemotePushTest < Rugged::SandboxedTestCase
       @remote.push(["refs/heads/master"])
     end
 
-    assert_equal "Local push doesn't (yet) support pushing to non-bare repos.", exception.message
+    assert_equal "local push doesn't (yet) support pushing to non-bare repos.", exception.message
   end
 
   def test_push_non_forward_raise_error
@@ -222,7 +158,7 @@ class RemotePushTest < Rugged::SandboxedTestCase
       @remote.push(["refs/heads/unit_test:refs/heads/master"])
     end
 
-    assert_equal "Cannot push non-fastforwardable reference", exception.message
+    assert_equal "cannot push non-fastforwardable reference", exception.message
     assert_equal "a65fedf39aefe402d3bb6e24df4d4f5fe4547750", @remote_repo.ref("refs/heads/master").target_id
   end
 
@@ -232,10 +168,52 @@ class RemotePushTest < Rugged::SandboxedTestCase
 
     assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @remote_repo.ref("refs/heads/master").target_id
   end
+
+end
+
+class RemotePruneTest < Rugged::TestCase
+  def setup
+    @remote_repo = FixtureRepo.from_libgit2("testrepo.git")
+    # We can only push to bare repos
+    @remote_repo.config['core.bare'] = 'true'
+
+    @repo = FixtureRepo.clone(@remote_repo)
+    @repo.references.create("refs/heads/unit_test", "8496071c1b46c854b31185ea97743be6a8774479")
+
+    @remote = @repo.remotes['origin']
+
+    @remote.push(["refs/heads/unit_test"])
+    @remote_repo.references.delete("refs/heads/unit_test")
+  end
+
+  def test_fetch_prune_is_forced
+    assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @repo.ref("refs/remotes/origin/unit_test").target_id
+    @remote.fetch(prune: true)
+    assert_nil @repo.ref("refs/remotes/origin/unit_test")
+  end
+
+  def test_fetch_prune_is_not_forced
+    @remote.fetch(prune: false)
+    assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @repo.ref("refs/remotes/origin/unit_test").target_id
+  end
+
+  def test_fetch_prune_nil
+    @remote.fetch(prune: nil)
+    assert_equal "8496071c1b46c854b31185ea97743be6a8774479", @repo.ref("refs/remotes/origin/unit_test").target_id
+  end
+
+  def test_fetch_prune_with_invalid_argument_raises
+    assert_raises TypeError do
+      @remote.fetch(prune: 'INVALID')
+    end
+  end
 end
 
 class RemoteWriteTest < Rugged::TestCase
-  include Rugged::TempRepositoryAccess
+  def setup
+    @source_repo = FixtureRepo.from_rugged("testrepo.git")
+    @repo = FixtureRepo.clone(@source_repo)
+  end
 
   def test_remote_add
     @repo.remotes.create('upstream', 'git://github.com/libgit2/libgit2.git')
@@ -248,12 +226,47 @@ class RemoteWriteTest < Rugged::TestCase
     @repo.remotes.create('upstream', 'libgit2')
   end
 
-  def test_url_set
-    new_url = 'git://github.com/l?#!@#$ibgit2/TestGitRepository.git'
+  def test_remote_set_url
     remote = @repo.remotes['origin']
-    remote.url = new_url
-    assert remote.save
+
+    old_url = remote.url
+    new_url = 'git://github.com/l?#!@#$ibgit2/TestGitRepository.git'
+
+    @repo.remotes.set_url(remote, new_url)
+
+    assert_equal old_url, remote.url
     assert_equal new_url, @repo.remotes['origin'].url
+  end
+
+  def test_remote_set_push_url
+    remote = @repo.remotes['origin']
+
+    new_url = 'git://github.com/l?#!@#$ibgit2/TestGitRepository.git'
+
+    @repo.remotes.set_push_url(remote, new_url)
+
+    assert_nil   remote.push_url
+    assert_equal new_url, @repo.remotes['origin'].push_url
+  end
+
+  def test_remote_add_fetch_refspech
+    remote = @repo.remotes['origin']
+    assert_nil @repo.remotes.add_fetch_refspec('origin', '+refs/pull/*/head:refs/remotes/origin/pr/*')
+
+    assert_equal ['+refs/heads/*:refs/remotes/origin/*'], remote.fetch_refspecs
+    assert_equal [
+      '+refs/heads/*:refs/remotes/origin/*', '+refs/pull/*/head:refs/remotes/origin/pr/*'
+    ], @repo.remotes['origin'].fetch_refspecs
+  end
+
+  def test_remote_add_push_refspec
+    remote = @repo.remotes['origin']
+    assert_nil @repo.remotes.add_push_refspec('origin', 'refs/heads/*:refs/heads/test/*')
+
+    assert_equal [], remote.push_refspecs
+    assert_equal [
+      'refs/heads/*:refs/heads/test/*'
+    ], @repo.remotes['origin'].push_refspecs
   end
 
   def test_rename
@@ -295,15 +308,9 @@ class RemoteTransportTest < Rugged::TestCase
   end
 
   def setup
-    @path = Dir.mktmpdir 'dir'
-    @repo = Rugged::Repository.init_at(@path, false)
+    @repo = FixtureRepo.empty
     repo_dir = File.join(TEST_DIR, (File.join('fixtures', 'testrepo.git', '.')))
     @remote = @repo.remotes.create('origin', repo_dir)
-  end
-
-  def teardown
-    @repo.close
-    FileUtils.remove_entry_secure(@path)
   end
 
   def test_remote_ls

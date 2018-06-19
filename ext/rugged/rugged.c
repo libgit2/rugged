@@ -1,55 +1,44 @@
 /*
- * The MIT License
+ * Copyright (C) the Rugged contributors.  All rights reserved.
  *
- * Copyright (c) 2014 GitHub, Inc
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * This file is part of Rugged, distributed under the MIT license.
+ * For full terms see the included LICENSE file.
  */
 
 #include "rugged.h"
 
 const char *RUGGED_ERROR_NAMES[] = {
 	"None",            /* GITERR_NONE */
-	"NoMemError",      /* GITERR_NOMEMORY, */
-	"OSError",         /* GITERR_OS, */
-	"InvalidError",    /* GITERR_INVALID, */
-	"ReferenceError",  /* GITERR_REFERENCE, */
-	"ZlibError",       /* GITERR_ZLIB, */
-	"RepositoryError", /* GITERR_REPOSITORY, */
-	"ConfigError",     /* GITERR_CONFIG, */
-	"RegexError",      /* GITERR_REGEX, */
-	"OdbError",        /* GITERR_ODB, */
-	"IndexError",      /* GITERR_INDEX, */
-	"ObjectError",     /* GITERR_OBJECT, */
-	"NetworkError",    /* GITERR_NET, */
-	"TagError",        /* GITERR_TAG, */
-	"TreeError",       /* GITERR_TREE, */
-	"IndexerError",    /* GITERR_INDEXER, */
-	"SslError",        /* GITERR_SSL, */
-	"SubmoduleError",  /* GITERR_SUBMODULE, */
-	"ThreadError",     /* GITERR_THREAD, */
-	"StashError",      /* GITERR_STASH, */
-	"CheckoutError",   /* GITERR_CHECKOUT, */
-	"FetchheadError",  /* GITERR_FETCHHEAD, */
-	"MergeError",      /* GITERR_MERGE, */
-	"SshError",        /* GITERR_SSH, */
-	"FilterError"      /* GITERR_FILTER, */
+	"NoMemError",      /* GITERR_NOMEMORY */
+	"OSError",         /* GITERR_OS */
+	"InvalidError",    /* GITERR_INVALID */
+	"ReferenceError",  /* GITERR_REFERENCE */
+	"ZlibError",       /* GITERR_ZLIB */
+	"RepositoryError", /* GITERR_REPOSITORY */
+	"ConfigError",     /* GITERR_CONFIG */
+	"RegexError",      /* GITERR_REGEX */
+	"OdbError",        /* GITERR_ODB */
+	"IndexError",      /* GITERR_INDEX */
+	"ObjectError",     /* GITERR_OBJECT */
+	"NetworkError",    /* GITERR_NET */
+	"TagError",        /* GITERR_TAG */
+	"TreeError",       /* GITERR_TREE */
+	"IndexerError",    /* GITERR_INDEXER */
+	"SslError",        /* GITERR_SSL */
+	"SubmoduleError",  /* GITERR_SUBMODULE */
+	"ThreadError",     /* GITERR_THREAD */
+	"StashError",      /* GITERR_STASH */
+	"CheckoutError",   /* GITERR_CHECKOUT */
+	"FetchheadError",  /* GITERR_FETCHHEAD */
+	"MergeError",      /* GITERR_MERGE */
+	"SshError",        /* GITERR_SSH */
+	"FilterError",     /* GITERR_FILTER */
+	"RevertError",     /* GITERR_REVERT */
+	"CallbackError",   /* GITERR_CALLBACK */
+	"CherrypickError", /* GITERR_CHERRYPICK */
+	"DescribeError",   /* GITERR_DESCRIBE */
+	"RebaseError",     /* GITERR_REBASE */
+	"FilesystemError", /* GITERR_FILESYSTEM */
 };
 
 #define RUGGED_ERROR_COUNT (int)((sizeof(RUGGED_ERROR_NAMES)/sizeof(RUGGED_ERROR_NAMES[0])))
@@ -111,6 +100,29 @@ static VALUE rb_git_features(VALUE self)
 
 /*
  *  call-seq:
+ *    Rugged.valid_full_oid?(oid) -> true or false
+ *
+ *  Checks to see if a string contains a full 40-character sha1.
+ *
+ *    Rugged.valid_full_oid?('d8786bfc97485e8d7b19b21fb88c8ef1f199fc3f')
+ *    #=> true
+ */
+static VALUE rb_git_valid_full_oid(VALUE self, VALUE hex)
+{
+	git_oid oid;
+	int errorcode;
+
+	Check_Type(hex, T_STRING);
+	errorcode = git_oid_fromstr(&oid, StringValueCStr(hex));
+	if (errorcode < 0) {
+		return Qfalse;
+	} else {
+		return Qtrue;
+	}
+}
+
+/*
+ *  call-seq:
  *    Rugged.hex_to_raw(oid) -> raw_buffer
  *
  *  Turn a string of 40 hexadecimal characters into the buffer of
@@ -152,7 +164,7 @@ static VALUE rb_git_raw_to_hex(VALUE self, VALUE raw)
 	git_oid_fromraw(&oid, (const unsigned char *)RSTRING_PTR(raw));
 	git_oid_fmt(out, &oid);
 
-	return rb_str_new(out, 40);
+	return rb_usascii_str_new(out, 40);
 }
 
 /*
@@ -175,7 +187,7 @@ static VALUE rb_git_prettify_message(int argc, VALUE *argv, VALUE self)
 	rb_scan_args(argc, argv, "11", &rb_message, &rb_strip);
 
 	Check_Type(rb_message, T_STRING);
-	
+
 	switch (TYPE(rb_strip)) {
 	case T_FALSE:
 		strip_comments = 0;
@@ -356,6 +368,29 @@ static VALUE rb_git_cache_usage(VALUE self)
 	return rb_ary_new3(2, LL2NUM(used), LL2NUM(max));
 }
 
+/*
+ *  call-seq:
+ *    Rugged.signature_from_buffer(buffer[, encoding_name]) -> signature
+ *
+ * Parse the signature from the given buffer. If an encoding is given, the
+ * strings will be tagged with that encoding.
+ *
+ *    commit.author #=> {:email=>"tanoku@gmail.com", :time=>Tue Jan 24 05:42:45 UTC 2012, :name=>"Vicent Mart\303\255"}
+ */
+static VALUE rb_git_signature_from_buffer(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_buffer, rb_encoding_name;
+	const char *buffer, *encoding_name = NULL;
+
+	rb_scan_args(argc, argv, "11", &rb_buffer, &rb_encoding_name);
+
+	buffer = StringValueCStr(rb_buffer);
+	if (!NIL_P(rb_encoding_name))
+		encoding_name = StringValueCStr(rb_encoding_name);
+
+	return rugged_signature_from_buffer(buffer, encoding_name);
+}
+
 VALUE rugged_strarray_to_rb_ary(git_strarray *str_array)
 {
 	VALUE rb_array = rb_ary_new2(str_array->count);
@@ -399,6 +434,87 @@ void rugged_rb_ary_to_strarray(VALUE rb_array, git_strarray *str_array)
 	}
 }
 
+void rugged_parse_merge_file_options(git_merge_file_options *opts, VALUE rb_options)
+{
+	VALUE rb_value;
+
+	Check_Type(rb_options, T_HASH);
+
+	rb_value = rb_hash_aref(rb_options, CSTR2SYM("ancestor_label"));
+	if (!NIL_P(rb_value)) {
+		Check_Type(rb_value, T_STRING);
+		opts->ancestor_label = StringValueCStr(rb_value);
+	}
+
+	rb_value = rb_hash_aref(rb_options, CSTR2SYM("our_label"));
+	if (!NIL_P(rb_value)) {
+		Check_Type(rb_value, T_STRING);
+		opts->our_label = StringValueCStr(rb_value);
+	}
+
+	rb_value = rb_hash_aref(rb_options, CSTR2SYM("their_label"));
+	if (!NIL_P(rb_value)) {
+		Check_Type(rb_value, T_STRING);
+		opts->their_label = StringValueCStr(rb_value);
+	}
+
+	rb_value = rb_hash_aref(rb_options, CSTR2SYM("favor"));
+	if (!NIL_P(rb_value)) {
+		ID id_favor;
+
+		Check_Type(rb_value, T_SYMBOL);
+		id_favor = SYM2ID(rb_value);
+
+		if (id_favor == rb_intern("normal")) {
+			opts->favor = GIT_MERGE_FILE_FAVOR_NORMAL;
+		} else if (id_favor == rb_intern("ours")) {
+			opts->favor = GIT_MERGE_FILE_FAVOR_OURS;
+		} else if (id_favor == rb_intern("theirs")) {
+			opts->favor = GIT_MERGE_FILE_FAVOR_THEIRS;
+		} else if (id_favor == rb_intern("union")) {
+			opts->favor = GIT_MERGE_FILE_FAVOR_UNION;
+		} else {
+			rb_raise(rb_eTypeError,
+				"Invalid favor mode. Expected `:normal`, `:ours`, `:theirs` or `:union`");
+		}
+	}
+
+	rb_value = rb_hash_aref(rb_options, CSTR2SYM("style"));
+	if (!NIL_P(rb_value)) {
+		ID id_style;
+
+		Check_Type(rb_value, T_SYMBOL);
+		id_style = SYM2ID(rb_value);
+
+		if (id_style == rb_intern("standard")) {
+			opts->flags |= GIT_MERGE_FILE_STYLE_MERGE;
+		} else if (id_style == rb_intern("diff3")) {
+			opts->flags |= GIT_MERGE_FILE_STYLE_DIFF3;
+		} else {
+			rb_raise(rb_eTypeError,
+				"Invalid style mode. Expected `:standard`, or `:diff3`");
+		}
+	} else {
+		opts->flags |= GIT_MERGE_FILE_STYLE_MERGE;
+	}
+
+	if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("simplify")))) {
+		opts->flags |= GIT_MERGE_FILE_SIMPLIFY_ALNUM;
+	}
+}
+
+VALUE rb_merge_file_result_fromC(const git_merge_file_result *result)
+{
+	VALUE rb_result = rb_hash_new();
+
+	rb_hash_aset(rb_result, CSTR2SYM("automergeable"), result->automergeable ? Qtrue : Qfalse);
+	rb_hash_aset(rb_result, CSTR2SYM("path"),          result->path ? rb_str_new_utf8(result->path) : Qnil);
+	rb_hash_aset(rb_result, CSTR2SYM("filemode"),      INT2FIX(result->mode));
+	rb_hash_aset(rb_result, CSTR2SYM("data"),          rb_str_new(result->ptr, result->len));
+
+	return rb_result;
+}
+
 void Init_rugged(void)
 {
 	rb_mRugged = rb_define_module("Rugged");
@@ -421,11 +537,13 @@ void Init_rugged(void)
 
 	rb_define_module_function(rb_mRugged, "libgit2_version", rb_git_libgit2_version, 0);
 	rb_define_module_function(rb_mRugged, "features", rb_git_features, 0);
+	rb_define_module_function(rb_mRugged, "valid_full_oid?", rb_git_valid_full_oid, 1);
 	rb_define_module_function(rb_mRugged, "hex_to_raw", rb_git_hex_to_raw, 1);
 	rb_define_module_function(rb_mRugged, "raw_to_hex", rb_git_raw_to_hex, 1);
 	rb_define_module_function(rb_mRugged, "minimize_oid", rb_git_minimize_oid, -1);
 	rb_define_module_function(rb_mRugged, "prettify_message", rb_git_prettify_message, -1);
 	rb_define_module_function(rb_mRugged, "__cache_usage__", rb_git_cache_usage, 0);
+	rb_define_module_function(rb_mRugged, "signature_from_buffer", rb_git_signature_from_buffer, -1);
 
 	Init_rugged_reference();
 	Init_rugged_reference_collection();
@@ -457,19 +575,18 @@ void Init_rugged(void)
 	Init_rugged_blame();
 	Init_rugged_cred();
 	Init_rugged_backend();
+	Init_rugged_rebase();
 
 	/*
-	 * Sort the repository contents in no particular ordering;
-	 * this sorting is arbitrary, implementation-specific
-	 * and subject to change at any time.
+	 * Sort the output with the same default time-order method from git.
 	 * This is the default sorting for new walkers.
 	 */
 	rb_define_const(rb_mRugged, "SORT_NONE", INT2FIX(GIT_SORT_NONE));
 
 	/*
-	 * Sort the repository contents in topological order
-	 * (parents before children); this sorting mode
-	 * can be combined with time sorting.
+	 * Sort the repository contents in topological order (parents before
+	 * children); this sorting mode can be combined with time sorting to
+	 * produce git's "time-order".
 	 */
 	rb_define_const(rb_mRugged, "SORT_TOPO", INT2FIX(GIT_SORT_TOPOLOGICAL));
 
@@ -495,4 +612,3 @@ void Init_rugged(void)
 	rb_mShutdownHook = Data_Wrap_Struct(rb_cObject, NULL, &cleanup_cb, NULL);
 	rb_global_variable(&rb_mShutdownHook);
 }
-

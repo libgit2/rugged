@@ -1,7 +1,9 @@
 require "test_helper"
 
 class BlobTest < Rugged::TestCase
-  include Rugged::RepositoryAccess
+  def setup
+    @repo = FixtureRepo.from_rugged("testrepo.git")
+  end
 
   def test_lookup_raises_error_if_object_type_does_not_match
     assert_raises Rugged::InvalidError do
@@ -122,8 +124,63 @@ class BlobTest < Rugged::TestCase
   end
 end
 
+class BlobMergeTest < Rugged::TestCase
+  def setup
+    @source_repo = FixtureRepo.from_rugged("testrepo.git")
+    @repo = FixtureRepo.clone(@source_repo)
+
+    @ancestor_content = "Common ancestor"
+    @our_content = "Ours side"
+    @their_content = "Theirs side"
+
+    @expected_data = "<<<<<<< OURS\nOurs side\n" +
+      "||||||| ANCESTOR\nCommon ancestor\n" +
+      "=======\n" +
+      "Theirs side\n>>>>>>> THEIRS\n"
+
+    @opts = {
+      :ancestor_label => "ANCESTOR",
+      :our_label => "OURS",
+      :their_label => "THEIRS",
+      :style => :diff3 }
+  end
+
+  def test_blob_merge_files
+    ancestor = { :content => @ancestor_content, :path => "file.txt",    :filemode => 0100644 }
+    ours =     { :content => @our_content,      :path => "newfile.txt", :filemode => 0100644 }
+    theirs =   { :content => @their_content,    :path => "file.txt",    :filemode => 0100755 }
+
+    result = Rugged::Blob.merge_files(nil, ancestor, ours, theirs, @opts)
+
+    assert_equal false, result[:automergeable]
+    assert_equal "newfile.txt", result[:path]
+    assert_equal 0100755, result[:filemode]
+    assert_equal @expected_data, result[:data]
+  end
+
+  def test_blob_merge_files_by_oid
+    ancestor_oid = Rugged::Blob.from_buffer(@repo, @ancestor_content)
+    our_oid = Rugged::Blob.from_buffer(@repo, @our_content)
+    their_oid = Rugged::Blob.from_buffer(@repo, @their_content)
+
+    ancestor = { :oid => ancestor_oid, :path => "file.txt",    :filemode => 0100644 }
+    ours =     { :oid => our_oid,      :path => "newfile.txt", :filemode => 0100644 }
+    theirs =   { :oid => their_oid,    :path => "file.txt",    :filemode => 0100755 }
+
+    result = Rugged::Blob.merge_files(@repo, ancestor, ours, theirs, @opts)
+
+    assert_equal false, result[:automergeable]
+    assert_equal "newfile.txt", result[:path]
+    assert_equal 0100755, result[:filemode]
+    assert_equal @expected_data, result[:data]
+  end
+end
+
 class BlobWriteTest < Rugged::TestCase
-  include Rugged::TempRepositoryAccess
+  def setup
+    @source_repo = FixtureRepo.from_rugged("testrepo.git")
+    @repo = FixtureRepo.clone(@source_repo)
+  end
 
   def test_fetch_blob_content_with_nulls
     content = "100644 example_helper.rb\x00\xD3\xD5\xED\x9DA4_"+
@@ -170,15 +227,50 @@ class BlobWriteTest < Rugged::TestCase
   end
 end
 
-class BlobDiffTest < Rugged::SandboxedTestCase
+class BlobLOCTest < Rugged::TestCase
   def setup
-    super
-    @repo = sandbox_init("diff")
+    @repo = FixtureRepo.from_rugged("testrepo.git")
   end
 
-  def teardown
-    @repo.close
-    super
+  def write_blob(data)
+    sha = Rugged::Blob.from_buffer(@repo, data)
+    Rugged::Blob.lookup(@repo, sha)
+  end
+
+  def test_loc_end_nl
+    blob = write_blob("hello\nworld\nwhat\n")
+    assert_equal 3, blob.loc
+  end
+
+  def test_loc_no_end_nl
+    blob = write_blob("hello\nworld\nwhat")
+    assert_equal 3, blob.loc
+  end
+
+  def test_loc_carriages
+    blob = write_blob("hello\r\nworld\r\nwhat\r\n")
+    assert_equal 3, blob.loc
+  end
+
+  def test_loc_carriages_no_end_nl
+    blob = write_blob("hello\r\nworld\r\nwhat")
+    assert_equal 3, blob.loc
+  end
+
+  def test_loc_mixed
+    blob = write_blob("hello\nworld\rwhat\r")
+    assert_equal 3, blob.loc
+  end
+
+  def test_loc_mixed_no_end_nl
+    blob = write_blob("hello\nworld\rwhat")
+    assert_equal 3, blob.loc
+  end
+end
+
+class BlobDiffTest < Rugged::TestCase
+  def setup
+    @repo = FixtureRepo.from_libgit2("diff")
   end
 
   def test_diff_blob
@@ -312,7 +404,9 @@ class BlobDiffTest < Rugged::SandboxedTestCase
 end
 
 class BlobCreateFromIOTest < Rugged::TestCase
-  include Rugged::TempRepositoryAccess
+  def setup
+    @repo = FixtureRepo.from_rugged("testrepo.git")
+  end
 
   def test_write_blob_from_io_with_hintpath
     file_path= File.join(TEST_DIR, (File.join('fixtures', 'archive.tar.gz')))
@@ -376,7 +470,9 @@ class BlobCreateFromIOTest < Rugged::TestCase
 end
 
 class BlobHashSignatureTest < Rugged::TestCase
-  include Rugged::RepositoryAccess
+  def setup
+    @repo = FixtureRepo.from_rugged("testrepo.git")
+  end
 
   LOREM = <<-LOREM
 Lorem ipsum dolor sit amet, consectetur adipiscing elit.
@@ -406,4 +502,3 @@ LOREM
     assert Rugged::Blob::HashSignature.compare(sig1, sig2) > 75
   end
 end
-

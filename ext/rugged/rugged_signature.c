@@ -1,25 +1,8 @@
 /*
- * The MIT License
+ * Copyright (C) the Rugged contributors.  All rights reserved.
  *
- * Copyright (c) 2014 GitHub, Inc
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * This file is part of Rugged, distributed under the MIT license.
+ * For full terms see the included LICENSE file.
  */
 
 #include "rugged.h"
@@ -52,6 +35,19 @@ VALUE rugged_signature_new(const git_signature *sig, const char *encoding_name)
 	return rb_sig;
 }
 
+VALUE rugged_signature_from_buffer(const char *buffer, const char *encoding_name)
+{
+	git_signature *sig;
+	VALUE rb_ret;
+
+	rugged_exception_check(git_signature_from_buffer(&sig, buffer));
+
+	rb_ret = rugged_signature_new(sig, encoding_name);
+	git_signature_free(sig);
+
+	return rb_ret;
+}
+
 git_signature *rugged_signature_get(VALUE rb_sig, git_repository *repo)
 {
 	int error;
@@ -67,8 +63,8 @@ git_signature *rugged_signature_get(VALUE rb_sig, git_repository *repo)
 
 	Check_Type(rb_sig, T_HASH);
 
-	rb_name = rb_hash_aref(rb_sig, CSTR2SYM("name"));
-	rb_email = rb_hash_aref(rb_sig, CSTR2SYM("email"));
+	rb_name = rb_hash_fetch(rb_sig, CSTR2SYM("name"));
+	rb_email = rb_hash_fetch(rb_sig, CSTR2SYM("email"));
 	rb_time = rb_hash_aref(rb_sig, CSTR2SYM("time"));
 	rb_time_offset = rb_hash_aref(rb_sig, CSTR2SYM("time_offset"));
 

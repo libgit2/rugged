@@ -1,25 +1,8 @@
 /*
- * The MIT License
+ * Copyright (C) the Rugged contributors.  All rights reserved.
  *
- * Copyright (c) 2014 GitHub, Inc
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * This file is part of Rugged, distributed under the MIT license.
+ * For full terms see the included LICENSE file.
  */
 
 #include "rugged.h"
@@ -164,13 +147,18 @@ static VALUE submodule_status_flags_to_rb(unsigned int flags)
  */
 static VALUE rb_git_submodule_status(VALUE self)
 {
+	VALUE rb_repo = rugged_owner(self);
 	git_submodule *submodule;
+	git_repository *repo;
 	unsigned int flags;
 
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
 	Data_Get_Struct(self, git_submodule, submodule);
 
 	rugged_exception_check(
-		git_submodule_status(&flags, submodule)
+		git_submodule_status(&flags, repo, git_submodule_name(submodule),
+			GIT_SUBMODULE_IGNORE_UNSPECIFIED)
 	);
 
 	return submodule_status_flags_to_rb(flags);
@@ -231,11 +219,16 @@ static VALUE rb_git_submodule_status_in_workdir(VALUE self)
 }
 
 #define RB_GIT_SUBMODULE_STATUS_FLAG_CHECK(flag) \
+	VALUE rb_repo = rugged_owner(self); \
+	git_repository *repo; \
 	git_submodule *submodule; \
 	unsigned int flags; \
+	rugged_check_repo(rb_repo); \
+	Data_Get_Struct(rb_repo, git_repository, repo); \
 	Data_Get_Struct(self, git_submodule, submodule); \
 	rugged_exception_check( \
-		git_submodule_status(&flags, submodule) \
+		git_submodule_status(&flags, repo, git_submodule_name(submodule), \
+			GIT_SUBMODULE_IGNORE_UNSPECIFIED) \
 	); \
 	return (flags & flag) ? Qtrue : Qfalse; \
 
@@ -350,11 +343,16 @@ static VALUE rb_git_submodule_status_untracked_files_in_workdir(VALUE self)
 }
 
 #define RB_GIT_SUBMODULE_STATUS_CHECK(check) \
+	VALUE rb_repo = rugged_owner(self); \
+	git_repository *repo; \
 	git_submodule *submodule; \
 	unsigned int flags; \
+	rugged_check_repo(rb_repo); \
+	Data_Get_Struct(rb_repo, git_repository, repo); \
 	Data_Get_Struct(self, git_submodule, submodule); \
 	rugged_exception_check( \
-		git_submodule_status(&flags, submodule) \
+		git_submodule_status(&flags, repo, git_submodule_name(submodule), \
+			GIT_SUBMODULE_IGNORE_UNSPECIFIED) \
 	); \
 	return check(flags) ? Qtrue : Qfalse; \
 
@@ -437,27 +435,6 @@ static VALUE rb_git_submodule_reload(VALUE self)
 
 	rugged_exception_check(
 		git_submodule_reload(submodule, 1)
-	);
-
-	return self;
-}
-
-/*
- *  call-seq:
- *    submodule.save -> submodule
- *
- *  Write submodule settings to +.gitmodules+ file.
- *
- *  This commits any in-memory changes to the submodule to the +.gitmodules+
- *  file on disk.
- */
-static VALUE rb_git_submodule_save(VALUE self)
-{
-	git_submodule *submodule;
-	Data_Get_Struct(self, git_submodule, submodule);
-
-	rugged_exception_check(
-		git_submodule_save(submodule)
 	);
 
 	return self;
@@ -565,33 +542,6 @@ static VALUE rb_git_submodule_url(VALUE self)
 
 /*
  *  call-seq:
- *    submodule.url = url -> url
- *
- *  Set the URL in memory for the submodule.
- *
- *  This will be used for any following submodule actions while this submodule
- *  data is in memory.
- *
- *  After calling this, #save can be called to write the changes back to
- *  the +.gitmodules+ file and #sync to write the changes to the checked out
- *  submodule repository.
- */
-static VALUE rb_git_submodule_set_url(VALUE self, VALUE rb_url)
-{
-	git_submodule *submodule;
-
-	Check_Type(rb_url, T_STRING);
-
-	Data_Get_Struct(self, git_submodule, submodule);
-
-	rugged_exception_check(
-		git_submodule_set_url(submodule, StringValueCStr(rb_url))
-	);
-	return rb_url;
-}
-
-/*
- *  call-seq:
  *    submodule.path -> string
  *
  *  Returns the path of the submodule.
@@ -680,28 +630,6 @@ static VALUE rb_git_submodule_fetch_recurse_submodules(VALUE self)
 	return git_submodule_fetch_recurse_submodules(submodule) ? Qtrue : Qfalse;
 }
 
-/*
- *  call-seq:
- *    submodule.fetch_recurse_submodules= bool -> bool
- *
- *  Set the +fetchRecurseSubmodules+ rule in memory for a submodule.
- *
- *  This sets the <tt>submodule.<name>.fetchRecurseSubmodules</tt> value for
- *  the submodule. #save can be called to persist the new value.
- */
-static VALUE rb_git_submodule_set_fetch_recurse_submodules(VALUE self, VALUE rb_fetch_recursive)
-{
-	git_submodule *submodule;
-	Data_Get_Struct(self, git_submodule, submodule);
-
-	git_submodule_set_fetch_recurse_submodules(
-			submodule,
-			rugged_parse_bool(rb_fetch_recursive)
-	);
-
-	return rb_fetch_recursive;
-}
-
 static VALUE rb_git_subm_ignore_rule_fromC(git_submodule_ignore_t rule)
 {
 	switch(rule) {
@@ -754,72 +682,6 @@ static VALUE rb_git_submodule_ignore_rule(VALUE self)
 	return rb_git_subm_ignore_rule_fromC(ignore);
 }
 
-static git_submodule_ignore_t rb_git_subm_ignore_rule_toC(VALUE rb_ignore_rule)
-{
-	ID id_ignore_rule;
-
-	Check_Type(rb_ignore_rule, T_SYMBOL);
-	id_ignore_rule = SYM2ID(rb_ignore_rule);
-
-	if (id_ignore_rule == id_ignore_none) {
-		return GIT_SUBMODULE_IGNORE_NONE;
-	} else if (id_ignore_rule == id_ignore_untracked) {
-		return GIT_SUBMODULE_IGNORE_UNTRACKED;
-	} else if (id_ignore_rule == id_ignore_dirty) {
-		return GIT_SUBMODULE_IGNORE_DIRTY;
-	} else if (id_ignore_rule == id_ignore_all) {
-		return GIT_SUBMODULE_IGNORE_ALL;
-	} else {
-		rb_raise(rb_eArgError, "Invalid submodule ignore rule type.");
-	}
-}
-
-/*
- *  call-seq:
- *    submodule.ignore_rule = rule -> rule
- *
- *  Set the ignore_rule to +rule+ in memory for a submodule.
- *  See #ignore for a list of accepted rules.
- *
- *  This will be used for any following actions (such as
- *  #status) while the submodule is in memory. The ignore
- *  rule can be persisted to the config with #save.
- *
- *  Calling #reset_ignore_rule or #reload will
- *  revert the rule to the value that was in the config.
- */
-static VALUE rb_git_submodule_set_ignore_rule(VALUE self, VALUE rb_ignore_rule)
-{
-	git_submodule *submodule;
-
-	Data_Get_Struct(self, git_submodule, submodule);
-
-	git_submodule_set_ignore(
-		submodule,
-		rb_git_subm_ignore_rule_toC(rb_ignore_rule)
-	);
-
-	return rb_ignore_rule;
-}
-
-/*
- *  call-seq:
- *    submodule.reset_ignore_rule -> submodule
- *
- *  Revert the ignore rule set by #ignore_rule= to the value that
- *  was in the config.
- */
-static VALUE rb_git_submodule_reset_ignore_rule(VALUE self)
-{
-	git_submodule *submodule;
-
-	Data_Get_Struct(self, git_submodule, submodule);
-
-	git_submodule_set_ignore(submodule, GIT_SUBMODULE_IGNORE_RESET);
-
-	return self;
-}
-
 static VALUE rb_git_subm_update_rule_fromC(git_submodule_update_t rule)
 {
 	switch(rule) {
@@ -865,68 +727,6 @@ static VALUE rb_git_submodule_update_rule(VALUE self)
 	update = git_submodule_update_strategy(submodule);
 
 	return rb_git_subm_update_rule_fromC(update);
-}
-
-static git_submodule_update_t rb_git_subm_update_rule_toC(VALUE rb_update_rule)
-{
-	ID id_update_rule;
-
-	Check_Type(rb_update_rule, T_SYMBOL);
-	id_update_rule = SYM2ID(rb_update_rule);
-
-	if (id_update_rule == id_update_checkout) {
-		return GIT_SUBMODULE_UPDATE_CHECKOUT;
-	} else if (id_update_rule == id_update_rebase) {
-		return GIT_SUBMODULE_UPDATE_REBASE;
-	} else if (id_update_rule == id_update_merge) {
-		return GIT_SUBMODULE_UPDATE_MERGE;
-	} else if (id_update_rule == id_update_none) {
-		return GIT_SUBMODULE_UPDATE_NONE;
-	} else {
-		rb_raise(rb_eArgError, "Invalid submodule update rule type.");
-	}
-}
-
-/*
- *  call-seq:
- *    submodule.update_rule = rule -> rule
- *
- *  Set the update_rule to +rule+ in memory for a submodule.
- *  See #update_rule for a list of accepted rules.
- *
- *  Calling #reset_update_rule or #reload will
- *  revert the +rule+ to the value that was in the config.
- */
-static VALUE rb_git_submodule_set_update_rule(VALUE self, VALUE rb_update_rule)
-{
-	git_submodule *submodule;
-
-	Data_Get_Struct(self, git_submodule, submodule);
-
-	git_submodule_set_update(
-		submodule,
-		rb_git_subm_update_rule_toC(rb_update_rule)
-	);
-
-	return rb_update_rule;
-}
-
-/*
- *  call-seq:
- *    submodule.reset_update_rule -> submodule
- *
- *  Revert the update rule set by #update_rule= to the value that
- *  was in the config.
- */
-static VALUE rb_git_submodule_reset_update_rule(VALUE self)
-{
-	git_submodule *submodule;
-
-	Data_Get_Struct(self, git_submodule, submodule);
-
-	git_submodule_set_update(submodule, GIT_SUBMODULE_UPDATE_RESET);
-
-	return self;
 }
 
 /*
@@ -997,17 +797,11 @@ void Init_rugged_submodule(void)
 
 	rb_define_method(rb_cRuggedSubmodule, "name", rb_git_submodule_name, 0);
 	rb_define_method(rb_cRuggedSubmodule, "url", rb_git_submodule_url, 0);
-	rb_define_method(rb_cRuggedSubmodule, "url=", rb_git_submodule_set_url, 1);
 	rb_define_method(rb_cRuggedSubmodule, "path", rb_git_submodule_path, 0);
 	rb_define_method(rb_cRuggedSubmodule, "fetch_recurse_submodules?", rb_git_submodule_fetch_recurse_submodules, 0);
-	rb_define_method(rb_cRuggedSubmodule, "fetch_recurse_submodules=", rb_git_submodule_set_fetch_recurse_submodules, 1);
 
 	rb_define_method(rb_cRuggedSubmodule, "ignore_rule", rb_git_submodule_ignore_rule, 0);
-	rb_define_method(rb_cRuggedSubmodule, "ignore_rule=", rb_git_submodule_set_ignore_rule, 1);
-	rb_define_method(rb_cRuggedSubmodule, "reset_ignore_rule", rb_git_submodule_reset_ignore_rule, 0);
 	rb_define_method(rb_cRuggedSubmodule, "update_rule", rb_git_submodule_update_rule, 0);
-	rb_define_method(rb_cRuggedSubmodule, "update_rule=", rb_git_submodule_set_update_rule, 1);
-	rb_define_method(rb_cRuggedSubmodule, "reset_update_rule", rb_git_submodule_reset_update_rule, 0);
 
 	rb_define_method(rb_cRuggedSubmodule, "head_oid", rb_git_submodule_head_id, 0);
 	rb_define_method(rb_cRuggedSubmodule, "index_oid", rb_git_submodule_index_id, 0);
@@ -1036,7 +830,6 @@ void Init_rugged_submodule(void)
 
 	rb_define_method(rb_cRuggedSubmodule, "add_to_index", rb_git_submodule_add_to_index, -1);
 	rb_define_method(rb_cRuggedSubmodule, "reload", rb_git_submodule_reload, 0);
-	rb_define_method(rb_cRuggedSubmodule, "save", rb_git_submodule_save, 0);
 	rb_define_method(rb_cRuggedSubmodule, "sync", rb_git_submodule_sync, 0);
 	rb_define_method(rb_cRuggedSubmodule, "init", rb_git_submodule_init, -1);
 }

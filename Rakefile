@@ -4,7 +4,7 @@ begin
   require 'rake/extensiontask'
 rescue LoadError
   abort <<-error
-  rake-compile is missing; Rugged depends on rake-compiler to build the C wrapping code.
+  rake-compiler is missing; Rugged depends on rake-compiler to build the C wrapping code.
 
   Install it by running `gem i rake-compiler`
 error

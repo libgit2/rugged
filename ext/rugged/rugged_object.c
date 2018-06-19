@@ -1,25 +1,8 @@
 /*
- * The MIT License
+ * Copyright (C) the Rugged contributors.  All rights reserved.
  *
- * Copyright (c) 2014 GitHub, Inc
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * This file is part of Rugged, distributed under the MIT license.
+ * For full terms see the included LICENSE file.
  */
 
 #include "rugged.h"
@@ -285,7 +268,7 @@ VALUE rugged_object_rev_parse(VALUE rb_repo, VALUE rb_spec, int as_obj)
  *  Find and return a single object inside +repo+ as specified by the
  *  git revision string +str+.
  *
- *  See http://git-scm.com/docs/git-rev-parse.html#_specifying_revisions or 
+ *  See http://git-scm.com/docs/git-rev-parse.html#_specifying_revisions or
  *  <code>man gitrevisions</code> for information on the accepted syntax.
  *
  *  Raises a Rugged::InvalidError if +str+ does not contain a valid revision string.
@@ -301,7 +284,7 @@ VALUE rb_git_object_rev_parse(VALUE klass, VALUE rb_repo, VALUE rb_spec)
  *  Find and return the id of the object inside +repo+ as specified by the
  *  git revision string +str+.
  *
- *  See http://git-scm.com/docs/git-rev-parse.html#_specifying_revisions or 
+ *  See http://git-scm.com/docs/git-rev-parse.html#_specifying_revisions or
  *  <code>man gitrevisions</code> for information on the accepted syntax.
  *
  *  Raises a Rugged::InvalidError if +str+ does not contain a valid revision string.

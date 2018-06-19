@@ -2,10 +2,8 @@ require "test_helper"
 require 'base64'
 
 class WalkerTest < Rugged::TestCase
-  include Rugged::RepositoryAccess
-
   def setup
-    super
+    @repo = FixtureRepo.from_rugged("testrepo.git")
     @walker = Rugged::Walker.new(@repo)
   end
 
@@ -138,14 +136,45 @@ class WalkerTest < Rugged::TestCase
     sort_list = do_sort(Rugged::SORT_TOPO | Rugged::SORT_REVERSE).reverse
     assert_equal is_toposorted(sort_list), true
   end
+
+  def test_walk_api
+    sha = "9fd738e8f7967c078dceed8190330fc8648ee56a"
+    data = Rugged::Walker.walk(@repo, show: sha).to_a
+    oids = data.sort { |a, b| a.oid <=> b.oid }.map {|a| a.oid[0,5]}.join('.')
+    assert_equal "4a202.5b5b0.84960.9fd73", oids
+  end
+
+  def test_walk_count
+    @walker.push("9fd738e8f7967c078dceed8190330fc8648ee56a")
+    @walker.hide("5b5b025afb0b4c913b4c338a42934a3863bf3644")
+    assert_equal 2, @walker.count
+  end
+
+  def test_walk_count_argument
+    @walker.push("9fd738e8f7967c078dceed8190330fc8648ee56a")
+    @walker.hide("5b5b025afb0b4c913b4c338a42934a3863bf3644")
+
+    assert_equal 0, @walker.count('foo')
+  end
+
+  def test_walk_count_with_block
+    @walker.push("9fd738e8f7967c078dceed8190330fc8648ee56a")
+    @walker.hide("5b5b025afb0b4c913b4c338a42934a3863bf3644")
+
+    amount = @walker.count do |commit|
+      commit.oid == "9fd738e8f7967c078dceed8190330fc8648ee56a"
+    end
+
+    assert_equal 1, amount
+  end
 end
 
 # testrepo (the non-bare repo) is the one with non-linear history,
 # which we need in order to make sure that we are activating the
 # first-parent simplification
-class WalkerTest2 < Rugged::SandboxedTestCase
+class WalkerTest2 < Rugged::TestCase
   def test_simplify_first_parent
-    repo = sandbox_init("testrepo")
+    repo = FixtureRepo.from_libgit2("testrepo")
     walker = Rugged::Walker.new(repo)
     walker.push("099fabac3a9ea935598528c27f866e34089c2eff")
     walker.simplify_first_parent

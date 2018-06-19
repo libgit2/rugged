@@ -1,25 +1,8 @@
 /*
- * The MIT License
+ * Copyright (C) the Rugged contributors.  All rights reserved.
  *
- * Copyright (c) 2014 GitHub, Inc
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * This file is part of Rugged, distributed under the MIT license.
+ * For full terms see the included LICENSE file.
  */
 
 #include "rugged.h"
@@ -215,7 +198,11 @@ static void rugged_repo_new_with_backend(git_repository **repo, VALUE rb_path, V
 	if (error) goto cleanup;
 
 	error = git_odb_add_backend(odb, odb_backend, 1);
-	if (error) goto cleanup;
+	if (error) {
+		assert(odb_backend->free);
+		odb_backend->free(odb_backend);
+		goto cleanup;
+	}
 
 	error = git_repository_wrap_odb(repo, odb);
 	if (error) goto cleanup;
@@ -224,7 +211,11 @@ static void rugged_repo_new_with_backend(git_repository **repo, VALUE rb_path, V
 	if (error) goto cleanup;
 
 	error = backend->refdb_backend(&refdb_backend, backend, path);
-	if (error) goto cleanup;
+	if (error) {
+		assert(refdb_backend->free);
+		refdb_backend->free(refdb_backend);
+		goto cleanup;
+	}
 
 	error = git_refdb_set_backend(refdb, refdb_backend);
 	if (error) goto cleanup;
@@ -235,7 +226,7 @@ static void rugged_repo_new_with_backend(git_repository **repo, VALUE rb_path, V
 
 	if (error == GIT_ENOTFOUND) {
 		giterr_clear();
-		error = git_reference_symbolic_create(&head, *repo, "HEAD", "refs/heads/master", 0, NULL, NULL);
+		error = git_reference_symbolic_create(&head, *repo, "HEAD", "refs/heads/master", 0, NULL);
 	}
 
 	if (!error) {
@@ -247,9 +238,6 @@ cleanup:
 	git_repository_free(*repo);
 	git_odb_free(odb);
 	git_refdb_free(refdb);
-
-	if (odb_backend != NULL) odb_backend->free(odb_backend);
-	if (refdb_backend != NULL) refdb_backend->free(refdb_backend);
 
 	rugged_exception_check(error);
 }
@@ -410,7 +398,6 @@ static VALUE rb_git_repo_init_at(int argc, VALUE *argv, VALUE klass)
 
 static void parse_clone_options(git_clone_options *ret, VALUE rb_options, struct rugged_remote_cb_payload *remote_payload)
 {
-	git_remote_callbacks remote_callbacks = GIT_REMOTE_CALLBACKS_INIT;
 	VALUE val;
 
 	if (NIL_P(rb_options))
@@ -426,9 +413,7 @@ static void parse_clone_options(git_clone_options *ret, VALUE rb_options, struct
 		ret->checkout_branch = StringValueCStr(val);
 	}
 
-	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &remote_callbacks, remote_payload);
-
-	ret->remote_callbacks = remote_callbacks;
+	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &ret->fetch_opts.callbacks, remote_payload);
 }
 
 /*
@@ -483,7 +468,7 @@ static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
 {
 	VALUE url, local_path, rb_options_hash;
 	git_clone_options options = GIT_CLONE_OPTIONS_INIT;
-	struct rugged_remote_cb_payload remote_payload = { Qnil, Qnil, Qnil, Qnil, 0 };
+	struct rugged_remote_cb_payload remote_payload = { Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, 0 };
 	git_repository *repo;
 	int error;
 
@@ -591,6 +576,75 @@ static VALUE rb_git_repo_set_config(VALUE self, VALUE rb_data)
 static VALUE rb_git_repo_get_config(VALUE self)
 {
 	RB_GIT_REPO_OWNED_GET(rb_cRuggedConfig, config);
+}
+
+/*
+ *  call-seq:
+ *    repo.ident = ident
+ *
+ *  Set the identity to be used for writing reflogs.
+ *
+ *  +ident+ can be either +nil+ or a Hash containing +name+ and/or +email+ entries.
+ */
+static VALUE rb_git_repo_set_ident(VALUE self, VALUE rb_ident) {
+	VALUE rb_val;
+
+	git_repository *repo;
+	const char *name = NULL, *email = NULL;
+
+	Data_Get_Struct(self, git_repository, repo);
+
+	if (!NIL_P(rb_ident)) {
+		Check_Type(rb_ident, T_HASH);
+
+		if (!NIL_P(rb_val = rb_hash_aref(rb_ident, CSTR2SYM("name")))) {
+			Check_Type(rb_val, T_STRING);
+			name = StringValueCStr(rb_val);
+		}
+
+		if (!NIL_P(rb_val = rb_hash_aref(rb_ident, CSTR2SYM("email")))) {
+			Check_Type(rb_val, T_STRING);
+			email = StringValueCStr(rb_val);
+		}
+	}
+
+	rugged_exception_check(
+		git_repository_set_ident(repo, name, email)
+	);
+
+	return Qnil;
+}
+
+/*
+ *  call-seq:
+ *    repo.ident -> ident
+ *
+ *  Return a Hash containing the identity that is used to write reflogs.
+ *
+ *  +ident+ is a Hash containing +name+ and/or +email+ entries, or `nil`.
+ */
+static VALUE rb_git_repo_get_ident(VALUE self)
+{
+	VALUE rb_ident = rb_hash_new();
+
+	git_repository *repo;
+	const char *name = NULL, *email = NULL;
+
+	Data_Get_Struct(self, git_repository, repo);
+
+	rugged_exception_check(
+		git_repository_ident(&name, &email, repo)
+	);
+
+	if (name) {
+		rb_hash_aset(rb_ident, CSTR2SYM("name"), rb_str_new_utf8(name));
+	}
+
+	if (email) {
+		rb_hash_aset(rb_ident, CSTR2SYM("email"), rb_str_new_utf8(email));
+	}
+
+	return rb_ident;
 }
 
 /*
@@ -760,6 +814,62 @@ static VALUE rb_git_repo_merge_analysis(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
+ *    repo.revert_commit(revert_commit, our_commit, options = {}) -> index
+ *
+ *	Reverts the given commit against the given "our" commit, producing an
+ *	index that reflects the result of the revert.
+ */
+static VALUE rb_git_repo_revert_commit(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_revert_commit, rb_our_commit, rb_options;
+	git_commit *revert_commit, *our_commit;
+	git_index *index;
+	git_repository *repo;
+	git_merge_options opts = GIT_MERGE_OPTIONS_INIT;
+	unsigned int mainline = 0;
+	int error;
+
+	rb_scan_args(argc, argv, "20:", &rb_revert_commit, &rb_our_commit, &rb_options);
+
+	if (TYPE(rb_revert_commit) == T_STRING)
+		rb_revert_commit = rugged_object_rev_parse(self, rb_revert_commit, 1);
+
+	if (TYPE(rb_our_commit) == T_STRING)
+		rb_our_commit = rugged_object_rev_parse(self, rb_our_commit, 1);
+
+	if (!rb_obj_is_kind_of(rb_revert_commit, rb_cRuggedCommit) ||
+		!rb_obj_is_kind_of(rb_our_commit, rb_cRuggedCommit)) {
+		rb_raise(rb_eArgError, "Expected a Rugged::Commit.");
+	}
+
+	if (!NIL_P(rb_options)) {
+		VALUE rb_mainline;
+
+		Check_Type(rb_options, T_HASH);
+		rugged_parse_merge_options(&opts, rb_options);
+
+		rb_mainline = rb_hash_aref(rb_options, CSTR2SYM("mainline"));
+		if (!NIL_P(rb_mainline)) {
+			Check_Type(rb_mainline, T_FIXNUM);
+			mainline = FIX2UINT(rb_mainline);
+		}
+	}
+
+	Data_Get_Struct(self, git_repository, repo);
+	Data_Get_Struct(rb_revert_commit, git_commit, revert_commit);
+	Data_Get_Struct(rb_our_commit, git_commit, our_commit);
+
+	error = git_revert_commit(&index, repo, revert_commit, our_commit, mainline, &opts);
+	if (error == GIT_EMERGECONFLICT)
+		return Qnil;
+
+	rugged_exception_check(error);
+
+	return rugged_index_new(rb_cRuggedIndex, self, index);
+}
+
+/*
+ *  call-seq:
  *    repo.merge_commits(our_commit, their_commit, options = {}) -> index
  *
  *  Merges the two given commits, returning a Rugged::Index that reflects
@@ -775,6 +885,7 @@ static VALUE rb_git_repo_merge_commits(int argc, VALUE *argv, VALUE self)
 	git_index *index;
 	git_repository *repo;
 	git_merge_options opts = GIT_MERGE_OPTIONS_INIT;
+	int error;
 
 	rb_scan_args(argc, argv, "20:", &rb_our_commit, &rb_their_commit, &rb_options);
 
@@ -803,7 +914,11 @@ static VALUE rb_git_repo_merge_commits(int argc, VALUE *argv, VALUE self)
 	Data_Get_Struct(rb_our_commit, git_commit, our_commit);
 	Data_Get_Struct(rb_their_commit, git_commit, their_commit);
 
-	rugged_exception_check(git_merge_commits(&index, repo, our_commit, their_commit, &opts));
+	error = git_merge_commits(&index, repo, our_commit, their_commit, &opts);
+	if (error == GIT_EMERGECONFLICT)
+		return Qnil;
+
+	rugged_exception_check(error);
 
 	return rugged_index_new(rb_cRuggedIndex, self, index);
 }
@@ -913,10 +1028,13 @@ static VALUE rb_git_repo_read_header(VALUE self, VALUE hex)
 /**
  *  call-seq:
  *    repo.expand_oids([oid..], object_type = :any) -> hash
+ *    repo.expand_oids([oid..], object_type = [type..]) -> hash
  *
  *  Expand a list of short oids to their full value, assuming they exist
- *  in the repository. If `object_type` is passed, OIDs are expected to be
- *  of the given type.
+ *  in the repository. If `object_type` is passed and is an array, it must
+ *  be the same length as the OIDs array. If it's a single type name, all
+ *  OIDs will be expected to resolve to that object type. OIDs that don't
+ *  match the expected object types will not be expanded.
  *
  *  Returns a hash of `{ short_oid => full_oid }` for the short OIDs which
  *  exist in the repository and match the expected object type. Missing OIDs
@@ -926,59 +1044,64 @@ static VALUE rb_git_repo_expand_oids(int argc, VALUE *argv, VALUE self)
 {
 	VALUE rb_result, rb_oids, rb_expected_type;
 
-	git_otype expected_type = GIT_OBJ_ANY;
-
 	git_repository *repo;
-	git_oid oid;
 	git_odb *odb;
-	int i, error;
+	git_odb_expand_id *expand;
+	long i, expand_count;
+	int error;
 
 	Data_Get_Struct(self, git_repository, repo);
-
 	rb_scan_args(argc, argv, "11", &rb_oids, &rb_expected_type);
 
 	Check_Type(rb_oids, T_ARRAY);
-	expected_type = rugged_otype_get(rb_expected_type);
+	expand_count = RARRAY_LEN(rb_oids);
+	expand = alloca(expand_count * sizeof(git_odb_expand_id));
+
+	for (i = 0; i < expand_count; ++i) {
+		VALUE rb_hex = rb_ary_entry(rb_oids, i);
+		Check_Type(rb_hex, T_STRING);
+
+		rugged_exception_check(
+			git_oid_fromstrn(&expand[i].id, RSTRING_PTR(rb_hex), RSTRING_LEN(rb_hex))
+		);
+		expand[i].length = RSTRING_LEN(rb_hex);
+	}
+
+	if (TYPE(rb_expected_type) == T_ARRAY) {
+		if (RARRAY_LEN(rb_expected_type) != expand_count)
+			rb_raise(rb_eRuntimeError,
+				"the `object_type` array must be the same length as the `oids` array");
+
+		for (i = 0; i < expand_count; ++i) {
+			VALUE rb_type = rb_ary_entry(rb_expected_type, i);
+			expand[i].type = rugged_otype_get(rb_type);
+		}
+	} else {
+		git_otype expected_type = GIT_OBJ_ANY;
+
+		if (!NIL_P(rb_expected_type))
+			expected_type = rugged_otype_get(rb_expected_type);
+
+		for (i = 0; i < expand_count; ++i)
+			expand[i].type = expected_type;
+	}
 
 	error = git_repository_odb(&odb, repo);
 	rugged_exception_check(error);
 
+	error = git_odb_expand_ids(odb, expand, (size_t)expand_count);
+	git_odb_free(odb);
+	rugged_exception_check(error);
+
 	rb_result = rb_hash_new();
 
-	for (i = 0; i < RARRAY_LEN(rb_oids); ++i) {
-		VALUE hex_oid = rb_ary_entry(rb_oids, i);
-		git_oid found_oid;
-
-		if (TYPE(hex_oid) != T_STRING) {
-			git_odb_free(odb);
-			rb_raise(rb_eTypeError, "Expected a SHA1 OID");
-		}
-
-		error = git_oid_fromstrn(&oid, RSTRING_PTR(hex_oid), RSTRING_LEN(hex_oid));
-		if (error < 0) {
-			git_odb_free(odb);
-			rugged_exception_check(error);
-		}
-
-		error = git_odb_exists_prefix(&found_oid, odb, &oid, RSTRING_LEN(hex_oid));
-
-		if (!error) {
-			if (expected_type != GIT_OBJ_ANY) {
-				size_t found_size;
-				git_otype found_type;
-
-				if (git_odb_read_header(&found_size, &found_type, odb, &found_oid) < 0)
-					continue;
-
-				if (found_type != expected_type)
-					continue;
-			}
-
-			rb_hash_aset(rb_result, hex_oid, rugged_create_oid(&found_oid));
+	for (i = 0; i < expand_count; ++i) {
+		if (expand[i].length) {
+			rb_hash_aset(rb_result,
+				rb_ary_entry(rb_oids, i), rugged_create_oid(&expand[i].id));
 		}
 	}
 
-	git_odb_free(odb);
 	return rb_result;
 }
 
@@ -1194,7 +1317,7 @@ static VALUE rb_git_repo_set_head(VALUE self, VALUE rb_head)
 	Data_Get_Struct(self, git_repository, repo);
 
 	Check_Type(rb_head, T_STRING);
-	error = git_repository_set_head(repo, StringValueCStr(rb_head), NULL, NULL);
+	error = git_repository_set_head(repo, StringValueCStr(rb_head));
 	rugged_exception_check(error);
 
 	return Qnil;
@@ -1388,58 +1511,26 @@ static int rugged__status_cb(const char *path, unsigned int flags, void *payload
 	return GIT_OK;
 }
 
-/*
- *  call-seq:
- *    repo.status { |file, status_data| block }
- *    repo.status(path) -> status_data
- *
- *  Returns the status for one or more files in the working directory
- *  of the repository. This is equivalent to the +git status+ command.
- *
- *  The returned +status_data+ is always an array containing one or more
- *  status flags as Ruby symbols. Possible flags are:
- *
- *  - +:index_new+: the file is new in the index
- *  - +:index_modified+: the file has been modified in the index
- *  - +:index_deleted+: the file has been deleted from the index
- *  - +:worktree_new+: the file is new in the working directory
- *  - +:worktree_modified+: the file has been modified in the working directory
- *  - +:worktree_deleted+: the file has been deleted from the working directory
- *
- *  If a +block+ is given, status information will be gathered for every
- *  single file on the working dir. The +block+ will be called with the
- *  status data for each file.
- *
- *    repo.status { |file, status_data| puts "#{file} has status: #{status_data.inspect}" }
- *
- *  results in, for example:
- *
- *    src/diff.c has status: [:index_new, :worktree_new]
- *    README has status: [:worktree_modified]
- *
- *  If a +path+ is given instead, the function will return the +status_data+ for
- *  the file pointed to by path, or raise an exception if the path doesn't exist.
- *
- *  +path+ must be relative to the repository's working directory.
- *
- *    repo.status('src/diff.c') #=> [:index_new, :worktree_new]
- */
-static VALUE rb_git_repo_status(int argc, VALUE *argv, VALUE self)
+static VALUE rb_git_repo_file_status(VALUE self, VALUE rb_path)
 {
+	unsigned int flags;
 	int error;
-	VALUE rb_path;
 	git_repository *repo;
 
 	Data_Get_Struct(self, git_repository, repo);
+	Check_Type(rb_path, T_STRING);
+	error = git_status_file(&flags, repo, StringValueCStr(rb_path));
+	rugged_exception_check(error);
 
-	if (rb_scan_args(argc, argv, "01", &rb_path) == 1) {
-		unsigned int flags;
-		Check_Type(rb_path, T_STRING);
-		error = git_status_file(&flags, repo, StringValueCStr(rb_path));
-		rugged_exception_check(error);
+	return flags_to_rb(flags);
+}
 
-		return flags_to_rb(flags);
-	}
+static VALUE rb_git_repo_file_each_status(VALUE self)
+{
+	int error;
+	git_repository *repo;
+
+	Data_Get_Struct(self, git_repository, repo);
 
 	if (!rb_block_given_p())
 		rb_raise(rb_eRuntimeError,
@@ -1466,7 +1557,7 @@ static int rugged__each_id_cb(const git_oid *id, void *payload)
 /*
  *  call-seq:
  *    repo.each_id { |id| block }
- *    repo.each_id -> Iterator
+ *    repo.each_id -> Enumerator
  *
  *  Call the given +block+ once with every object ID found in +repo+
  *  and all its alternates. Object IDs are passed as 40-character
@@ -1478,8 +1569,7 @@ static VALUE rb_git_repo_each_id(VALUE self)
 	git_odb *odb;
 	int error, exception = 0;
 
-	if (!rb_block_given_p())
-		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_id"));
+	RETURN_ENUMERATOR(self, 0, 0);
 
 	Data_Get_Struct(self, git_repository, repo);
 
@@ -1517,7 +1607,7 @@ static int parse_reset_type(VALUE rb_reset_type)
 
 /*
  *  call-seq:
- *    repo.reset(target, reset_type, options = {}) -> nil
+ *    repo.reset(target, reset_type) -> nil
  *
  *  Sets the current head to the specified commit oid and optionally
  *  resets the index and working tree to match.
@@ -1534,51 +1624,25 @@ static int parse_reset_type(VALUE rb_reset_type)
  *    replaced with the content of the index. (Untracked and ignored files
  *    will be left alone)
  *
- *  The following options can be passed in the +options+ Hash:
- *
- *  :message ::
- *    A single line log message to be appended to the reflog.
- *
- *  :signature ::
- *    The signature to be used for populating the reflog entry.
- *
  *  Examples:
  *
  *    repo.reset('origin/master', :hard) #=> nil
  */
-static VALUE rb_git_repo_reset(int argc, VALUE *argv, VALUE self)
+static VALUE rb_git_repo_reset(VALUE self, VALUE rb_target, VALUE rb_reset_type)
 {
-	VALUE rb_target, rb_reset_type, rb_options;
 	git_repository *repo;
 	int reset_type;
 	git_object *target = NULL;
-	char *log_message = NULL;
-	git_signature *signature = NULL;
 	int error;
-
-	rb_scan_args(argc, argv, "20:", &rb_target, &rb_reset_type, &rb_options);
 
 	Data_Get_Struct(self, git_repository, repo);
 
 	reset_type = parse_reset_type(rb_reset_type);
 	target = rugged_object_get(repo, rb_target, GIT_OBJ_ANY);
 
-	if (!NIL_P(rb_options)) {
-		VALUE rb_val;
-
-		rb_val = rb_hash_aref(rb_options, CSTR2SYM("signature"));
-		if (!NIL_P(rb_val))
-			signature = rugged_signature_get(rb_val, repo);
-
-		rb_val = rb_hash_aref(rb_options, CSTR2SYM("message"));
-		if (!NIL_P(rb_val))
-			log_message = StringValueCStr(rb_val);
-	}
-
-	error = git_reset(repo, target, reset_type, NULL, signature, log_message);
+	error = git_reset(repo, target, reset_type, NULL);
 
 	git_object_free(target);
-	git_signature_free(signature);
 
 	rugged_exception_check(error);
 
@@ -1828,7 +1892,7 @@ static int rugged__checkout_notify_cb(
 /**
  * The caller has to free the returned git_checkout_options paths strings array.
  */
-static void rugged_parse_checkout_options(git_checkout_options *opts, VALUE rb_options)
+void rugged_parse_checkout_options(git_checkout_options *opts, VALUE rb_options)
 {
 	VALUE rb_value;
 
@@ -1839,7 +1903,7 @@ static void rugged_parse_checkout_options(git_checkout_options *opts, VALUE rb_o
 
 	rb_value = rb_hash_aref(rb_options, CSTR2SYM("progress"));
 	if (!NIL_P(rb_value)) {
-		struct rugged_cb_payload *payload = malloc(sizeof(struct rugged_cb_payload));
+		struct rugged_cb_payload *payload = xmalloc(sizeof(struct rugged_cb_payload));
 		payload->rb_data = rb_value;
 		payload->exception = 0;
 
@@ -1849,7 +1913,7 @@ static void rugged_parse_checkout_options(git_checkout_options *opts, VALUE rb_o
 
 	rb_value = rb_hash_aref(rb_options, CSTR2SYM("notify"));
 	if (!NIL_P(rb_value)) {
-		struct rugged_cb_payload *payload = malloc(sizeof(struct rugged_cb_payload));
+		struct rugged_cb_payload *payload = xmalloc(sizeof(struct rugged_cb_payload));
 		payload->rb_data = rb_value;
 		payload->exception = 0;
 
@@ -1866,10 +1930,10 @@ static void rugged_parse_checkout_options(git_checkout_options *opts, VALUE rb_o
 
 			if (rb_strategy == CSTR2SYM("safe")) {
 				opts->checkout_strategy |= GIT_CHECKOUT_SAFE;
-			} else if (rb_strategy == CSTR2SYM("safe_create")) {
-				opts->checkout_strategy |= GIT_CHECKOUT_SAFE_CREATE;
 			} else if (rb_strategy == CSTR2SYM("force")) {
 				opts->checkout_strategy |= GIT_CHECKOUT_FORCE;
+			} else if (rb_strategy == CSTR2SYM("recreate_missing")) {
+				opts->checkout_strategy |= GIT_CHECKOUT_RECREATE_MISSING;
 			} else if (rb_strategy == CSTR2SYM("allow_conflicts")) {
 				opts->checkout_strategy |= GIT_CHECKOUT_ALLOW_CONFLICTS;
 			} else if (rb_strategy == CSTR2SYM("remove_untracked")) {
@@ -1999,8 +2063,8 @@ static void rugged_parse_checkout_options(git_checkout_options *opts, VALUE rb_o
  *    :safe ::
  *      Allow safe updates that cannot overwrite uncommitted data.
  *
- *    :safe_create ::
- *      Allow safe updates plus creation of missing files.
+ *    :recreate_missing ::
+ *      Allow checkout to recreate missing files.
  *
  *    :force ::
  *      Allow all updates to force working directory to look like index.
@@ -2121,6 +2185,54 @@ static VALUE rb_git_checkout_tree(int argc, VALUE *argv, VALUE self)
 	rugged_parse_checkout_options(&opts, rb_options);
 
 	error = git_checkout_tree(repo, treeish, &opts);
+	xfree(opts.paths.strings);
+
+	if ((payload = opts.notify_payload) != NULL) {
+		exception = payload->exception;
+		xfree(opts.notify_payload);
+	}
+
+	if ((payload = opts.progress_payload) != NULL) {
+		exception = payload->exception;
+		xfree(opts.progress_payload);
+	}
+
+	if (exception)
+		rb_jump_tag(exception);
+
+	rugged_exception_check(error);
+
+	return Qnil;
+}
+
+/**
+ *  call-seq: repo.checkout_index(index[,options]) -> nil
+ *
+ *  Updates files in the index and the working tree to match the content of the
+ *  commit pointed at by +index+.
+ *
+ *  See Repository#checkout_tree for a list of supported +options+.
+ */
+static VALUE rb_git_checkout_index(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_index, rb_options;
+	git_repository *repo;
+	git_index *index;
+	git_checkout_options opts = GIT_CHECKOUT_OPTIONS_INIT;
+	struct rugged_cb_payload *payload;
+	int error, exception = 0;
+
+	rb_scan_args(argc, argv, "10:", &rb_index, &rb_options);
+
+	if (!rb_obj_is_kind_of(rb_index, rb_cRuggedIndex))
+		rb_raise(rb_eTypeError, "Expected Rugged::Index");
+
+	Data_Get_Struct(self, git_repository, repo);
+	Data_Get_Struct(rb_index, git_index, index);
+
+	rugged_parse_checkout_options(&opts, rb_options);
+
+	error = git_checkout_index(repo, index, &opts);
 	xfree(opts.paths.strings);
 
 	if ((payload = opts.notify_payload) != NULL) {
@@ -2266,7 +2378,7 @@ static VALUE rb_git_repo_attributes(int argc, VALUE *argv, VALUE self)
 		VALUE rb_result;
 		const char **values;
 		const char **names;
-		int i, num_attr = RARRAY_LEN(rb_names);
+		long i, num_attr = RARRAY_LEN(rb_names);
 
 		if (num_attr > 32)
 			rb_raise(rb_eRuntimeError, "Too many attributes requested");
@@ -2376,6 +2488,61 @@ static VALUE rb_git_repo_cherrypick(int argc, VALUE *argv, VALUE self)
 	return Qnil;
 }
 
+/*
+ *  call-seq:
+ *    repo.cherrypick_commit(commit, our_commit, [mainline, options]) -> nil
+ *
+ *  Cherry-pick the given commit on the given base in-memory and
+ *  return an index with the result.
+ *
+ *  `commit` can be either a string containing a commit id or a
+ *  `Rugged::Commit` object.
+ *
+ *  `our_commit` is the base commit, can be either a string containing
+ *  a commit id or a `Rugged::Commit` object.
+ *
+ *  `mainline` when cherry-picking a merge, this is the parent number
+ *   (starting from 1) which should be considered the mainline.
+ */
+static VALUE rb_git_repo_cherrypick_commit(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_options, rb_commit, rb_our_commit, rb_mainline;
+
+	git_repository *repo;
+	git_commit *commit, *our_commit;
+	git_merge_options opts = GIT_MERGE_OPTIONS_INIT;
+	git_index *index;
+	int error, mainline;
+
+	rb_scan_args(argc, argv, "21:", &rb_commit, &rb_our_commit, &rb_mainline, &rb_options);
+
+	if (TYPE(rb_commit) == T_STRING) {
+		rb_commit = rugged_object_rev_parse(self, rb_commit, 1);
+	}
+	if (TYPE(rb_our_commit) == T_STRING) {
+		rb_our_commit = rugged_object_rev_parse(self, rb_our_commit, 1);
+	}
+
+	if (!rb_obj_is_kind_of(rb_commit, rb_cRuggedCommit)) {
+		rb_raise(rb_eArgError, "Expected a Rugged::Commit.");
+	}
+	if (!rb_obj_is_kind_of(rb_our_commit, rb_cRuggedCommit)) {
+		rb_raise(rb_eArgError, "Expected a Rugged::Commit.");
+	}
+
+	Data_Get_Struct(self, git_repository, repo);
+	Data_Get_Struct(rb_commit, git_commit, commit);
+	Data_Get_Struct(rb_our_commit, git_commit, our_commit);
+
+	rugged_parse_merge_options(&opts, rb_options);
+
+	mainline = NIL_P(rb_mainline) ? 0 : FIX2UINT(rb_mainline);
+	error = git_cherrypick_commit(&index, repo, commit, our_commit, mainline, &opts);
+	rugged_exception_check(error);
+
+	return rugged_index_new(rb_cRuggedIndex, self, index);
+}
+
 void Init_rugged_repo(void)
 {
 	id_call = rb_intern("call");
@@ -2405,12 +2572,16 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "path",  rb_git_repo_path, 0);
 	rb_define_method(rb_cRuggedRepo, "workdir",  rb_git_repo_workdir, 0);
 	rb_define_method(rb_cRuggedRepo, "workdir=",  rb_git_repo_set_workdir, 1);
-	rb_define_method(rb_cRuggedRepo, "status",  rb_git_repo_status,  -1);
+	rb_define_private_method(rb_cRuggedRepo, "file_status",  rb_git_repo_file_status, 1);
+	rb_define_private_method(rb_cRuggedRepo, "each_status",  rb_git_repo_file_each_status, 0);
 
 	rb_define_method(rb_cRuggedRepo, "index",  rb_git_repo_get_index,  0);
 	rb_define_method(rb_cRuggedRepo, "index=",  rb_git_repo_set_index,  1);
 	rb_define_method(rb_cRuggedRepo, "config",  rb_git_repo_get_config,  0);
 	rb_define_method(rb_cRuggedRepo, "config=",  rb_git_repo_set_config,  1);
+
+	rb_define_method(rb_cRuggedRepo, "ident", rb_git_repo_get_ident, 0);
+	rb_define_method(rb_cRuggedRepo, "ident=", rb_git_repo_set_ident, 1);
 
 	rb_define_method(rb_cRuggedRepo, "bare?",  rb_git_repo_is_bare,  0);
 	rb_define_method(rb_cRuggedRepo, "shallow?",  rb_git_repo_is_shallow,  0);
@@ -2427,9 +2598,11 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "merge_analysis", rb_git_repo_merge_analysis, -1);
 	rb_define_method(rb_cRuggedRepo, "merge_commits", rb_git_repo_merge_commits, -1);
 
+	rb_define_method(rb_cRuggedRepo, "revert_commit", rb_git_repo_revert_commit, -1);
+
 	rb_define_method(rb_cRuggedRepo, "path_ignored?", rb_git_repo_is_path_ignored, 1);
 
-	rb_define_method(rb_cRuggedRepo, "reset", rb_git_repo_reset, -1);
+	rb_define_method(rb_cRuggedRepo, "reset", rb_git_repo_reset, 2);
 	rb_define_method(rb_cRuggedRepo, "reset_path", rb_git_repo_reset_path, -1);
 
 	rb_define_method(rb_cRuggedRepo, "namespace=", rb_git_repo_set_namespace, 1);
@@ -2440,9 +2613,11 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "default_signature", rb_git_repo_default_signature, 0);
 
 	rb_define_method(rb_cRuggedRepo, "checkout_tree", rb_git_checkout_tree, -1);
+	rb_define_method(rb_cRuggedRepo, "checkout_index", rb_git_checkout_index, -1);
 	rb_define_method(rb_cRuggedRepo, "checkout_head", rb_git_checkout_head, -1);
 
 	rb_define_method(rb_cRuggedRepo, "cherrypick", rb_git_repo_cherrypick, -1);
+	rb_define_method(rb_cRuggedRepo, "cherrypick_commit", rb_git_repo_cherrypick_commit, -1);
 	rb_define_method(rb_cRuggedRepo, "fetch_attributes", rb_git_repo_attributes, -1);
 
 	rb_cRuggedOdbObject = rb_define_class_under(rb_mRugged, "OdbObject", rb_cObject);

@@ -1,25 +1,8 @@
 /*
- * The MIT License
+ * Copyright (C) the Rugged contributors.  All rights reserved.
  *
- * Copyright (c) 2014 GitHub, Inc
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * This file is part of Rugged, distributed under the MIT license.
+ * For full terms see the included LICENSE file.
  */
 
 #include "rugged.h"
@@ -125,19 +108,19 @@ static void rugged_parse_blame_options(git_blame_options *opts, git_repository *
  *    The last line in the file to blame. Defaults to the last line in
  *    the file.
  *
- *  :track_copies_same_file
+ *  :track_copies_same_file ::
  *    If this value is +true+, lines that have moved within a file will be
  *    tracked (like `git blame -M`).
  *
- *  :track_copies_same_commit_moves
+ *  :track_copies_same_commit_moves ::
  *    If this value is +true+, lines that have moved across files in the same
  *    commit will be tracked (like `git blame -C`).
  *
- *  :track_copies_same_commit_copies
+ *  :track_copies_same_commit_copies ::
  *    If this value is +true+, lines that have been copied from another file
  *    that exists in the same commit will be tracked (like `git blame -CC`).
  *
- *  :track_copies_any_commit_copies
+ *  :track_copies_any_commit_copies ::
  *    If this value is +true+, lines that have been copied from another file
  *    that exists in *any* commit will be tracked (like `git blame -CCC`).
  *
@@ -205,6 +188,11 @@ static VALUE rb_git_blame_count(VALUE self)
 	return UINT2NUM(git_blame_get_hunk_count(blame));
 }
 
+static VALUE rugged_blame_enum_size(VALUE rb_blame, VALUE rb_args, VALUE rb_eobj)
+{
+	return rb_git_blame_count(rb_blame);
+}
+
 /*
  *  call-seq:
  *    blame[index] -> hunk
@@ -259,9 +247,7 @@ static VALUE rb_git_blame_each(VALUE self)
 	git_blame *blame;
 	uint32_t i, blame_count;
 
-	if (!rb_block_given_p()) {
-		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each"), self);
-	}
+	RETURN_SIZED_ENUMERATOR(self, 0, 0, rugged_blame_enum_size);
 
 	Data_Get_Struct(self, git_blame, blame);
 

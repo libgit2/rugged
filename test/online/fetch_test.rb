@@ -2,19 +2,11 @@ require 'test_helper'
 
 class OnlineFetchTest < Rugged::OnlineTestCase
   def setup
-    super
-    @repo = Rugged::Repository.init_at(File.join(@_sandbox_path, "repo"))
-  end
-
-  def teardown
-    @repo.close
-    super
+    @repo = FixtureRepo.empty
   end
 
   if git_creds?
     def test_fetch_over_git
-      reset_remote_repo
-
       @repo.remotes.create("origin", ENV['GITTEST_REMOTE_GIT_URL'])
 
       @repo.fetch("origin")
@@ -36,12 +28,52 @@ class OnlineFetchTest < Rugged::OnlineTestCase
         "refs/tags/commit_tree"
       ], @repo.refs.map(&:name).sort
     end
+
+    def test_fetch_over_https_with_certificate_callback
+      @repo.remotes.create("origin", "https://github.com/libgit2/TestGitRepository.git")
+
+      args = {}
+      @repo.fetch("origin", {
+        certificate_check: lambda { |valid, host|
+          args[:valid] = valid
+          args[:host] = host
+
+          true
+        }
+      })
+
+      assert_equal({ valid: true, host: "github.com" }, args)
+    end
+
+    def test_fetch_over_https_with_certificate_callback_fail
+      @repo.remotes.create("origin", "https://github.com/libgit2/TestGitRepository.git")
+
+      exception = assert_raises Rugged::NetworkError do
+        @repo.fetch("origin", {
+          certificate_check: lambda { |valid, host| false }
+        })
+      end
+
+      assert_equal "user cancelled certificate check", exception.message
+    end
+
+    def test_fetch_over_https_with_certificate_callback_exception
+      @repo.remotes.create("origin", "https://github.com/libgit2/TestGitRepository.git")
+
+      exception = assert_raises RuntimeError do
+        @repo.fetch("origin", {
+          certificate_check: lambda { |valid, host|
+            raise "Exception from callback"
+          }
+        })
+      end
+
+      assert_equal "Exception from callback", exception.message
+    end
   end
 
   if Rugged.features.include?(:ssh) && ssh_creds?
     def test_fetch_over_ssh_with_credentials
-      reset_remote_repo
-
       @repo.remotes.create("origin", ENV['GITTEST_REMOTE_SSH_URL'])
 
       @repo.fetch("origin", {
@@ -50,8 +82,6 @@ class OnlineFetchTest < Rugged::OnlineTestCase
     end
 
     def test_fetch_over_ssh_with_credentials_from_agent
-      reset_remote_repo
-
       @repo.remotes.create("origin", ENV['GITTEST_REMOTE_SSH_URL'])
 
       @repo.fetch("origin", {
@@ -60,8 +90,6 @@ class OnlineFetchTest < Rugged::OnlineTestCase
     end
 
     def test_fetch_over_ssh_with_credentials_callback
-      reset_remote_repo
-
       @repo.remotes.create("origin", ENV['GITTEST_REMOTE_SSH_URL'])
 
       @repo.fetch("origin", {

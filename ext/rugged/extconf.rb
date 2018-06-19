@@ -1,3 +1,8 @@
+# Copyright (C) the Rugged contributors.  All rights reserved.
+#
+# This file is part of Rugged, distributed under the MIT license.
+# For full terms see the included LICENSE file.
+
 require 'mkmf'
 
 RbConfig::MAKEFILE_CONFIG['CC'] = ENV['CC'] if ENV['CC']
@@ -7,6 +12,9 @@ $CFLAGS << " -g"
 $CFLAGS << " -O3" unless $CFLAGS[/-O\d/]
 $CFLAGS << " -Wall -Wno-comment"
 
+cmake_flags = [ ENV["CMAKE_FLAGS"] ]
+cmake_flags << "-DUSE_SHA1DC=ON" if with_config("sha1dc")
+
 def sys(cmd)
   puts " -- #{cmd}"
   unless ret = xsystem(cmd)
@@ -15,7 +23,14 @@ def sys(cmd)
   ret
 end
 
-if !(MAKE = find_executable('gmake') || find_executable('make'))
+MAKE = if Gem.win_platform?
+  # On Windows, Ruby-DevKit only has 'make'.
+  find_executable('make')
+else
+  find_executable('gmake') || find_executable('make')
+end
+
+if !MAKE
   abort "ERROR: GNU make is required to build Rugged."
 end
 
@@ -55,7 +70,7 @@ else
     abort "ERROR: CMake is required to build Rugged."
   end
 
-  if !find_executable('pkg-config')
+  if !Gem.win_platform? && !find_executable('pkg-config')
     abort "ERROR: pkg-config is required to build Rugged."
   end
 
@@ -63,11 +78,21 @@ else
     Dir.mkdir("build") if !Dir.exists?("build")
 
     Dir.chdir("build") do
-      sys("cmake .. -DBUILD_CLAR=OFF -DTHREADSAFE=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS=-fPIC -DCMAKE_BUILD_TYPE=RelWithDebInfo -G \"Unix Makefiles\"")
+      # On Windows, Ruby-DevKit is MSYS-based, so ensure to use MSYS Makefiles.
+      generator = "-G \"MSYS Makefiles\"" if Gem.win_platform?
+      sys("cmake .. -DBUILD_CLAR=OFF -DTHREADSAFE=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS=-fPIC -DCMAKE_BUILD_TYPE=RelWithDebInfo #{cmake_flags.join(' ')} #{generator}")
       sys(MAKE)
 
-      pcfile = File.join(LIBGIT2_DIR, "build", "libgit2.pc")
-      $LDFLAGS << " " + `pkg-config --libs --static #{pcfile}`.strip
+      # "normal" libraries (and libgit2 builds) get all these when they build but we're doing it
+      # statically so we put the libraries in by hand. It's important that we put the libraries themselves
+      # in $LIBS or the final linking stage won't pick them up
+      if Gem.win_platform?
+        $LDFLAGS << " " + "-L#{Dir.pwd}/deps/winhttp"
+        $LIBS << " -lwinhttp -lcrypt32 -lrpcrt4 -lole32 -lz"
+      else
+        pcfile = File.join(LIBGIT2_DIR, "build", "libgit2.pc")
+        $LDFLAGS << " " + `pkg-config --libs --static #{pcfile}`.strip
+      end
     end
   end
 

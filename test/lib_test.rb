@@ -14,7 +14,7 @@ class RuggedTest < Rugged::TestCase
     version = Rugged::libgit2_version
     assert_equal version.length, 3
     version.each do |i|
-      assert i.is_a? Fixnum
+      assert i.is_a? Integer
     end
   end
 
@@ -34,14 +34,26 @@ class RuggedTest < Rugged::TestCase
              ['search_path_system', '/tmp/system']]
 
     paths.each do |opt, path|
+      before = Rugged::Settings[opt]
       Rugged::Settings[opt] = path
-      assert_equal(path, Rugged::Settings[opt])
+
+      begin
+        assert_equal(path, Rugged::Settings[opt])
+      ensure
+        Rugged::Settings[opt] = before
+      end
     end
   end
 
   def test_features
     features = Rugged.features
     assert features.is_a? Array
+  end
+
+  def test_valid_full_oid
+    assert Rugged.valid_full_oid?("ce08fe4884650f067bd5703b6a59a8b3b3c99a09")
+    refute Rugged.valid_full_oid?("nope")
+    refute Rugged.valid_full_oid?("ce08fe4884650f067bd5703b6a59a8b3b3c99a0")
   end
 
   def test_hex_to_raw_oid
@@ -55,6 +67,11 @@ class RuggedTest < Rugged::TestCase
     assert_equal raw1, raw2
   end
 
+  def test_hex_to_raw_encoding
+    raw = Rugged::hex_to_raw("ce08fe4884650f067bd5703b6a59a8b3b3c99a09")
+    assert_equal Encoding::ASCII_8BIT, raw.encoding
+  end
+
   def test_raw_to_hex
     raw = Base64.decode64("FqASNFZ4mrze9Ld1ITwjqL109eA=")
     hex = Rugged::raw_to_hex(raw)
@@ -64,6 +81,13 @@ class RuggedTest < Rugged::TestCase
     hex1 = Rugged::raw_to_hex(raw)
     hex2 = raw.unpack("H*")[0]
     assert_equal hex1, hex2
+  end
+
+  def test_raw_to_hex_encoding
+    raw = Base64.decode64("FqASNFZ4mrze9Ld1ITwjqL109eA=")
+    hex = Rugged::raw_to_hex(raw)
+    assert_equal "16a0123456789abcdef4b775213c23a8bd74f5e0", hex
+    assert_equal Encoding::US_ASCII, hex.encoding
   end
 
   def test_raw_to_hex_with_nulls
@@ -135,4 +159,3 @@ MESSAGE
     assert_equal clean_message, Rugged::prettify_message(message, true)
   end
 end
-

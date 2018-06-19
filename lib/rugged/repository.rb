@@ -1,3 +1,8 @@
+# Copyright (C) the Rugged contributors.  All rights reserved.
+#
+# This file is part of Rugged, distributed under the MIT license.
+# For full terms see the included LICENSE file.
+
 module Rugged
   # Repository is an interface into a Git repository on-disk. It's the primary
   # interface between your app and the main Git objects Rugged makes available
@@ -45,6 +50,49 @@ module Rugged
         commit = Commit.lookup(self, self.rev_parse_oid(target))
         references.create("HEAD", commit.oid, force: true)
         self.checkout_tree(commit, options)
+      end
+    end
+
+    ###
+    #  call-seq:
+    #    repo.status { |file, status_data| block }
+    #    repo.status(path) -> status_data
+    #
+    #  Returns the status for one or more files in the working directory
+    #  of the repository. This is equivalent to the +git status+ command.
+    #
+    #  The returned +status_data+ is always an array containing one or more
+    #  status flags as Ruby symbols. Possible flags are:
+    #
+    #  - +:index_new+: the file is new in the index
+    #  - +:index_modified+: the file has been modified in the index
+    #  - +:index_deleted+: the file has been deleted from the index
+    #  - +:worktree_new+: the file is new in the working directory
+    #  - +:worktree_modified+: the file has been modified in the working directory
+    #  - +:worktree_deleted+: the file has been deleted from the working directory
+    #
+    #  If a +block+ is given, status information will be gathered for every
+    #  single file on the working dir. The +block+ will be called with the
+    #  status data for each file.
+    #
+    #    repo.status { |file, status_data| puts "#{file} has status: #{status_data.inspect}" }
+    #
+    #  results in, for example:
+    #
+    #    src/diff.c has status: [:index_new, :worktree_new]
+    #    README has status: [:worktree_modified]
+    #
+    #  If a +path+ is given instead, the function will return the +status_data+ for
+    #  the file pointed to by path, or raise an exception if the path doesn't exist.
+    #
+    #  +path+ must be relative to the repository's working directory.
+    #
+    #    repo.status('src/diff.c') #=> [:index_new, :worktree_new]
+    def status(file = nil, &block)
+      if file
+        file_status file
+      else
+        each_status(&block)
       end
     end
 
@@ -140,7 +188,7 @@ module Rugged
 
     # All the tags in the repository.
     #
-    # Returns an TagCollection containing all the tags.
+    # Returns a TagCollection containing all the tags.
     def tags
       @tags ||= TagCollection.new(self)
     end
@@ -155,14 +203,14 @@ module Rugged
 
     # All the branches in the repository
     #
-    # Returns an BranchCollection containing Rugged::Branch objects
+    # Returns a BranchCollection containing Rugged::Branch objects
     def branches
       @branches ||= BranchCollection.new(self)
     end
 
     # All the submodules in the repository
     #
-    # Returns an SubmoduleCollection containing Rugged::Submodule objects
+    # Returns a SubmoduleCollection containing Rugged::Submodule objects
     def submodules
       @submodules ||= SubmoduleCollection.new(self)
     end
@@ -190,7 +238,7 @@ module Rugged
     # revision - The String SHA1.
     # path     - The String file path.
     #
-    # Returns a String.
+    # Returns a Rugged::Blob object
     def blob_at(revision, path)
       tree = Rugged::Commit.lookup(self, revision).tree
       begin

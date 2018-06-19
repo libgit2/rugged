@@ -1,28 +1,13 @@
 /*
- * The MIT License
+ * Copyright (C) the Rugged contributors.  All rights reserved.
  *
- * Copyright (c) 2014 GitHub, Inc
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * This file is part of Rugged, distributed under the MIT license.
+ * For full terms see the included LICENSE file.
  */
 
 #include "rugged.h"
+#include "git2/commit.h"
+#include "git2/message.h"
 
 extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedObject;
@@ -35,7 +20,7 @@ VALUE rb_cRuggedCommit;
  *    commit.message -> msg
  *
  *  Return the message of this commit. This includes the full body of the
- *  message, with the short description, detailed descritpion, and any
+ *  message, with the short description, detailed description, and any
  *  optional footers or signatures after it.
  *
  *  In Ruby 1.9+, the returned string will be encoded with the encoding
@@ -58,6 +43,89 @@ static VALUE rb_git_commit_message_GET(VALUE self)
 		encoding = rb_enc_find(encoding_name);
 
 	return rb_enc_str_new(message, strlen(message), encoding);
+}
+
+/*
+ *  call-seq:
+ *    commit.trailers -> [["Trailer-name", "trailer value"], ...]
+ *
+ *  Return an array of arrays, each of which is a key/value pair representing a
+ *  commit message trailer. Both the keys and values will be strings. An array
+ *  is used to preserve the order the trailers were found.
+ *
+ *  In Ruby 1.9+, the returned strings will be encoded with the encoding
+ *  specified in the +Encoding+ header of the commit, if available.
+ *
+ */
+static VALUE rb_git_commit_trailers_GET(VALUE self)
+{
+	git_commit *commit;
+	const char *message;
+	rb_encoding *encoding = rb_utf8_encoding();
+	const char *encoding_name;
+	git_message_trailer_array arr;
+	VALUE trailers = rb_ary_new();
+	int error;
+	size_t i;
+
+	Data_Get_Struct(self, git_commit, commit);
+
+	encoding_name = git_commit_message_encoding(commit);
+	if (encoding_name != NULL)
+		encoding = rb_enc_find(encoding_name);
+
+	message = git_commit_message(commit);
+
+	error = git_message_trailers(&arr, message);
+	rugged_exception_check(error);
+
+	for(i = 0; i < arr.count; i++) {
+		VALUE pair = rb_ary_new();
+		const char *key = arr.trailers[i].key;
+		const char *value = arr.trailers[i].value;
+
+		// trailer key
+		rb_ary_push(pair, rb_enc_str_new(key, strlen(key), encoding));
+
+		// trailer value
+		rb_ary_push(pair, rb_enc_str_new(value, strlen(value), encoding));
+
+		// add it to the list
+		rb_ary_push(trailers, pair);
+	}
+
+	git_message_trailer_array_free(&arr);
+
+	return trailers;
+}
+
+/*
+ *  call-seq:
+ *    commit.summary -> summary
+ *
+ *  Return the short summary message of this commit.
+ *
+ *  In Ruby 1.9+, the returned string will be encoded with the encoding
+ *  specified in the +Encoding+ header of the commit, if available.
+ *
+ *    commit.message #=> "add a lot of RDoc docs\n\nthis includes docs for commit and blob"
+ *    commit.summary #=> "add a lot of RDoc docs"
+ */
+static VALUE rb_git_commit_summary_GET(VALUE self)
+{
+	git_commit *commit;
+	rb_encoding *encoding = rb_utf8_encoding();
+	const char *encoding_name;
+	const char *summary;
+
+	Data_Get_Struct(self, git_commit, commit);
+
+	summary = git_commit_summary(commit);
+	encoding_name = git_commit_message_encoding(commit);
+	if (encoding_name != NULL)
+		encoding = rb_enc_find(encoding_name);
+
+	return rb_enc_str_new(summary, strlen(summary), encoding);
 }
 
 /*
@@ -337,6 +405,107 @@ static VALUE rb_git_commit_amend(VALUE self, VALUE rb_data)
 	return rugged_create_oid(&commit_oid);
 }
 
+struct commit_data {
+	VALUE rb_err_obj;
+
+	const char *update_ref;
+	const char *message;
+	git_tree *tree;
+	git_signature *author;
+	git_signature *committer;
+	int parent_count;
+	const git_commit **parents;
+};
+
+/**
+ * Parse the commit options into something we can re-use
+ *
+ * Note that parents may be set even when the function errors, so make
+ * sure to free this data.
+ */
+static VALUE parse_commit_options(struct commit_data *out, git_repository *repo, VALUE rb_data)
+{
+	VALUE rb_message, rb_tree, rb_parents, rb_ref;
+	int error = 0, parent_count, i;
+
+	rb_ref = rb_hash_aref(rb_data, CSTR2SYM("update_ref"));
+	if (!NIL_P(rb_ref)) {
+		Check_Type(rb_ref, T_STRING);
+		out->update_ref = StringValueCStr(rb_ref);
+	}
+
+	rb_message = rb_hash_aref(rb_data, CSTR2SYM("message"));
+	Check_Type(rb_message, T_STRING);
+	out->message = StringValueCStr(rb_message);
+
+	out->committer = rugged_signature_get(
+		rb_hash_aref(rb_data, CSTR2SYM("committer")), repo
+	);
+
+	out->author = rugged_signature_get(
+		rb_hash_aref(rb_data, CSTR2SYM("author")), repo
+	);
+
+	rb_parents = rb_hash_aref(rb_data, CSTR2SYM("parents"));
+	Check_Type(rb_parents, T_ARRAY);
+
+	rb_tree = rb_hash_aref(rb_data, CSTR2SYM("tree"));
+	out->tree = (git_tree *)rugged_object_get(repo, rb_tree, GIT_OBJ_TREE);
+
+	out->parents = xcalloc(RARRAY_LEN(rb_parents), sizeof(void *));
+	parent_count = 0;
+
+	for (i = 0; i < (int)RARRAY_LEN(rb_parents); ++i) {
+		VALUE p = rb_ary_entry(rb_parents, i);
+		git_commit *parent = NULL;
+		git_commit *tmp = NULL;
+
+		if (NIL_P(p))
+			continue;
+
+		if (TYPE(p) == T_STRING) {
+			git_oid oid;
+
+			error = git_oid_fromstr(&oid, StringValueCStr(p));
+			if (error < GIT_OK)
+				goto out;
+
+			error = git_commit_lookup(&parent, repo, &oid);
+			if (error < GIT_OK)
+				goto out;
+		} else if (rb_obj_is_kind_of(p, rb_cRuggedCommit)) {
+			Data_Get_Struct(p, git_commit, tmp);
+			if ((error = git_object_dup((git_object **) &parent, (git_object *) tmp)) < 0)
+				goto out;
+		} else {
+			out->rb_err_obj = rb_exc_new2(rb_eTypeError, "Invalid type for parent object");
+			error = -1;
+			goto out;
+		}
+
+		out->parents[parent_count] = parent;
+		parent_count++;
+	}
+
+out:
+	out->parent_count = parent_count;
+	return error;
+}
+
+static void free_commit_options(struct commit_data *commit_data)
+{
+	int i;
+
+	git_signature_free(commit_data->author);
+	git_signature_free(commit_data->committer);
+
+	git_object_free((git_object *)commit_data->tree);
+
+	for (i = 0; i < commit_data->parent_count; ++i)
+		git_object_free((git_object *) commit_data->parents[i]);
+	xfree(commit_data->parents);
+}
+
 /*
  *  call-seq:
  *    Commit.create(repository, data = {}) -> oid
@@ -370,105 +539,35 @@ static VALUE rb_git_commit_amend(VALUE self, VALUE rb_data)
  */
 static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 {
-	VALUE rb_message, rb_tree, rb_parents, rb_ref;
-	VALUE rb_err_obj = Qnil;
-	int parent_count, i, error = 0;
-	const git_commit **parents = NULL;
-	git_commit **free_list = NULL;
-	git_tree *tree;
-	git_signature *author, *committer;
+	int error = 0;
+	struct commit_data commit_data = { Qnil };
 	git_oid commit_oid;
 	git_repository *repo;
-	const char *update_ref = NULL;
 
 	Check_Type(rb_data, T_HASH);
 
 	rugged_check_repo(rb_repo);
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
-	rb_ref = rb_hash_aref(rb_data, CSTR2SYM("update_ref"));
-	if (!NIL_P(rb_ref)) {
-		Check_Type(rb_ref, T_STRING);
-		update_ref = StringValueCStr(rb_ref);
-	}
-
-	rb_message = rb_hash_aref(rb_data, CSTR2SYM("message"));
-	Check_Type(rb_message, T_STRING);
-
-	committer = rugged_signature_get(
-		rb_hash_aref(rb_data, CSTR2SYM("committer")), repo
-	);
-
-	author = rugged_signature_get(
-		rb_hash_aref(rb_data, CSTR2SYM("author")), repo
-	);
-
-	rb_parents = rb_hash_aref(rb_data, CSTR2SYM("parents"));
-	Check_Type(rb_parents, T_ARRAY);
-
-	rb_tree = rb_hash_aref(rb_data, CSTR2SYM("tree"));
-	tree = (git_tree *)rugged_object_get(repo, rb_tree, GIT_OBJ_TREE);
-
-	parents = alloca(RARRAY_LEN(rb_parents) * sizeof(void *));
-	free_list = alloca(RARRAY_LEN(rb_parents) * sizeof(void *));
-	parent_count = 0;
-
-	for (i = 0; i < (int)RARRAY_LEN(rb_parents); ++i) {
-		VALUE p = rb_ary_entry(rb_parents, i);
-		git_commit *parent = NULL;
-		git_commit *free_ptr = NULL;
-
-		if (NIL_P(p))
-			continue;
-
-		if (TYPE(p) == T_STRING) {
-			git_oid oid;
-
-			error = git_oid_fromstr(&oid, StringValueCStr(p));
-			if (error < GIT_OK)
-				goto cleanup;
-
-			error = git_commit_lookup(&parent, repo, &oid);
-			if (error < GIT_OK)
-				goto cleanup;
-
-			free_ptr = parent;
-
-		} else if (rb_obj_is_kind_of(p, rb_cRuggedCommit)) {
-			Data_Get_Struct(p, git_commit, parent);
-		} else {
-			rb_err_obj = rb_exc_new2(rb_eTypeError, "Invalid type for parent object");
-			goto cleanup;
-		}
-
-		parents[parent_count] = parent;
-		free_list[parent_count] = free_ptr;
-		parent_count++;
-	}
+	if ((error = parse_commit_options(&commit_data, repo, rb_data)) < 0)
+		goto cleanup;
 
 	error = git_commit_create(
 		&commit_oid,
 		repo,
-		update_ref,
-		author,
-		committer,
+		commit_data.update_ref,
+		commit_data.author,
+		commit_data.committer,
 		NULL,
-		StringValueCStr(rb_message),
-		tree,
-		parent_count,
-		parents);
+		commit_data.message,
+		commit_data.tree,
+		commit_data.parent_count,
+		commit_data.parents);
 
 cleanup:
-	git_signature_free(author);
-	git_signature_free(committer);
-
-	git_object_free((git_object *)tree);
-
-	for (i = 0; i < parent_count; ++i)
-		git_object_free((git_object *)free_list[i]);
-
-	if (!NIL_P(rb_err_obj))
-		rb_exc_raise(rb_err_obj);
+	free_commit_options(&commit_data);
+	if (!NIL_P(commit_data.rb_err_obj))
+		rb_exc_raise(commit_data.rb_err_obj);
 
 	rugged_exception_check(error);
 
@@ -556,14 +655,227 @@ static VALUE rb_git_commit_to_mbox(int argc, VALUE *argv, VALUE self)
 	return rb_email_patch;
 }
 
+/*
+ *  call-seq:
+ *    commit.header_field(field_name) -> str
+ *
+ *  Returns +commit+'s header field value.
+ */
+static VALUE rb_git_commit_header_field(VALUE self, VALUE rb_field)
+{
+	git_buf header_field = { 0 };
+	git_commit *commit = NULL;
+
+	const char *encoding_name;
+	rb_encoding *encoding = rb_utf8_encoding();
+	VALUE rb_result;
+
+	int error;
+
+	Check_Type(rb_field, T_STRING);
+	Data_Get_Struct(self, git_commit, commit);
+
+	error = git_commit_header_field(&header_field, commit, StringValueCStr(rb_field));
+
+	if (error < 0) {
+		git_buf_free(&header_field);
+		if (error == GIT_ENOTFOUND)
+			return Qnil;
+		rugged_exception_check(error);
+	}
+
+	encoding_name = git_commit_message_encoding(commit);
+	if (encoding_name != NULL)
+		encoding = rb_enc_find(encoding_name);
+
+	rb_result = rb_enc_str_new(header_field.ptr, header_field.size, encoding);
+	git_buf_free(&header_field);
+	return rb_result;
+}
+
+/*
+ *  call-seq:
+ *    commit.header -> str
+ *
+ *  Returns +commit+'s entire raw header.
+ */
+static VALUE rb_git_commit_header(VALUE self)
+{
+	git_commit *commit;
+	const char *raw_header;
+
+	Data_Get_Struct(self, git_commit, commit);
+
+	raw_header = git_commit_raw_header(commit);
+	return rb_str_new_utf8(raw_header);
+}
+
+/*
+ *  call-seq:
+ *    Commit.extract_signature(repo, commit, field_name) -> [str, str]
+ *
+ *  Returns +commit+'s signature in 'field' and the signed data
+ *
+ *  The signature is done over the contents of the commit without the
+ *  signature block in the header, which is the data in the second
+ *  element in the return array.
+ */
+static VALUE rb_git_commit_extract_signature(int argc, VALUE *argv, VALUE self)
+{
+	int error;
+	VALUE ret;
+	git_oid commit_id;
+	const char *field;
+	git_repository *repo;
+	git_buf signature = {0}, signed_data = {0};
+	VALUE rb_repo, rb_commit, rb_field = Qnil;
+
+	rb_scan_args(argc, argv, "21", &rb_repo, &rb_commit, &rb_field);
+
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	error = git_oid_fromstr(&commit_id, StringValueCStr(rb_commit));
+	rugged_exception_check(error);
+
+	field = NIL_P(rb_field) ? NULL : StringValueCStr(rb_field);
+	error = git_commit_extract_signature(&signature, &signed_data, repo, &commit_id, field);
+	if (error < 0) {
+		git_buf_free(&signature);
+		git_buf_free(&signed_data);
+	}
+
+	if (error == GIT_ENOTFOUND && giterr_last()->klass == GITERR_OBJECT ) {
+		ret = Qnil;
+	} else {
+		rugged_exception_check(error);
+
+		ret = rb_ary_new3(2, rb_str_new(signature.ptr, signature.size),
+				     rb_str_new(signed_data.ptr, signed_data.size));
+	}
+
+	git_buf_free(&signature);
+	git_buf_free(&signed_data);
+
+	return ret;
+}
+
+/*
+ *  call-seq:
+ *    Commit.create_to_s(repository, data = {}) -> str
+ *
+ *  Create a string with the contents of the commit, created with the
+ *  given +data+ arguments, passed as a +Hash+:
+ *
+ *  - +:message+: a string with the full text for the commit's message
+ *  - +:committer+ (optional): a hash with the signature for the committer,
+ *    defaults to the signature from the configuration
+ *  - +:author+ (optional): a hash with the signature for the author,
+ *    defaults to the signature from the configuration
+ *  - +:parents+: an +Array+ with zero or more parents for this commit,
+ *    represented as <tt>Rugged::Commit</tt> instances, or OID +String+.
+ *  - +:tree+: the tree for this commit, represented as a <tt>Rugged::Tree</tt>
+ *    instance or an OID +String+.
+ *
+ *    author = {:email=>"tanoku@gmail.com", :time=>Time.now, :name=>"Vicent Mart\303\255"}
+ *
+ *    Rugged::Commit.create(r,
+ *      :author => author,
+ *      :message => "Hello world\n\n",
+ *      :committer => author,
+ *      :parents => ["2cb831a8aea28b2c1b9c63385585b864e4d3bad1"],
+ *      :tree => some_tree) #=> "tree some_tree\nparent 2cb831...."
+ */
+static VALUE rb_git_commit_create_to_s(VALUE self, VALUE rb_repo, VALUE rb_data)
+{
+	int error = 0;
+	struct commit_data commit_data = { Qnil };
+	git_repository *repo;
+	git_buf buf = { 0 };
+	VALUE ret;
+
+	Check_Type(rb_data, T_HASH);
+
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	if ((error = parse_commit_options(&commit_data, repo, rb_data)) < 0)
+		goto cleanup;
+
+	error = git_commit_create_buffer(
+		&buf,
+		repo,
+		commit_data.author,
+		commit_data.committer,
+		NULL,
+		commit_data.message,
+		commit_data.tree,
+		commit_data.parent_count,
+		commit_data.parents);
+
+cleanup:
+	free_commit_options(&commit_data);
+	if (!NIL_P(commit_data.rb_err_obj))
+		rb_exc_raise(commit_data.rb_err_obj);
+
+	rugged_exception_check(error);
+
+	ret = rb_str_new_utf8(buf.ptr);
+	git_buf_free(&buf);
+
+	return ret;
+}
+
+/*
+ *  call-seq:
+ *    Commit.create_with_signature(repo, content, signature, field_name = "gpgsig") -> oid
+ *
+ *  Create a commit from the +content+ string and the +signature+,
+ *  adding this data to the +field_name+ header field in the resulting
+ *  commit.
+ *
+ *  Returns the new commit's object id.
+ *
+ */
+static VALUE rb_git_commit_create_with_signature(int argc, VALUE *argv, VALUE self)
+{
+	int error;
+	git_oid id;
+	const char *field = NULL;
+	git_repository *repo;
+	VALUE rb_repo, rb_content, rb_signature, rb_field = Qnil;
+
+	rb_scan_args(argc, argv, "31", &rb_repo, &rb_content, &rb_signature, &rb_field);
+
+	rugged_check_repo(rb_repo);
+	Data_Get_Struct(rb_repo, git_repository, repo);
+
+	Check_Type(rb_content, T_STRING);
+	Check_Type(rb_signature, T_STRING);
+
+	if (!NIL_P(rb_field)) {
+		Check_Type(rb_field, T_STRING);
+		field = StringValueCStr(rb_field);
+	}
+
+	error = git_commit_create_with_signature(&id, repo, StringValueCStr(rb_content), StringValueCStr(rb_signature), field);
+	rugged_exception_check(error);
+
+	return rugged_create_oid(&id);
+}
 
 void Init_rugged_commit(void)
 {
 	rb_cRuggedCommit = rb_define_class_under(rb_mRugged, "Commit", rb_cRuggedObject);
 
 	rb_define_singleton_method(rb_cRuggedCommit, "create", rb_git_commit_create, 2);
+	rb_define_singleton_method(rb_cRuggedCommit, "create_to_s", rb_git_commit_create_to_s, 2);
+	rb_define_singleton_method(rb_cRuggedCommit, "create_with_signature", rb_git_commit_create_with_signature, -1);
+	rb_define_singleton_method(rb_cRuggedCommit, "extract_signature", rb_git_commit_extract_signature, -1);
 
 	rb_define_method(rb_cRuggedCommit, "message", rb_git_commit_message_GET, 0);
+	rb_define_method(rb_cRuggedCommit, "trailers", rb_git_commit_trailers_GET, 0);
+	rb_define_method(rb_cRuggedCommit, "summary", rb_git_commit_summary_GET, 0);
 	rb_define_method(rb_cRuggedCommit, "epoch_time", rb_git_commit_epoch_time_GET, 0);
 	rb_define_method(rb_cRuggedCommit, "committer", rb_git_commit_committer_GET, 0);
 	rb_define_method(rb_cRuggedCommit, "author", rb_git_commit_author_GET, 0);
@@ -579,4 +891,7 @@ void Init_rugged_commit(void)
 	rb_define_method(rb_cRuggedCommit, "amend", rb_git_commit_amend, 1);
 
 	rb_define_method(rb_cRuggedCommit, "to_mbox", rb_git_commit_to_mbox, -1);
+
+	rb_define_method(rb_cRuggedCommit, "header_field", rb_git_commit_header_field, 1);
+	rb_define_method(rb_cRuggedCommit, "header", rb_git_commit_header, 0);
 }

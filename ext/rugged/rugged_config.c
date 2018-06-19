@@ -1,25 +1,8 @@
 /*
- * The MIT License
+ * Copyright (C) the Rugged contributors.  All rights reserved.
  *
- * Copyright (c) 2014 GitHub, Inc
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * This file is part of Rugged, distributed under the MIT license.
+ * For full terms see the included LICENSE file.
  */
 
 #include "rugged.h"
@@ -50,21 +33,27 @@ VALUE rugged_config_new(VALUE klass, VALUE owner, git_config *cfg)
 static VALUE rb_git_config_new(VALUE klass, VALUE rb_path)
 {
 	git_config *config = NULL;
-	int error, i;
 
 	if (TYPE(rb_path) == T_ARRAY) {
+		int error, i;
+
 		error = git_config_new(&config);
 		rugged_exception_check(error);
 
-		for (i = 0; i < RARRAY_LEN(rb_path); ++i) {
+		for (i = 0; i < RARRAY_LEN(rb_path) && !error; ++i) {
 			VALUE f = rb_ary_entry(rb_path, i);
 			Check_Type(f, T_STRING);
-			error = git_config_add_file_ondisk(config, StringValueCStr(f), i + 1, 1);
+			error = git_config_add_file_ondisk(config, StringValueCStr(f), i + 1, NULL, 1);
+		}
+
+		if (error) {
+			git_config_free(config);
 			rugged_exception_check(error);
 		}
 	} else if (TYPE(rb_path) == T_STRING) {
-		error = git_config_open_ondisk(&config, StringValueCStr(rb_path));
-		rugged_exception_check(error);
+		rugged_exception_check(
+			git_config_open_ondisk(&config, StringValueCStr(rb_path))
+		);
 	} else {
 		rb_raise(rb_eTypeError, "Expecting a filename or an array of filenames");
 	}
@@ -87,18 +76,22 @@ static VALUE rb_git_config_new(VALUE klass, VALUE rb_path)
 static VALUE rb_git_config_get(VALUE self, VALUE rb_key)
 {
 	git_config *config;
-	const char *value;
+	git_buf buf = { NULL };
 	int error;
+	VALUE rb_result;
 
 	Data_Get_Struct(self, git_config, config);
 	Check_Type(rb_key, T_STRING);
 
-	error = git_config_get_string(&value, config, StringValueCStr(rb_key));
+	error = git_config_get_string_buf(&buf, config, StringValueCStr(rb_key));
 	if (error == GIT_ENOTFOUND)
 		return Qnil;
 
 	rugged_exception_check(error);
-	return rb_str_new_utf8(value);
+	rb_result = rb_str_new_utf8(buf.ptr);
+	git_buf_free(&buf);
+
+	return rb_result;
 }
 
 /*
@@ -205,7 +198,7 @@ static int cb_config__to_hash(const git_config_entry *entry, void *opaque)
 /*
  *  call-seq:
  *    cfg.each_key { |key| block }
- *    cfg.each_key -> enumarator
+ *    cfg.each_key -> enumerator
  *
  *  Call the given block once for each key in the config file. If no block
  *  is given, an enumerator is returned.
@@ -219,10 +212,8 @@ static VALUE rb_git_config_each_key(VALUE self)
 	git_config *config;
 	int error;
 
+	RETURN_ENUMERATOR(self, 0, 0);
 	Data_Get_Struct(self, git_config, config);
-
-	if (!rb_block_given_p())
-		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_key"));
 
 	error = git_config_foreach(config, &cb_config__each_key, (void *)rb_block_proc());
 	rugged_exception_check(error);
@@ -247,11 +238,9 @@ static VALUE rb_git_config_each_pair(VALUE self)
 {
 	git_config *config;
 	int error;
-
+	
+	RETURN_ENUMERATOR(self, 0, 0);
 	Data_Get_Struct(self, git_config, config);
-
-	if (!rb_block_given_p())
-		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_pair"));
 
 	error = git_config_foreach(config, &cb_config__each_pair, (void *)rb_block_proc());
 	rugged_exception_check(error);
@@ -302,6 +291,107 @@ static VALUE rb_git_config_open_default(VALUE klass)
 	return rugged_config_new(klass, Qnil, cfg);
 }
 
+/*
+ *  call-seq:
+ *    config.snapshot -> snapshot
+ *
+ *  Create a snapshot of the configuration.
+ *
+ *  Provides a consistent, read-only view of the configuration for
+ *  looking up complex values from a configuration.
+ */
+static VALUE rb_git_config_snapshot(VALUE self)
+{
+	git_config *config, *snapshot;
+
+	Data_Get_Struct(self, git_config, config);
+
+	rugged_exception_check(
+		git_config_snapshot(&snapshot, config)
+	);
+
+	return rugged_config_new(rb_obj_class(self), Qnil, snapshot);
+}
+
+/*
+ *  call-seq:
+ *    config.transaction { |config| }
+ *
+ *  Perform configuration changes in a transaction.
+ *
+ *  Locks the configuration, executes the given block and stores
+ *  any changes that were made to the configuration. If the block
+ *  throws an exception, all changes are rolled back automatically.
+ *
+ *  During the execution of the block, configuration changes don't
+ *  get stored to disk immediately, so reading from the configuration
+ *  will continue to return the values that were stored in the configuration
+ *  when the transaction was started.
+ */
+static VALUE rb_git_config_transaction(VALUE self)
+{
+	git_config *config;
+	git_transaction *tx;
+	VALUE rb_result;
+	int error = 0, exception = 0;
+
+	Data_Get_Struct(self, git_config, config);
+
+	git_config_lock(&tx, config);
+
+	rb_result = rb_protect(rb_yield, self, &exception);
+
+	if (!exception)
+		error = git_transaction_commit(tx);
+
+	git_transaction_free(tx);
+
+	if (exception)
+		rb_jump_tag(exception);
+	else if (error)
+		rugged_exception_check(error);
+
+	return rb_result;
+}
+
+static int each_config_value(const git_config_entry * entry, void *ctx)
+{
+	VALUE list = (VALUE)ctx;
+	rb_ary_push(list, rb_str_new_utf8(entry->value));
+	return 0;
+}
+
+/*
+ *  call-seq:
+ *    cfg.get_all(key) -> [value1, value2, ...]
+ *
+ *  Get a list of values for the given config +key+. Values are always
+ *  returned as an +Array+ of +String+, or +nil+ if the given key doesn't exist
+ *  in the Config file.
+ *
+ *    cfg['apply.whitespace'] #=> ['fix']
+ *    cfg['diff.renames'] #=> ['true']
+ *    cfg['remote.origin.fetch'] #=> ["+refs/heads/*:refs/remotes/origin/*", "+refs/heads/*:refs/lolol/origin/*"]
+ */
+static VALUE rb_git_config_get_all(VALUE self, VALUE key)
+{
+	git_config *config;
+	VALUE list;
+	int error;
+
+	Data_Get_Struct(self, git_config, config);
+
+	list = rb_ary_new();
+	error = git_config_get_multivar_foreach(
+		config, StringValueCStr(key), NULL, each_config_value, (void *)list);
+
+	if (error == GIT_ENOTFOUND)
+		return Qnil;
+
+	rugged_exception_check(error);
+	return list;
+}
+
 void Init_rugged_config(void)
 {
 	/*
@@ -320,10 +410,13 @@ void Init_rugged_config(void)
 
 	rb_define_method(rb_cRuggedConfig, "get", rb_git_config_get, 1);
 	rb_define_method(rb_cRuggedConfig, "[]", rb_git_config_get, 1);
+	rb_define_method(rb_cRuggedConfig, "get_all", rb_git_config_get_all, 1);
 
 	rb_define_method(rb_cRuggedConfig, "each_key", rb_git_config_each_key, 0);
 	rb_define_method(rb_cRuggedConfig, "each_pair", rb_git_config_each_pair, 0);
 	rb_define_method(rb_cRuggedConfig, "each", rb_git_config_each_pair, 0);
 	rb_define_method(rb_cRuggedConfig, "to_hash", rb_git_config_to_hash, 0);
 
+	rb_define_method(rb_cRuggedConfig, "snapshot", rb_git_config_snapshot, 0);
+	rb_define_method(rb_cRuggedConfig, "transaction", rb_git_config_transaction, 0);
 }

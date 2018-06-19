@@ -30,5 +30,5 @@ for testing and using the libgit2 library in a language that is awesome.
 desc
   s.add_development_dependency "rake-compiler", ">= 0.9.0"
   s.add_development_dependency "pry"
-  s.add_development_dependency "minitest", "~> 3.0.0"
+  s.add_development_dependency "minitest", "~> 5.0"
 end

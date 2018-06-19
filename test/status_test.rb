@@ -1,7 +1,7 @@
 # encoding: UTF-8
 require "test_helper"
 
-class LibgitRepositoryStatusTest < Rugged::SandboxedTestCase
+class LibgitRepositoryStatusTest < Rugged::TestCase
   STATUSES = {
     "staged_changes" => [:index_modified],
     "staged_changes_file_deleted" => [:index_modified, :worktree_deleted],
@@ -30,8 +30,7 @@ class LibgitRepositoryStatusTest < Rugged::SandboxedTestCase
   end
 
   def setup
-    super
-    @repo = sandbox_init "status"
+    @repo = FixtureRepo.from_libgit2 "status"
   end
 
   def test_status_with_callback
@@ -50,10 +49,4 @@ class LibgitRepositoryStatusTest < Rugged::SandboxedTestCase
       @repo.status(invalid_file)
     end
   end
-
-  def teardown
-    @repo.close
-    super
-  end
-
 end

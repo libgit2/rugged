@@ -1,28 +1,43 @@
-# Travis-CI Build for rugged
-# see travis-ci.org for details
-
 language: ruby
+cache: bundler
 
 os:
   - linux
   - osx
 
-# Ruby versions to test against
 rvm:
-  - 1.9.3
-  - 2.0.0
-  - 2.1.2
+  - 2.2.5
+  - 2.3.3
+  - 2.4.0
+  - 2.5.0
   - ruby-head
   - rbx-2
+
+addons:
+  apt:
+    sources:
+     - sourceline: 'deb https://dl.bintray.com/libgit2/ci-dependencies trusty libgit2deps'
+       key_url: 'https://bintray.com/user/downloadSubjectPublicKey?username=bintray'
+    packages:
+    - cmake
+    - libssh2-1-dev
+    - openssh-client
+    - openssh-server
+
+sudo: required
 
 matrix:
   fast_finish: true
   allow_failures:
     - rvm: rbx-2
-    - { os: osx, rvm: 2.1.2 }
+    - rvm: ruby-head
 
-install:
-  - ./vendor/libgit2/script/install-deps-${TRAVIS_OS_NAME}.sh
-  - bundle install --deployment
+git:
+  submodules: false
+
+before_install:
+  - git submodule update --init
+  - gem update --system
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then ./vendor/libgit2/script/install-deps-osx.sh; fi
 
 script: script/travisbuild

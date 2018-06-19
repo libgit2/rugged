@@ -1,4 +1,4 @@
-# Rugged
+# Rugged [![Build Status](https://travis-ci.org/libgit2/rugged.svg?branch=master)](https://travis-ci.org/libgit2/rugged)
 **libgit2 bindings in Ruby**
 
 Rugged is a library for accessing [libgit2](https://github.com/libgit2/libgit2) in Ruby. It gives you the speed and
@@ -21,6 +21,8 @@ You need to have CMake and `pkg-config` installed on your system to be able to b
 ```bash
 $ brew install cmake
 ```
+
+Please follow the above in case installation of the gem fails with `ERROR: CMake is required to build Rugged.`.
 
 If you want to build Rugged with HTTPS and SSH support, check out the list of optional [libgit2 dependencies](https://github.com/libgit2/libgit2#optional-dependencies).
 
@@ -569,7 +571,7 @@ Rugged.raw_to_hex("\277\336Y\315\320\337\254\035\211(\024\366j\225d\032\275\212\
 
 ---
 
-### Alternative backends
+### Alternative backends
 
 You can store bare repositories in alternative backends instead of storing on disk. (see
 `redbadger/rugged-redis` for an example of how a rugged backend works).

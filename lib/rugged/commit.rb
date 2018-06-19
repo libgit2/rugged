@@ -1,3 +1,8 @@
+# Copyright (C) the Rugged contributors.  All rights reserved.
+#
+# This file is part of Rugged, distributed under the MIT license.
+# For full terms see the included LICENSE file.
+
 module Rugged
   class Commit
 
@@ -7,6 +12,10 @@ module Rugged
 
     def inspect
       "#<Rugged::Commit:#{object_id} {message: #{message.inspect}, tree: #{tree.inspect}, parents: #{parent_oids}}>"
+    end
+
+    def header_field?(field)
+      !!header_field(field)
     end
 
     # Return a diff between this commit and its first parent or another commit or tree.

@@ -1,7 +1,16 @@
 require "test_helper"
 
-class ConfigTest < Rugged::TestCase 
-  include Rugged::RepositoryAccess
+class ConfigTest < Rugged::TestCase
+  def setup
+    @repo = FixtureRepo.from_rugged("testrepo.git")
+  end
+
+  def test_multi_fetch
+    config = @repo.config
+    fetches = ["+refs/heads/*:refs/remotes/test_remote/*",
+               "+refs/heads/*:refs/remotes/hello_remote/*"]
+    assert_equal fetches, config.get_all("remote.test_multiple_fetches.fetch")
+  end
 
   def test_read_config_file
     config = @repo.config
@@ -16,13 +25,54 @@ class ConfigTest < Rugged::TestCase
 
   def test_read_global_config_file
     config = Rugged::Config.global
-    assert config['user.name'] != nil
+    refute_nil config['user.name']
     assert_nil config['core.bare']
+  end
+
+  def test_snapshot
+    config = Rugged::Config.new(File.join(@repo.path, 'config'))
+    config['old.value'] = 5
+
+    snapshot = config.snapshot
+    assert_equal '5', snapshot['old.value']
+
+    config['new.value'] = 42
+    config['old.value'] = 1337
+
+    assert_equal '5', snapshot['old.value']
+    assert_nil snapshot['new.value']
+  end
+
+  def test_transaction
+    config = Rugged::Config.new(File.join(@repo.path, 'config'))
+    config['section.name'] = 'value'
+
+    config2 = Rugged::Config.new(File.join(@repo.path, 'config'))
+
+    config.transaction do
+      config['section.name'] = 'other value'
+      config['section2.name3'] = 'more value'
+
+      assert_equal 'value', config2['section.name']
+      assert_nil config2['section2.name3']
+
+      assert_equal 'value', config['section.name']
+      assert_nil config['section2.name3']
+    end
+
+    assert_equal 'other value', config['section.name']
+    assert_equal 'more value', config['section2.name3']
+    assert_equal 'other value', config2['section.name']
+    assert_equal 'more value', config2['section2.name3']
   end
 end
 
 class ConfigWriteTest < Rugged::TestCase
-  include Rugged::TempRepositoryAccess
+  def setup
+    @source_repo = FixtureRepo.from_rugged("testrepo.git")
+    @repo = FixtureRepo.clone(@source_repo)
+    @path = @repo.workdir
+  end
 
   def test_write_config_values
     config = @repo.config

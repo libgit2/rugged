@@ -1,25 +1,8 @@
 /*
- * The MIT License
+ * Copyright (C) the Rugged contributors.  All rights reserved.
  *
- * Copyright (c) 2014 GitHub, Inc
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * This file is part of Rugged, distributed under the MIT license.
+ * For full terms see the included LICENSE file.
  */
 
 #include "rugged.h"
@@ -231,30 +214,6 @@ static VALUE rb_read_check(VALUE pointer) {
 	return rb_buffer;
 }
 
-static int cb_blob__get__chunk(char *content, size_t max_length, void *data)
-{
-	VALUE rb_buffer, rb_args[2];
-	size_t str_len, safe_len;
-	struct rugged_cb_payload *payload = data;
-
-	rb_args[0] = payload->rb_data;
-	rb_args[1] = INT2FIX(max_length);
-
-	rb_buffer = rb_protect(rb_read_check, (VALUE)rb_args, &payload->exception);
-
-	if (payload->exception)
-		return GIT_ERROR;
-
-	if (NIL_P(rb_buffer))
-		return 0;
-
-	str_len = (size_t)RSTRING_LEN(rb_buffer);
-	safe_len = str_len > max_length ? max_length : str_len;
-	memcpy(content, StringValuePtr(rb_buffer), safe_len);
-
-	return (int)safe_len;
-}
-
 /*
  *  call-seq:
  *    Blob.from_io(repository, io [, hint_path]) -> oid
@@ -282,11 +241,10 @@ static int cb_blob__get__chunk(char *content, size_t max_length, void *data)
  */
 static VALUE rb_git_blob_from_io(int argc, VALUE *argv, VALUE klass)
 {
-	VALUE rb_repo, rb_io, rb_hint_path;
-	struct rugged_cb_payload payload;
+	VALUE rb_repo, rb_io, rb_hint_path, rb_buffer, rb_read_args[2];
 	const char * hint_path = NULL;
-
-	int error;
+	git_writestream *stream;
+	int error = 0, exception = 0, max_length = 4096;
 	git_oid oid;
 	git_repository *repo;
 
@@ -300,21 +258,75 @@ static VALUE rb_git_blob_from_io(int argc, VALUE *argv, VALUE klass)
 		hint_path = StringValueCStr(rb_hint_path);
 	}
 
-	payload.exception = 0;
-	payload.rb_data = rb_io;
+	error = git_blob_create_fromstream(&stream, repo, hint_path);
+	if (error)
+		goto cleanup;
 
-	error = git_blob_create_fromchunks(
-			&oid,
-			repo,
-			hint_path,
-			cb_blob__get__chunk,
-			(void *)&payload);
+	rb_read_args[0] = rb_io;
+	rb_read_args[1] = INT2FIX(max_length);
 
-	if (payload.exception)
-		rb_jump_tag(payload.exception);
+	do {
+		rb_buffer = rb_protect(rb_read_check, (VALUE)rb_read_args, &exception);
+
+		if (exception)
+			goto cleanup;
+
+		if (NIL_P(rb_buffer))
+			break;
+
+		error = stream->write(stream, RSTRING_PTR(rb_buffer), RSTRING_LEN(rb_buffer));
+		if (error)
+			goto cleanup;
+	} while (RSTRING_LEN(rb_buffer) == max_length);
+
+	error = git_blob_create_fromstream_commit(&oid, stream);
+
+cleanup:
+
+	if (exception)
+		rb_jump_tag(exception);
+
 	rugged_exception_check(error);
 
 	return rugged_create_oid(&oid);
+}
+
+/*
+ *  call-seq:
+ *    blob.loc -> int
+ *
+ *  Return the number of lines for this blob,
+ *  assuming the blob is plaintext (i.e. not binary)
+ */
+static VALUE rb_git_blob_loc(VALUE self)
+{
+	git_blob *blob;
+	const char *data, *data_end;
+	size_t loc = 0;
+
+	Data_Get_Struct(self, git_blob, blob);
+
+	data = git_blob_rawcontent(blob);
+	data_end = data + git_blob_rawsize(blob);
+
+	if (data == data_end)
+		return INT2FIX(0);
+
+	for (; data < data_end; ++data) {
+		if (data[0] == '\n') {
+			loc++;
+		}
+		else if (data[0] == '\r') {
+			if (data + 1 < data_end && data[1] == '\n')
+				data++;
+			loc++;
+		}
+	}
+
+	if (data[-1] != '\n' && data[-1] != '\r')
+		loc++;
+
+	return INT2FIX(loc);
 }
 
 
@@ -522,6 +534,108 @@ static VALUE rb_git_blob_to_buffer(int argc, VALUE *argv, VALUE self)
 	return rb_ret;
 }
 
+#define RUGGED_MERGE_FILE_INPUT_INIT { GIT_MERGE_FILE_INPUT_INIT }
+
+typedef struct {
+	git_merge_file_input parent;
+	int has_id;
+	git_oid id;
+} rugged_merge_file_input;
+
+static void rugged_parse_merge_file_input(rugged_merge_file_input *input, git_repository *repo, VALUE rb_input)
+{
+	VALUE rb_value;
+
+	Check_Type(rb_input, T_HASH);
+
+	if (!NIL_P(rb_value = rb_hash_aref(rb_input, CSTR2SYM("content")))) {
+		input->parent.ptr = RSTRING_PTR(rb_value);
+		input->parent.size = RSTRING_LEN(rb_value);
+	} else if (!NIL_P(rb_value = rb_hash_aref(rb_input, CSTR2SYM("oid")))) {
+		if (!repo)
+			rb_raise(rb_eArgError, "Rugged repository is required when file input is `:oid`.");
+
+		rugged_exception_check(git_oid_fromstr(&input->id, RSTRING_PTR(rb_value)));
+		input->has_id = 1;
+	} else {
+		rb_raise(rb_eArgError, "File input must have `:content` or `:oid`.");
+	}
+
+	rb_value = rb_hash_aref(rb_input, CSTR2SYM("filemode"));
+	if (!NIL_P(rb_value))
+		input->parent.mode = FIX2UINT(rb_value);
+
+	rb_value = rb_hash_aref(rb_input, CSTR2SYM("path"));
+	if (!NIL_P(rb_value)) {
+		Check_Type(rb_value, T_STRING);
+		input->parent.path = RSTRING_PTR(rb_value);
+	}
+}
+
+static int rugged_load_merge_file_input(git_blob **out, git_repository *repo, rugged_merge_file_input *input)
+{
+	int error;
+
+	if (!input->has_id)
+		return 0;
+
+	if ((error = git_blob_lookup(out, repo, &input->id)) < 0)
+		return error;
+
+	input->parent.ptr = git_blob_rawcontent(*out);
+	input->parent.size = git_blob_rawsize(*out);
+
+	return 0;
+}
+
+static VALUE rb_git_blob_merge_files(int argc, VALUE *argv, VALUE klass)
+{
+	VALUE rb_repo, rb_ancestor, rb_ours, rb_theirs, rb_options, rb_result = Qnil;
+
+	git_repository *repo = NULL;
+	rugged_merge_file_input ancestor = RUGGED_MERGE_FILE_INPUT_INIT,
+		ours = RUGGED_MERGE_FILE_INPUT_INIT,
+		theirs = RUGGED_MERGE_FILE_INPUT_INIT;
+	git_blob *ancestor_blob = NULL, *our_blob = NULL, *their_blob = NULL;
+	git_merge_file_options opts = GIT_MERGE_FILE_OPTIONS_INIT;
+	git_merge_file_result result = {0};
+	int error;
+
+	rb_scan_args(argc, argv, "41", &rb_repo, &rb_ancestor, &rb_ours, &rb_theirs, &rb_options);
+
+	if (!NIL_P(rb_repo)) {
+		rugged_check_repo(rb_repo);
+		Data_Get_Struct(rb_repo, git_repository, repo);
+	}
+
+	if (!NIL_P(rb_options))
+		rugged_parse_merge_file_options(&opts, rb_options);
+
+	if (!NIL_P(rb_ancestor))
+		rugged_parse_merge_file_input(&ancestor, repo, rb_ancestor);
+	if (!NIL_P(rb_ours))
+		rugged_parse_merge_file_input(&ours, repo, rb_ours);
+	if (!NIL_P(rb_theirs))
+		rugged_parse_merge_file_input(&theirs, repo, rb_theirs);
+
+	if ((error = rugged_load_merge_file_input(&ancestor_blob, repo, &ancestor)) < 0 ||
+		(error = rugged_load_merge_file_input(&our_blob, repo, &ours)) < 0 ||
+		(error = rugged_load_merge_file_input(&their_blob, repo, &theirs)) < 0 ||
+		(error = git_merge_file(&result, &ancestor.parent, &ours.parent, &theirs.parent, &opts)) < 0)
+		goto done;
+
+	rb_result = rb_merge_file_result_fromC(&result);
+
+done:
+	git_blob_free(ancestor_blob);
+	git_blob_free(our_blob);
+	git_blob_free(their_blob);
+	git_merge_file_result_free(&result);
+
+	rugged_exception_check(error);
+	return rb_result;
+}
+
 static VALUE rb_git_blob_sig_new(int argc, VALUE *argv, VALUE klass)
 {
 	int error, opts = 0;
@@ -583,6 +697,7 @@ void Init_rugged_blob(void)
 	rb_define_method(rb_cRuggedBlob, "content", rb_git_blob_content_GET, -1);
 	rb_define_method(rb_cRuggedBlob, "text", rb_git_blob_text_GET, -1);
 	rb_define_method(rb_cRuggedBlob, "sloc", rb_git_blob_sloc, 0);
+	rb_define_method(rb_cRuggedBlob, "loc", rb_git_blob_loc, 0);
 	rb_define_method(rb_cRuggedBlob, "binary?", rb_git_blob_is_binary, 0);
 	rb_define_method(rb_cRuggedBlob, "diff", rb_git_blob_diff, -1);
 
@@ -592,6 +707,7 @@ void Init_rugged_blob(void)
 	rb_define_singleton_method(rb_cRuggedBlob, "from_io", rb_git_blob_from_io, -1);
 
 	rb_define_singleton_method(rb_cRuggedBlob, "to_buffer", rb_git_blob_to_buffer, -1);
+	rb_define_singleton_method(rb_cRuggedBlob, "merge_files", rb_git_blob_merge_files, -1);
 
 	rb_cRuggedBlobSig = rb_define_class_under(rb_cRuggedBlob, "HashSignature", rb_cObject);
 	rb_define_singleton_method(rb_cRuggedBlobSig, "new", rb_git_blob_sig_new, -1);

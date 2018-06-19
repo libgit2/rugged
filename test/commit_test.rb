@@ -1,7 +1,10 @@
 require "test_helper"
 
 class TestCommit < Rugged::TestCase
-  include Rugged::RepositoryAccess
+  def setup
+    @repo = FixtureRepo.from_rugged("testrepo.git")
+    @repo.config['core.abbrev'] = 7
+  end
 
   def test_lookup_raises_error_if_object_type_does_not_match
     assert_raises Rugged::InvalidError do
@@ -171,10 +174,202 @@ class TestCommit < Rugged::TestCase
     amended_commit = @repo.lookup(new_commit_oid)
     assert_equal tree_oid, amended_commit.tree.oid
   end
+
+  def test_header_field
+    oid = "8496071c1b46c854b31185ea97743be6a8774479"
+    obj = @repo.lookup(oid)
+
+    expected_header_field = "Scott Chacon <schacon@gmail.com> 1273360386 -0700"
+    assert_equal expected_header_field, obj.header_field("author")
+    assert_nil   obj.header_field("foobar")
+  end
+
+  def test_header_field?
+    oid = "8496071c1b46c854b31185ea97743be6a8774479"
+    obj = @repo.lookup(oid)
+
+    assert_equal true, obj.header_field?("author")
+    assert_equal false, obj.header_field?("foobar")
+  end
+
+  def test_header
+    oid = "8496071c1b46c854b31185ea97743be6a8774479"
+    obj = @repo.lookup(oid)
+
+    expected_header = <<-HEADER
+tree 181037049a54a1eb5fab404658a3a250b44335d7
+author Scott Chacon <schacon@gmail.com> 1273360386 -0700
+committer Scott Chacon <schacon@gmail.com> 1273360386 -0700
+    HEADER
+
+    assert_equal expected_header, obj.header
+  end
+
+  def test_extract_signature
+
+    raw_commit = <<-COMMIT
+tree 6b79e22d69bf46e289df0345a14ca059dfc9bdf6
+parent 34734e478d6cf50c27c9d69026d93974d052c454
+author Ben Burkert <ben@benburkert.com> 1358451456 -0800
+committer Ben Burkert <ben@benburkert.com> 1358451456 -0800
+gpgsig -----BEGIN PGP SIGNATURE-----
+ Version: GnuPG v1.4.12 (Darwin)
+ 
+ iQIcBAABAgAGBQJQ+FMIAAoJEH+LfPdZDSs1e3EQAJMjhqjWF+WkGLHju7pTw2al
+ o6IoMAhv0Z/LHlWhzBd9e7JeCnanRt12bAU7yvYp9+Z+z+dbwqLwDoFp8LVuigl8
+ JGLcnwiUW3rSvhjdCp9irdb4+bhKUnKUzSdsR2CK4/hC0N2i/HOvMYX+BRsvqweq
+ AsAkA6dAWh+gAfedrBUkCTGhlNYoetjdakWqlGL1TiKAefEZrtA1TpPkGn92vbLq
+ SphFRUY9hVn1ZBWrT3hEpvAIcZag3rTOiRVT1X1flj8B2vGCEr3RrcwOIZikpdaW
+ who/X3xh/DGbI2RbuxmmJpxxP/8dsVchRJJzBwG+yhwU/iN3MlV2c5D69tls/Dok
+ 6VbyU4lm/ae0y3yR83D9dUlkycOnmmlBAHKIZ9qUts9X7mWJf0+yy2QxJVpjaTGG
+ cmnQKKPeNIhGJk2ENnnnzjEve7L7YJQF6itbx5VCOcsGh3Ocb3YR7DMdWjt7f8pu
+ c6j+q1rP7EpE2afUN/geSlp5i3x8aXZPDj67jImbVCE/Q1X9voCtyzGJH7MXR0N9
+ ZpRF8yzveRfMH8bwAJjSOGAFF5XkcR/RNY95o+J+QcgBLdX48h+ZdNmUf6jqlu3J
+ 7KmTXXQcOVpN6dD3CmRFsbjq+x6RHwa8u1iGn+oIkX908r97ckfB/kHKH7ZdXIJc
+ cpxtDQQMGYFpXK/71stq
+ =ozeK
+ -----END PGP SIGNATURE-----
+
+a simple commit which works
+COMMIT
+
+    exp_signature = <<-SIGNATURE.strip
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (Darwin)
+
+iQIcBAABAgAGBQJQ+FMIAAoJEH+LfPdZDSs1e3EQAJMjhqjWF+WkGLHju7pTw2al
+o6IoMAhv0Z/LHlWhzBd9e7JeCnanRt12bAU7yvYp9+Z+z+dbwqLwDoFp8LVuigl8
+JGLcnwiUW3rSvhjdCp9irdb4+bhKUnKUzSdsR2CK4/hC0N2i/HOvMYX+BRsvqweq
+AsAkA6dAWh+gAfedrBUkCTGhlNYoetjdakWqlGL1TiKAefEZrtA1TpPkGn92vbLq
+SphFRUY9hVn1ZBWrT3hEpvAIcZag3rTOiRVT1X1flj8B2vGCEr3RrcwOIZikpdaW
+who/X3xh/DGbI2RbuxmmJpxxP/8dsVchRJJzBwG+yhwU/iN3MlV2c5D69tls/Dok
+6VbyU4lm/ae0y3yR83D9dUlkycOnmmlBAHKIZ9qUts9X7mWJf0+yy2QxJVpjaTGG
+cmnQKKPeNIhGJk2ENnnnzjEve7L7YJQF6itbx5VCOcsGh3Ocb3YR7DMdWjt7f8pu
+c6j+q1rP7EpE2afUN/geSlp5i3x8aXZPDj67jImbVCE/Q1X9voCtyzGJH7MXR0N9
+ZpRF8yzveRfMH8bwAJjSOGAFF5XkcR/RNY95o+J+QcgBLdX48h+ZdNmUf6jqlu3J
+7KmTXXQcOVpN6dD3CmRFsbjq+x6RHwa8u1iGn+oIkX908r97ckfB/kHKH7ZdXIJc
+cpxtDQQMGYFpXK/71stq
+=ozeK
+-----END PGP SIGNATURE-----
+SIGNATURE
+
+    exp_signed_data = <<-SIGNEDDATA
+tree 6b79e22d69bf46e289df0345a14ca059dfc9bdf6
+parent 34734e478d6cf50c27c9d69026d93974d052c454
+author Ben Burkert <ben@benburkert.com> 1358451456 -0800
+committer Ben Burkert <ben@benburkert.com> 1358451456 -0800
+
+a simple commit which works
+SIGNEDDATA
+
+    commit_sha = @repo.write(raw_commit, :commit)
+
+    signature, signed_data = Rugged::Commit.extract_signature(@repo, commit_sha, "gpgsig")
+    assert_equal exp_signature, signature
+    assert_equal exp_signed_data, signed_data
+
+    signature, signed_data = Rugged::Commit.extract_signature(@repo, commit_sha)
+    assert_equal exp_signature, signature
+    assert_equal exp_signed_data, signed_data
+
+    assert_nil Rugged::Commit.extract_signature(@repo, "8496071c1b46c854b31185ea97743be6a8774479")
+
+    # Ask for a tree
+    assert_raises(Rugged::InvalidError) { Rugged::Commit.extract_signature(@repo, "181037049a54a1eb5fab404658a3a250b44335d7") }
+
+    # Ask for a non-existent object
+    assert_raises(Rugged::OdbError) { Rugged::Commit.extract_signature(@repo, "181037049a54a1eb5fab404658a3a250b44335d8") }
+  end
+
+  def test_create_with_signature
+    signed_commit = <<-COMMIT
+tree 6b79e22d69bf46e289df0345a14ca059dfc9bdf6
+parent 34734e478d6cf50c27c9d69026d93974d052c454
+author Ben Burkert <ben@benburkert.com> 1358451456 -0800
+committer Ben Burkert <ben@benburkert.com> 1358451456 -0800
+gpgsig -----BEGIN PGP SIGNATURE-----
+ Version: GnuPG v1.4.12 (Darwin)
+ 
+ iQIcBAABAgAGBQJQ+FMIAAoJEH+LfPdZDSs1e3EQAJMjhqjWF+WkGLHju7pTw2al
+ o6IoMAhv0Z/LHlWhzBd9e7JeCnanRt12bAU7yvYp9+Z+z+dbwqLwDoFp8LVuigl8
+ JGLcnwiUW3rSvhjdCp9irdb4+bhKUnKUzSdsR2CK4/hC0N2i/HOvMYX+BRsvqweq
+ AsAkA6dAWh+gAfedrBUkCTGhlNYoetjdakWqlGL1TiKAefEZrtA1TpPkGn92vbLq
+ SphFRUY9hVn1ZBWrT3hEpvAIcZag3rTOiRVT1X1flj8B2vGCEr3RrcwOIZikpdaW
+ who/X3xh/DGbI2RbuxmmJpxxP/8dsVchRJJzBwG+yhwU/iN3MlV2c5D69tls/Dok
+ 6VbyU4lm/ae0y3yR83D9dUlkycOnmmlBAHKIZ9qUts9X7mWJf0+yy2QxJVpjaTGG
+ cmnQKKPeNIhGJk2ENnnnzjEve7L7YJQF6itbx5VCOcsGh3Ocb3YR7DMdWjt7f8pu
+ c6j+q1rP7EpE2afUN/geSlp5i3x8aXZPDj67jImbVCE/Q1X9voCtyzGJH7MXR0N9
+ ZpRF8yzveRfMH8bwAJjSOGAFF5XkcR/RNY95o+J+QcgBLdX48h+ZdNmUf6jqlu3J
+ 7KmTXXQcOVpN6dD3CmRFsbjq+x6RHwa8u1iGn+oIkX908r97ckfB/kHKH7ZdXIJc
+ cpxtDQQMGYFpXK/71stq
+ =ozeK
+ -----END PGP SIGNATURE-----
+
+a simple commit which works
+COMMIT
+
+    signature = <<-SIGNATURE.strip
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (Darwin)
+
+iQIcBAABAgAGBQJQ+FMIAAoJEH+LfPdZDSs1e3EQAJMjhqjWF+WkGLHju7pTw2al
+o6IoMAhv0Z/LHlWhzBd9e7JeCnanRt12bAU7yvYp9+Z+z+dbwqLwDoFp8LVuigl8
+JGLcnwiUW3rSvhjdCp9irdb4+bhKUnKUzSdsR2CK4/hC0N2i/HOvMYX+BRsvqweq
+AsAkA6dAWh+gAfedrBUkCTGhlNYoetjdakWqlGL1TiKAefEZrtA1TpPkGn92vbLq
+SphFRUY9hVn1ZBWrT3hEpvAIcZag3rTOiRVT1X1flj8B2vGCEr3RrcwOIZikpdaW
+who/X3xh/DGbI2RbuxmmJpxxP/8dsVchRJJzBwG+yhwU/iN3MlV2c5D69tls/Dok
+6VbyU4lm/ae0y3yR83D9dUlkycOnmmlBAHKIZ9qUts9X7mWJf0+yy2QxJVpjaTGG
+cmnQKKPeNIhGJk2ENnnnzjEve7L7YJQF6itbx5VCOcsGh3Ocb3YR7DMdWjt7f8pu
+c6j+q1rP7EpE2afUN/geSlp5i3x8aXZPDj67jImbVCE/Q1X9voCtyzGJH7MXR0N9
+ZpRF8yzveRfMH8bwAJjSOGAFF5XkcR/RNY95o+J+QcgBLdX48h+ZdNmUf6jqlu3J
+7KmTXXQcOVpN6dD3CmRFsbjq+x6RHwa8u1iGn+oIkX908r97ckfB/kHKH7ZdXIJc
+cpxtDQQMGYFpXK/71stq
+=ozeK
+-----END PGP SIGNATURE-----
+SIGNATURE
+
+    base_data = <<-SIGNEDDATA
+tree 6b79e22d69bf46e289df0345a14ca059dfc9bdf6
+parent 34734e478d6cf50c27c9d69026d93974d052c454
+author Ben Burkert <ben@benburkert.com> 1358451456 -0800
+committer Ben Burkert <ben@benburkert.com> 1358451456 -0800
+
+a simple commit which works
+SIGNEDDATA
+
+    id1 = Rugged::Commit::create_with_signature(@repo, base_data, signature, "gpgsig")
+    id2 = Rugged::Commit::create_with_signature(@repo, base_data, signature)
+    sig, data = Rugged::Commit::extract_signature(@repo, id1)
+
+    assert_equal id1, id2
+    assert_equal base_data, data
+    assert_equal signature, sig
+
+    raw_commit = Rugged::Commit::lookup(@repo, id1).read_raw.data
+    assert_equal signed_commit, raw_commit
+  end
+
+  def test_commit_summary
+    person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
+
+    commit_id = Rugged::Commit.create(@repo,
+      :message => "This is the commit message\n\nThis commit is created from Rugged",
+      :committer => person,
+      :author => person,
+      :parents => [@repo.head.target],
+      :tree => "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
+
+    commit = Rugged::Commit.lookup(@repo, commit_id)
+    assert_equal "This is the commit message", commit.summary
+  end
 end
 
 class CommitWriteTest < Rugged::TestCase
-  include Rugged::TempRepositoryAccess
+  def setup
+    @source_repo = FixtureRepo.from_rugged("testrepo.git")
+    @repo = FixtureRepo.clone(@source_repo)
+    @repo.config['core.abbrev'] = 7
+  end
 
   def test_write_commit_with_time
     person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
@@ -256,19 +451,45 @@ class CommitWriteTest < Rugged::TestCase
       :tree => "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
     end
   end
-end
 
-class CommitToMboxTest < Rugged::SandboxedTestCase
-  def setup
-    super
-
-    @repo = sandbox_init "diff_format_email"
+  def test_write_signature_raises_key_error_for_missing_keys
+    person = {:name => 'Jake', :time => Time.now} # no :email
+    assert_raises KeyError do
+      Rugged::Commit.create(@repo,
+      :message => "This is the commit message\n\nThis commit is created from Rugged",
+      :committer => person,
+      :author => person,
+      :parents => [@repo.head.target],
+      :tree => "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
+    end
   end
 
-  def teardown
-    @repo.close
+  def test_create_commit_to_s
+    person = {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
 
-    super
+    id = Rugged::Commit.create(@repo,
+      :message => "This is the commit message\n\nThis commit is created from Rugged",
+      :committer => person,
+      :author => person,
+      :parents => [@repo.head.target],
+      :tree => "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
+
+    buffer = Rugged::Commit.create_to_s(@repo,
+      :message => "This is the commit message\n\nThis commit is created from Rugged",
+      :committer => person,
+      :author => person,
+      :parents => [@repo.head.target],
+      :tree => "c4dc1555e4d4fa0e0c9c3fc46734c7c35b3ce90b")
+
+    commit = @repo.lookup(id)
+    assert_equal buffer, commit.read_raw.data
+  end
+end
+
+class CommitToMboxTest < Rugged::TestCase
+  def setup
+    @repo = FixtureRepo.from_libgit2 "diff_format_email"
+    @repo.config['core.abbrev'] = 7
   end
 
   def test_format_to_mbox
@@ -324,7 +545,7 @@ Subject: [PATCH 1/2] Added file2.txt file3.txt
 ---
  file2.txt | 5 +++++
  file3.txt | 5 +++++
- 2 files changed, 10 insertions(+), 0 deletions(-)
+ 2 files changed, 10 insertions(+)
  create mode 100644 file2.txt
  create mode 100644 file3.txt
 
@@ -478,4 +699,31 @@ libgit2 #{Rugged.libgit2_version.join('.')}
 EOS
   end
 
+  class TrailersTest < Rugged::TestCase
+    def setup
+      @source_repo = FixtureRepo.from_rugged("testrepo.git")
+      @repo = FixtureRepo.clone(@source_repo)
+      @repo.config['core.abbrev'] = 7
+    end
+
+    def test_can_parse_trailers
+      person = {:name => 'Brian', :email => 'brian@gmail.com', :time => Time.now }
+
+      commit_oid = Rugged::Commit.create(@repo,
+        :message => "This is the commit message\n\nCo-authored-by: Charles <charliesome@github.com>\nSigned-off-by: Arthur Schreiber <arthurschreiber@github.com>",
+        :committer => person,
+        :author => person,
+        :parents => [@repo.head.target],
+        :tree => @repo.head.target.tree_oid)
+
+      commit = @repo.lookup(commit_oid)
+
+      expected = [
+        ["Co-authored-by", "Charles <charliesome@github.com>"],
+        ["Signed-off-by", "Arthur Schreiber <arthurschreiber@github.com>"]
+      ]
+
+      assert_equal expected, commit.trailers
+    end
+  end
 end

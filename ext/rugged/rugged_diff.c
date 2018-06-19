@@ -1,25 +1,8 @@
 /*
- * The MIT License
+ * Copyright (C) the Rugged contributors.  All rights reserved.
  *
- * Copyright (c) 2014 GitHub, Inc
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * This file is part of Rugged, distributed under the MIT license.
+ * For full terms see the included LICENSE file.
  */
 
 #include "rugged.h"
@@ -120,11 +103,15 @@ void rugged_parse_diff_options(git_diff_options *opts, VALUE rb_options)
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("show_untracked_content")))) {
-			opts->flags |= GIT_DIFF_SHOW_UNTRACKED_CONTENT ;
+			opts->flags |= GIT_DIFF_SHOW_UNTRACKED_CONTENT;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("show_unmodified")))) {
-			opts->flags |= GIT_DIFF_SHOW_UNTRACKED_CONTENT ;
+			opts->flags |= GIT_DIFF_SHOW_UNMODIFIED;
+		}
+
+		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("show_binary")))) {
+			opts->flags |= GIT_DIFF_SHOW_BINARY;
 		}
 
 		if (RTEST(rb_hash_aref(rb_options, CSTR2SYM("patience")))) {
@@ -460,10 +447,7 @@ static VALUE rb_git_diff_each_patch(VALUE self)
 	int error = 0;
 	size_t d, delta_count;
 
-	if (!rb_block_given_p()) {
-		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_patch"), self);
-	}
-
+	RETURN_ENUMERATOR(self, 0, 0);
 	Data_Get_Struct(self, git_diff, diff);
 
 	delta_count = git_diff_num_deltas(diff);
@@ -494,13 +478,9 @@ static VALUE rb_git_diff_each_delta(VALUE self)
 {
 	git_diff *diff;
 	const git_diff_delta *delta;
-	int error = 0;
 	size_t d, delta_count;
 
-	if (!rb_block_given_p()) {
-		return rb_funcall(self, rb_intern("to_enum"), 1, CSTR2SYM("each_delta"), self);
-	}
-
+	RETURN_ENUMERATOR(self, 0, 0);
 	Data_Get_Struct(self, git_diff, diff);
 
 	delta_count = git_diff_num_deltas(diff);
@@ -508,8 +488,6 @@ static VALUE rb_git_diff_each_delta(VALUE self)
 		delta = git_diff_get_delta(diff, d);
 		rb_yield(rugged_diff_delta_new(self, delta));
 	}
-
-	rugged_exception_check(error);
 
 	return self;
 }
@@ -537,6 +515,7 @@ static VALUE rb_git_diff_each_line(int argc, VALUE *argv, VALUE self)
 	git_diff_format_t format;
 	int exception = 0, error;
 
+	RETURN_ENUMERATOR(self, argc, argv);
 	Data_Get_Struct(self, git_diff, diff);
 
 	if (rb_scan_args(argc, argv, "01", &rb_format) == 1) {
@@ -544,9 +523,6 @@ static VALUE rb_git_diff_each_line(int argc, VALUE *argv, VALUE self)
 	} else {
 		rb_format = CSTR2SYM("patch");
 	}
-
-	if (!rb_block_given_p())
-		return rb_funcall(self, rb_intern("to_enum"), 2, CSTR2SYM("each_line"), rb_format);
 
 	if (SYM2ID(rb_format) == rb_intern("patch")) {
 		format = GIT_DIFF_FORMAT_PATCH;
@@ -643,7 +619,7 @@ static VALUE rb_git_diff_stat(VALUE self)
 	Data_Get_Struct(self, git_diff, diff);
 
 	git_diff_foreach(
-		diff, diff_file_stats_cb, NULL, diff_line_stats_cb, &stats);
+		diff, diff_file_stats_cb, NULL, NULL, diff_line_stats_cb, &stats);
 
 	return rb_ary_new3(
 		3, INT2FIX(stats.files), INT2FIX(stats.adds), INT2FIX(stats.dels));

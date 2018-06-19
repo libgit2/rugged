@@ -1,14 +1,8 @@
 require "test_helper"
 
-class TagTest < Rugged::SandboxedTestCase
+class TagTest < Rugged::TestCase
   def setup
-    super
-    @repo = sandbox_init("testrepo.git")
-  end
-
-  def teardown
-    @repo.close
-    super
+    @repo = FixtureRepo.from_libgit2("testrepo.git")
   end
 
   def test_lookup_raises_error_if_object_type_does_not_match
@@ -104,21 +98,70 @@ class TagTest < Rugged::SandboxedTestCase
     assert_equal tag_names[0], "annotated_tag_to_blob"
     assert_equal tag_names[1], "e90810b"
   end
+
+  def test_extract_signature
+    raw_tag = <<-TAG
+object 36060c58702ed4c2a40832c51758d5344201d89a
+type commit
+tag signed
+tagger Ben Toews <mastahyeti@users.noreply.github.com> 1455121460 -0700
+
+my signed tag
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAABAgAGBQJWu2Q0AAoJEDJi7/JboNJwYNgH/0NQAgNthQi5kiZL5LdAKNE9
+HRHj1Gumcqf04pPbuNXBTt4jdsWka8cTLu8q4CVE2EBtJRJfYhoKXt+bhDSa4WRc
+W/M02GASaqBbY3BVAI0+jd/nmoUqz97jsYotOjVOhUbIGJjo2V2nKi1x6lAN3Nr2
+bq9zJBbYWkIExZU29ycWWk+yTLPGcmcnr0itoUyywgg9NKivH2e8EmyQgAjLUp+M
+NL9Fgg5UMTDoRvJs98i+SIJAkNzxN0mypr51G0kmZbWkSEshHvBoZlV731QqmT+j
+1+eI1odAMHSNHqkmel8+1yooQQzPFc9ZmxGi8DdyuSv6AD7pzxX5vmU0AuBU9C4=
+=Tmm9
+-----END PGP SIGNATURE-----
+TAG
+
+    exp_signature = <<-SIGNATURE
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAABAgAGBQJWu2Q0AAoJEDJi7/JboNJwYNgH/0NQAgNthQi5kiZL5LdAKNE9
+HRHj1Gumcqf04pPbuNXBTt4jdsWka8cTLu8q4CVE2EBtJRJfYhoKXt+bhDSa4WRc
+W/M02GASaqBbY3BVAI0+jd/nmoUqz97jsYotOjVOhUbIGJjo2V2nKi1x6lAN3Nr2
+bq9zJBbYWkIExZU29ycWWk+yTLPGcmcnr0itoUyywgg9NKivH2e8EmyQgAjLUp+M
+NL9Fgg5UMTDoRvJs98i+SIJAkNzxN0mypr51G0kmZbWkSEshHvBoZlV731QqmT+j
+1+eI1odAMHSNHqkmel8+1yooQQzPFc9ZmxGi8DdyuSv6AD7pzxX5vmU0AuBU9C4=
+=Tmm9
+-----END PGP SIGNATURE-----
+SIGNATURE
+
+    exp_signed_data = <<-SIGNEDDATA
+object 36060c58702ed4c2a40832c51758d5344201d89a
+type commit
+tag signed
+tagger Ben Toews <mastahyeti@users.noreply.github.com> 1455121460 -0700
+
+my signed tag
+SIGNEDDATA
+
+    tag_oid = @repo.write(raw_tag, :tag)
+
+    signature, signed_data = Rugged::Tag.extract_signature(@repo, tag_oid)
+    assert_equal exp_signature, signature
+    assert_equal exp_signed_data, signed_data
+
+    signature, signed_data = Rugged::Tag.extract_signature(@repo, tag_oid, Rugged::Tag::GPG_SIGNATURE_PREFIX)
+    assert_equal exp_signature, signature
+    assert_equal exp_signed_data, signed_data
+  end
 end
 
-class AnnotatedTagTest < Rugged::SandboxedTestCase
+class AnnotatedTagTest < Rugged::TestCase
   def setup
-    super
-    @repo = sandbox_init("testrepo.git")
+    @repo = FixtureRepo.from_libgit2("testrepo.git")
     @tag = @repo.tags.create('annotated_tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
       :message => "test tag message\n",
       :tagger  => { :name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
     })
-  end
-
-  def teardown
-    @repo.close
-    super
   end
 
   def test_is_annotated
@@ -143,10 +186,9 @@ class AnnotatedTagTest < Rugged::SandboxedTestCase
   end
 end
 
-class AnnotatedTagObjectTest < Rugged::SandboxedTestCase
+class AnnotatedTagObjectTest < Rugged::TestCase
   def setup
-    super
-    @repo = sandbox_init("testrepo.git")
+    @repo = FixtureRepo.from_libgit2("testrepo.git")
     @annotation = @repo.tags.create_annotation("my-tag", "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
       :message => "test tag message\n",
       :tagger  => { :name => "Scott", :email => "schacon@gmail.com", :time => Time.now },
@@ -171,16 +213,10 @@ class AnnotatedTagObjectTest < Rugged::SandboxedTestCase
   end
 end
 
-class LightweightTagTest < Rugged::SandboxedTestCase
+class LightweightTagTest < Rugged::TestCase
   def setup
-    super
-    @repo = sandbox_init("testrepo.git")
+    @repo = FixtureRepo.from_libgit2("testrepo.git")
     @tag = @repo.tags.create('lightweight_tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644")
-  end
-
-  def teardown
-    @repo.close
-    super
   end
 
   def test_is_not_annotated
@@ -200,7 +236,10 @@ class LightweightTagTest < Rugged::SandboxedTestCase
 end
 
 class TagWriteTest < Rugged::TestCase
-  include Rugged::TempRepositoryAccess
+  def setup
+    @source_repo = FixtureRepo.from_rugged("testrepo.git")
+    @repo = FixtureRepo.clone(@source_repo)
+  end
 
   def test_writing_a_tag
     tag = @repo.tags.create('tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
