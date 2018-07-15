@@ -173,4 +173,6 @@ typedef struct _rugged_backend {
   int (* refdb_backend)(git_refdb_backend **backend_out, struct _rugged_backend *backend, const char* path);
 } rugged_backend;
 
+extern void rugged_set_allocator(void);
+
 #endif

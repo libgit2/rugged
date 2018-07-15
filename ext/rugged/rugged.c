@@ -604,7 +604,8 @@ void Init_rugged(void)
 	 */
 	rb_define_const(rb_mRugged, "SORT_REVERSE", INT2FIX(GIT_SORT_REVERSE));
 
-	/* Initialize libgit2 */
+	/* Set the allocator and initialize libgit2 */
+	rugged_set_allocator();
 	git_libgit2_init();
 
 	/* Hook a global object to cleanup the library
