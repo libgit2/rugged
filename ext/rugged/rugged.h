@@ -20,6 +20,8 @@
 #include <ruby/encoding.h>
 #endif
 
+#include <ruby/util.h>
+
 #include <assert.h>
 #include <git2.h>
 #include <git2/odb_backend.h>

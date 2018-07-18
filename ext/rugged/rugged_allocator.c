@@ -20,15 +20,7 @@ static void *rugged_gcalloc(size_t nelem, size_t elsize, const char *file, int l
 
 static char *rugged_gstrdup(const char *str, const char *file, int line)
 {
-	char *newstr;
-	size_t n;
-
-	n = strlen(str);
-	newstr = xmalloc(n+1);
-	memcpy(newstr, str, n);
-	newstr[n] = '\0';
-
-	return newstr;
+	return ruby_strdup(str);
 }
 
 static char *rugged_gstrndup(const char *str, size_t n, const char *file, int line)
