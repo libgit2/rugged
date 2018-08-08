@@ -649,7 +649,7 @@ static VALUE rb_git_commit_to_mbox(int argc, VALUE *argv, VALUE self)
 	cleanup:
 
 	xfree(opts.pathspec.strings);
-	git_buf_free(&email_patch);
+	git_buf_dispose(&email_patch);
 	rugged_exception_check(error);
 
 	return rb_email_patch;
@@ -678,7 +678,7 @@ static VALUE rb_git_commit_header_field(VALUE self, VALUE rb_field)
 	error = git_commit_header_field(&header_field, commit, StringValueCStr(rb_field));
 
 	if (error < 0) {
-		git_buf_free(&header_field);
+		git_buf_dispose(&header_field);
 		if (error == GIT_ENOTFOUND)
 			return Qnil;
 		rugged_exception_check(error);
@@ -689,7 +689,7 @@ static VALUE rb_git_commit_header_field(VALUE self, VALUE rb_field)
 		encoding = rb_enc_find(encoding_name);
 
 	rb_result = rb_enc_str_new(header_field.ptr, header_field.size, encoding);
-	git_buf_free(&header_field);
+	git_buf_dispose(&header_field);
 	return rb_result;
 }
 
@@ -741,8 +741,8 @@ static VALUE rb_git_commit_extract_signature(int argc, VALUE *argv, VALUE self)
 	field = NIL_P(rb_field) ? NULL : StringValueCStr(rb_field);
 	error = git_commit_extract_signature(&signature, &signed_data, repo, &commit_id, field);
 	if (error < 0) {
-		git_buf_free(&signature);
-		git_buf_free(&signed_data);
+		git_buf_dispose(&signature);
+		git_buf_dispose(&signed_data);
 	}
 
 	if (error == GIT_ENOTFOUND && giterr_last()->klass == GITERR_OBJECT ) {
@@ -754,8 +754,8 @@ static VALUE rb_git_commit_extract_signature(int argc, VALUE *argv, VALUE self)
 				     rb_str_new(signed_data.ptr, signed_data.size));
 	}
 
-	git_buf_free(&signature);
-	git_buf_free(&signed_data);
+	git_buf_dispose(&signature);
+	git_buf_dispose(&signed_data);
 
 	return ret;
 }
@@ -821,7 +821,7 @@ cleanup:
 	rugged_exception_check(error);
 
 	ret = rb_str_new_utf8(buf.ptr);
-	git_buf_free(&buf);
+	git_buf_dispose(&buf);
 
 	return ret;
 }

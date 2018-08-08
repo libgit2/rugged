@@ -63,7 +63,7 @@ static VALUE rb_git_branch__remote_name(VALUE rb_repo, const char *canonical_nam
 	if ((error = git_branch_remote_name(&remote_name, repo, canonical_name)) == GIT_OK)
 		result = rb_enc_str_new(remote_name.ptr, remote_name.size, rb_utf8_encoding());
 
-	git_buf_free(&remote_name);
+	git_buf_dispose(&remote_name);
 	rugged_exception_check(error);
 
 	return result;
