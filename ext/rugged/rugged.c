@@ -210,7 +210,7 @@ static VALUE rb_git_prettify_message(int argc, VALUE *argv, VALUE self)
 	if (!error)
 		result = rb_enc_str_new(message.ptr, message.size, rb_utf8_encoding());
 
-	git_buf_free(&message);
+	git_buf_dispose(&message);
 	rugged_exception_check(error);
 
 	return result;

@@ -1467,7 +1467,7 @@ static VALUE rb_git_repo_discover(int argc, VALUE *argv, VALUE klass)
 	rugged_exception_check(error);
 
 	error = git_repository_open(&repo, repository_path.ptr);
-	git_buf_free(&repository_path);
+	git_buf_dispose(&repository_path);
 
 	rugged_exception_check(error);
 

@@ -340,7 +340,7 @@ static VALUE rb_git_note_default_ref_GET(VALUE self)
 
 	rb_result = rb_enc_str_new(ref_name.ptr, ref_name.size, rb_utf8_encoding());
 
-	git_buf_free(&ref_name);
+	git_buf_dispose(&ref_name);
 
 	return rb_result;
 }

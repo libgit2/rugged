@@ -89,7 +89,7 @@ static VALUE rb_git_config_get(VALUE self, VALUE rb_key)
 
 	rugged_exception_check(error);
 	rb_result = rb_str_new_utf8(buf.ptr);
-	git_buf_free(&buf);
+	git_buf_dispose(&buf);
 
 	return rb_result;
 }
