@@ -28,7 +28,7 @@ static char *rugged_gstrndup(const char *str, size_t n, const char *file, int li
 	size_t len;
 	char *newstr;
 
-	len = strlen(str);
+	len = strnlen(str, n);
 	if (len < n)
 		n = len;
 
