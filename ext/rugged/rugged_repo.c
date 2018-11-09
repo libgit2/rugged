@@ -182,7 +182,7 @@ static void rugged_repo_new_with_backend(git_repository **repo, VALUE rb_path, V
 
 	int error = 0;
 
-	Check_Type(rb_path, T_STRING);
+	FilePathValue(rb_path);
 	path = StringValueCStr(rb_path);
 
 	if (rb_obj_is_kind_of(rb_backend, rb_cRuggedBackend) == Qfalse) {
@@ -291,7 +291,7 @@ static VALUE rb_git_repo_open_bare(int argc, VALUE *argv, VALUE klass)
 	}
 
 	if (!repo) {
-		Check_Type(rb_path, T_STRING);
+		FilePathValue(rb_path);
 
 		error = git_repository_open_bare(&repo, StringValueCStr(rb_path));
 		rugged_exception_check(error);
@@ -335,7 +335,7 @@ static VALUE rb_git_repo_new(int argc, VALUE *argv, VALUE klass)
 	VALUE rb_path, rb_options;
 
 	rb_scan_args(argc, argv, "10:", &rb_path, &rb_options);
-	Check_Type(rb_path, T_STRING);
+	FilePathValue(rb_path);
 
 	error = git_repository_open(&repo, StringValueCStr(rb_path));
 	rugged_exception_check(error);
@@ -377,7 +377,7 @@ static VALUE rb_git_repo_init_at(int argc, VALUE *argv, VALUE klass)
 	int error;
 
 	rb_scan_args(argc, argv, "11:", &rb_path, &rb_is_bare, &rb_options);
-	Check_Type(rb_path, T_STRING);
+	FilePathValue(rb_path);
 
 	if (!NIL_P(rb_options)) {
 		/* Check for `:backend` */
@@ -474,7 +474,7 @@ static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
 
 	rb_scan_args(argc, argv, "21", &url, &local_path, &rb_options_hash);
 	Check_Type(url, T_STRING);
-	Check_Type(local_path, T_STRING);
+	FilePathValue(local_path);
 
 	parse_clone_options(&options, rb_options_hash, &remote_payload);
 
@@ -1180,7 +1180,7 @@ static VALUE rb_git_repo_hashfile(VALUE self, VALUE rb_path, VALUE rb_type)
 	int error;
 	git_oid oid;
 
-	Check_Type(rb_path, T_STRING);
+	FilePathValue(rb_path);
 
 	error = git_odb_hashfile(&oid,
 		StringValueCStr(rb_path),
@@ -1455,7 +1455,7 @@ static VALUE rb_git_repo_discover(int argc, VALUE *argv, VALUE klass)
 		across_fs = rugged_parse_bool(rb_across_fs);
 	}
 
-	Check_Type(rb_path, T_STRING);
+	FilePathValue(rb_path);
 
 	error = git_repository_discover(
 		&repository_path,
@@ -1518,7 +1518,7 @@ static VALUE rb_git_repo_file_status(VALUE self, VALUE rb_path)
 	git_repository *repo;
 
 	Data_Get_Struct(self, git_repository, repo);
-	Check_Type(rb_path, T_STRING);
+	FilePathValue(rb_path);
 	error = git_status_file(&flags, repo, StringValueCStr(rb_path));
 	rugged_exception_check(error);
 
@@ -2365,7 +2365,7 @@ static VALUE rb_git_repo_attributes(int argc, VALUE *argv, VALUE self)
 	rb_scan_args(argc, argv, "12", &rb_path, &rb_names, &rb_options);
 
 	Data_Get_Struct(self, git_repository, repo);
-	Check_Type(rb_path, T_STRING);
+	FilePathValue(rb_path);
 
 	if (!NIL_P(rb_options)) {
 		Check_Type(rb_options, T_FIXNUM);

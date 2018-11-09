@@ -165,7 +165,7 @@ static VALUE rb_git_blob_from_workdir(VALUE self, VALUE rb_repo, VALUE rb_path)
 	git_oid oid;
 	git_repository *repo;
 
-	Check_Type(rb_path, T_STRING);
+	FilePathValue(rb_path);
 	rugged_check_repo(rb_repo);
 
 	Data_Get_Struct(rb_repo, git_repository, repo);
@@ -193,7 +193,7 @@ static VALUE rb_git_blob_from_disk(VALUE self, VALUE rb_repo, VALUE rb_path)
 	git_oid oid;
 	git_repository *repo;
 
-	Check_Type(rb_path, T_STRING);
+	FilePathValue(rb_path);
 	rugged_check_repo(rb_repo);
 
 	Data_Get_Struct(rb_repo, git_repository, repo);
@@ -254,7 +254,7 @@ static VALUE rb_git_blob_from_io(int argc, VALUE *argv, VALUE klass)
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
 	if (!NIL_P(rb_hint_path)) {
-		Check_Type(rb_hint_path, T_STRING);
+		FilePathValue(rb_hint_path);
 		hint_path = StringValueCStr(rb_hint_path);
 	}
 
