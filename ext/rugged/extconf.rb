@@ -88,7 +88,7 @@ else
       # in $LIBS or the final linking stage won't pick them up
       if Gem.win_platform?
         $LDFLAGS << " " + "-L#{Dir.pwd}/deps/winhttp"
-        $LIBS << " -lwinhttp -lcrypt32 -lrpcrt4 -lole32 -lz"
+        $LIBS << " -lwinhttp -lcrypt32 -lrpcrt4 -lole32 -lz -lssh2"
       else
         pcfile = File.join(LIBGIT2_DIR, "build", "libgit2.pc")
         $LDFLAGS << " " + `pkg-config --libs --static #{pcfile}`.strip
