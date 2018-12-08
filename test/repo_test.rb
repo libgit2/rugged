@@ -503,6 +503,22 @@ class RepositoryInitTest < Rugged::TestCase
       repo.close
     end
   end
+
+  def test_init_with_pathname
+    require 'pathname'
+    repo = Rugged::Repository.init_at(Pathname(@tmppath))
+    begin
+      refute repo.bare?
+    ensure
+      repo.close
+    end
+  end
+
+  def test_init_with_wrong_argument
+    assert_raises(TypeError) do
+      Rugged::Repository.init_at(@tmppath.to_sym)
+    end
+  end
 end
 
 class RepositoryCloneTest < Rugged::TestCase
