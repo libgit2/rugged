@@ -4,6 +4,7 @@
 # For full terms see the included LICENSE file.
 
 require 'mkmf'
+require 'timeout'
 
 RbConfig::MAKEFILE_CONFIG['CC'] = ENV['CC'] if ENV['CC']
 
@@ -21,6 +22,26 @@ def sys(cmd)
     raise "ERROR: '#{cmd}' failed"
   end
   ret
+end
+
+# Thrown when we detect CMake is taking too long and we killed it
+class CMakeTimeout < StandardError
+end
+
+def self.run_cmake(timeout, args)
+  # Set to process group so we can kill it and its children
+  pid = Process.spawn("cmake #{args}", pgroup: true)
+
+  Timeout.timeout(timeout) do
+    Process.waitpid(pid)
+  end
+
+rescue Timeout::Error
+  # Kill it, #detach is essentially a background wait, since we don't actually
+  # care about waiting for it now
+  Process.kill(-9, pid)
+  Process.detach(pid)
+  raise CMakeTimeout.new("cmake has exceeded its timeout of #{timeout}s")
 end
 
 MAKE = if Gem.win_platform?
@@ -80,7 +101,7 @@ else
     Dir.chdir("build") do
       # On Windows, Ruby-DevKit is MSYS-based, so ensure to use MSYS Makefiles.
       generator = "-G \"MSYS Makefiles\"" if Gem.win_platform?
-      sys("cmake .. -DBUILD_CLAR=OFF -DTHREADSAFE=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS=-fPIC -DCMAKE_BUILD_TYPE=RelWithDebInfo #{cmake_flags.join(' ')} #{generator}")
+      run_cmake(5 * 60, ".. -DBUILD_CLAR=OFF -DTHREADSAFE=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS=-fPIC -DCMAKE_BUILD_TYPE=RelWithDebInfo #{cmake_flags.join(' ')} #{generator}")
       sys(MAKE)
 
       # "normal" libraries (and libgit2 builds) get all these when they build but we're doing it
