@@ -33,6 +33,26 @@ class LibgitRepositoryStatusTest < Rugged::TestCase
     @repo = FixtureRepo.from_libgit2 "status"
   end
 
+  class TestException < RuntimeError
+  end
+
+  def test_status_block_raises
+    assert_raises(TestException) do
+      @repo.status do |file, status|
+        raise TestException, "wow"
+      end
+    end
+  end
+
+  def test_status_block_breaks
+    yielded = 0
+    @repo.status do |file, status|
+      yielded += 1
+      break
+    end
+    assert_equal 1, yielded
+  end
+
   def test_status_with_callback
     actual_statuses = {}
     @repo.status do |file, status|
