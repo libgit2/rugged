@@ -10,6 +10,7 @@
 #include <git2/sys/odb_backend.h>
 #include <git2/sys/refdb_backend.h>
 #include <git2/refs.h>
+#include <git2/apply.h>
 
 extern VALUE rb_mRugged;
 extern VALUE rb_eRuggedError;
@@ -18,6 +19,7 @@ extern VALUE rb_cRuggedConfig;
 extern VALUE rb_cRuggedBackend;
 extern VALUE rb_cRuggedRemote;
 extern VALUE rb_cRuggedCommit;
+extern VALUE rb_cRuggedDiff;
 extern VALUE rb_cRuggedTag;
 extern VALUE rb_cRuggedTree;
 extern VALUE rb_cRuggedReference;
@@ -866,6 +868,42 @@ static VALUE rb_git_repo_revert_commit(int argc, VALUE *argv, VALUE self)
 	rugged_exception_check(error);
 
 	return rugged_index_new(rb_cRuggedIndex, self, index);
+}
+
+/*
+ *  call-seq:
+ *    repo.apply(diff, options = {}) -> true or false
+ *
+ *	Applies the given diff to the repository.
+ */
+static VALUE rb_git_repo_apply(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_diff, rb_options;
+	git_diff *diff;
+	git_repository *repo;
+	git_apply_options opts = GIT_APPLY_OPTIONS_INIT;
+	git_apply_location_t location = GIT_APPLY_LOCATION_BOTH;
+	int error;
+
+	rb_scan_args(argc, argv, "11", &rb_diff, &rb_options);
+
+	if (!rb_obj_is_kind_of(rb_diff, rb_cRuggedDiff)) {
+		rb_raise(rb_eArgError, "Expected a Rugged::Diff.");
+	}
+
+	if (!NIL_P(rb_options)) {
+		Check_Type(rb_options, T_HASH);
+		rugged_parse_apply_options(&opts, &location, rb_options);
+	}
+
+	Data_Get_Struct(self, git_repository, repo);
+	Data_Get_Struct(rb_diff, git_diff, diff);
+
+	error = git_apply(repo, diff, location, &opts);
+
+	rugged_exception_check(error);
+
+	return Qtrue;
 }
 
 /*
@@ -2543,6 +2581,33 @@ static VALUE rb_git_repo_cherrypick_commit(int argc, VALUE *argv, VALUE self)
 	return rugged_index_new(rb_cRuggedIndex, self, index);
 }
 
+void rugged_parse_apply_options(git_apply_options *opts, git_apply_location_t *location, VALUE rb_options)
+{
+	if (!NIL_P(rb_options)) {
+		VALUE rb_value;
+		Check_Type(rb_options, T_HASH);
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("location"));
+		if (!NIL_P(rb_value)) {
+			ID id_location;
+
+			Check_Type(rb_value, T_SYMBOL);
+			id_location = SYM2ID(rb_value);
+
+			if (id_location == rb_intern("both")) {
+				*location = GIT_APPLY_LOCATION_BOTH;
+			} else if (id_location == rb_intern("index")) {
+				*location = GIT_APPLY_LOCATION_INDEX;
+			} else if (id_location == rb_intern("workdir")) {
+				*location = GIT_APPLY_LOCATION_WORKDIR;
+			} else {
+				rb_raise(rb_eTypeError,
+					"Invalid location. Expected `:both`, `:index`, or `:workdir`");
+			}
+		}
+	}
+}
+
 void Init_rugged_repo(void)
 {
 	id_call = rb_intern("call");
@@ -2597,6 +2662,8 @@ void Init_rugged_repo(void)
 
 	rb_define_method(rb_cRuggedRepo, "merge_analysis", rb_git_repo_merge_analysis, -1);
 	rb_define_method(rb_cRuggedRepo, "merge_commits", rb_git_repo_merge_commits, -1);
+
+	rb_define_method(rb_cRuggedRepo, "apply", rb_git_repo_apply, -1);
 
 	rb_define_method(rb_cRuggedRepo, "revert_commit", rb_git_repo_revert_commit, -1);
 
