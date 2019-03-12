@@ -1502,15 +1502,6 @@ static VALUE flags_to_rb(unsigned int flags)
 	return rb_flags;
 }
 
-static int rugged__status_cb(const char *path, unsigned int flags, void *payload)
-{
-	rb_funcall((VALUE)payload, rb_intern("call"), 2,
-		rb_str_new_utf8(path), flags_to_rb(flags)
-	);
-
-	return GIT_OK;
-}
-
 static VALUE rb_git_repo_file_status(VALUE self, VALUE rb_path)
 {
 	unsigned int flags;
@@ -1527,8 +1518,10 @@ static VALUE rb_git_repo_file_status(VALUE self, VALUE rb_path)
 
 static VALUE rb_git_repo_file_each_status(VALUE self)
 {
-	int error;
+	int error, exception;
+	size_t i, nentries;
 	git_repository *repo;
+	git_status_list *list;
 
 	Data_Get_Struct(self, git_repository, repo);
 
@@ -1537,13 +1530,30 @@ static VALUE rb_git_repo_file_each_status(VALUE self)
 			"A block was expected for iterating through "
 			"the repository contents.");
 
-	error = git_status_foreach(
-		repo,
-		&rugged__status_cb,
-		(void *)rb_block_proc()
-	);
-
+	error = git_status_list_new(&list, repo, NULL);
 	rugged_exception_check(error);
+
+	nentries = git_status_list_entrycount(list);
+	for (i = 0; i < nentries; i++) {
+		const git_status_entry *entry;
+		const char *path;
+		VALUE args;
+
+		entry = git_status_byindex(list, i);
+
+		path = entry->head_to_index ?
+		       entry->head_to_index->old_file.path :
+		       entry->index_to_workdir->old_file.path;
+		args = rb_ary_new3(2, rb_str_new_utf8(path), flags_to_rb(entry->status));
+		rb_protect(rb_yield, args, &exception);
+		if (exception != 0)
+			break;
+	}
+	git_status_list_free(list);
+
+	if (exception != 0)
+		rb_jump_tag(exception);
+
 	return Qnil;
 }
 
