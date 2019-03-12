@@ -169,20 +169,22 @@ static VALUE rb_git_config_delete(VALUE self, VALUE rb_key)
 	return Qtrue;
 }
 
-static int cb_config__each_key(const git_config_entry *entry, void *opaque)
+static int cb_config__each_key(const git_config_entry *entry, void *payload)
 {
-	rb_funcall((VALUE)opaque, rb_intern("call"), 1, rb_str_new_utf8(entry->name));
-	return GIT_OK;
+	int *exception = (int *) payload;
+
+	rb_protect(rb_yield, rb_ary_new3(1, rb_str_new_utf8(entry->name)), exception);
+
+	return (*exception != 0) ? GIT_EUSER : GIT_OK;
 }
 
-static int cb_config__each_pair(const git_config_entry *entry, void *opaque)
+static int cb_config__each_pair(const git_config_entry *entry, void *payload)
 {
-	rb_funcall((VALUE)opaque, rb_intern("call"), 2,
-		rb_str_new_utf8(entry->name),
-		rb_str_new_utf8(entry->value)
-	);
+	int *exception = (int *) payload;
 
-	return GIT_OK;
+	rb_protect(rb_yield, rb_ary_new3(2, rb_str_new_utf8(entry->name), rb_str_new_utf8(entry->value)), exception);
+
+	return (*exception != 0) ? GIT_EUSER : GIT_OK;
 }
 
 static int cb_config__to_hash(const git_config_entry *entry, void *opaque)
@@ -210,12 +212,15 @@ static int cb_config__to_hash(const git_config_entry *entry, void *opaque)
 static VALUE rb_git_config_each_key(VALUE self)
 {
 	git_config *config;
-	int error;
+	int error, exception;
 
 	RETURN_ENUMERATOR(self, 0, 0);
 	Data_Get_Struct(self, git_config, config);
 
-	error = git_config_foreach(config, &cb_config__each_key, (void *)rb_block_proc());
+	error = git_config_foreach(config, &cb_config__each_key, &exception);
+	if (error == GIT_EUSER)
+		rb_jump_tag(exception);
+
 	rugged_exception_check(error);
 	return Qnil;
 }
@@ -237,12 +242,15 @@ static VALUE rb_git_config_each_key(VALUE self)
 static VALUE rb_git_config_each_pair(VALUE self)
 {
 	git_config *config;
-	int error;
-	
+	int error, exception;
+
 	RETURN_ENUMERATOR(self, 0, 0);
 	Data_Get_Struct(self, git_config, config);
 
-	error = git_config_foreach(config, &cb_config__each_pair, (void *)rb_block_proc());
+	error = git_config_foreach(config, &cb_config__each_pair, &exception);
+	if (error == GIT_EUSER)
+		rb_jump_tag(exception);
+
 	rugged_exception_check(error);
 	return Qnil;
 }
