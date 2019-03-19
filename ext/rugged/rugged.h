@@ -85,7 +85,6 @@ VALUE rb_merge_file_result_fromC(const git_merge_file_result *results);
 
 void rugged_parse_diff_options(git_diff_options *opts, VALUE rb_options);
 void rugged_parse_merge_options(git_merge_options *opts, VALUE rb_options);
-
 void rugged_parse_checkout_options(git_checkout_options *opts, VALUE rb_options);
 void rugged_parse_merge_file_options(git_merge_file_options *opts, VALUE rb_options);
 

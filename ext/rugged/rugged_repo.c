@@ -984,7 +984,7 @@ static VALUE rb_git_repo_revert_commit(int argc, VALUE *argv, VALUE self)
  *  :hunk_callback ::
  *    While applying the patch, this callback will be executed per hunk.
  *    The current +hunk+ will be passed to the block. The block's return value
- *    determines further behavior, as per :delta_callback.
+ *    determines further behavior, as per +:delta_callback+.
  *
  */
 static VALUE rb_git_repo_apply(int argc, VALUE *argv, VALUE self)
@@ -993,9 +993,16 @@ static VALUE rb_git_repo_apply(int argc, VALUE *argv, VALUE self)
 	git_diff *diff;
 	git_repository *repo;
 	git_apply_options opts = GIT_APPLY_OPTIONS_INIT;
-	git_apply_location_t location = GIT_APPLY_LOCATION_WORKDIR;
+	git_apply_location_t location;
 	struct rugged_apply_cb_payload payload = { Qnil, Qnil, 0 };
 	int error;
+
+	Data_Get_Struct(self, git_repository, repo);
+	if (git_repository_is_bare(repo)) {
+		location = GIT_APPLY_LOCATION_INDEX;
+	} else {
+		location = GIT_APPLY_LOCATION_WORKDIR;
+	}
 
 	rb_scan_args(argc, argv, "11", &rb_diff, &rb_options);
 
@@ -1008,7 +1015,6 @@ static VALUE rb_git_repo_apply(int argc, VALUE *argv, VALUE self)
 		rugged_parse_apply_options(&opts, &location, rb_options, &payload);
 	}
 
-	Data_Get_Struct(self, git_repository, repo);
 	Data_Get_Struct(rb_diff, git_diff, diff);
 
 	error = git_apply(repo, diff, location, &opts);
