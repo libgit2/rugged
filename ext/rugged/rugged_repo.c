@@ -970,8 +970,9 @@ static VALUE rb_git_repo_revert_commit(int argc, VALUE *argv, VALUE self)
  *  The following options can be passed in the +options+ Hash:
  *
  *  :location ::
- *    Whether to apply the changes to the workdir (default),
- *    the index, or both. Valid values: +:index+, +:workdir+, +:both+.
+ *    Whether to apply the changes to the workdir (default for non-bare),
+ *    the index (default for bare) or both. Valid values: +:index+, +:workdir+,
+ *    +:both+.
  *
  *  :delta_callback ::
  *    While applying the patch, this callback will be executed per delta (file).
