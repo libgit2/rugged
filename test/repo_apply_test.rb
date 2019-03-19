@@ -138,5 +138,13 @@ class RepositoryApplyTest < Rugged::TestCase
     assert_raises RuntimeError do
       @repo.apply(diff, {:location => :index, :delta_callback => delta_fail})
     end
+
+    assert_raises ArgumentError do
+      @repo.apply(diff, {:location => :index, :delta_callback => 'this is not a callable object'})
+    end
+
+    assert_raises ArgumentError do
+      @repo.apply(diff, {:location => :index, :hunk_callback => 'this is not a callable object'})
+    end
   end
 end
