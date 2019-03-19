@@ -2,6 +2,14 @@ require 'test_helper'
 require 'base64'
 
 module RepositoryApplyTestHelpers
+  def assert_workdir_contents(path, test_value)
+    assert_equal File.read(File.join(@repo.workdir, path)), test_value
+  end
+
+  def assert_index_content(path, test_value)
+    assert_equal @repo.lookup(@repo.index[path][:oid]).content, test_value
+  end
+
   def blob_contents(repo, path)
     repo.lookup(repo.head.target.tree[path][:oid]).content
   end
@@ -46,56 +54,89 @@ class RepositoryApplyTest < Rugged::TestCase
 
   def setup
     @repo = FixtureRepo.from_libgit2("testrepo")
+    @original_commit = @repo.head.target.oid
   end
 
   def test_apply_index
-    original_commit = @repo.head.target.oid
     new_commit, new_content, original_content = update_file(@repo, 'README')
 
-    assert_equal @repo.lookup(@repo.index["README"][:oid]).content, new_content
+    assert_index_content 'README', new_content
 
-    diff = @repo.diff(new_commit, original_commit)
+    diff = @repo.diff(new_commit, @original_commit)
 
     assert_equal true, @repo.apply(diff, {:location => :index})
-    assert_equal @repo.lookup(@repo.index["README"][:oid]).content, original_content
+    assert_index_content 'README', original_content
   end
 
   def test_apply_workdir
-    original_commit = @repo.head.target.oid
     new_commit, new_content, original_content = update_file(@repo, 'README')
 
     @repo.checkout_head(:strategy => :force)
-    assert_equal File.read(File.join(@repo.workdir, 'README')), new_content
+    assert_workdir_contents 'README', new_content
 
-    diff = @repo.diff(new_commit, original_commit)
+    diff = @repo.diff(new_commit, @original_commit)
 
-    assert_equal true, @repo.apply(diff, {:location => :workdir})
-    assert_equal File.read(File.join(@repo.workdir, 'README')), original_content
+    assert_equal true, @repo.apply(diff)
+    assert_workdir_contents 'README', original_content
   end
 
   def test_apply_both
-    original_commit = @repo.head.target.oid
     new_commit, new_content, original_content = update_file(@repo, 'README')
 
     @repo.checkout_head(:strategy => :force)
-    assert_equal @repo.lookup(@repo.index["README"][:oid]).content, new_content
-    assert_equal File.read(File.join(@repo.workdir, 'README')), new_content
+    assert_index_content 'README', new_content
+    assert_workdir_contents 'README', new_content
 
-    diff = @repo.diff(new_commit, original_commit)
+    diff = @repo.diff(new_commit, @original_commit)
 
-    assert_equal true, @repo.apply(diff)
-    assert_equal @repo.lookup(@repo.index["README"][:oid]).content, original_content
-    assert_equal File.read(File.join(@repo.workdir, 'README')), original_content
+    assert_equal true, @repo.apply(diff, :location => :both)
+    assert_index_content 'README', original_content
+    assert_workdir_contents 'README', original_content
   end
 
   def test_location_option
-    original_commit = @repo.head.target.oid
     new_commit, new_content, original_content = update_file(@repo, 'README')
 
-    diff = @repo.diff(new_commit, original_commit)
+    diff = @repo.diff(new_commit, @original_commit)
 
     assert_raises TypeError do
       @repo.apply(diff, :location => :invalid)
+    end
+  end
+
+  def test_callbacks
+    new_commit, new_content, original_content = update_file(@repo, 'README')
+
+    assert_equal @repo.lookup(@repo.index["README"][:oid]).content, new_content
+
+    diff = @repo.diff(new_commit, @original_commit)
+
+    hunk_cb = Proc.new { |hunk|
+      assert hunk.is_a?(Rugged::Diff::Hunk)
+    }
+
+    delta_cb = Proc.new { |delta|
+      assert delta.is_a?(Rugged::Diff::Delta)
+    }
+
+    assert_equal true, @repo.apply(diff, {:location => :index, :hunk_callback => hunk_cb, :delta_callback => delta_cb})
+    assert_index_content 'README', original_content
+
+    hunk_skip_all = Proc.new {
+      false
+    }
+
+    new_commit, new_content, original_content = update_file(@repo, 'README')
+    diff = @repo.diff(new_commit, @original_commit)
+    assert_equal true, @repo.apply(diff, {:location => :index, :hunk_callback => hunk_skip_all})
+    assert_index_content 'README', new_content
+
+    delta_fail = Proc.new {
+      nil
+    }
+
+    assert_raises RuntimeError do
+      @repo.apply(diff, {:location => :index, :delta_callback => delta_fail})
     end
   end
 end
