@@ -1,13 +1,14 @@
 require 'test_helper'
-require 'base64'
 
 module RepositoryApplyTestHelpers
-  def assert_workdir_contents(path, test_value)
-    assert_equal File.read(File.join(@repo.workdir, path)), test_value
+  def assert_workdir_content(path, test_value, repo = nil)
+    repo = @repo if repo.nil?
+    assert_equal File.read(File.join(repo.workdir, path)), test_value
   end
 
-  def assert_index_content(path, test_value)
-    assert_equal @repo.lookup(@repo.index[path][:oid]).content, test_value
+  def assert_index_content(path, test_value, repo = nil)
+    repo = @repo if repo.nil?
+    assert_equal repo.lookup(repo.index[path][:oid]).content, test_value
   end
 
   def blob_contents(repo, path)
@@ -72,12 +73,12 @@ class RepositoryApplyTest < Rugged::TestCase
     new_commit, new_content, original_content = update_file(@repo, 'README')
 
     @repo.checkout_head(:strategy => :force)
-    assert_workdir_contents 'README', new_content
+    assert_workdir_content 'README', new_content
 
     diff = @repo.diff(new_commit, @original_commit)
 
     assert_equal true, @repo.apply(diff)
-    assert_workdir_contents 'README', original_content
+    assert_workdir_content 'README', original_content
   end
 
   def test_apply_both
@@ -85,13 +86,26 @@ class RepositoryApplyTest < Rugged::TestCase
 
     @repo.checkout_head(:strategy => :force)
     assert_index_content 'README', new_content
-    assert_workdir_contents 'README', new_content
+    assert_workdir_content 'README', new_content
 
     diff = @repo.diff(new_commit, @original_commit)
 
     assert_equal true, @repo.apply(diff, :location => :both)
     assert_index_content 'README', original_content
-    assert_workdir_contents 'README', original_content
+    assert_workdir_content 'README', original_content
+  end
+
+  def test_bare_repository_defaults_to_index
+    bare_repo = Rugged::Repository.clone_at(@repo.path, Dir.mktmpdir('rugged-apply_bare'), :bare => true)
+    original_commit = bare_repo.head.target.oid
+
+    new_commit, new_content, original_content = update_file(bare_repo, 'README')
+    assert_index_content 'README', new_content, bare_repo
+
+    diff = bare_repo.diff(new_commit, original_commit)
+    
+    assert_equal true, bare_repo.apply(diff)
+    assert_index_content 'README', original_content, bare_repo
   end
 
   def test_location_option
@@ -111,16 +125,21 @@ class RepositoryApplyTest < Rugged::TestCase
 
     diff = @repo.diff(new_commit, @original_commit)
 
+    callsback = 0
+
     hunk_cb = Proc.new { |hunk|
+      callsback += 1
       assert hunk.is_a?(Rugged::Diff::Hunk)
     }
 
     delta_cb = Proc.new { |delta|
+      callsback += 1
       assert delta.is_a?(Rugged::Diff::Delta)
     }
 
     assert_equal true, @repo.apply(diff, {:location => :index, :hunk_callback => hunk_cb, :delta_callback => delta_cb})
     assert_index_content 'README', original_content
+    assert_equal callsback, 2
 
     hunk_skip_all = Proc.new {
       false
