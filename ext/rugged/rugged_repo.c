@@ -10,6 +10,7 @@
 #include <git2/sys/odb_backend.h>
 #include <git2/sys/refdb_backend.h>
 #include <git2/refs.h>
+#include <git2/apply.h>
 
 extern VALUE rb_mRugged;
 extern VALUE rb_eRuggedError;
@@ -18,6 +19,7 @@ extern VALUE rb_cRuggedConfig;
 extern VALUE rb_cRuggedBackend;
 extern VALUE rb_cRuggedRemote;
 extern VALUE rb_cRuggedCommit;
+extern VALUE rb_cRuggedDiff;
 extern VALUE rb_cRuggedTag;
 extern VALUE rb_cRuggedTree;
 extern VALUE rb_cRuggedReference;
@@ -394,6 +396,98 @@ static VALUE rb_git_repo_init_at(int argc, VALUE *argv, VALUE klass)
 	}
 
 	return rugged_repo_new(klass, repo);
+}
+
+static int apply_cb_result(int exception, VALUE result)
+{
+	if (exception || result == Qnil) {
+		return GIT_EAPPLYFAIL;
+	} else {
+		if (RTEST(result)) {
+			return 0;
+		} else {
+			return 1;
+		}
+	}
+}
+
+static int apply_delta_cb(const git_diff_delta *delta, void *data)
+{
+	struct rugged_apply_cb_payload *payload = data;
+	VALUE args = rb_ary_new2(2);
+	VALUE result;
+
+	if (NIL_P(payload->delta_cb))
+		return 0;
+
+	VALUE rb_delta = rugged_diff_delta_new(Qnil, delta);
+
+	rb_ary_push(args, payload->delta_cb);
+	rb_ary_push(args, rb_delta);
+
+	result = rb_protect(rugged__block_yield_splat, args, &payload->exception);
+
+	return apply_cb_result(payload->exception, result);
+}
+
+static int apply_hunk_cb(const git_diff_hunk *hunk, void *data)
+{
+	struct rugged_apply_cb_payload *payload = data;
+	VALUE args = rb_ary_new2(2);
+	VALUE result;
+
+	if (NIL_P(payload->hunk_cb))
+		return 0;
+
+	VALUE rb_hunk = rugged_diff_hunk_new(Qnil, 0, hunk, 0);
+
+	rb_ary_push(args, payload->hunk_cb);
+	rb_ary_push(args, rb_hunk);
+
+	result = rb_protect(rugged__block_yield_splat, args, &payload->exception);
+
+	return apply_cb_result(payload->exception, result);
+}
+
+static void rugged_parse_apply_options(git_apply_options *opts, git_apply_location_t *location, VALUE rb_options, struct rugged_apply_cb_payload *payload)
+{
+	if (!NIL_P(rb_options)) {
+		VALUE rb_value;
+		Check_Type(rb_options, T_HASH);
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("location"));
+		if (!NIL_P(rb_value)) {
+			ID id_location;
+
+			Check_Type(rb_value, T_SYMBOL);
+			id_location = SYM2ID(rb_value);
+
+			if (id_location == rb_intern("both")) {
+				*location = GIT_APPLY_LOCATION_BOTH;
+			} else if (id_location == rb_intern("index")) {
+				*location = GIT_APPLY_LOCATION_INDEX;
+			} else if (id_location == rb_intern("workdir")) {
+				*location = GIT_APPLY_LOCATION_WORKDIR;
+			} else {
+				rb_raise(rb_eTypeError,
+					"Invalid location. Expected `:both`, `:index`, or `:workdir`");
+			}
+		}
+
+		opts->payload = payload;
+
+		payload->delta_cb = rb_hash_aref(rb_options, CSTR2SYM("delta_callback"));
+		if (!NIL_P(payload->delta_cb)) {
+			CALLABLE_OR_RAISE(payload->delta_cb, "delta_callback");
+			opts->delta_cb = apply_delta_cb;
+		}
+
+		payload->hunk_cb = rb_hash_aref(rb_options, CSTR2SYM("hunk_callback"));
+		if (!NIL_P(payload->hunk_cb)) {
+			CALLABLE_OR_RAISE(payload->hunk_cb, "hunk_callback");
+			opts->hunk_cb = apply_hunk_cb;
+		}
+	}
 }
 
 static void parse_clone_options(git_clone_options *ret, VALUE rb_options, struct rugged_remote_cb_payload *remote_payload)
@@ -866,6 +960,69 @@ static VALUE rb_git_repo_revert_commit(int argc, VALUE *argv, VALUE self)
 	rugged_exception_check(error);
 
 	return rugged_index_new(rb_cRuggedIndex, self, index);
+}
+
+/*
+ *  call-seq:
+ *    repo.apply(diff, options = {}) -> true or false
+ *
+ *	Applies the given diff to the repository.
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :location ::
+ *    Whether to apply the changes to the workdir (default for non-bare),
+ *    the index (default for bare) or both. Valid values: +:index+, +:workdir+,
+ *    +:both+.
+ *
+ *  :delta_callback ::
+ *    While applying the patch, this callback will be executed per delta (file).
+ *    The current +delta+ will be passed to the block. The block's return value
+ *    determines further behavior. When the block evaluates to:
+ *       - +true+: the hunk will be applied and the apply process will continue.
+ *       - +false+: the hunk will be skipped, but the apply process continues.
+ *       - +nil+: the hunk is not applied, and the apply process is aborted.
+ *
+ *  :hunk_callback ::
+ *    While applying the patch, this callback will be executed per hunk.
+ *    The current +hunk+ will be passed to the block. The block's return value
+ *    determines further behavior, as per +:delta_callback+.
+ *
+ */
+static VALUE rb_git_repo_apply(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_diff, rb_options;
+	git_diff *diff;
+	git_repository *repo;
+	git_apply_options opts = GIT_APPLY_OPTIONS_INIT;
+	git_apply_location_t location;
+	struct rugged_apply_cb_payload payload = { Qnil, Qnil, 0 };
+	int error;
+
+	Data_Get_Struct(self, git_repository, repo);
+	if (git_repository_is_bare(repo)) {
+		location = GIT_APPLY_LOCATION_INDEX;
+	} else {
+		location = GIT_APPLY_LOCATION_WORKDIR;
+	}
+
+	rb_scan_args(argc, argv, "11", &rb_diff, &rb_options);
+
+	if (!rb_obj_is_kind_of(rb_diff, rb_cRuggedDiff)) {
+		rb_raise(rb_eArgError, "Expected a Rugged::Diff.");
+	}
+
+	if (!NIL_P(rb_options)) {
+		Check_Type(rb_options, T_HASH);
+		rugged_parse_apply_options(&opts, &location, rb_options, &payload);
+	}
+
+	Data_Get_Struct(rb_diff, git_diff, diff);
+
+	error = git_apply(repo, diff, location, &opts);
+
+	rugged_exception_check(error);
+
+	return Qtrue;
 }
 
 /*
@@ -2607,6 +2764,8 @@ void Init_rugged_repo(void)
 
 	rb_define_method(rb_cRuggedRepo, "merge_analysis", rb_git_repo_merge_analysis, -1);
 	rb_define_method(rb_cRuggedRepo, "merge_commits", rb_git_repo_merge_commits, -1);
+
+	rb_define_method(rb_cRuggedRepo, "apply", rb_git_repo_apply, -1);
 
 	rb_define_method(rb_cRuggedRepo, "revert_commit", rb_git_repo_revert_commit, -1);
 
