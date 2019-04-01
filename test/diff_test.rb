@@ -1,6 +1,14 @@
 require "test_helper"
 
 class PatchFromStringsTest < Rugged::TestCase
+  def test_new_from_string
+    repo = FixtureRepo.from_libgit2("attr")
+    diff = repo.diff("605812a", nil)
+    patch = diff.patch
+    diff2 = Rugged::Diff.new_from_string(patch)
+    assert_equal diff2.patch, patch
+  end
+
   def test_from_strings_no_args
     patch = Rugged::Patch.from_strings()
     assert_equal 0, patch.size

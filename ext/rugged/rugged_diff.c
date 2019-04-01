@@ -657,9 +657,28 @@ static VALUE rb_git_diff_sorted_icase_p(VALUE self)
 	return git_diff_is_sorted_icase(diff) ? Qtrue : Qfalse;
 }
 
+static VALUE rb_git_diff_from_string(VALUE contents)
+{
+	git_diff *diff;
+	const char *buffer;
+	size_t len;
+	VALUE rb_diff;
+
+	buffer = StringValuePtr(contents);
+	len = strlen(buffer);
+
+	git_diff_from_buffer(&diff, buffer, len);
+
+	Data_Wrap_Struct(rb_cRuggedDiff, NULL, git_diff_free, diff);
+
+	return rb_diff;
+}
+
 void Init_rugged_diff(void)
 {
 	rb_cRuggedDiff = rb_define_class_under(rb_mRugged, "Diff", rb_cObject);
+
+	rb_define_singleton_method(rb_cRuggedDiff, "new_from_string", rb_git_diff_from_string, 1);
 
 	rb_define_method(rb_cRuggedDiff, "patch", rb_git_diff_patch, -1);
 	rb_define_method(rb_cRuggedDiff, "write_patch", rb_git_diff_write_patch, -1);
