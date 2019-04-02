@@ -657,28 +657,37 @@ static VALUE rb_git_diff_sorted_icase_p(VALUE self)
 	return git_diff_is_sorted_icase(diff) ? Qtrue : Qfalse;
 }
 
-static VALUE rb_git_diff_from_string(VALUE contents)
+/*
+ *  call-seq: Diff.from_buffer(buffer) -> Rugged::Diff object
+ *  
+ *  Where +buffer+ is a +String+.
+ *  Returns A Rugged::Diff object
+ */
+static VALUE rb_git_diff_from_buffer(VALUE self, VALUE rb_buffer)
 {
-	git_diff *diff;
-	const char *buffer;
+	git_diff *diff = NULL;
+  const char *buffer;
+  // const char *buffer = "diff --git a/file b/file\nnew file mode 100644\nindex 0000000..d5f7fc3\n--- /dev/null\n+++ b/file\n@@ -0,0 +1 @@\n+added\n" ;
 	size_t len;
 	VALUE rb_diff;
+	int error;
 
-	buffer = StringValuePtr(contents);
-	len = strlen(buffer);
+  Check_Type(rb_buffer, T_STRING);
+  buffer = RSTRING_PTR(rb_buffer);
+  len = RSTRING_LEN(rb_buffer);
 
-	git_diff_from_buffer(&diff, buffer, len);
-
-	Data_Wrap_Struct(rb_cRuggedDiff, NULL, git_diff_free, diff);
-
-	return rb_diff;
+  error = git_diff_from_buffer(&diff, buffer, len);
+  rugged_exception_check(error);
+  
+  rb_diff = Data_Wrap_Struct(rb_cRuggedDiff, NULL, git_diff_free, diff);
+  return rb_diff;
 }
 
 void Init_rugged_diff(void)
 {
 	rb_cRuggedDiff = rb_define_class_under(rb_mRugged, "Diff", rb_cObject);
 
-	rb_define_singleton_method(rb_cRuggedDiff, "new_from_string", rb_git_diff_from_string, 1);
+	rb_define_singleton_method(rb_cRuggedDiff, "from_buffer", rb_git_diff_from_buffer, 1);
 
 	rb_define_method(rb_cRuggedDiff, "patch", rb_git_diff_patch, -1);
 	rb_define_method(rb_cRuggedDiff, "write_patch", rb_git_diff_write_patch, -1);
