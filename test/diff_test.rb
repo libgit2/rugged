@@ -66,15 +66,16 @@ end
 
 class RepoDiffTest < Rugged::TestCase
   def test_new_from_buffer
-    repo = FixtureRepo.from_libgit2("attr")
-    diff = repo.diff("605812a", nil)
-    patch = diff.patch
-    diff2 = Rugged::Diff.from_buffer(patch)
-    puts diff2.inspect
-    puts diff2.patch.inspect
-    puts "----------------"
-    puts patch
-    #assert_equal diff2.patch, patch
+    patch1  = Rugged::Patch.from_strings("deleted\n", "added\n", old_path: "old", new_path: "new").to_s
+    diff1   = Rugged::Diff.from_buffer(patch1)
+    assert_equal diff1.patch, patch1
+    
+    # This currently breaks
+    repo    = FixtureRepo.from_libgit2("attr")
+    diff2   = repo.diff("605812a", nil)
+    patch2  = diff2.patch
+    diff3   = Rugged::Diff.from_buffer(patch2)
+    assert_equal diff3.patch, patch2
   end
   
   def test_with_oid_string
