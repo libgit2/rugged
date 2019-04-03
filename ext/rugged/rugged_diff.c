@@ -667,7 +667,6 @@ static VALUE rb_git_diff_from_buffer(VALUE self, VALUE rb_buffer)
 {
 	git_diff *diff = NULL;
   const char *buffer;
-  // const char *buffer = "diff --git a/file b/file\nnew file mode 100644\nindex 0000000..d5f7fc3\n--- /dev/null\n+++ b/file\n@@ -0,0 +1 @@\n+added\n" ;
 	size_t len;
 	VALUE rb_diff;
 	int error;
