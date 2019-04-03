@@ -70,9 +70,8 @@ class RepoDiffTest < Rugged::TestCase
     diff1   = Rugged::Diff.from_buffer(patch1)
     assert_equal diff1.patch, patch1
     
-    # This currently breaks
     repo    = FixtureRepo.from_libgit2("attr")
-    diff2   = repo.diff("605812a", nil)
+    diff2   = repo.diff("605812a", "370fe9ec22", :context_lines => 1, :interhunk_lines => 1)
     patch2  = diff2.patch
     diff3   = Rugged::Diff.from_buffer(patch2)
     assert_equal diff3.patch, patch2
