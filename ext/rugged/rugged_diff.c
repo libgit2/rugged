@@ -665,11 +665,11 @@ static VALUE rb_git_diff_sorted_icase_p(VALUE self)
  */
 static VALUE rb_git_diff_from_buffer(VALUE self, VALUE rb_buffer)
 {
-	git_diff *diff = NULL;
+  git_diff *diff = NULL;
   const char *buffer;
-	size_t len;
-	VALUE rb_diff;
-	int error;
+  size_t len;
+  VALUE rb_diff;
+  int error;
 
   Check_Type(rb_buffer, T_STRING);
   buffer = RSTRING_PTR(rb_buffer);
@@ -677,7 +677,7 @@ static VALUE rb_git_diff_from_buffer(VALUE self, VALUE rb_buffer)
 
   error = git_diff_from_buffer(&diff, buffer, len);
   rugged_exception_check(error);
-  
+
   rb_diff = Data_Wrap_Struct(rb_cRuggedDiff, NULL, git_diff_free, diff);
   return rb_diff;
 }
