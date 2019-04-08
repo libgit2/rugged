@@ -2718,19 +2718,19 @@ static VALUE rb_git_repo_cherrypick_commit(int argc, VALUE *argv, VALUE self)
  */
 static VALUE rb_git_diff_from_buffer(VALUE self, VALUE rb_buffer)
 {
-  git_diff *diff = NULL;
-  const char *buffer;
-  size_t len;
-  int error;
+	git_diff *diff = NULL;
+	const char *buffer;
+	size_t len;
+	int error;
 
-  Check_Type(rb_buffer, T_STRING);
-  buffer = RSTRING_PTR(rb_buffer);
-  len = RSTRING_LEN(rb_buffer);
+	Check_Type(rb_buffer, T_STRING);
+	buffer = RSTRING_PTR(rb_buffer);
+	len = RSTRING_LEN(rb_buffer);
 
-  error = git_diff_from_buffer(&diff, buffer, len);
-  rugged_exception_check(error);
+	error = git_diff_from_buffer(&diff, buffer, len);
+	rugged_exception_check(error);
 
-  return rugged_diff_new(rb_cRuggedDiff, self, diff);
+	return rugged_diff_new(rb_cRuggedDiff, self, diff);
 }
 
 void Init_rugged_repo(void)
