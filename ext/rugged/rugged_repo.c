@@ -2710,6 +2710,29 @@ static VALUE rb_git_repo_cherrypick_commit(int argc, VALUE *argv, VALUE self)
 	return rugged_index_new(rb_cRuggedIndex, self, index);
 }
 
+/*
+ *  call-seq: repo.diff_from_buffer(buffer) -> Rugged::Diff object
+ *  
+ *  Where +buffer+ is a +String+.
+ *  Returns A Rugged::Diff object
+ */
+static VALUE rb_git_diff_from_buffer(VALUE self, VALUE rb_buffer)
+{
+	git_diff *diff = NULL;
+	const char *buffer;
+	size_t len;
+	int error;
+
+	Check_Type(rb_buffer, T_STRING);
+	buffer = RSTRING_PTR(rb_buffer);
+	len = RSTRING_LEN(rb_buffer);
+
+	error = git_diff_from_buffer(&diff, buffer, len);
+	rugged_exception_check(error);
+
+	return rugged_diff_new(rb_cRuggedDiff, self, diff);
+}
+
 void Init_rugged_repo(void)
 {
 	id_call = rb_intern("call");
@@ -2768,6 +2791,8 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "apply", rb_git_repo_apply, -1);
 
 	rb_define_method(rb_cRuggedRepo, "revert_commit", rb_git_repo_revert_commit, -1);
+	
+	rb_define_method(rb_cRuggedRepo, "diff_from_buffer", rb_git_diff_from_buffer, 1);
 
 	rb_define_method(rb_cRuggedRepo, "path_ignored?", rb_git_repo_is_path_ignored, 1);
 
