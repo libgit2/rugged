@@ -17,12 +17,25 @@ module Rugged
     end
 
     # A ssh key credential object that can optionally be passphrase-protected
+    # publickey and privatekey are filenames that will be opened to load the key
     class SshKey
       def initialize(options)
         @username, @publickey, @privatekey, @passphrase = options[:username], options[:publickey], options[:privatekey], options[:passphrase]
       end
 
       def call(url, username_from_url, allowed_types)
+        self
+      end
+    end
+
+    # A ssh key credential object that can optionally be passphrase-protected
+    # publickey and privatekey are string that are the actual contents of the key
+    class SshKeyFromMemory
+      def initialize(options)
+        @username, @publickey, @privatekey, @passphrase = options[:username], options[:publickey], options[:privatekey], options[:passphrase]
+      end
+
+      def call(*)
         self
       end
     end
