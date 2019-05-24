@@ -217,16 +217,43 @@ class CommitDiffTest < Rugged::TestCase
     assert_equal 5, deltas.size
     assert_equal 5, patches.size
 
-    assert_equal 0, deltas.select(&:added?).size
-    assert_equal 3, deltas.select(&:deleted?).size
+    assert_equal 3, deltas.select(&:added?).size
+    assert_equal 0, deltas.select(&:deleted?).size
     assert_equal 2, deltas.select(&:modified?).size
 
     assert_equal 4, hunks.size
 
     assert_equal(51, lines.size)
     assert_equal(2, lines.select(&:context?).size)
-    assert_equal(3, lines.select(&:addition?).size)
-    assert_equal(46, lines.select(&:deletion?).size)
+    assert_equal(46, lines.select(&:addition?).size)
+    assert_equal(3, lines.select(&:deletion?).size)
+  end
+
+  def test_diff_with_parent_no_options
+    repo = FixtureRepo.from_libgit2("attr")
+    commit = Rugged::Commit.lookup(repo, "605812a")
+
+    diff = commit.diff
+
+    deltas = diff.deltas
+    patches = diff.patches
+    hunks = patches.map(&:hunks).flatten
+    lines = hunks.map(&:lines).flatten
+
+    assert_equal 5, diff.size
+    assert_equal 5, deltas.size
+    assert_equal 5, patches.size
+
+    assert_equal 3, deltas.select(&:added?).size
+    assert_equal 0, deltas.select(&:deleted?).size
+    assert_equal 2, deltas.select(&:modified?).size
+
+    assert_equal 4, hunks.size
+
+    assert_equal(53, lines.size)
+    assert_equal(4, lines.select(&:context?).size)
+    assert_equal(46, lines.select(&:addition?).size)
+    assert_equal(3, lines.select(&:deletion?).size)
   end
 
   def test_diff_with_parent_for_initial_commit

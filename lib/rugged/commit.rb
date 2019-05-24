@@ -20,10 +20,24 @@ module Rugged
 
     # Return a diff between this commit and its first parent or another commit or tree.
     #
+    # The commit is treated as the new side of the diff by default
+    #
     # See Rugged::Tree#diff for more details.
     def diff(*args)
-      args.unshift(parents.first) if args.size == 1 && args.first.is_a?(Hash)
-      self.tree.diff(*args)
+      raise ArgumentError("wrong number of arguments (given #{args.length}, expected 0..2") if args.length > 2
+      other, opts = args
+      if other.is_a?(Hash)
+        opts = other
+        other = nil
+      end
+      opts ||= {}
+      # if other is not provided at all (as opposed to explicitly nil, or given)
+      # then diff against the prior commit
+      if args.empty? || args.first.is_a?(Hash)
+        other = parents.first
+        opts[:reverse] = !opts[:reverse] if other
+      end
+      self.tree.diff(other, opts)
     end
 
     # Return a diff between this commit and the workdir.
