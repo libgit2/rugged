@@ -204,12 +204,14 @@ struct nogvl_diff_patch_args {
 	VALUE rb_str;
 };
 
-static void rb_git_diff_patch_nogvl(void * _args)
+static void * rb_git_diff_patch_nogvl(void * _args)
 {
 	struct nogvl_diff_patch_args * args;
 
 	args = (struct nogvl_diff_patch_args *)_args;
 	git_diff_print(args->diff, args->format, diff_print_cb, (void*) args->rb_str);
+
+        return NULL;
 }
 
 /*
