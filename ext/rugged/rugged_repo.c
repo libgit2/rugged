@@ -34,6 +34,8 @@ VALUE rb_cRuggedOdbObject;
 
 static ID id_call;
 
+extern const rb_data_type_t rugged_object_type;
+
 /*
  *  call-seq:
  *    odb_obj.oid -> hex_oid
@@ -882,7 +884,7 @@ static VALUE rb_git_repo_merge_analysis(int argc, VALUE *argv, VALUE self)
 		rb_raise(rb_eArgError, "Expected a Rugged::Commit.");
 	}
 
-	Data_Get_Struct(rb_their_commit, git_commit, their_commit);
+	TypedData_Get_Struct(rb_their_commit, git_commit, &rugged_object_type, their_commit);
 
 	error = git_annotated_commit_lookup(&annotated_commit, repo, git_commit_id(their_commit));
 	rugged_exception_check(error);
@@ -950,8 +952,8 @@ static VALUE rb_git_repo_revert_commit(int argc, VALUE *argv, VALUE self)
 	}
 
 	Data_Get_Struct(self, git_repository, repo);
-	Data_Get_Struct(rb_revert_commit, git_commit, revert_commit);
-	Data_Get_Struct(rb_our_commit, git_commit, our_commit);
+	TypedData_Get_Struct(rb_revert_commit, git_commit, &rugged_object_type, revert_commit);
+	TypedData_Get_Struct(rb_our_commit, git_commit, &rugged_object_type, our_commit);
 
 	error = git_revert_commit(&index, repo, revert_commit, our_commit, mainline, &opts);
 	if (error == GIT_EMERGECONFLICT)
@@ -1068,8 +1070,8 @@ static VALUE rb_git_repo_merge_commits(int argc, VALUE *argv, VALUE self)
 	}
 
 	Data_Get_Struct(self, git_repository, repo);
-	Data_Get_Struct(rb_our_commit, git_commit, our_commit);
-	Data_Get_Struct(rb_their_commit, git_commit, their_commit);
+	TypedData_Get_Struct(rb_our_commit, git_commit, &rugged_object_type, our_commit);
+	TypedData_Get_Struct(rb_their_commit, git_commit, &rugged_object_type, their_commit);
 
 	error = git_merge_commits(&index, repo, our_commit, their_commit, &opts);
 	if (error == GIT_EMERGECONFLICT)
@@ -2183,7 +2185,7 @@ void rugged_parse_checkout_options(git_checkout_options *opts, VALUE rb_options)
 	rb_value = rb_hash_aref(rb_options, CSTR2SYM("baseline"));
 	if (!NIL_P(rb_value)) {
 		if (rb_obj_is_kind_of(rb_value, rb_cRuggedTree)) {
-			Data_Get_Struct(rb_value, git_tree, opts->baseline);
+			TypedData_Get_Struct(rb_value, git_tree, &rugged_object_type, opts->baseline);
 		} else {
 			rb_raise(rb_eTypeError, "Expected a Rugged::Tree.");
 		}
@@ -2347,7 +2349,7 @@ static VALUE rb_git_checkout_tree(int argc, VALUE *argv, VALUE self)
 	}
 
 	Data_Get_Struct(self, git_repository, repo);
-	Data_Get_Struct(rb_treeish, git_object, treeish);
+	TypedData_Get_Struct(rb_treeish, git_object, &rugged_object_type, treeish);
 
 	rugged_parse_checkout_options(&opts, rb_options);
 
@@ -2645,7 +2647,7 @@ static VALUE rb_git_repo_cherrypick(int argc, VALUE *argv, VALUE self)
 	}
 
 	Data_Get_Struct(self, git_repository, repo);
-	Data_Get_Struct(rb_commit, git_commit, commit);
+	TypedData_Get_Struct(rb_commit, git_commit, &rugged_object_type, commit);
 
 	rugged_parse_cherrypick_options(&opts, rb_options);
 
@@ -2698,8 +2700,8 @@ static VALUE rb_git_repo_cherrypick_commit(int argc, VALUE *argv, VALUE self)
 	}
 
 	Data_Get_Struct(self, git_repository, repo);
-	Data_Get_Struct(rb_commit, git_commit, commit);
-	Data_Get_Struct(rb_our_commit, git_commit, our_commit);
+	TypedData_Get_Struct(rb_commit, git_commit, &rugged_object_type, commit);
+	TypedData_Get_Struct(rb_our_commit, git_commit, &rugged_object_type, our_commit);
 
 	rugged_parse_merge_options(&opts, rb_options);
 
