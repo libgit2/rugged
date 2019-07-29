@@ -17,6 +17,8 @@ static ID id_read;
 VALUE rb_cRuggedBlob;
 VALUE rb_cRuggedBlobSig;
 
+extern const rb_data_type_t rugged_object_type;
+
 /*
  *  call-seq:
  *    blob.text(max_lines = -1, encoding = Encoding.default_external) -> string
@@ -38,7 +40,7 @@ static VALUE rb_git_blob_text_GET(int argc, VALUE *argv, VALUE self)
 	const char *content;
 	VALUE rb_max_lines, rb_encoding;
 
-	Data_Get_Struct(self, git_blob, blob);
+	TypedData_Get_Struct(self, git_blob, &rugged_object_type, blob);
 	rb_scan_args(argc, argv, "02", &rb_max_lines, &rb_encoding);
 
 	content = git_blob_rawcontent(blob);
@@ -85,7 +87,7 @@ static VALUE rb_git_blob_content_GET(int argc, VALUE *argv, VALUE self)
 	const char *content;
 	VALUE rb_max_bytes;
 
-	Data_Get_Struct(self, git_blob, blob);
+	TypedData_Get_Struct(self, git_blob, &rugged_object_type, blob);
 	rb_scan_args(argc, argv, "01", &rb_max_bytes);
 
 	content = git_blob_rawcontent(blob);
@@ -119,7 +121,7 @@ static VALUE rb_git_blob_content_GET(int argc, VALUE *argv, VALUE self)
 static VALUE rb_git_blob_rawsize(VALUE self)
 {
 	git_blob *blob;
-	Data_Get_Struct(self, git_blob, blob);
+	TypedData_Get_Struct(self, git_blob, &rugged_object_type, blob);
 
 	return INT2FIX(git_blob_rawsize(blob));
 }
@@ -304,7 +306,7 @@ static VALUE rb_git_blob_loc(VALUE self)
 	const char *data, *data_end;
 	size_t loc = 0;
 
-	Data_Get_Struct(self, git_blob, blob);
+	TypedData_Get_Struct(self, git_blob, &rugged_object_type, blob);
 
 	data = git_blob_rawcontent(blob);
 	data_end = data + git_blob_rawsize(blob);
@@ -343,7 +345,7 @@ static VALUE rb_git_blob_sloc(VALUE self)
 	const char *data, *data_end;
 	size_t sloc = 0;
 
-	Data_Get_Struct(self, git_blob, blob);
+	TypedData_Get_Struct(self, git_blob, &rugged_object_type, blob);
 
 	data = git_blob_rawcontent(blob);
 	data_end = data + git_blob_rawsize(blob);
@@ -383,7 +385,7 @@ static VALUE rb_git_blob_sloc(VALUE self)
 static VALUE rb_git_blob_is_binary(VALUE self)
 {
 	git_blob *blob;
-	Data_Get_Struct(self, git_blob, blob);
+	TypedData_Get_Struct(self, git_blob, &rugged_object_type, blob);
 	return git_blob_is_binary(blob) ? Qtrue : Qfalse;
 }
 
@@ -467,14 +469,14 @@ static VALUE rb_git_blob_diff(int argc, VALUE *argv, VALUE self)
 		rugged_parse_diff_options(&opts, rb_options);
 	}
 
-	Data_Get_Struct(self, git_blob, blob);
+	TypedData_Get_Struct(self, git_blob, &rugged_object_type, blob);
 
 	if (NIL_P(rb_other)) {
 		error = git_patch_from_blobs(&patch, blob, old_path, NULL, new_path, &opts);
 	} else if (rb_obj_is_kind_of(rb_other, rb_cRuggedBlob)) {
 		git_blob *other_blob;
 
-		Data_Get_Struct(rb_other, git_blob, other_blob);
+		TypedData_Get_Struct(rb_other, git_blob, &rugged_object_type, other_blob);
 
 		error = git_patch_from_blobs(&patch, blob, old_path, other_blob, new_path, &opts);
 	} else if (TYPE(rb_other) == T_STRING) {
@@ -649,7 +651,7 @@ static VALUE rb_git_blob_sig_new(int argc, VALUE *argv, VALUE klass)
 
 	if (rb_obj_is_kind_of(rb_blob, rb_cRuggedBlob)) {
 		git_blob *blob;
-		Data_Get_Struct(rb_blob, git_blob, blob);
+		TypedData_Get_Struct(rb_blob, git_blob, &rugged_object_type, blob);
 
 		error = git_hashsig_create(&sig,
 				git_blob_rawcontent(blob),

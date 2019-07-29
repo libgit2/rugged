@@ -15,6 +15,8 @@ extern VALUE rb_cRuggedReference;
 VALUE rb_cRuggedTag;
 VALUE rb_cRuggedTagAnnotation;
 
+extern const rb_data_type_t rugged_object_type;
+
 /*
  *  call-seq:
  *    annotation.target -> object
@@ -31,7 +33,7 @@ static VALUE rb_git_tag_annotation_target(VALUE self)
 	int error;
 	VALUE owner;
 
-	Data_Get_Struct(self, git_tag, tag);
+	TypedData_Get_Struct(self, git_tag, &rugged_object_type, tag);
 	owner = rugged_owner(self);
 
 	error = git_tag_target(&target, tag);
@@ -55,7 +57,7 @@ static VALUE rb_git_tag_annotation_target_id(VALUE self)
 	git_tag *tag;
 	const git_oid *target_oid;
 
-	Data_Get_Struct(self, git_tag, tag);
+	TypedData_Get_Struct(self, git_tag, &rugged_object_type, tag);
 
 	target_oid = git_tag_target_id(tag);
 
@@ -77,7 +79,7 @@ static VALUE rb_git_tag_annotation_target_id(VALUE self)
 static VALUE rb_git_tag_annotation_target_type(VALUE self)
 {
 	git_tag *tag;
-	Data_Get_Struct(self, git_tag, tag);
+	TypedData_Get_Struct(self, git_tag, &rugged_object_type, tag);
 
 	return rugged_otype_new(git_tag_target_type(tag));
 }
@@ -93,7 +95,7 @@ static VALUE rb_git_tag_annotation_target_type(VALUE self)
 static VALUE rb_git_tag_annotation_name(VALUE self)
 {
 	git_tag *tag;
-	Data_Get_Struct(self, git_tag, tag);
+	TypedData_Get_Struct(self, git_tag, &rugged_object_type, tag);
 
 	return rb_str_new_utf8(git_tag_name(tag));
 }
@@ -113,7 +115,7 @@ static VALUE rb_git_tag_annotation_tagger(VALUE self)
 	git_tag *tag;
 	const git_signature *tagger;
 
-	Data_Get_Struct(self, git_tag, tag);
+	TypedData_Get_Struct(self, git_tag, &rugged_object_type, tag);
 	tagger = git_tag_tagger(tag);
 
 	if (!tagger)
@@ -136,7 +138,7 @@ static VALUE rb_git_tag_annotation_message(VALUE self)
 	git_tag *tag;
 	const char *message;
 
-	Data_Get_Struct(self, git_tag, tag);
+	TypedData_Get_Struct(self, git_tag, &rugged_object_type, tag);
 	message = git_tag_message(tag);
 
 	if (!message)

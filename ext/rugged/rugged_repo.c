@@ -34,6 +34,9 @@ VALUE rb_cRuggedOdbObject;
 
 static ID id_call;
 
+extern const rb_data_type_t rugged_object_type;
+static const rb_data_type_t rugged_odb_object_type;
+
 /*
  *  call-seq:
  *    odb_obj.oid -> hex_oid
@@ -46,7 +49,7 @@ static ID id_call;
 static VALUE rb_git_odbobj_oid(VALUE self)
 {
 	git_odb_object *obj;
-	Data_Get_Struct(self, git_odb_object, obj);
+	TypedData_Get_Struct(self, git_odb_object, &rugged_odb_object_type, obj);
 	return rugged_create_oid(git_odb_object_id(obj));
 }
 
@@ -64,7 +67,7 @@ static VALUE rb_git_odbobj_oid(VALUE self)
 static VALUE rb_git_odbobj_data(VALUE self)
 {
 	git_odb_object *obj;
-	Data_Get_Struct(self, git_odb_object, obj);
+	TypedData_Get_Struct(self, git_odb_object, &rugged_odb_object_type, obj);
 	return rb_str_new(git_odb_object_data(obj), git_odb_object_size(obj));
 }
 
@@ -80,7 +83,7 @@ static VALUE rb_git_odbobj_data(VALUE self)
 static VALUE rb_git_odbobj_size(VALUE self)
 {
 	git_odb_object *obj;
-	Data_Get_Struct(self, git_odb_object, obj);
+	TypedData_Get_Struct(self, git_odb_object, &rugged_odb_object_type, obj);
 	return INT2FIX(git_odb_object_size(obj));
 }
 
@@ -96,7 +99,7 @@ static VALUE rb_git_odbobj_size(VALUE self)
 static VALUE rb_git_odbobj_type(VALUE self)
 {
 	git_odb_object *obj;
-	Data_Get_Struct(self, git_odb_object, obj);
+	TypedData_Get_Struct(self, git_odb_object, &rugged_odb_object_type, obj);
 	return rugged_otype_new(git_odb_object_type(obj));
 }
 
@@ -104,6 +107,24 @@ void rb_git__odbobj_free(void *obj)
 {
 	git_odb_object_free((git_odb_object *)obj);
 }
+
+static size_t rb_git__odbobj_size(const void *obj)
+{
+	return git_odb_object_size((git_odb_object *)obj);
+}
+
+static const rb_data_type_t rugged_odb_object_type = {
+	.wrap_struct_name = "Rugged::OdbObject",
+	.function = {
+		.dmark = NULL,
+		.dfree = rb_git__odbobj_free,
+		.dsize = rb_git__odbobj_size,
+	},
+	.data = NULL,
+	.flags = RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
+
 
 VALUE rugged_raw_read(git_repository *repo, const git_oid *oid)
 {
@@ -119,7 +140,7 @@ VALUE rugged_raw_read(git_repository *repo, const git_oid *oid)
 	git_odb_free(odb);
 	rugged_exception_check(error);
 
-	return Data_Wrap_Struct(rb_cRuggedOdbObject, NULL, rb_git__odbobj_free, obj);
+	return TypedData_Wrap_Struct(rb_cRuggedOdbObject, &rugged_odb_object_type, obj);
 }
 
 void rb_git_repo__free(git_repository *repo)
@@ -882,7 +903,7 @@ static VALUE rb_git_repo_merge_analysis(int argc, VALUE *argv, VALUE self)
 		rb_raise(rb_eArgError, "Expected a Rugged::Commit.");
 	}
 
-	Data_Get_Struct(rb_their_commit, git_commit, their_commit);
+	TypedData_Get_Struct(rb_their_commit, git_commit, &rugged_object_type, their_commit);
 
 	error = git_annotated_commit_lookup(&annotated_commit, repo, git_commit_id(their_commit));
 	rugged_exception_check(error);
@@ -950,8 +971,8 @@ static VALUE rb_git_repo_revert_commit(int argc, VALUE *argv, VALUE self)
 	}
 
 	Data_Get_Struct(self, git_repository, repo);
-	Data_Get_Struct(rb_revert_commit, git_commit, revert_commit);
-	Data_Get_Struct(rb_our_commit, git_commit, our_commit);
+	TypedData_Get_Struct(rb_revert_commit, git_commit, &rugged_object_type, revert_commit);
+	TypedData_Get_Struct(rb_our_commit, git_commit, &rugged_object_type, our_commit);
 
 	error = git_revert_commit(&index, repo, revert_commit, our_commit, mainline, &opts);
 	if (error == GIT_EMERGECONFLICT)
@@ -1068,8 +1089,8 @@ static VALUE rb_git_repo_merge_commits(int argc, VALUE *argv, VALUE self)
 	}
 
 	Data_Get_Struct(self, git_repository, repo);
-	Data_Get_Struct(rb_our_commit, git_commit, our_commit);
-	Data_Get_Struct(rb_their_commit, git_commit, their_commit);
+	TypedData_Get_Struct(rb_our_commit, git_commit, &rugged_object_type, our_commit);
+	TypedData_Get_Struct(rb_their_commit, git_commit, &rugged_object_type, their_commit);
 
 	error = git_merge_commits(&index, repo, our_commit, their_commit, &opts);
 	if (error == GIT_EMERGECONFLICT)
@@ -2183,7 +2204,7 @@ void rugged_parse_checkout_options(git_checkout_options *opts, VALUE rb_options)
 	rb_value = rb_hash_aref(rb_options, CSTR2SYM("baseline"));
 	if (!NIL_P(rb_value)) {
 		if (rb_obj_is_kind_of(rb_value, rb_cRuggedTree)) {
-			Data_Get_Struct(rb_value, git_tree, opts->baseline);
+			TypedData_Get_Struct(rb_value, git_tree, &rugged_object_type, opts->baseline);
 		} else {
 			rb_raise(rb_eTypeError, "Expected a Rugged::Tree.");
 		}
@@ -2347,7 +2368,7 @@ static VALUE rb_git_checkout_tree(int argc, VALUE *argv, VALUE self)
 	}
 
 	Data_Get_Struct(self, git_repository, repo);
-	Data_Get_Struct(rb_treeish, git_object, treeish);
+	TypedData_Get_Struct(rb_treeish, git_object, &rugged_object_type, treeish);
 
 	rugged_parse_checkout_options(&opts, rb_options);
 
@@ -2645,7 +2666,7 @@ static VALUE rb_git_repo_cherrypick(int argc, VALUE *argv, VALUE self)
 	}
 
 	Data_Get_Struct(self, git_repository, repo);
-	Data_Get_Struct(rb_commit, git_commit, commit);
+	TypedData_Get_Struct(rb_commit, git_commit, &rugged_object_type, commit);
 
 	rugged_parse_cherrypick_options(&opts, rb_options);
 
@@ -2698,8 +2719,8 @@ static VALUE rb_git_repo_cherrypick_commit(int argc, VALUE *argv, VALUE self)
 	}
 
 	Data_Get_Struct(self, git_repository, repo);
-	Data_Get_Struct(rb_commit, git_commit, commit);
-	Data_Get_Struct(rb_our_commit, git_commit, our_commit);
+	TypedData_Get_Struct(rb_commit, git_commit, &rugged_object_type, commit);
+	TypedData_Get_Struct(rb_our_commit, git_commit, &rugged_object_type, our_commit);
 
 	rugged_parse_merge_options(&opts, rb_options);
 
@@ -2814,7 +2835,7 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "cherrypick_commit", rb_git_repo_cherrypick_commit, -1);
 	rb_define_method(rb_cRuggedRepo, "fetch_attributes", rb_git_repo_attributes, -1);
 
-	rb_cRuggedOdbObject = rb_define_class_under(rb_mRugged, "OdbObject", rb_cObject);
+	rb_cRuggedOdbObject = rb_define_class_under(rb_mRugged, "OdbObject", rb_cData);
 	rb_define_method(rb_cRuggedOdbObject, "data",  rb_git_odbobj_data,  0);
 	rb_define_method(rb_cRuggedOdbObject, "len",  rb_git_odbobj_size,  0);
 	rb_define_method(rb_cRuggedOdbObject, "type",  rb_git_odbobj_type,  0);

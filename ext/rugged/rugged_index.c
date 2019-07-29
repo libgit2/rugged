@@ -13,6 +13,8 @@ extern VALUE rb_cRuggedCommit;
 extern VALUE rb_cRuggedDiff;
 extern VALUE rb_cRuggedTree;
 
+extern const rb_data_type_t rugged_object_type;
+
 static void rb_git_indexentry_toC(git_index_entry *entry, VALUE rb_entry);
 static VALUE rb_git_indexentry_fromC(const git_index_entry *entry);
 
@@ -658,7 +660,7 @@ static VALUE rb_git_index_readtree(VALUE self, VALUE rb_tree)
 	int error;
 
 	Data_Get_Struct(self, git_index, index);
-	Data_Get_Struct(rb_tree, git_tree, tree);
+	TypedData_Get_Struct(rb_tree, git_tree, &rugged_object_type, tree);
 
 	if (!rb_obj_is_kind_of(rb_tree, rb_cRuggedTree)) {
 		rb_raise(rb_eTypeError, "A Rugged::Tree instance is required");
@@ -690,7 +692,7 @@ static VALUE rb_git_diff_tree_to_index(VALUE self, VALUE rb_other, VALUE rb_opti
 	// the "old file" side of the diff.
 	opts.flags ^= GIT_DIFF_REVERSE;
 
-	Data_Get_Struct(rb_other, git_tree, other_tree);
+	TypedData_Get_Struct(rb_other, git_tree, &rugged_object_type, other_tree);
 	error = git_diff_tree_to_index(&diff, repo, other_tree, index, &opts);
 
 	xfree(opts.pathspec.strings);
