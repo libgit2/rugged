@@ -528,6 +528,13 @@ static void parse_clone_options(git_clone_options *ret, VALUE rb_options, struct
 		ret->checkout_branch = StringValueCStr(val);
 	}
 
+	val = rb_hash_aref(rb_options, CSTR2SYM("proxy_url"));
+	if (!NIL_P(val)) {
+		Check_Type(val, T_STRING);
+		ret->fetch_opts.proxy_opts.type = GIT_PROXY_SPECIFIED;
+		ret->fetch_opts.proxy_opts.url = StringValueCStr(val);
+	}
+
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &ret->fetch_opts.callbacks, remote_payload);
 }
 
@@ -551,6 +558,9 @@ static void parse_clone_options(git_clone_options *ret, VALUE rb_options, struct
  *
  *  :ignore_cert_errors ::
  *    If set to +true+, errors while validating the remote's host certificate will be ignored.
+ *
+ *  :proxy_url ::
+ *    The url of an http(s) proxy to use to access the remote repository.
  *
  *  :credentials ::
  *    The credentials to use for the clone operation. Can be either an instance of one
