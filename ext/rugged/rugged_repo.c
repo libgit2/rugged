@@ -1696,7 +1696,7 @@ static VALUE rb_git_repo_file_status(VALUE self, VALUE rb_path)
 
 static VALUE rb_git_repo_file_each_status(VALUE self)
 {
-	int error, exception;
+	int error, exception = 0;
 	size_t i, nentries;
 	git_repository *repo;
 	git_status_list *list;
