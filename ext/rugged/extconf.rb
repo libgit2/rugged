@@ -31,7 +31,7 @@ end
 
 def self.run_cmake(timeout, args)
   # Set to process group so we can kill it and its children
-  pid = Process.spawn("cmake #{args}", pgroup: true)
+  pid = Process.spawn("cmake #{args}", pgroup: !Gem.win_platform?, new_pgroup: Gem.win_platform?)
 
   Timeout.timeout(timeout) do
     Process.waitpid(pid)
