@@ -1,0 +1,24 @@
+version: 1.0.{build}
+image: Visual Studio 2019
+environment:
+  matrix:
+  - PATH: C:\Ruby26-x64\bin;%PATH%
+  - PATH: C:\Ruby25-x64\bin;%PATH%
+  - PATH: C:\Ruby24-x64\bin;%PATH%
+install:
+- ps: >-
+    ridk install 2
+
+    ridk exec pacman -S --noconfirm mingw-w64-x86_64-libssh2 mingw-w64-x86_64-cmake
+
+    gem install bundler
+
+    bundle lock --add-platform ruby
+
+    try { start-process -wait -nonewwindow bundle 2> $null } catch { exit 0 }
+build: off
+test_script:
+- ps: >-
+    ridk enable
+
+    bundle exec rake
