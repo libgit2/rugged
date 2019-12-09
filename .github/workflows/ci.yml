@@ -21,6 +21,9 @@ jobs:
     steps:
     - uses: actions/checkout@master
 
+    - name: Update submodules
+      run: git submodule init && git submodule update
+
     - name: Install Linux packages
       if: runner.os == 'Linux'
       run: |
