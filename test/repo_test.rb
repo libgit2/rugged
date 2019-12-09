@@ -416,10 +416,7 @@ class RepositoryDiscoverTest < Rugged::TestCase
   def setup
     @tmpdir = Dir.mktmpdir
     Dir.mkdir(File.join(@tmpdir, 'foo'))
-  end
-
-  def teardown
-    FileUtils.remove_entry_secure(@tmpdir)
+    Rugged::TestCase::FixtureRepo.ensure_cleanup @tmpdir
   end
 
   def test_discover_false
@@ -462,10 +459,7 @@ end
 class RepositoryInitTest < Rugged::TestCase
   def setup
     @tmppath = Dir.mktmpdir
-  end
-
-  def teardown
-    FileUtils.remove_entry_secure(@tmppath)
+    Rugged::TestCase::FixtureRepo.ensure_cleanup @tmppath
   end
 
   def test_init_bare_false
@@ -524,11 +518,8 @@ end
 class RepositoryCloneTest < Rugged::TestCase
   def setup
     @tmppath = Dir.mktmpdir
-    @source_path = "file://" + File.join(Rugged::TestCase::TEST_DIR, 'fixtures', 'testrepo.git')
-  end
-
-  def teardown
-    FileUtils.remove_entry_secure(@tmppath)
+    Rugged::TestCase::FixtureRepo.ensure_cleanup @tmppath
+    @source_path = File.join(Rugged::TestCase::TEST_DIR, 'fixtures', 'testrepo.git')
   end
 
   def test_clone
