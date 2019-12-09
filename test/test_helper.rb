@@ -6,12 +6,6 @@ require 'pp'
 
 module Rugged
   class TestCase < Minitest::Test
-    # Automatically clean up created fixture repos after each test run
-    def after_teardown
-      Rugged::TestCase::FixtureRepo.teardown
-      super
-    end
-
     module FixtureRepo
       # Create a new, empty repository.
       def self.empty(*args)
@@ -115,8 +109,11 @@ module Rugged
 
       # Delete temp directories that got created
       def self.teardown
-        self.directories.each { |path| FileUtils.remove_entry_secure(path) }
-        self.directories.clear
+        puts 'Cleaning up temporary directories'
+        # even after waiting for the suite finish there are still a few
+        # stray handles open within this process.
+        # the second paramter ignores the requisite ENOTEMPTY errors
+        self.directories.each { |path| FileUtils.remove_entry_secure(path, true) }
       end
 
       def self.directories
@@ -169,3 +166,9 @@ module Rugged
     end
   end
 end
+
+# Automatically clean up created fixture repos after the whole suite
+# there are race conditions on Windows where the original test run
+# did not release handles to the temporary directories.
+# waiting until all tests finish works successfully
+Minitest.after_run { Rugged::TestCase::FixtureRepo.teardown }
