@@ -124,6 +124,7 @@ end
 
 class RemotePushTest < Rugged::TestCase
   def setup
+    skip 'local files and file:// protocol handled inconsistently with libgit2 on windows' if Gem.win_platform?
     @remote_repo = FixtureRepo.from_libgit2("testrepo.git")
     # We can only push to bare repos
     @remote_repo.config['core.bare'] = 'true'
@@ -173,6 +174,8 @@ end
 
 class RemotePruneTest < Rugged::TestCase
   def setup
+    skip 'local files and file:// protocol handled inconsistently with libgit2 on windows' if Gem.win_platform?
+
     @remote_repo = FixtureRepo.from_libgit2("testrepo.git")
     # We can only push to bare repos
     @remote_repo.config['core.bare'] = 'true'
