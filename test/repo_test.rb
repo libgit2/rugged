@@ -1,6 +1,7 @@
 require 'test_helper'
 require 'base64'
 
+
 class RepositoryTest < Rugged::TestCase
   def setup
     @repo = FixtureRepo.from_libgit2 "testrepo.git"
@@ -659,6 +660,7 @@ end
 
 class RepositoryPushTest < Rugged::TestCase
   def setup
+    skip 'local files and file:// protocol handled inconsistently with libgit2 on windows' if Gem.win_platform?
     @remote_repo = FixtureRepo.from_libgit2("testrepo.git")
     # We can only push to bare repos
     @remote_repo.config['core.bare'] = 'true'
