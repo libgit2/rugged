@@ -558,7 +558,6 @@ class RepositoryCloneTest < Rugged::TestCase
       transfer_progress: lambda { |*args|
         total_objects, indexed_objects, received_objects, local_objects, total_deltas, indexed_deltas, received_bytes = args
         callsback += 1
-        puts "called back"
       }
     })
     repo.close
