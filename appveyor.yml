@@ -25,11 +25,11 @@ test_script:
 
     bundle exec rake
 on_finish:
-  - ps: >-
+- ps: >-
     Get-ChildItem .\test\reports | ForEach-Object { 
 
-      $wc = New-Object 'System.Net.WebClient'
+        $wc = New-Object 'System.Net.WebClient'
       
-      $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", $_)
+        $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", $_)
       
     }
