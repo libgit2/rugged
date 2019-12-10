@@ -34,7 +34,7 @@ jobs:
       if: runner.os == 'Linux'
       uses: actions/setup-ruby@v1
       with:
-        version: ${{ matrix.ruby }}
+        ruby-version: ${{ matrix.ruby }}
     - name: Set up Ruby on macOS
       if: runner.os == 'macOS'
       run: |
