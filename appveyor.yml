@@ -21,4 +21,15 @@ test_script:
 - ps: >-
     ridk enable
 
+    $env:MINITEST_REPORTER="JUnitReporter"
+
     bundle exec rake
+on_finish:
+  - ps: >-
+    Get-ChildItem .\test\reports | ForEach-Object { 
+
+      $wc = New-Object 'System.Net.WebClient'
+      
+      $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", $_)
+      
+    }
