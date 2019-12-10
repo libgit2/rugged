@@ -12,3 +12,4 @@ vendor/gems
 bin/
 pkg/
 rdoc/
+test/reports

@@ -3,6 +3,9 @@ require 'tmpdir'
 require 'minitest/autorun'
 require 'rugged'
 require 'pp'
+require 'minitest/reporters'
+
+Minitest::Reporters.use!
 
 module Rugged
   class TestCase < Minitest::Test
