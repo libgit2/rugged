@@ -26,12 +26,12 @@ test_script:
     bundle exec rake
 on_finish:
 - ps: >-
-    $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-
     Get-ChildItem .\test\reports | ForEach-Object { 
 
         $wc = New-Object 'System.Net.WebClient'
-      
+
+        echo "https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)"
+
         $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", $_)
       
     }
