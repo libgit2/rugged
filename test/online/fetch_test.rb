@@ -54,7 +54,13 @@ class OnlineFetchTest < Rugged::OnlineTestCase
         })
       end
 
-      assert_equal "user rejected certificate for github.com", exception.message
+      response_message = if Gem.win_platform?
+                           'user cancelled certificate check'
+                         else
+                           'user rejected certificate for github.com'
+                         end
+
+      assert_equal response_message, exception.message
     end
 
     def test_fetch_over_https_with_certificate_callback_exception

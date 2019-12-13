@@ -138,10 +138,12 @@ class IndexWriteTest < Rugged::TestCase
 
   def test_can_write_index
     e = IndexTest.new_index_entry
-    @index << e
-
     e[:path] = "else.txt"
     @index << e
+
+    f = IndexTest.new_index_entry
+    f[:oid].succ!
+    @index << f
 
     @index.write
 
