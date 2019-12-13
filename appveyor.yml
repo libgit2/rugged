@@ -7,6 +7,8 @@ environment:
   - PATH: C:\Ruby24-x64\bin;%PATH%
 install:
 - ps: >-
+    git config --global user.name 'The rugged tests are fragile'
+
     ridk install 2
 
     ridk exec pacman -S --noconfirm mingw-w64-x86_64-libssh2 mingw-w64-x86_64-cmake
@@ -24,14 +26,11 @@ test_script:
     $env:MINITEST_REPORTER="JUnitReporter"
 
     bundle exec rake
-on_finish:
-- ps: >-
+
     Get-ChildItem .\test\reports | ForEach-Object { 
 
         $wc = New-Object 'System.Net.WebClient'
 
-        echo "https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)"
-
-        $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", $_)
+        $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", $_.FullName)
       
     }
