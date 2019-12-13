@@ -88,7 +88,7 @@ class RepositoryTest < Rugged::TestCase
   def test_return_all_ref_names
     refs = @repo.ref_names
     refs.each {|name| assert name.kind_of?(String)}
-    assert_equal 21, refs.count
+    assert_equal 22, refs.count
   end
 
   def test_return_all_tags

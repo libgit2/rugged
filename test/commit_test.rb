@@ -283,8 +283,8 @@ SIGNEDDATA
 
   def test_create_with_signature
     signed_commit = <<-COMMIT
-tree 6b79e22d69bf46e289df0345a14ca059dfc9bdf6
-parent 34734e478d6cf50c27c9d69026d93974d052c454
+tree 4b825dc642cb6eb9a060e54bf8d69288fbee4904
+parent 8496071c1b46c854b31185ea97743be6a8774479
 author Ben Burkert <ben@benburkert.com> 1358451456 -0800
 committer Ben Burkert <ben@benburkert.com> 1358451456 -0800
 gpgsig -----BEGIN PGP SIGNATURE-----
@@ -329,8 +329,8 @@ cpxtDQQMGYFpXK/71stq
 SIGNATURE
 
     base_data = <<-SIGNEDDATA
-tree 6b79e22d69bf46e289df0345a14ca059dfc9bdf6
-parent 34734e478d6cf50c27c9d69026d93974d052c454
+tree 4b825dc642cb6eb9a060e54bf8d69288fbee4904
+parent 8496071c1b46c854b31185ea97743be6a8774479
 author Ben Burkert <ben@benburkert.com> 1358451456 -0800
 committer Ben Burkert <ben@benburkert.com> 1358451456 -0800
 
