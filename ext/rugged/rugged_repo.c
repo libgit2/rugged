@@ -10,6 +10,7 @@
 #include <git2/sys/odb_backend.h>
 #include <git2/sys/refdb_backend.h>
 #include <git2/refs.h>
+#include <git2/apply.h>
 
 extern VALUE rb_mRugged;
 extern VALUE rb_eRuggedError;
@@ -18,6 +19,7 @@ extern VALUE rb_cRuggedConfig;
 extern VALUE rb_cRuggedBackend;
 extern VALUE rb_cRuggedRemote;
 extern VALUE rb_cRuggedCommit;
+extern VALUE rb_cRuggedDiff;
 extern VALUE rb_cRuggedTag;
 extern VALUE rb_cRuggedTree;
 extern VALUE rb_cRuggedReference;
@@ -32,6 +34,9 @@ VALUE rb_cRuggedOdbObject;
 
 static ID id_call;
 
+extern const rb_data_type_t rugged_object_type;
+static const rb_data_type_t rugged_odb_object_type;
+
 /*
  *  call-seq:
  *    odb_obj.oid -> hex_oid
@@ -44,7 +49,7 @@ static ID id_call;
 static VALUE rb_git_odbobj_oid(VALUE self)
 {
 	git_odb_object *obj;
-	Data_Get_Struct(self, git_odb_object, obj);
+	TypedData_Get_Struct(self, git_odb_object, &rugged_odb_object_type, obj);
 	return rugged_create_oid(git_odb_object_id(obj));
 }
 
@@ -62,7 +67,7 @@ static VALUE rb_git_odbobj_oid(VALUE self)
 static VALUE rb_git_odbobj_data(VALUE self)
 {
 	git_odb_object *obj;
-	Data_Get_Struct(self, git_odb_object, obj);
+	TypedData_Get_Struct(self, git_odb_object, &rugged_odb_object_type, obj);
 	return rb_str_new(git_odb_object_data(obj), git_odb_object_size(obj));
 }
 
@@ -78,7 +83,7 @@ static VALUE rb_git_odbobj_data(VALUE self)
 static VALUE rb_git_odbobj_size(VALUE self)
 {
 	git_odb_object *obj;
-	Data_Get_Struct(self, git_odb_object, obj);
+	TypedData_Get_Struct(self, git_odb_object, &rugged_odb_object_type, obj);
 	return INT2FIX(git_odb_object_size(obj));
 }
 
@@ -94,7 +99,7 @@ static VALUE rb_git_odbobj_size(VALUE self)
 static VALUE rb_git_odbobj_type(VALUE self)
 {
 	git_odb_object *obj;
-	Data_Get_Struct(self, git_odb_object, obj);
+	TypedData_Get_Struct(self, git_odb_object, &rugged_odb_object_type, obj);
 	return rugged_otype_new(git_odb_object_type(obj));
 }
 
@@ -102,6 +107,24 @@ void rb_git__odbobj_free(void *obj)
 {
 	git_odb_object_free((git_odb_object *)obj);
 }
+
+static size_t rb_git__odbobj_size(const void *obj)
+{
+	return git_odb_object_size((git_odb_object *)obj);
+}
+
+static const rb_data_type_t rugged_odb_object_type = {
+	.wrap_struct_name = "Rugged::OdbObject",
+	.function = {
+		.dmark = NULL,
+		.dfree = rb_git__odbobj_free,
+		.dsize = rb_git__odbobj_size,
+	},
+	.data = NULL,
+	.flags = RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
+
 
 VALUE rugged_raw_read(git_repository *repo, const git_oid *oid)
 {
@@ -117,7 +140,7 @@ VALUE rugged_raw_read(git_repository *repo, const git_oid *oid)
 	git_odb_free(odb);
 	rugged_exception_check(error);
 
-	return Data_Wrap_Struct(rb_cRuggedOdbObject, NULL, rb_git__odbobj_free, obj);
+	return TypedData_Wrap_Struct(rb_cRuggedOdbObject, &rugged_odb_object_type, obj);
 }
 
 void rb_git_repo__free(git_repository *repo)
@@ -394,6 +417,98 @@ static VALUE rb_git_repo_init_at(int argc, VALUE *argv, VALUE klass)
 	}
 
 	return rugged_repo_new(klass, repo);
+}
+
+static int apply_cb_result(int exception, VALUE result)
+{
+	if (exception || result == Qnil) {
+		return GIT_EAPPLYFAIL;
+	} else {
+		if (RTEST(result)) {
+			return 0;
+		} else {
+			return 1;
+		}
+	}
+}
+
+static int apply_delta_cb(const git_diff_delta *delta, void *data)
+{
+	struct rugged_apply_cb_payload *payload = data;
+	VALUE args = rb_ary_new2(2);
+	VALUE result;
+
+	if (NIL_P(payload->delta_cb))
+		return 0;
+
+	VALUE rb_delta = rugged_diff_delta_new(Qnil, delta);
+
+	rb_ary_push(args, payload->delta_cb);
+	rb_ary_push(args, rb_delta);
+
+	result = rb_protect(rugged__block_yield_splat, args, &payload->exception);
+
+	return apply_cb_result(payload->exception, result);
+}
+
+static int apply_hunk_cb(const git_diff_hunk *hunk, void *data)
+{
+	struct rugged_apply_cb_payload *payload = data;
+	VALUE args = rb_ary_new2(2);
+	VALUE result;
+
+	if (NIL_P(payload->hunk_cb))
+		return 0;
+
+	VALUE rb_hunk = rugged_diff_hunk_new(Qnil, 0, hunk, 0);
+
+	rb_ary_push(args, payload->hunk_cb);
+	rb_ary_push(args, rb_hunk);
+
+	result = rb_protect(rugged__block_yield_splat, args, &payload->exception);
+
+	return apply_cb_result(payload->exception, result);
+}
+
+static void rugged_parse_apply_options(git_apply_options *opts, git_apply_location_t *location, VALUE rb_options, struct rugged_apply_cb_payload *payload)
+{
+	if (!NIL_P(rb_options)) {
+		VALUE rb_value;
+		Check_Type(rb_options, T_HASH);
+
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("location"));
+		if (!NIL_P(rb_value)) {
+			ID id_location;
+
+			Check_Type(rb_value, T_SYMBOL);
+			id_location = SYM2ID(rb_value);
+
+			if (id_location == rb_intern("both")) {
+				*location = GIT_APPLY_LOCATION_BOTH;
+			} else if (id_location == rb_intern("index")) {
+				*location = GIT_APPLY_LOCATION_INDEX;
+			} else if (id_location == rb_intern("workdir")) {
+				*location = GIT_APPLY_LOCATION_WORKDIR;
+			} else {
+				rb_raise(rb_eTypeError,
+					"Invalid location. Expected `:both`, `:index`, or `:workdir`");
+			}
+		}
+
+		opts->payload = payload;
+
+		payload->delta_cb = rb_hash_aref(rb_options, CSTR2SYM("delta_callback"));
+		if (!NIL_P(payload->delta_cb)) {
+			CALLABLE_OR_RAISE(payload->delta_cb, "delta_callback");
+			opts->delta_cb = apply_delta_cb;
+		}
+
+		payload->hunk_cb = rb_hash_aref(rb_options, CSTR2SYM("hunk_callback"));
+		if (!NIL_P(payload->hunk_cb)) {
+			CALLABLE_OR_RAISE(payload->hunk_cb, "hunk_callback");
+			opts->hunk_cb = apply_hunk_cb;
+		}
+	}
 }
 
 static void parse_clone_options(git_clone_options *ret, VALUE rb_options, struct rugged_remote_cb_payload *remote_payload)
@@ -788,7 +903,7 @@ static VALUE rb_git_repo_merge_analysis(int argc, VALUE *argv, VALUE self)
 		rb_raise(rb_eArgError, "Expected a Rugged::Commit.");
 	}
 
-	Data_Get_Struct(rb_their_commit, git_commit, their_commit);
+	TypedData_Get_Struct(rb_their_commit, git_commit, &rugged_object_type, their_commit);
 
 	error = git_annotated_commit_lookup(&annotated_commit, repo, git_commit_id(their_commit));
 	rugged_exception_check(error);
@@ -856,8 +971,8 @@ static VALUE rb_git_repo_revert_commit(int argc, VALUE *argv, VALUE self)
 	}
 
 	Data_Get_Struct(self, git_repository, repo);
-	Data_Get_Struct(rb_revert_commit, git_commit, revert_commit);
-	Data_Get_Struct(rb_our_commit, git_commit, our_commit);
+	TypedData_Get_Struct(rb_revert_commit, git_commit, &rugged_object_type, revert_commit);
+	TypedData_Get_Struct(rb_our_commit, git_commit, &rugged_object_type, our_commit);
 
 	error = git_revert_commit(&index, repo, revert_commit, our_commit, mainline, &opts);
 	if (error == GIT_EMERGECONFLICT)
@@ -866,6 +981,69 @@ static VALUE rb_git_repo_revert_commit(int argc, VALUE *argv, VALUE self)
 	rugged_exception_check(error);
 
 	return rugged_index_new(rb_cRuggedIndex, self, index);
+}
+
+/*
+ *  call-seq:
+ *    repo.apply(diff, options = {}) -> true or false
+ *
+ *	Applies the given diff to the repository.
+ *  The following options can be passed in the +options+ Hash:
+ *
+ *  :location ::
+ *    Whether to apply the changes to the workdir (default for non-bare),
+ *    the index (default for bare) or both. Valid values: +:index+, +:workdir+,
+ *    +:both+.
+ *
+ *  :delta_callback ::
+ *    While applying the patch, this callback will be executed per delta (file).
+ *    The current +delta+ will be passed to the block. The block's return value
+ *    determines further behavior. When the block evaluates to:
+ *       - +true+: the hunk will be applied and the apply process will continue.
+ *       - +false+: the hunk will be skipped, but the apply process continues.
+ *       - +nil+: the hunk is not applied, and the apply process is aborted.
+ *
+ *  :hunk_callback ::
+ *    While applying the patch, this callback will be executed per hunk.
+ *    The current +hunk+ will be passed to the block. The block's return value
+ *    determines further behavior, as per +:delta_callback+.
+ *
+ */
+static VALUE rb_git_repo_apply(int argc, VALUE *argv, VALUE self)
+{
+	VALUE rb_diff, rb_options;
+	git_diff *diff;
+	git_repository *repo;
+	git_apply_options opts = GIT_APPLY_OPTIONS_INIT;
+	git_apply_location_t location;
+	struct rugged_apply_cb_payload payload = { Qnil, Qnil, 0 };
+	int error;
+
+	Data_Get_Struct(self, git_repository, repo);
+	if (git_repository_is_bare(repo)) {
+		location = GIT_APPLY_LOCATION_INDEX;
+	} else {
+		location = GIT_APPLY_LOCATION_WORKDIR;
+	}
+
+	rb_scan_args(argc, argv, "11", &rb_diff, &rb_options);
+
+	if (!rb_obj_is_kind_of(rb_diff, rb_cRuggedDiff)) {
+		rb_raise(rb_eArgError, "Expected a Rugged::Diff.");
+	}
+
+	if (!NIL_P(rb_options)) {
+		Check_Type(rb_options, T_HASH);
+		rugged_parse_apply_options(&opts, &location, rb_options, &payload);
+	}
+
+	Data_Get_Struct(rb_diff, git_diff, diff);
+
+	error = git_apply(repo, diff, location, &opts);
+
+	rugged_exception_check(error);
+
+	return Qtrue;
 }
 
 /*
@@ -911,8 +1089,8 @@ static VALUE rb_git_repo_merge_commits(int argc, VALUE *argv, VALUE self)
 	}
 
 	Data_Get_Struct(self, git_repository, repo);
-	Data_Get_Struct(rb_our_commit, git_commit, our_commit);
-	Data_Get_Struct(rb_their_commit, git_commit, their_commit);
+	TypedData_Get_Struct(rb_our_commit, git_commit, &rugged_object_type, our_commit);
+	TypedData_Get_Struct(rb_their_commit, git_commit, &rugged_object_type, their_commit);
 
 	error = git_merge_commits(&index, repo, our_commit, their_commit, &opts);
 	if (error == GIT_EMERGECONFLICT)
@@ -1518,7 +1696,7 @@ static VALUE rb_git_repo_file_status(VALUE self, VALUE rb_path)
 
 static VALUE rb_git_repo_file_each_status(VALUE self)
 {
-	int error, exception;
+	int error, exception = 0;
 	size_t i, nentries;
 	git_repository *repo;
 	git_status_list *list;
@@ -2026,7 +2204,7 @@ void rugged_parse_checkout_options(git_checkout_options *opts, VALUE rb_options)
 	rb_value = rb_hash_aref(rb_options, CSTR2SYM("baseline"));
 	if (!NIL_P(rb_value)) {
 		if (rb_obj_is_kind_of(rb_value, rb_cRuggedTree)) {
-			Data_Get_Struct(rb_value, git_tree, opts->baseline);
+			TypedData_Get_Struct(rb_value, git_tree, &rugged_object_type, opts->baseline);
 		} else {
 			rb_raise(rb_eTypeError, "Expected a Rugged::Tree.");
 		}
@@ -2190,7 +2368,7 @@ static VALUE rb_git_checkout_tree(int argc, VALUE *argv, VALUE self)
 	}
 
 	Data_Get_Struct(self, git_repository, repo);
-	Data_Get_Struct(rb_treeish, git_object, treeish);
+	TypedData_Get_Struct(rb_treeish, git_object, &rugged_object_type, treeish);
 
 	rugged_parse_checkout_options(&opts, rb_options);
 
@@ -2488,7 +2666,7 @@ static VALUE rb_git_repo_cherrypick(int argc, VALUE *argv, VALUE self)
 	}
 
 	Data_Get_Struct(self, git_repository, repo);
-	Data_Get_Struct(rb_commit, git_commit, commit);
+	TypedData_Get_Struct(rb_commit, git_commit, &rugged_object_type, commit);
 
 	rugged_parse_cherrypick_options(&opts, rb_options);
 
@@ -2541,8 +2719,8 @@ static VALUE rb_git_repo_cherrypick_commit(int argc, VALUE *argv, VALUE self)
 	}
 
 	Data_Get_Struct(self, git_repository, repo);
-	Data_Get_Struct(rb_commit, git_commit, commit);
-	Data_Get_Struct(rb_our_commit, git_commit, our_commit);
+	TypedData_Get_Struct(rb_commit, git_commit, &rugged_object_type, commit);
+	TypedData_Get_Struct(rb_our_commit, git_commit, &rugged_object_type, our_commit);
 
 	rugged_parse_merge_options(&opts, rb_options);
 
@@ -2551,6 +2729,29 @@ static VALUE rb_git_repo_cherrypick_commit(int argc, VALUE *argv, VALUE self)
 	rugged_exception_check(error);
 
 	return rugged_index_new(rb_cRuggedIndex, self, index);
+}
+
+/*
+ *  call-seq: repo.diff_from_buffer(buffer) -> Rugged::Diff object
+ *  
+ *  Where +buffer+ is a +String+.
+ *  Returns A Rugged::Diff object
+ */
+static VALUE rb_git_diff_from_buffer(VALUE self, VALUE rb_buffer)
+{
+	git_diff *diff = NULL;
+	const char *buffer;
+	size_t len;
+	int error;
+
+	Check_Type(rb_buffer, T_STRING);
+	buffer = RSTRING_PTR(rb_buffer);
+	len = RSTRING_LEN(rb_buffer);
+
+	error = git_diff_from_buffer(&diff, buffer, len);
+	rugged_exception_check(error);
+
+	return rugged_diff_new(rb_cRuggedDiff, self, diff);
 }
 
 void Init_rugged_repo(void)
@@ -2608,7 +2809,11 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "merge_analysis", rb_git_repo_merge_analysis, -1);
 	rb_define_method(rb_cRuggedRepo, "merge_commits", rb_git_repo_merge_commits, -1);
 
+	rb_define_method(rb_cRuggedRepo, "apply", rb_git_repo_apply, -1);
+
 	rb_define_method(rb_cRuggedRepo, "revert_commit", rb_git_repo_revert_commit, -1);
+	
+	rb_define_method(rb_cRuggedRepo, "diff_from_buffer", rb_git_diff_from_buffer, 1);
 
 	rb_define_method(rb_cRuggedRepo, "path_ignored?", rb_git_repo_is_path_ignored, 1);
 
@@ -2630,7 +2835,7 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "cherrypick_commit", rb_git_repo_cherrypick_commit, -1);
 	rb_define_method(rb_cRuggedRepo, "fetch_attributes", rb_git_repo_attributes, -1);
 
-	rb_cRuggedOdbObject = rb_define_class_under(rb_mRugged, "OdbObject", rb_cObject);
+	rb_cRuggedOdbObject = rb_define_class_under(rb_mRugged, "OdbObject", rb_cData);
 	rb_define_method(rb_cRuggedOdbObject, "data",  rb_git_odbobj_data,  0);
 	rb_define_method(rb_cRuggedOdbObject, "len",  rb_git_odbobj_size,  0);
 	rb_define_method(rb_cRuggedOdbObject, "type",  rb_git_odbobj_type,  0);

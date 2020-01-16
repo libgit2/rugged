@@ -10,6 +10,8 @@
 extern VALUE rb_cRuggedRepo;
 extern VALUE rb_cRuggedObject;
 
+extern const rb_data_type_t rugged_object_type;
+
 static VALUE rugged_git_note_message(const git_note *note)
 {
 	const char *message;
@@ -59,7 +61,7 @@ static VALUE rb_git_note_lookup(int argc, VALUE *argv, VALUE self)
 		notes_ref = StringValueCStr(rb_notes_ref);
 	}
 
-	Data_Get_Struct(self, git_object, object);
+	TypedData_Get_Struct(self, git_object, &rugged_object_type, object);
 
 	owner = rugged_owner(self);
 	Data_Get_Struct(owner, git_repository, repo);
@@ -124,7 +126,7 @@ static VALUE rb_git_note_create(VALUE self, VALUE rb_data)
 
 	Check_Type(rb_data, T_HASH);
 
-	Data_Get_Struct(self, git_object, target);
+	TypedData_Get_Struct(self, git_object, &rugged_object_type, target);
 
 	owner = rugged_owner(self);
 	Data_Get_Struct(owner, git_repository, repo);
@@ -207,7 +209,7 @@ static VALUE rb_git_note_remove(int argc, VALUE *argv, VALUE self)
 	VALUE rb_committer = Qnil;
 	VALUE owner;
 
-	Data_Get_Struct(self, git_object, target);
+	TypedData_Get_Struct(self, git_object, &rugged_object_type, target);
 
 	owner = rugged_owner(self);
 	Data_Get_Struct(owner, git_repository, repo);

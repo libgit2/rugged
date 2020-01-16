@@ -6,12 +6,7 @@ os:
   - osx
 
 rvm:
-  - 2.3.3
-  - 2.4.0
-  - 2.5.0
-  - 2.6
   - ruby-head
-  - rbx-2
 
 addons:
   apt:
@@ -38,6 +33,6 @@ git:
 before_install:
   - git submodule update --init
   - gem update --system
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then ./vendor/libgit2/ci/setup-osx.sh; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then ./vendor/libgit2/azure-pipelines/setup-osx.sh; fi
 
 script: script/travisbuild

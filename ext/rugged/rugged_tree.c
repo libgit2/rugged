@@ -18,6 +18,8 @@ extern VALUE rb_cRuggedCommit;
 VALUE rb_cRuggedTree;
 VALUE rb_cRuggedTreeBuilder;
 
+extern const rb_data_type_t rugged_object_type;
+
 static VALUE rb_git_treeentry_fromC(const git_tree_entry *entry)
 {
 	VALUE rb_entry;
@@ -72,7 +74,7 @@ static VALUE rb_git_treeentry_fromC(const git_tree_entry *entry)
 static VALUE rb_git_tree_entrycount(VALUE self)
 {
 	git_tree *tree;
-	Data_Get_Struct(self, git_tree, tree);
+	TypedData_Get_Struct(self, git_tree, &rugged_object_type, tree);
 
 	return INT2FIX(git_tree_entrycount(tree));
 }
@@ -115,7 +117,7 @@ static VALUE rb_git_tree_entrycount_recursive(int argc, VALUE* argv, VALUE self)
 	struct rugged_treecount_cb_payload payload;
 	VALUE rb_limit;
 
-	Data_Get_Struct(self, git_tree, tree);
+	TypedData_Get_Struct(self, git_tree, &rugged_object_type, tree);
 
 	rb_scan_args(argc, argv, "01", &rb_limit);
 
@@ -158,7 +160,7 @@ static VALUE rb_git_tree_entrycount_recursive(int argc, VALUE* argv, VALUE self)
 static VALUE rb_git_tree_get_entry(VALUE self, VALUE entry_id)
 {
 	git_tree *tree;
-	Data_Get_Struct(self, git_tree, tree);
+	TypedData_Get_Struct(self, git_tree, &rugged_object_type, tree);
 
 	if (TYPE(entry_id) == T_FIXNUM)
 		return rb_git_treeentry_fromC(git_tree_entry_byindex(tree, FIX2INT(entry_id)));
@@ -189,7 +191,7 @@ static VALUE rb_git_tree_get_entry_by_oid(VALUE self, VALUE rb_oid)
 {
 	git_tree *tree;
 	git_oid oid;
-	Data_Get_Struct(self, git_tree, tree);
+	TypedData_Get_Struct(self, git_tree, &rugged_object_type, tree);
 
 	Check_Type(rb_oid, T_STRING);
 	rugged_exception_check(git_oid_fromstr(&oid, StringValueCStr(rb_oid)));
@@ -222,7 +224,7 @@ static VALUE rb_git_tree_each(VALUE self)
 	size_t i, count;
 
 	RETURN_ENUMERATOR(self, 0, 0);
-	Data_Get_Struct(self, git_tree, tree);
+	TypedData_Get_Struct(self, git_tree, &rugged_object_type, tree);
 
 	count = git_tree_entrycount(tree);
 
@@ -287,7 +289,7 @@ static VALUE rb_git_tree_walk(VALUE self, VALUE rb_mode)
 	int error, mode = 0, exception = 0;
 	ID id_mode;
 
-	Data_Get_Struct(self, git_tree, tree);
+	TypedData_Get_Struct(self, git_tree, &rugged_object_type, tree);
 
 	if (!rb_block_given_p())
 		return rb_funcall(self, rb_intern("to_enum"), 2, CSTR2SYM("walk"), rb_mode);
@@ -325,7 +327,7 @@ static VALUE rb_git_tree_path(VALUE self, VALUE rb_path)
 	git_tree *tree;
 	git_tree_entry *entry;
 	VALUE rb_entry;
-	Data_Get_Struct(self, git_tree, tree);
+	TypedData_Get_Struct(self, git_tree, &rugged_object_type, tree);
 	Check_Type(rb_path, T_STRING);
 
 	error = git_tree_entry_bypath(&entry, tree, StringValueCStr(rb_path));
@@ -352,7 +354,7 @@ static VALUE rb_git_diff_tree_to_index(VALUE self, VALUE rb_repo, VALUE rb_self,
 	rugged_parse_diff_options(&opts, rb_options);
 
 	if (RTEST(rb_self)) {
-		Data_Get_Struct(rb_self, git_tree, tree);
+		TypedData_Get_Struct(rb_self, git_tree, &rugged_object_type, tree);
 	}
 
 	error = git_diff_tree_to_index(&diff, repo, tree, index, &opts);
@@ -392,10 +394,10 @@ static VALUE rb_git_diff_tree_to_tree(VALUE self, VALUE rb_repo, VALUE rb_tree, 
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
 	if(RTEST(rb_tree))
-	    Data_Get_Struct(rb_tree, git_tree, tree);
+	    TypedData_Get_Struct(rb_tree, git_tree, &rugged_object_type, tree);
 
 	if(RTEST(rb_other_tree))
-	    Data_Get_Struct(rb_other_tree, git_tree, other_tree);
+	    TypedData_Get_Struct(rb_other_tree, git_tree, &rugged_object_type, other_tree);
 
 	rugged_parse_diff_options(&opts, rb_options);
 
@@ -435,7 +437,7 @@ static VALUE rb_git_tree_diff_workdir(int argc, VALUE *argv, VALUE self)
 	rb_scan_args(argc, argv, "00:", &rb_options);
 	rugged_parse_diff_options(&opts, rb_options);
 
-	Data_Get_Struct(self, git_tree, tree);
+	TypedData_Get_Struct(self, git_tree, &rugged_object_type, tree);
 	owner = rugged_owner(self);
 	Data_Get_Struct(owner, git_repository, repo);
 
@@ -558,12 +560,12 @@ static VALUE rb_git_tree_merge(int argc, VALUE *argv, VALUE self)
 	else if (!NIL_P(rb_ancestor_tree) && !rb_obj_is_kind_of(rb_ancestor_tree, rb_cRuggedTree))
 		rb_raise(rb_eTypeError, "Expecting a Rugged::Tree instance");
 
-	Data_Get_Struct(self, git_tree, tree);
+	TypedData_Get_Struct(self, git_tree, &rugged_object_type, tree);
 	Data_Get_Struct(rb_repo, git_repository, repo);
-	Data_Get_Struct(rb_other_tree, git_tree, other_tree);
+	TypedData_Get_Struct(rb_other_tree, git_tree, &rugged_object_type, other_tree);
 
 	if (!NIL_P(rb_ancestor_tree))
-		Data_Get_Struct(rb_ancestor_tree, git_tree, ancestor_tree);
+		TypedData_Get_Struct(rb_ancestor_tree, git_tree, &rugged_object_type, ancestor_tree);
 	else
 		ancestor_tree = NULL;
 
@@ -693,7 +695,7 @@ static VALUE rb_git_tree_update(VALUE self, VALUE rb_updates)
 	int nupdates, error;
 	git_oid id;
 
-	Data_Get_Struct(self, git_tree, tree);
+	TypedData_Get_Struct(self, git_tree, &rugged_object_type, tree);
 	repo = git_tree_owner(tree);
 
 	parse_tree_updates(&updates, &nupdates, rb_updates);
@@ -734,7 +736,7 @@ static VALUE rb_git_treebuilder_new(int argc, VALUE *argv, VALUE klass)
 		if (!rb_obj_is_kind_of(rb_object, rb_cRuggedTree))
 			rb_raise(rb_eTypeError, "A Rugged::Tree instance is required");
 
-		Data_Get_Struct(rb_object, git_tree, tree);
+		TypedData_Get_Struct(rb_object, git_tree, &rugged_object_type, tree);
 	}
 
 	rugged_check_repo(rb_repo);

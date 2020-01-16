@@ -6,7 +6,6 @@
  */
 
 #include "rugged.h"
-#include <ruby/thread.h>
 
 extern VALUE rb_mRugged;
 VALUE rb_cRuggedDiff;
@@ -198,22 +197,6 @@ static int diff_print_cb(
 	return GIT_OK;
 }
 
-struct nogvl_diff_patch_args {
-	git_diff * diff;
-	git_diff_format_t format;
-	VALUE rb_str;
-};
-
-static void * rb_git_diff_patch_nogvl(void * _args)
-{
-	struct nogvl_diff_patch_args * args;
-
-	args = (struct nogvl_diff_patch_args *)_args;
-	git_diff_print(args->diff, args->format, diff_print_cb, (void*) args->rb_str);
-
-        return NULL;
-}
-
 /*
  *  call-seq:
  *    diff.patch -> patch
@@ -226,8 +209,6 @@ static VALUE rb_git_diff_patch(int argc, VALUE *argv, VALUE self)
 	git_diff *diff;
 	VALUE rb_str = rb_str_new(NULL, 0);
 	VALUE rb_opts;
-	struct nogvl_diff_patch_args args;
-	git_diff_format_t format = GIT_DIFF_FORMAT_PATCH;
 
 	rb_scan_args(argc, argv, "00:", &rb_opts);
 
@@ -235,15 +216,12 @@ static VALUE rb_git_diff_patch(int argc, VALUE *argv, VALUE self)
 
 	if (!NIL_P(rb_opts)) {
 		if (rb_hash_aref(rb_opts, CSTR2SYM("compact")) == Qtrue)
-			format = GIT_DIFF_FORMAT_NAME_STATUS;
+			git_diff_print(diff, GIT_DIFF_FORMAT_NAME_STATUS, diff_print_cb, (void*)rb_str);
 		else
-			format = GIT_DIFF_FORMAT_PATCH;
+			git_diff_print(diff, GIT_DIFF_FORMAT_PATCH, diff_print_cb, (void*)rb_str);
+	} else {
+		git_diff_print(diff, GIT_DIFF_FORMAT_PATCH, diff_print_cb, (void*)rb_str);
 	}
-
-	args.diff = diff;
-	args.format = format;
-	args.rb_str = rb_str;
-	rb_thread_call_without_gvl(rb_git_diff_patch_nogvl, &args, RUBY_UBF_PROCESS, NULL);
 
 	return rb_str;
 }

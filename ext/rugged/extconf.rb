@@ -14,6 +14,7 @@ $CFLAGS << " -O3" unless $CFLAGS[/-O\d/]
 $CFLAGS << " -Wall -Wno-comment"
 
 cmake_flags = [ ENV["CMAKE_FLAGS"] ]
+cmake_flags << "-DREGEX_BACKEND=builtin"
 cmake_flags << "-DUSE_SHA1DC=ON" if with_config("sha1dc")
 
 def sys(cmd)
@@ -30,7 +31,8 @@ end
 
 def self.run_cmake(timeout, args)
   # Set to process group so we can kill it and its children
-  pid = Process.spawn("cmake #{args}", pgroup: true)
+  pgroup = Gem.win_platform? ? :new_pgroup : :pgroup
+  pid = Process.spawn("cmake #{args}", pgroup => true)
 
   Timeout.timeout(timeout) do
     Process.waitpid(pid)

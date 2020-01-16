@@ -15,6 +15,8 @@ extern VALUE rb_cRuggedReference;
 
 VALUE rb_cRuggedRebase;
 
+extern const rb_data_type_t rugged_object_type;
+
 static VALUE rebase_operation_type(git_rebase_operation *operation);
 
 static void parse_rebase_options(git_rebase_options *ret, VALUE rb_options)
@@ -70,7 +72,7 @@ static void get_annotated_commit(git_annotated_commit **annotated_commit, VALUE 
 		const git_commit * commit;
 		const git_oid * oid;
 
-		Data_Get_Struct(rb_value, git_commit, commit);
+		TypedData_Get_Struct(rb_value, git_commit, &rugged_object_type, commit);
 
 		oid = git_commit_id(commit);
 		error = git_annotated_commit_lookup(annotated_commit, repo, oid);

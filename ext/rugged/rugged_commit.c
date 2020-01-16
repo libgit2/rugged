@@ -15,6 +15,8 @@ extern VALUE rb_cRuggedRepo;
 extern VALUE rb_cRuggedSignature;
 VALUE rb_cRuggedCommit;
 
+extern const rb_data_type_t rugged_object_type;
+
 /*
  *  call-seq:
  *    commit.message -> msg
@@ -35,7 +37,7 @@ static VALUE rb_git_commit_message_GET(VALUE self)
 	const char *encoding_name;
 	const char *message;
 
-	Data_Get_Struct(self, git_commit, commit);
+	TypedData_Get_Struct(self, git_commit, &rugged_object_type, commit);
 
 	message = git_commit_message(commit);
 	encoding_name = git_commit_message_encoding(commit);
@@ -68,7 +70,7 @@ static VALUE rb_git_commit_trailers_GET(VALUE self)
 	int error;
 	size_t i;
 
-	Data_Get_Struct(self, git_commit, commit);
+	TypedData_Get_Struct(self, git_commit, &rugged_object_type, commit);
 
 	encoding_name = git_commit_message_encoding(commit);
 	if (encoding_name != NULL)
@@ -118,7 +120,7 @@ static VALUE rb_git_commit_summary_GET(VALUE self)
 	const char *encoding_name;
 	const char *summary;
 
-	Data_Get_Struct(self, git_commit, commit);
+	TypedData_Get_Struct(self, git_commit, &rugged_object_type, commit);
 
 	summary = git_commit_summary(commit);
 	encoding_name = git_commit_message_encoding(commit);
@@ -147,7 +149,7 @@ static VALUE rb_git_commit_summary_GET(VALUE self)
 static VALUE rb_git_commit_committer_GET(VALUE self)
 {
 	git_commit *commit;
-	Data_Get_Struct(self, git_commit, commit);
+	TypedData_Get_Struct(self, git_commit, &rugged_object_type, commit);
 
 	return rugged_signature_new(
 		git_commit_committer(commit),
@@ -172,7 +174,7 @@ static VALUE rb_git_commit_committer_GET(VALUE self)
 static VALUE rb_git_commit_author_GET(VALUE self)
 {
 	git_commit *commit;
-	Data_Get_Struct(self, git_commit, commit);
+	TypedData_Get_Struct(self, git_commit, &rugged_object_type, commit);
 
 	return rugged_signature_new(
 		git_commit_author(commit),
@@ -192,7 +194,7 @@ static VALUE rb_git_commit_author_GET(VALUE self)
 static VALUE rb_git_commit_epoch_time_GET(VALUE self)
 {
 	git_commit *commit;
-	Data_Get_Struct(self, git_commit, commit);
+	TypedData_Get_Struct(self, git_commit, &rugged_object_type, commit);
 
 	return ULONG2NUM(git_commit_time(commit));
 }
@@ -213,7 +215,7 @@ static VALUE rb_git_commit_tree_GET(VALUE self)
 	VALUE owner;
 	int error;
 
-	Data_Get_Struct(self, git_commit, commit);
+	TypedData_Get_Struct(self, git_commit, &rugged_object_type, commit);
 	owner = rugged_owner(self);
 
 	error = git_commit_tree(&tree, commit);
@@ -236,7 +238,7 @@ static VALUE rb_git_commit_tree_id_GET(VALUE self)
 	git_commit *commit;
 	const git_oid *tree_id;
 
-	Data_Get_Struct(self, git_commit, commit);
+	TypedData_Get_Struct(self, git_commit, &rugged_object_type, commit);
 
 	tree_id = git_commit_tree_id(commit);
 
@@ -262,7 +264,7 @@ static VALUE rb_git_commit_parents_GET(VALUE self)
 	VALUE ret_arr, owner;
 	int error;
 
-	Data_Get_Struct(self, git_commit, commit);
+	TypedData_Get_Struct(self, git_commit, &rugged_object_type, commit);
 	owner = rugged_owner(self);
 
 	parent_count = git_commit_parentcount(commit);
@@ -295,7 +297,7 @@ static VALUE rb_git_commit_parent_ids_GET(VALUE self)
 	unsigned int n, parent_count;
 	VALUE ret_arr;
 
-	Data_Get_Struct(self, git_commit, commit);
+	TypedData_Get_Struct(self, git_commit, &rugged_object_type, commit);
 
 	parent_count = git_commit_parentcount(commit);
 	ret_arr = rb_ary_new2((long)parent_count);
@@ -352,7 +354,7 @@ static VALUE rb_git_commit_amend(VALUE self, VALUE rb_data)
 
 	Check_Type(rb_data, T_HASH);
 
-	Data_Get_Struct(self, git_commit, commit_to_amend);
+	TypedData_Get_Struct(self, git_commit, &rugged_object_type, commit_to_amend);
 
 	owner = rugged_owner(self);
 	Data_Get_Struct(owner, git_repository, repo);
@@ -474,7 +476,7 @@ static VALUE parse_commit_options(struct commit_data *out, git_repository *repo,
 			if (error < GIT_OK)
 				goto out;
 		} else if (rb_obj_is_kind_of(p, rb_cRuggedCommit)) {
-			Data_Get_Struct(p, git_commit, tmp);
+			TypedData_Get_Struct(p, git_commit, &rugged_object_type, tmp);
 			if ((error = git_object_dup((git_object **) &parent, (git_object *) tmp)) < 0)
 				goto out;
 		} else {
@@ -614,7 +616,7 @@ static VALUE rb_git_commit_to_mbox(int argc, VALUE *argv, VALUE self)
 	rugged_check_repo(rb_repo);
 	Data_Get_Struct(rb_repo, git_repository, repo);
 
-	Data_Get_Struct(self, git_commit, commit);
+	TypedData_Get_Struct(self, git_commit, &rugged_object_type, commit);
 
 	if (!NIL_P(rb_options)) {
 		Check_Type(rb_options, T_HASH);
@@ -673,7 +675,7 @@ static VALUE rb_git_commit_header_field(VALUE self, VALUE rb_field)
 	int error;
 
 	Check_Type(rb_field, T_STRING);
-	Data_Get_Struct(self, git_commit, commit);
+	TypedData_Get_Struct(self, git_commit, &rugged_object_type, commit);
 
 	error = git_commit_header_field(&header_field, commit, StringValueCStr(rb_field));
 
@@ -704,7 +706,7 @@ static VALUE rb_git_commit_header(VALUE self)
 	git_commit *commit;
 	const char *raw_header;
 
-	Data_Get_Struct(self, git_commit, commit);
+	TypedData_Get_Struct(self, git_commit, &rugged_object_type, commit);
 
 	raw_header = git_commit_raw_header(commit);
 	return rb_str_new_utf8(raw_header);

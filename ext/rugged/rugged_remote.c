@@ -157,12 +157,6 @@ static int credentials_cb(
 	return payload->exception ? GIT_ERROR : GIT_OK;
 }
 
-#define CALLABLE_OR_RAISE(ret, name) \
-	do { \
-		if (!rb_respond_to(ret, rb_intern("call"))) \
-			rb_raise(rb_eArgError, "Expected a Proc or an object that responds to #call (:" name " )."); \
-	} while (0);
-
 void rugged_remote_init_callbacks_and_payload_from_options(
 	VALUE rb_options,
 	git_remote_callbacks *callbacks,

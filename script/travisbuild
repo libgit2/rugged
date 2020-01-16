@@ -1,9 +1,14 @@
 #!/bin/sh
 
+set -ex
+
 # Create a test repo which we can use for the online tests
 mkdir $HOME/_temp
 git init --bare $HOME/_temp/test.git
 git daemon --listen=localhost --export-all --enable=receive-pack --base-path=$HOME/_temp $HOME/_temp 2>/dev/null &
+
+# On Actions we start with 777 which means sshd won't let us in
+chmod 750 $HOME
 
 ssh-keygen -t rsa -f ~/.ssh/rugged_test_rsa -N "" -q
 cat ~/.ssh/rugged_test_rsa.pub >>~/.ssh/authorized_keys
