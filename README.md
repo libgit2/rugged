@@ -17,9 +17,9 @@ Rugged is a self-contained gem. You can install it by running:
 
     $ gem install rugged
 
-You need to have CMake and `pkg-config` installed on your system to be able to build the included version of `libgit2`. On OS X, after installing [Homebrew](http://brew.sh/), you can get CMake with:
+You need to have CMake and `pkg-config` installed on your system to be able to build the included version of `libgit2`. On OS X, after installing [Homebrew](http://brew.sh/), you can get CMake & `pkg-config` with:
 ```bash
-$ brew install cmake
+$ brew install cmake pkg-config
 ```
 
 Please follow the above in case installation of the gem fails with `ERROR: CMake is required to build Rugged.`.
@@ -297,7 +297,7 @@ blob.content # => Gives you the content of the blob.
 
 There is currently no way to stream data from a blob, because `libgit2` itself does not (yet) support
 streaming blobs out of the git object database. While there are hooks and interfaces for supporting it,
-the default file system backend always loads the entire blob contents into memory. 
+the default file system backend always loads the entire blob contents into memory.
 
 If you need to access a Blob object through an IO-like API, you can wrap it with the `StringIO` class.
 Note that the only advantage here is a stream-compatible interface, the complete blob object will still
