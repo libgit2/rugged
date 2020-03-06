@@ -145,6 +145,53 @@ static VALUE rb_git_config_store(VALUE self, VALUE rb_key, VALUE rb_val)
 
 /*
  *  call-seq:
+ *   cfg.add(key, value)
+ *
+ *  Store the given +value+ in the Config file, under the section
+ *  and name specified by +key+, without replacing any existing
+ *  entries. Value can be any of the following Ruby types:
+ *  +String+, +true+, +false+ and +Fixnum+.
+ *
+ *  The config file will be automatically stored to disk.
+ *
+ *    cfg.add('custom.multi.value', 'fix')
+ *    cfg.add('custom.multi.value', true)
+ *    cfg.add('custom.multi.value', 90)
+ */
+static VALUE rb_git_config_add(VALUE self, VALUE rb_key, VALUE rb_val)
+{
+	git_config *config;
+	const char *key;
+	int error;
+
+	Data_Get_Struct(self, git_config, config);
+	Check_Type(rb_key, T_STRING);
+
+	key = StringValueCStr(rb_key);
+
+	/*
+	 * "$^" is an unmatchable regexp: it will not match anything at all, so
+	 * all values will be considered new and will not replace any present value.
+	 */
+	if (RB_TYPE_P(rb_val, T_STRING)) {
+		error = git_config_set_multivar(config, key, "$^", StringValueCStr(rb_val));
+	} else if (RB_TYPE_P(rb_val, T_TRUE) || RB_TYPE_P(rb_val, T_FALSE)) {
+		error = git_config_set_multivar(config, key, "$^", (rb_val == Qtrue) ? "true" : "false");
+	} else if (FIXNUM_P(rb_val)) {
+		char str_value[32];
+		snprintf(str_value, sizeof(str_value), "%" PRId64, (int64_t)FIX2INT(rb_val));
+		error = git_config_set_multivar(config, key, "$^", str_value);
+	} else {
+		rb_raise(rb_eTypeError,
+			"Invalid value; config files can only store string, bool or int keys");
+	}
+
+	rugged_exception_check(error);
+	return Qnil;
+}
+
+/*
+ *  call-seq:
  *    cfg.delete(key) -> true or false
  *
  *  Delete the given +key+ from the config file. Return +true+ if
@@ -415,6 +462,7 @@ void Init_rugged_config(void)
 
 	rb_define_method(rb_cRuggedConfig, "store", rb_git_config_store, 2);
 	rb_define_method(rb_cRuggedConfig, "[]=", rb_git_config_store, 2);
+	rb_define_method(rb_cRuggedConfig, "add", rb_git_config_add, 2);
 
 	rb_define_method(rb_cRuggedConfig, "get", rb_git_config_get, 1);
 	rb_define_method(rb_cRuggedConfig, "[]", rb_git_config_get, 1);

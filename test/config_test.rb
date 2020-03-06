@@ -85,6 +85,22 @@ class ConfigWriteTest < Rugged::TestCase
     assert_match(/value = my value/, content)
   end
 
+  def test_write_multivar_config_values
+    config = @repo.config
+    config.add('custom.multivalue', 'my value')
+    config.add('custom.multivalue', true)
+    config.add('custom.multivalue', 42)
+
+    config2 = @repo.config
+    custom_multivar = ['my value', 'true', '42']
+    assert_equal custom_multivar, config2.get_all('custom.multivalue')
+
+    content = File.read(File.join(@repo.path, 'config'))
+    assert_match(/multivalue = my value/, content)
+    assert_match(/multivalue = true/, content)
+    assert_match(/multivalue = 42/, content)
+  end
+
   def test_delete_config_values
     config = @repo.config
     config.delete('core.bare')
