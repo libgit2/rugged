@@ -48,7 +48,7 @@ class OnlineFetchTest < Rugged::OnlineTestCase
     def test_fetch_over_https_with_certificate_callback_fail
       @repo.remotes.create("origin", "https://github.com/libgit2/TestGitRepository.git")
 
-      exception = assert_raises Rugged::NetworkError do
+      exception = assert_raises Rugged::HTTPError do
         @repo.fetch("origin", {
           certificate_check: lambda { |valid, host| false }
         })

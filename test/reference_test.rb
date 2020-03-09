@@ -36,6 +36,7 @@ class ReferenceTest < Rugged::TestCase
       "refs/heads/subtrees",
       "refs/heads/test",
       "refs/heads/testrepo-worktree",
+      "refs/symref",
       "refs/tags/e90810b",
       "refs/tags/foo/bar",
       "refs/tags/foo/foo/bar",
