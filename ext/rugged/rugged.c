@@ -39,6 +39,10 @@ const char *RUGGED_ERROR_NAMES[] = {
 	"DescribeError",   /* GIT_ERROR_DESCRIBE */
 	"RebaseError",     /* GIT_ERROR_REBASE */
 	"FilesystemError", /* GIT_ERROR_FILESYSTEM */
+	"PathError",       /* GIT_ERROR_PATCH */
+	"WorktreeError",   /* GIT_ERROR_WORKTREE */
+	"SHA1Error",       /* GIT_ERROR_SHA1 */
+	"HTTPError",       /* GIT_ERROR_HTTP */
 };
 
 #define RUGGED_ERROR_COUNT (int)((sizeof(RUGGED_ERROR_NAMES)/sizeof(RUGGED_ERROR_NAMES[0])))
