@@ -336,9 +336,9 @@ class ReflogTest < Rugged::TestCase
   def test_create_default_log_custom_log_message
     ref = @repo.references.create(
       "refs/heads/test-reflog-default",
-      "a65fedf39aefe402d3bb6e24df4d4f5fe4547750", {
-        message: "reference created"
-      })
+      "a65fedf39aefe402d3bb6e24df4d4f5fe4547750",
+      message: "reference created"
+      )
     reflog = ref.log
 
     assert_equal reflog.size, 1
@@ -359,9 +359,9 @@ class ReflogTest < Rugged::TestCase
 
     ref = @repo.references.create(
       "refs/heads/test-reflog-default",
-      "a65fedf39aefe402d3bb6e24df4d4f5fe4547750", {
-        message: "reference created"
-      })
+      "a65fedf39aefe402d3bb6e24df4d4f5fe4547750",
+      message: "reference created"
+    )
     reflog = ref.log
 
     assert_equal reflog.size, 1
@@ -408,9 +408,11 @@ class ReflogTest < Rugged::TestCase
   end
 
   def test_set_target_default_log_custom_log_message
-    @repo.references.update(@ref, "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
+    @repo.references.update(
+      @ref,
+      "5b5b025afb0b4c913b4c338a42934a3863bf3644",
       message: "reference updated"
-    })
+    )
 
     reflog = @ref.log
     assert_equal reflog.size, 2

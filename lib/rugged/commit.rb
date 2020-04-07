@@ -5,7 +5,6 @@
 
 module Rugged
   class Commit
-
     def self.prettify_message(msg, strip_comments = true)
       Rugged::prettify_message(msg, strip_comments)
     end
@@ -30,7 +29,7 @@ module Rugged
     #
     # See Rugged::Tree#diff_workdir for more details.
     def diff_workdir(options = {})
-      self.tree.diff_workdir(options)
+      self.tree.diff_workdir(**options)
     end
 
     # The time when this commit was made effective. This is the same value

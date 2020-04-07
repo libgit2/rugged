@@ -30,7 +30,7 @@ module Rugged
       options[:strategy] ||= :safe
       options.delete(:paths)
 
-      return checkout_head(options) if target == "HEAD"
+      return checkout_head(**options) if target == "HEAD"
 
       if target.kind_of?(Rugged::Branch)
         branch = target
@@ -39,7 +39,7 @@ module Rugged
       end
 
       if branch
-        self.checkout_tree(branch.target, options)
+        self.checkout_tree(branch.target, **options)
 
         if branch.remote?
           references.create("HEAD", branch.target_id, force: true)
@@ -49,7 +49,7 @@ module Rugged
       else
         commit = Commit.lookup(self, self.rev_parse_oid(target))
         references.create("HEAD", commit.oid, force: true)
-        self.checkout_tree(commit, options)
+        self.checkout_tree(commit, **options)
       end
     end
 
@@ -250,12 +250,11 @@ module Rugged
       (blob.type == :blob) ? blob : nil
     end
 
-    def fetch(remote_or_url, *args)
+    def fetch(remote_or_url, *args, **kwargs)
       unless remote_or_url.kind_of? Remote
         remote_or_url = remotes[remote_or_url] || remotes.create_anonymous(remote_or_url)
       end
-
-      remote_or_url.fetch(*args)
+      remote_or_url.fetch(*args, **kwargs)
     end
 
     # Push a list of refspecs to the given remote.
