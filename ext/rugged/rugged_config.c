@@ -173,7 +173,7 @@ static int cb_config__each_key(const git_config_entry *entry, void *payload)
 {
 	int *exception = (int *) payload;
 
-	rb_protect(rb_yield, rb_ary_new3(1, rb_str_new_utf8(entry->name)), exception);
+	rb_protect(rb_yield, rb_str_new_utf8(entry->name), exception);
 
 	return (*exception != 0) ? GIT_EUSER : GIT_OK;
 }
