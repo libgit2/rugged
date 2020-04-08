@@ -92,4 +92,11 @@ class ConfigWriteTest < Rugged::TestCase
     config2 = @repo.config
     assert_nil config2.get('core.bare')
   end
+
+  def test_iterate_keys
+    config = @repo.config
+    config.each_key do |key|
+      assert key.is_a?(String)
+    end
+  end
 end
