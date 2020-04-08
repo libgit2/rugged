@@ -103,13 +103,13 @@ class RepositoryApplyTest < Rugged::TestCase
     assert_index_content 'README', new_content, bare_repo
 
     diff = bare_repo.diff(new_commit, original_commit)
-    
+
     assert_equal true, bare_repo.apply(diff)
     assert_index_content 'README', original_content, bare_repo
   end
 
   def test_location_option
-    new_commit, new_content, original_content = update_file(@repo, 'README')
+    new_commit, _new_content, _original_content = update_file(@repo, 'README')
 
     diff = @repo.diff(new_commit, @original_commit)
 
