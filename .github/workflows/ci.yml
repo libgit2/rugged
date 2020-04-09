@@ -12,12 +12,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ruby: [ '2.4.9', '2.5.7', '2.6.5', '2.7.0' ]
-        os: [ ubuntu-18.04, macOS-10.14 ]
+        ruby-mac: [ '2.4.9', '2.5.7', '2.6.5', '2.7.0' ]
+        ruby-linux: [ '2.4', '2.5', '2.6', '2.7' ]
+        os: [ ubuntu-18.04, macOS-latest ]
 
     runs-on: ${{ matrix.os }}
 
-    name: Ruby ${{ matrix.ruby }} on ${{ matrix.os }}
+    name: Ruby ${{ matrix.ruby-mac }} ${{ matrix.ruby-linux }} on ${{ matrix.os }}
     steps:
     - uses: actions/checkout@master
     - name: update submodule
@@ -34,13 +35,13 @@ jobs:
       if: runner.os == 'Linux'
       uses: actions/setup-ruby@v1
       with:
-        ruby-version: ${{ matrix.ruby }}
+        ruby-version: ${{ matrix.ruby-linux }}
     - name: Set up Ruby on macOS
       if: runner.os == 'macOS'
       run: |
         brew install rbenv
-        rbenv install ${{ matrix.ruby }}
-        rbenv local ${{ matrix.ruby }}
+        rbenv install ${{ matrix.ruby-mac }}
+        rbenv local ${{ matrix.ruby-mac }}
     - name: run build
       run: |
         if [ -x rbenv ]; then eval "$(rbenv init -)"; fi
