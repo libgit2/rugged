@@ -50,6 +50,14 @@ class ConfigTest < Rugged::TestCase
     end
   end
 
+  def test_each_pair_is_pairs
+    config = @repo.config
+    config.each_pair do |key, value|
+      assert key.is_a?(String)
+      assert value.is_a?(String)
+    end
+  end
+
   def test_transaction
     config = Rugged::Config.new(File.join(@repo.path, 'config'))
     config['section.name'] = 'value'
