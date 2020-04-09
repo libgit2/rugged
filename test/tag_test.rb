@@ -158,10 +158,12 @@ end
 class AnnotatedTagTest < Rugged::TestCase
   def setup
     @repo = FixtureRepo.from_libgit2("testrepo.git")
-    @tag = @repo.tags.create('annotated_tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
+    @tag = @repo.tags.create(
+      'annotated_tag',
+      "5b5b025afb0b4c913b4c338a42934a3863bf3644",
       :message => "test tag message\n",
       :tagger  => { :name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
-    })
+    )
   end
 
   def test_is_annotated
@@ -242,10 +244,12 @@ class TagWriteTest < Rugged::TestCase
   end
 
   def test_writing_a_tag
-    tag = @repo.tags.create('tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
+    tag = @repo.tags.create(
+      'tag',
+      "5b5b025afb0b4c913b4c338a42934a3863bf3644",
       :message => "test tag message\n",
       :tagger  => { :name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
-    })
+    )
 
     annotation = tag.annotation
     assert_equal :tag, annotation.type
@@ -261,9 +265,11 @@ class TagWriteTest < Rugged::TestCase
     @repo.config['user.name'] = name
     @repo.config['user.email'] = email
 
-    tag = @repo.tags.create('tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
+    tag = @repo.tags.create(
+      'tag',
+      "5b5b025afb0b4c913b4c338a42934a3863bf3644",
       :message => "test tag message\n"
-    })
+    )
 
     assert_equal name, tag.annotation.tagger[:name]
     assert_equal email, tag.annotation.tagger[:email]
@@ -271,10 +277,12 @@ class TagWriteTest < Rugged::TestCase
 
   def test_tag_invalid_message_type
     assert_raises TypeError do
-      @repo.tags.create('tag', "5b5b025afb0b4c913b4c338a42934a3863bf3644", {
+      @repo.tags.create(
+        'tag',
+        "5b5b025afb0b4c913b4c338a42934a3863bf3644",
         :message => :invalid_message,
         :tagger  => {:name => 'Scott', :email => 'schacon@gmail.com', :time => Time.now }
-      })
+      )
     end
   end
 

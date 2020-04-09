@@ -26,8 +26,8 @@ module Rugged
     #
     # Returns the newly created +submodule+
     def add(url, path, options = {})
-      submodule = setup_add(url, path, options)
-      clone_submodule(submodule.repository, options)
+      submodule = setup_add(url, path, **options)
+      clone_submodule(submodule.repository, **options)
       submodule.finalize_add
     end
 
@@ -40,9 +40,9 @@ module Rugged
     # 1. fetches the remote
     # 2. sets up a master branch to be tracking origin/master
     # 3. checkouts the submodule
-    def clone_submodule(repo, fetch_options)
+    def clone_submodule(repo, **fetch_options)
       # the remote was just added by setup_add, no need to check presence
-      repo.remotes['origin'].fetch(fetch_options)
+      repo.remotes['origin'].fetch(**fetch_options)
 
       repo.branches.create('master','origin/master')
       repo.branches['master'].upstream = repo.branches['origin/master']

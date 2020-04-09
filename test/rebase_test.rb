@@ -172,10 +172,10 @@ class TestRebase < Rugged::TestCase
     rebase = Rugged::Rebase.new(@repo, "refs/heads/gravy", "refs/heads/veal")
 
     assert rebase.next
-    assert rebase.commit({ committer: { :email => "rebaser@rebaser.com", :name => "Rebaser" } })
+    assert rebase.commit(committer: { :email => "rebaser@rebaser.com", :name => "Rebaser" })
 
     assert rebase.next
-    assert rebase.commit({ committer: { :email => "rebaser@rebaser.com", :name => "Rebaser" } })
+    assert rebase.commit(committer: { :email => "rebaser@rebaser.com", :name => "Rebaser" })
   end
 
   def test_inmemory_rebase_does_not_lose_files
@@ -197,9 +197,9 @@ class TestRebase < Rugged::TestCase
     rebase = Rugged::Rebase.new(@repo, "refs/heads/gravy", "refs/heads/veal", inmemory: true)
 
     assert rebase.next
-    assert rebase.commit({ committer: { :email => "rebaser@rebaser.com", :name => "Rebaser" } })
+    assert rebase.commit(committer: { :email => "rebaser@rebaser.com", :name => "Rebaser" })
 
     assert rebase.next
-    assert rebase.commit({ committer: { :email => "rebaser@rebaser.com", :name => "Rebaser" } })
+    assert rebase.commit(committer: { :email => "rebaser@rebaser.com", :name => "Rebaser" })
   end
 end
