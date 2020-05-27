@@ -14,7 +14,7 @@ class SettingsTest < Rugged::TestCase
 
     size = Rugged::Settings.used_cache_size
     repo = FixtureRepo.from_libgit2("attr")
-    diff = repo.diff("605812a", "370fe9ec22", :context_lines => 1, :interhunk_lines => 1)
+    repo.diff("605812a", "370fe9ec22", :context_lines => 1, :interhunk_lines => 1)
 
     # cache size should grow
     assert_operator size, :<, Rugged::Settings.used_cache_size

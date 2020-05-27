@@ -278,7 +278,7 @@ class SubmoduleTest < Rugged::TestCase
     end
 
     # add a submodule using gitlink by default
-    submodule = @repo.submodules.setup_add(url, submod_path)
+    @repo.submodules.setup_add(url, submod_path)
 
     assert File.file?(File.join(@repo.workdir, submod_path, '.git'))
     assert File.directory?(File.join(@repo.path, 'modules'))
@@ -287,7 +287,7 @@ class SubmoduleTest < Rugged::TestCase
 
     assert_equal url, @repo.config["submodule.#{submod_path}.url"]
 
-    submodule = @repo.submodules.setup_add(url, second_submod_path, gitlink: false)
+    @repo.submodules.setup_add(url, second_submod_path, gitlink: false)
 
     assert File.directory?(File.join(@repo.workdir, second_submod_path, '.git'))
     refute File.exist?(File.join(@repo.path, 'modules', second_submod_path))
