@@ -207,6 +207,18 @@ static void init_custom_headers(VALUE rb_options, git_strarray *custom_headers)
 	}
 }
 
+static void init_proxy_options(VALUE rb_options, git_proxy_options *proxy_options)
+{
+	if (NIL_P(rb_options)) return;
+
+	VALUE val = rb_hash_aref(rb_options, CSTR2SYM("proxy_url"));
+	if (!NIL_P(val)) {
+		Check_Type(val, T_STRING);
+		proxy_options->type = GIT_PROXY_SPECIFIED;
+		proxy_options->url = StringValueCStr(val);
+	}
+}
+
 static int parse_prune_type(VALUE rb_prune_type)
 {
 	if (rb_prune_type == Qtrue) {
@@ -283,11 +295,15 @@ static VALUE rugged_rhead_new(const git_remote_head *head)
  *
  *  :headers ::
  *    Extra HTTP headers to include with the request (only applies to http:// or https:// remotes)
+ *
+ *  :proxy_url ::
+ *    The url of an http proxy to use to access the remote repository.
  */
 static VALUE rb_git_remote_ls(int argc, VALUE *argv, VALUE self)
 {
 	git_remote *remote;
 	git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
+	git_proxy_options proxy_options = GIT_PROXY_OPTIONS_INIT;
 	git_strarray custom_headers = {0};
 	const git_remote_head **heads;
 
@@ -304,8 +320,9 @@ static VALUE rb_git_remote_ls(int argc, VALUE *argv, VALUE self)
 
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &callbacks, &payload);
 	init_custom_headers(rb_options, &custom_headers);
+	init_proxy_options(rb_options, &proxy_options);
 
-	if ((error = git_remote_connect(remote, GIT_DIRECTION_FETCH, &callbacks, NULL, &custom_headers)) ||
+	if ((error = git_remote_connect(remote, GIT_DIRECTION_FETCH, &callbacks, &proxy_options, &custom_headers)) ||
 	    (error = git_remote_ls(&heads, &heads_len, remote)))
 		goto cleanup;
 
@@ -474,6 +491,9 @@ static VALUE rb_git_remote_push_refspecs(VALUE self)
  *  :headers ::
  *    Extra HTTP headers to include with the request (only applies to http:// or https:// remotes)
  *
+ *  :proxy_url ::
+ *    The url of an http proxy to use to access the remote repository.
+ *
  *  Example:
  *
  *    remote = repo.remotes["origin"]
@@ -484,6 +504,7 @@ static VALUE rb_git_remote_check_connection(int argc, VALUE *argv, VALUE self)
 {
 	git_remote *remote;
 	git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
+	git_proxy_options proxy_options = GIT_PROXY_OPTIONS_INIT;
 	git_strarray custom_headers = {0};
 	struct rugged_remote_cb_payload payload = { Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, 0 };
 	VALUE rb_direction, rb_options;
@@ -504,8 +525,9 @@ static VALUE rb_git_remote_check_connection(int argc, VALUE *argv, VALUE self)
 
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &callbacks, &payload);
 	init_custom_headers(rb_options, &custom_headers);
+	init_proxy_options(rb_options, &proxy_options);
 
-	error = git_remote_connect(remote, direction, &callbacks, NULL, &custom_headers);
+	error = git_remote_connect(remote, direction, &callbacks, &proxy_options, &custom_headers);
 	git_remote_disconnect(remote);
 
 	xfree(custom_headers.strings);
@@ -563,6 +585,9 @@ static VALUE rb_git_remote_check_connection(int argc, VALUE *argv, VALUE self)
  *    Specifies the prune mode for the fetch. +true+ remove any remote-tracking references that
  *    no longer exist, +false+ do not prune, +nil+ use configured settings Defaults to "nil".
  *
+ *  :proxy_url ::
+ *    The url of an http proxy to use to access the remote repository.
+ *
  *  Example:
  *
  *    remote = Rugged::Remote.lookup(@repo, 'origin')
@@ -593,6 +618,7 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &opts.callbacks, &payload);
 	init_custom_headers(rb_options, &opts.custom_headers);
+	init_proxy_options(rb_options, &opts.proxy_opts);
 
 	if (!NIL_P(rb_options)) {
 		VALUE rb_prune_type;
@@ -654,6 +680,9 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
  *  :headers ::
  *    Extra HTTP headers to include with the push (only applies to http:// or https:// remotes)
  *
+ *  :proxy_url ::
+ *    The url of an http proxy to use to access the remote repository.
+ *
  *  Example:
  *
  *    remote = Rugged::Remote.lookup(@repo, 'origin')
@@ -679,6 +708,7 @@ static VALUE rb_git_remote_push(int argc, VALUE *argv, VALUE self)
 
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &opts.callbacks, &payload);
 	init_custom_headers(rb_options, &opts.custom_headers);
+	init_proxy_options(rb_options, &opts.proxy_opts);
 
 	error = git_remote_push(remote, &refspecs, &opts);
 
