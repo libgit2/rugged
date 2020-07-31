@@ -260,7 +260,7 @@ class CommitDiffTest < Rugged::TestCase
     repo = FixtureRepo.from_libgit2("attr")
     commit = Rugged::Commit.lookup(repo, "6bab5c79cd5140d0f800917f550eb2a3dc32b0da")
 
-    diff = commit.diff(:context_lines => 1, :interhunk_lines => 1, :reverse => true)
+    diff = commit.diff(:context_lines => 1, :interhunk_lines => 1)
 
     deltas = diff.deltas
     patches = diff.patches
