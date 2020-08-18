@@ -316,4 +316,15 @@ class SubmoduleTest < Rugged::TestCase
     assert submodule.repository.branches['master']
     assert_equal 'origin/master', submodule.repository.branches['master'].upstream.name
   end
+
+  def test_submodule_valid_name?
+    assert Rugged::Submodule.valid_name?("mysubmodule")
+    assert Rugged::Submodule.valid_name?("mysubmodule/.git/foo")
+
+    refute Rugged::Submodule.valid_name?("../mysubmodule")
+    refute Rugged::Submodule.valid_name?("my/../submodule")
+
+    refute Rugged::Submodule.valid_name?("..\\mysubmodule")
+    refute Rugged::Submodule.valid_name?("my\\..\\submodule")
+  end
 end
