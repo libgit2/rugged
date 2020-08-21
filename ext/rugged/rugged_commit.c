@@ -425,7 +425,7 @@ struct commit_data {
  * Note that parents may be set even when the function errors, so make
  * sure to free this data.
  */
-static VALUE parse_commit_options(struct commit_data *out, git_repository *repo, VALUE rb_data)
+static int parse_commit_options(struct commit_data *out, git_repository *repo, VALUE rb_data)
 {
 	VALUE rb_message, rb_tree, rb_parents, rb_ref;
 	int error = 0, parent_count, i;
