@@ -1460,8 +1460,8 @@ static VALUE rb_git_repo_is_shallow(VALUE self)
  *  call-seq:
  *    repo.empty? -> true or false
  *
- *  Return whether a repository is empty or not. An empty repository has just
- *  been initialized and has no commits yet.
+ *  Return whether a repository is empty or not. An empty repository has HEAD
+ *  pointing to the default value and there are no other references.
  */
 static VALUE rb_git_repo_is_empty(VALUE self)
 {
