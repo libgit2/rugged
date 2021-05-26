@@ -2845,7 +2845,7 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "cherrypick_commit", rb_git_repo_cherrypick_commit, -1);
 	rb_define_method(rb_cRuggedRepo, "fetch_attributes", rb_git_repo_attributes, -1);
 
-	rb_cRuggedOdbObject = rb_define_class_under(rb_mRugged, "OdbObject", rb_cData);
+	rb_cRuggedOdbObject = rb_define_class_under(rb_mRugged, "OdbObject", rb_cObject);
 	rb_define_method(rb_cRuggedOdbObject, "data",  rb_git_odbobj_data,  0);
 	rb_define_method(rb_cRuggedOdbObject, "len",  rb_git_odbobj_size,  0);
 	rb_define_method(rb_cRuggedOdbObject, "type",  rb_git_odbobj_type,  0);
