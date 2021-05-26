@@ -577,7 +577,7 @@ You can store bare repositories in alternative backends instead of storing on di
 `redbadger/rugged-redis` for an example of how a rugged backend works).
 
 ```ruby
-a_backend = Rugged::InMemory::Backend.new(opt1: 'setting', opt2: 'setting')
+a_backend = MyProject::CustomObjectDB(opt1: 'setting', opt2: 'setting')
 
 repo = Rugged::Repository.init_at('repo_name', :bare, backend: a_backend)
 
