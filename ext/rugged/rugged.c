@@ -220,15 +220,18 @@ static VALUE rb_git_prettify_message(int argc, VALUE *argv, VALUE self)
 	return result;
 }
 
-static VALUE minimize_cb(VALUE rb_oid, git_oid_shorten *shortener)
+static VALUE minimize_cb(RB_BLOCK_CALL_FUNC_ARGLIST(rb_oid, shorten))
 {
+	git_oid_shorten *shortener = (git_oid_shorten*) shorten;
+
 	Check_Type(rb_oid, T_STRING);
 	git_oid_shorten_add(shortener, RSTRING_PTR(rb_oid));
 	return Qnil;
 }
 
-static VALUE minimize_yield(VALUE rb_oid, VALUE *data)
+static VALUE minimize_yield(RB_BLOCK_CALL_FUNC_ARGLIST(rb_oid, args))
 {
+	VALUE *data = (VALUE*) args;
 	rb_funcall(data[0], rb_intern("call"), 1,
 		rb_str_substr(rb_oid, 0, FIX2INT(data[1])));
 	return Qnil;
@@ -293,7 +296,7 @@ static VALUE rb_git_minimize_oid(int argc, VALUE *argv, VALUE self)
 
 	shrt = git_oid_shorten_new(minlen);
 
-	rb_iterate(rb_each, rb_enum, &minimize_cb, (VALUE)shrt);
+	rb_block_call(rb_enum, rb_intern("each"), 0, NULL, minimize_cb, (VALUE)shrt);
 	length = git_oid_shorten_add(shrt, NULL);
 
 	git_oid_shorten_free(shrt);
@@ -305,7 +308,7 @@ static VALUE rb_git_minimize_oid(int argc, VALUE *argv, VALUE self)
 		yield_data[0] = rb_block;
 		yield_data[1] = INT2FIX(length);
 
-		rb_iterate(rb_each, rb_enum, &minimize_yield, (VALUE)yield_data);
+		rb_block_call(rb_enum, rb_intern("each"), 0, NULL, minimize_yield, (VALUE)yield_data);
 		return Qnil;
 	}
 
