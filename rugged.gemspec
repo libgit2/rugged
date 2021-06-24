@@ -31,5 +31,5 @@ desc
   s.add_development_dependency "rake-compiler", ">= 0.9.0"
   s.add_development_dependency "pry"
   s.add_development_dependency "minitest", "~> 5.0"
-  s.metadata["msys2_mingw_dependencies"] = "libssh2"
+  s.metadata["msys2_mingw_dependencies"] = "libssh2 cmake"
 end
