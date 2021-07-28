@@ -6,9 +6,22 @@ require 'pp'
 
 module Rugged
   class TestCase < Minitest::Test
+    # Set up some isolation for our tests so we don't try to touch any
+    # configuration from the user running the tests
+    def before_setup
+      @configdir ||= begin
+        path = Dir.mktmpdir("rugged-config")
+        Rugged::Settings['search_path_global'] = path
+        Rugged::Settings['search_path_xdg'] = path
+        Rugged::Settings['search_path_system'] = path
+      end
+      super
+    end
+
     # Automatically clean up created fixture repos after each test run
     def after_teardown
       Rugged::TestCase::FixtureRepo.teardown
+      FileUtils.remove_entry_secure(@configdir)
       super
     end
 
