@@ -26,6 +26,4 @@ echo 'PasswordAuthentication yes' | sudo tee -a /etc/sshd_config
 eval $(ssh-agent)
 ssh-add $GITTEST_REMOTE_SSH_KEY
 
-# We need the config so the tests don't fail
-git config --global user.name 'The rugged tests are fragile'
 bundle exec rake || exit $?
