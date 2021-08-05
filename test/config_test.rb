@@ -3,6 +3,16 @@ require "test_helper"
 class ConfigTest < Rugged::TestCase
   def setup
     @repo = FixtureRepo.from_rugged("testrepo.git")
+
+    path = Dir.mktmpdir("rugged-global-config")
+    cfg = Rugged::Config.new(File.join(path, ".gitconfig"))
+    cfg['user.name'] = "The test suite"
+    Rugged::Settings['search_path_global'] = path
+    @glocalconfigdir = path
+  end
+
+  def cleanup
+    FileUtils.remove_entry_secure(@globalconfigdir)
   end
 
   def test_multi_fetch
