@@ -175,6 +175,15 @@ module Rugged
       })
     end
 
+    def ssh_key_credential_from_memory
+      Rugged::Credentials::SshKeyFromMemory.new({
+        username:   ENV["GITTEST_REMOTE_SSH_USER"],
+        publickey:  File.read(ENV["GITTEST_REMOTE_SSH_PUBKEY"]),
+        privatekey: File.read(ENV["GITTEST_REMOTE_SSH_KEY"]),
+        passphrase: ENV["GITTEST_REMOTE_SSH_PASSPHASE"],
+      })
+    end
+
     def ssh_key_credential_from_agent
       Rugged::Credentials::SshKeyFromAgent.new({
         username: ENV["GITTEST_REMOTE_SSH_USER"]
