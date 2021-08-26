@@ -263,12 +263,12 @@ module Rugged
     #
     # Returns a hash containing the pushed refspecs as keys and
     # any error messages or +nil+ as values.
-    def push(remote_or_url, *args)
+    def push(remote_or_url, *args, **kwargs)
       unless remote_or_url.kind_of? Remote
         remote_or_url = remotes[remote_or_url] || remotes.create_anonymous(remote_or_url)
       end
 
-      remote_or_url.push(*args)
+      remote_or_url.push(*args, **kwargs)
     end
   end
 end
