@@ -33,10 +33,11 @@ class RemoteNetworkTest < Rugged::TestCase
   end
 
   def test_remote_check_connection_push_credentials
-    skip_if_unreachable
-    remote = @repo.remotes.create_anonymous('https://github.com/libgit2-push-test/libgit2-push-test.git')
-    credentials = Rugged::Credentials::UserPassword.new(username: "libgit2-push-test", password: "123qwe123")
-    assert remote.check_connection(:push, credentials: credentials)
+    skip unless Rugged.features.include?(:ssh) && ssh_creds?
+
+    url = ENV['GITTEST_REMOTE_SSH_URL']
+    remote = @repo.remotes.create_anonymous(url)
+    assert remote.check_connection(:push, credentials: ssh_key_credential)
   end
 
   def test_remote_check_connection_invalid
