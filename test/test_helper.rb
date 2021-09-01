@@ -158,11 +158,11 @@ module Rugged
       end
     end
 
-    def self.ssh_creds?
+    def ssh_creds?
       %w{URL USER KEY PUBKEY PASSPHRASE}.all? { |key| ENV["GITTEST_REMOTE_SSH_#{key}"] }
     end
 
-    def self.git_creds?
+    def git_creds?
       ENV['GITTEST_REMOTE_GIT_URL']
     end
 
