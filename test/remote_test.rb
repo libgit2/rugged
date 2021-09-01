@@ -1,7 +1,7 @@
 require "test_helper"
 require 'net/http'
 
-class RemoteNetworkTest < Rugged::TestCase
+class RemoteNetworkTest < Rugged::OnlineTestCase
   def setup
     @repo = FixtureRepo.from_rugged("testrepo.git")
   end
