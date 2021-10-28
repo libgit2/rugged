@@ -89,6 +89,14 @@ if arg_config("--use-system-libraries", !!ENV['RUGGED_USE_SYSTEM_LIBRARIES'])
 #endif
   SRC
 else
+  if regex = arg_config("--with-regex-backend")
+    cmake_flags << "-DREGEX_BACKEND=#{regex}"
+  end
+
+  if https = arg_config("--with-https-backend")
+    cmake_flags << "-DUSE_HTTPS=#{https}"
+  end
+
   if !find_executable('cmake')
     abort "ERROR: CMake is required to build Rugged."
   end
