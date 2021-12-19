@@ -30,10 +30,7 @@ jobs:
         bundler-cache: true
     - name: run build
       run: |
-        eval "$(rbenv init -)"
         ruby --version
-        gem install bundler
-        bundle install --path vendor
         ./script/travisbuild
 
   ubuntu:
@@ -61,6 +58,4 @@ jobs:
     - name: run build
       run: |
         ruby --version
-        gem install bundler
-        bundle install --path vendor
         ./script/travisbuild
