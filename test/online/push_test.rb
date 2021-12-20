@@ -45,7 +45,7 @@ class OnlineSshPushTest < Rugged::OnlineTestCase
                    "refs/heads/b3:refs/heads/b3",
                    "refs/heads/b4:refs/heads/b4",
                    "refs/heads/b5:refs/heads/b5"
-                 ], {
+                 ], **{
                    credentials: ssh_key_credential
                  })
 
