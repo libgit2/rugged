@@ -219,6 +219,17 @@ static void init_proxy_options(VALUE rb_options, git_proxy_options *proxy_option
 	}
 }
 
+static void init_pb_parallelism(VALUE rb_options, git_push_options *opts)
+{
+	if (NIL_P(rb_options)) return;
+
+	VALUE val = rb_hash_aref(rb_options, CSTR2SYM("pb_parallelism"));
+	if (!NIL_P(val)) {
+		Check_Type(val, T_FIXNUM);
+		opts->pb_parallelism = FIX2INT(val);
+	}
+}
+
 static int parse_prune_type(VALUE rb_prune_type)
 {
 	if (rb_prune_type == Qtrue) {
@@ -683,6 +694,11 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
  *  :proxy_url ::
  *    The url of an http proxy to use to access the remote repository.
  *
+ *  :pb_parallelism ::
+ *    Sets the number of worker threads that will be available to the packbuilder when generating
+ *    a pack file, if required by the transport being used. A value of 0 means the packbuilder will
+ *    auto-detect the number of of threads to use.
+ *
  *  Example:
  *
  *    remote = Rugged::Remote.lookup(@repo, 'origin')
@@ -709,6 +725,7 @@ static VALUE rb_git_remote_push(int argc, VALUE *argv, VALUE self)
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &opts.callbacks, &payload);
 	init_custom_headers(rb_options, &opts.custom_headers);
 	init_proxy_options(rb_options, &opts.proxy_opts);
+	init_pb_parallelism(rb_options, &opts);
 
 	error = git_remote_push(remote, &refspecs, &opts);
 
