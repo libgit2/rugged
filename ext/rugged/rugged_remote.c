@@ -226,7 +226,7 @@ static void init_pb_parallelism(VALUE rb_options, git_push_options *opts)
 	VALUE val = rb_hash_aref(rb_options, CSTR2SYM("pb_parallelism"));
 	if (!NIL_P(val)) {
 		Check_Type(val, T_FIXNUM);
-		opts->pb_parallelism = FIX2INT(val);
+		opts->pb_parallelism = FIX2UINT(val);
 	}
 }
 
