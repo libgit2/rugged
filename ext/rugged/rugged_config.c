@@ -181,17 +181,22 @@ static int cb_config__each_key(const git_config_entry *entry, void *payload)
 static int cb_config__each_pair(const git_config_entry *entry, void *payload)
 {
 	int *exception = (int *) payload;
+	VALUE value;
 
-	rb_protect(rb_yield, rb_ary_new3(2, rb_str_new_utf8(entry->name), rb_str_new_utf8(entry->value)), exception);
+	value = entry->value ? rb_str_new_utf8(entry->value) : Qnil;
+	rb_protect(rb_yield, rb_ary_new3(2, rb_str_new_utf8(entry->name), value), exception);
 
 	return (*exception != 0) ? GIT_EUSER : GIT_OK;
 }
 
 static int cb_config__to_hash(const git_config_entry *entry, void *opaque)
 {
+	VALUE value;
+
+	value = entry->value ? rb_str_new_utf8(entry->value) : Qnil;
 	rb_hash_aset((VALUE)opaque,
 		rb_str_new_utf8(entry->name),
-		rb_str_new_utf8(entry->value)
+		value
 	);
 
 	return GIT_OK;

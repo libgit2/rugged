@@ -117,4 +117,25 @@ class ConfigWriteTest < Rugged::TestCase
     config2 = @repo.config
     assert_nil config2.get('core.bare')
   end
+
+  def test_invalid_values
+    Tempfile.open("config-value") do |file|
+      file.write(<<-CONFIG)
+      [section "subsection"]
+      line1 = string1
+      line2
+      line3 = string2
+      CONFIG
+      file.flush
+
+      config = Rugged::Config.new(file.path)
+      config.each_pair.to_a # just checking it doesn't crash
+      config.to_hash
+
+      # We expect an empty string due to how we look up specific keys
+      assert_equal "string1", config["section.subsection.line1"]
+      assert_equal "", config["section.subsection.line2"]
+      assert_equal "string2", config["section.subsection.line3"]
+    end
+  end
 end
