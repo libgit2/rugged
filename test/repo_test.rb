@@ -81,13 +81,13 @@ class RepositoryTest < Rugged::TestCase
 
   def test_match_all_refs
     refs = @repo.refs 'refs/heads/*'
-    assert_equal 12, refs.count
+    assert_equal 13, refs.count
   end
 
   def test_return_all_ref_names
     refs = @repo.ref_names
     refs.each {|name| assert name.kind_of?(String)}
-    assert_equal 22, refs.count
+    assert_equal 23, refs.count
   end
 
   def test_return_all_tags
