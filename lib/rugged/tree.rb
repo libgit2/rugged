@@ -172,21 +172,25 @@ module Rugged
 
     # Walks the tree but only yields blobs
     def walk_blobs(mode=:postorder)
+      return to_enum(__method__) unless block_given?
       self.walk(mode) { |root, e| yield root, e if e[:type] == :blob }
     end
 
     # Walks the tree but only yields subtrees
     def walk_trees(mode=:postorder)
+      return to_enum(__method__) unless block_given?
       self.walk(mode) { |root, e| yield root, e if e[:type] == :tree }
     end
 
     # Iterate over the blobs in this tree
     def each_blob
+      return to_enum(__method__) unless block_given?
       self.each { |e| yield e if e[:type] == :blob }
     end
 
     # Iterate over the subtrees in this tree
     def each_tree
+      return to_enum(__method__) unless block_given?
       self.each { |e| yield e if e[:type] == :tree }
     end
   end

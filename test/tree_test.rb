@@ -98,16 +98,32 @@ class TreeTest < Rugged::TestCase
     @tree.walk_trees {|root, entry| assert_equal :tree, entry[:type]}
   end
 
+  def test_tree_walk_only_trees_without_block
+    assert_equal [:tree], @tree.walk_trees.map { |_root, entry| entry[:type] }.uniq
+  end
+
   def test_tree_walk_only_blobs
     @tree.walk_blobs {|root, entry| assert_equal :blob, entry[:type]}
+  end
+
+  def test_tree_walk_only_blobs_without_block
+    assert_equal [:blob], @tree.walk_blobs.map { |_root, entry| entry[:type] }.uniq
   end
 
   def test_iterate_subtrees
     @tree.each_tree {|tree| assert_equal :tree, tree[:type]}
   end
 
+  def test_iterate_subtrees_without_block
+    assert_equal [:tree], @tree.each_tree.map { |tree| tree[:type] }.uniq
+  end
+
   def test_iterate_subtree_blobs
     @tree.each_blob {|tree| assert_equal :blob, tree[:type]}
+  end
+
+  def test_iterate_subtree_blobs_without_block
+    assert_equal [:blob], @tree.each_blob.map { |tree| tree[:type] }.uniq
   end
 end
 
