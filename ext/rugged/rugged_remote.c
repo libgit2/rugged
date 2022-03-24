@@ -198,7 +198,7 @@ void rugged_remote_init_callbacks_and_payload_from_options(
 	}
 }
 
-static void init_custom_headers(VALUE rb_options, git_strarray *custom_headers)
+void rugged_remote_init_custom_headers(VALUE rb_options, git_strarray *custom_headers)
 {
 	if (!NIL_P(rb_options))
 	{
@@ -207,7 +207,7 @@ static void init_custom_headers(VALUE rb_options, git_strarray *custom_headers)
 	}
 }
 
-static void init_proxy_options(VALUE rb_options, git_proxy_options *proxy_options)
+void rugged_remote_init_proxy_options(VALUE rb_options, git_proxy_options *proxy_options)
 {
 	if (NIL_P(rb_options)) return;
 
@@ -330,8 +330,8 @@ static VALUE rb_git_remote_ls(int argc, VALUE *argv, VALUE self)
 	rb_scan_args(argc, argv, ":", &rb_options);
 
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &callbacks, &payload);
-	init_custom_headers(rb_options, &custom_headers);
-	init_proxy_options(rb_options, &proxy_options);
+	rugged_remote_init_custom_headers(rb_options, &custom_headers);
+	rugged_remote_init_proxy_options(rb_options, &proxy_options);
 
 	if ((error = git_remote_connect(remote, GIT_DIRECTION_FETCH, &callbacks, &proxy_options, &custom_headers)) ||
 	    (error = git_remote_ls(&heads, &heads_len, remote)))
@@ -535,8 +535,8 @@ static VALUE rb_git_remote_check_connection(int argc, VALUE *argv, VALUE self)
 		rb_raise(rb_eTypeError, "Invalid direction. Expected :fetch or :push");
 
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &callbacks, &payload);
-	init_custom_headers(rb_options, &custom_headers);
-	init_proxy_options(rb_options, &proxy_options);
+	rugged_remote_init_custom_headers(rb_options, &custom_headers);
+	rugged_remote_init_proxy_options(rb_options, &proxy_options);
 
 	error = git_remote_connect(remote, direction, &callbacks, &proxy_options, &custom_headers);
 	git_remote_disconnect(remote);
@@ -628,8 +628,8 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 	Data_Get_Struct(self, git_remote, remote);
 
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &opts.callbacks, &payload);
-	init_custom_headers(rb_options, &opts.custom_headers);
-	init_proxy_options(rb_options, &opts.proxy_opts);
+	rugged_remote_init_custom_headers(rb_options, &opts.custom_headers);
+	rugged_remote_init_proxy_options(rb_options, &opts.proxy_opts);
 
 	if (!NIL_P(rb_options)) {
 		VALUE rb_prune_type;
@@ -722,9 +722,8 @@ static VALUE rb_git_remote_push(int argc, VALUE *argv, VALUE self)
 
 	Data_Get_Struct(self, git_remote, remote);
 
-	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &opts.callbacks, &payload);
-	init_custom_headers(rb_options, &opts.custom_headers);
-	init_proxy_options(rb_options, &opts.proxy_opts);
+	rugged_remote_init_custom_headers(rb_options, &opts.custom_headers);
+	rugged_remote_init_proxy_options(rb_options, &opts.proxy_opts);
 	init_pb_parallelism(rb_options, &opts);
 
 	error = git_remote_push(remote, &refspecs, &opts);

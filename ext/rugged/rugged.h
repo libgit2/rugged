@@ -165,6 +165,10 @@ struct rugged_remote_cb_payload
 	int exception;
 };
 
+void rugged_remote_init_custom_headers(VALUE rb_options, git_strarray *custom_headers);
+
+void rugged_remote_init_proxy_options(VALUE rb_options, git_proxy_options *proxy_options);
+
 void rugged_remote_init_callbacks_and_payload_from_options(
 	VALUE rb_options,
 	git_remote_callbacks *callbacks,
