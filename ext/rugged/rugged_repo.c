@@ -535,6 +535,9 @@ static void parse_clone_options(git_clone_options *ret, VALUE rb_options, struct
 		ret->fetch_opts.proxy_opts.url = StringValueCStr(val);
 	}
 
+	val = rb_hash_aref(rb_options, CSTR2SYM("headers"));
+	rugged_rb_ary_to_strarray(val, &(ret->fetch_opts.custom_headers));
+
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &ret->fetch_opts.callbacks, remote_payload);
 }
 
