@@ -528,17 +528,9 @@ static void parse_clone_options(git_clone_options *ret, VALUE rb_options, struct
 		ret->checkout_branch = StringValueCStr(val);
 	}
 
-	val = rb_hash_aref(rb_options, CSTR2SYM("proxy_url"));
-	if (!NIL_P(val)) {
-		Check_Type(val, T_STRING);
-		ret->fetch_opts.proxy_opts.type = GIT_PROXY_SPECIFIED;
-		ret->fetch_opts.proxy_opts.url = StringValueCStr(val);
-	}
-
-	val = rb_hash_aref(rb_options, CSTR2SYM("headers"));
-	rugged_rb_ary_to_strarray(val, &(ret->fetch_opts.custom_headers));
-
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &ret->fetch_opts.callbacks, remote_payload);
+	rugged_remote_init_custom_headers(rb_options, &ret->fetch_opts.custom_headers);
+	rugged_remote_init_proxy_options(rb_options, &ret->fetch_opts.proxy_opts);
 }
 
 /*
