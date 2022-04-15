@@ -529,7 +529,7 @@ index 94aaae8..af8f41d 100644
 +_file1.txt_
  file1.txt
 --
-libgit2 #{Rugged.libgit2_version.join('.')}
+libgit2 #{Rugged.libgit2_version.join('.')}#{Rugged.libgit2_prerelease ? "-" : ""}#{Rugged.libgit2_prerelease}
 
 EOS
   end
@@ -572,7 +572,7 @@ index 0000000..9435022
 +file3
 +file3
 --
-libgit2 #{Rugged.libgit2_version.join('.')}
+libgit2 #{Rugged.libgit2_version.join('.')}#{Rugged.libgit2_prerelease ? "-" : ""}#{Rugged.libgit2_prerelease}
 
 EOS
 
@@ -611,7 +611,7 @@ index 9435022..9a2d780 100644
  file3
  file3
 --
-libgit2 #{Rugged.libgit2_version.join('.')}
+libgit2 #{Rugged.libgit2_version.join('.')}#{Rugged.libgit2_prerelease ? "-" : ""}#{Rugged.libgit2_prerelease}
 
 EOS
 
@@ -655,7 +655,7 @@ index 94aaae8..af8f41d 100644
 +_file1.txt_
  file1.txt
 --
-libgit2 #{Rugged.libgit2_version.join('.')}
+libgit2 #{Rugged.libgit2_version.join('.')}#{Rugged.libgit2_prerelease ? "-" : ""}#{Rugged.libgit2_prerelease}
 
 EOS
   end
@@ -694,7 +694,7 @@ index 94aaae8..af8f41d 100644
 +_file1.txt_
  file1.txt
 --
-libgit2 #{Rugged.libgit2_version.join('.')}
+libgit2 #{Rugged.libgit2_version.join('.')}#{Rugged.libgit2_prerelease ? "-" : ""}#{Rugged.libgit2_prerelease}
 
 EOS
   end
