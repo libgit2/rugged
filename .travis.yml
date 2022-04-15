@@ -33,6 +33,6 @@ git:
 before_install:
   - git submodule update --init
   - gem update --system
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then ./vendor/libgit2/ci/setup-osx.sh; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then ./vendor/libgit2/ci/setup-osx-build.sh; fi
 
 script: script/travisbuild

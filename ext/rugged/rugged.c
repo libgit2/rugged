@@ -77,6 +77,18 @@ static VALUE rb_git_libgit2_version(VALUE self)
 
 /*
  *  call-seq:
+ *     Rugged.libgit2_prerelease -> prerelease string
+ *
+ *  Returns a string with the prerelease string for libgit2. This will be empty
+ *  for tagged releases.
+ */
+static VALUE rb_git_libgit2_prerelease(VALUE self)
+{
+	return rb_str_new_utf8(git_libgit2_prerelease());
+}
+
+/*
+ *  call-seq:
  *     Rugged.features -> [feature, ...]
  *
  *  Returns an array representing the features that libgit2 was compiled
@@ -585,6 +597,7 @@ void Init_rugged(void)
 	}
 
 	rb_define_module_function(rb_mRugged, "libgit2_version", rb_git_libgit2_version, 0);
+	rb_define_module_function(rb_mRugged, "libgit2_prerelease", rb_git_libgit2_prerelease, 0);
 	rb_define_module_function(rb_mRugged, "features", rb_git_features, 0);
 	rb_define_module_function(rb_mRugged, "valid_full_oid?", rb_git_valid_full_oid, 1);
 	rb_define_module_function(rb_mRugged, "hex_to_raw", rb_git_hex_to_raw, 1);

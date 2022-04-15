@@ -38,13 +38,7 @@ module Rugged
         path = Dir.mktmpdir("rugged-#{name}")
         ensure_cleanup(path)
 
-        FileUtils.cp_r(File.join(TestCase::TEST_DIR, "fixtures", name, "."), path)
-
-        prepare(path)
-
-        Rugged::Repository.new(path, *args).tap do |repo|
-          rewrite_gitmodules(repo) unless repo.bare?
-        end
+        copy_fixture(path, name, File.join(TestCase::TEST_DIR, "fixtures", name, "."), *args)
       end
 
       # Create a repository based on a libgit2 fixture repo.
@@ -52,11 +46,16 @@ module Rugged
         path = Dir.mktmpdir("rugged-libgit2-#{name}")
         ensure_cleanup(path)
 
-        FileUtils.cp_r(File.join(TestCase::LIBGIT2_FIXTURE_DIR, name, "."), path)
+        copy_fixture(path, name, File.join(TestCase::LIBGIT2_FIXTURE_DIR, name, "."), *args)
+      end
 
-        prepare(path)
+      def self.copy_fixture(path, name, fixture_prefix, *args)
+        repo_path = File.join(path, name)
+        FileUtils.cp_r(fixture_prefix, repo_path)
 
-        Rugged::Repository.new(path, *args).tap do |repo|
+        prepare(repo_path)
+
+        Rugged::Repository.new(repo_path, *args).tap do |repo|
           rewrite_gitmodules(repo) unless repo.bare?
         end
       end
