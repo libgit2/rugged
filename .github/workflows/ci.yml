@@ -22,7 +22,7 @@ jobs:
     - name: update submodule
       run: git submodule update --init
     - name: Install macOS packages
-      run: ./vendor/libgit2/ci/setup-osx.sh
+      run: ./vendor/libgit2/ci/setup-osx-build.sh
     - name: Set up Ruby on macOS
       uses: ruby/setup-ruby@v1
       with:
