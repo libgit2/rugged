@@ -6,29 +6,25 @@ class RemoteNetworkTest < Rugged::OnlineTestCase
     @repo = FixtureRepo.from_rugged("testrepo.git")
   end
 
-  def skip_if_unreachable
-    begin
-      Net::HTTP.new('github.com').head('/')
-    rescue SocketError => msg
-      skip "github is not reachable: #{msg}"
-    end
+  def skip_if_no_test_url
+    skip "no local git-daemon" unless ENV["GITTEST_REMOTE_GIT_RO_URL"]
   end
 
   def test_remote_network_connect
-    skip_if_unreachable
-    remote = @repo.remotes.create_anonymous('git://github.com/libgit2/libgit2.git')
+    skip_if_no_test_url
+    remote = @repo.remotes.create_anonymous(ENV["GITTEST_REMOTE_GIT_RO_URL"])
     assert remote.ls.any?
   end
 
   def test_remote_check_connection_fetch
-    skip_if_unreachable
-    remote = @repo.remotes.create_anonymous('git://github.com/libgit2/libgit2.git')
+    skip_if_no_test_url
+    remote = @repo.remotes.create_anonymous(ENV["GITTEST_REMOTE_GIT_RO_URL"])
     assert remote.check_connection(:fetch)
   end
 
   def test_remote_check_connection_push
-    skip_if_unreachable
-    remote = @repo.remotes.create_anonymous('git://github.com/libgit2/libgit2.git')
+    skip_if_no_test_url
+    remote = @repo.remotes.create_anonymous(ENV["GITTEST_REMOTE_GIT_RO_URL"])
     assert !remote.check_connection(:push)
   end
 
@@ -41,7 +37,7 @@ class RemoteNetworkTest < Rugged::OnlineTestCase
   end
 
   def test_remote_check_connection_invalid
-    skip_if_unreachable
+    skip_if_no_test_url
     remote = @repo.remotes.create_anonymous('git://github.com/libgit2/libgit2.git')
     assert_raises(TypeError) { remote.check_connection(:pull) }
   end
