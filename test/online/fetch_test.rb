@@ -84,7 +84,7 @@ class OnlineFetchTest < Rugged::OnlineTestCase
 
     @repo.remotes.create("origin", ENV['GITTEST_REMOTE_SSH_URL'])
 
-    @repo.fetch("origin", {
+    @repo.fetch("origin", **{
                   credentials: ssh_key_credential
                 })
   end
@@ -94,7 +94,7 @@ class OnlineFetchTest < Rugged::OnlineTestCase
 
     @repo.remotes.create("origin", ENV['GITTEST_REMOTE_SSH_URL'])
 
-    @repo.fetch("origin", {
+    @repo.fetch("origin", **{
                   credentials: ssh_key_credential_from_agent
                 })
   end
