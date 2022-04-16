@@ -48,9 +48,16 @@ mkdir $HOME/_temp
 git init --bare $HOME/_temp/test.git
 git daemon --listen=localhost --export-all --enable=receive-pack --base-path=$HOME/_temp $HOME/_temp 2>/dev/null &
 
+# Also copy a test repo in there for read tests; we check that we correctly
+# detect when a push isn't allowed so we need a different instance running there
+mkdir $HOME/_temp_ro
+cp -r ./test/fixtures/testrepo.git $HOME/_temp_ro/
+git daemon --listen=localhost --port=9419 --export-all --base-path=$HOME/_temp_ro $HOME/_temp_ro 2>/dev/null &
+
 # On Actions we start with 777 which means sshd won't let us in
 chmod 750 $HOME
 
+export GITTEST_REMOTE_GIT_RO_URL="git://localhost:9419/testrepo.git"
 export GITTEST_REMOTE_GIT_URL="git://localhost/test.git"
 export GITTEST_REMOTE_SSH_URL="ssh://localhost:2222/$HOME/_temp/test.git"
 export GITTEST_REMOTE_SSH_USER=$USER
