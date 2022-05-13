@@ -28,6 +28,15 @@ class RuggedTest < Rugged::TestCase
     assert_raises(TypeError) { Rugged::Settings['mwindow_size'] = nil }
   end
 
+  def test_fsync_gitdir
+    # We can only really test whether this does _something_. libgit2 doesn't
+    # provide any way to query the state of this configuration, and we have no
+    # easy way to verify whether data is now synchronized or not.
+    Rugged::Settings['fsync_gitdir'] = true
+
+    Rugged::Settings['fsync_gitdir'] = false
+  end
+
   def test_search_path
     paths = [['search_path_global', '/tmp/global'],
              ['search_path_xdg', '/tmp/xdg'],
