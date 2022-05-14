@@ -17,12 +17,24 @@ Rugged is a self-contained gem. You can install it by running:
 
     $ gem install rugged
 
-You need to have CMake and `pkg-config` installed on your system to be able to build the included version of `libgit2`. On OS X, after installing [Homebrew](http://brew.sh/), you can get the required packages with:
+## Prerequisites
+You need to have CMake and `pkg-config` installed on your system to be able to build the included version of `libgit2`. 
+
+### Debian, Including Ubuntu
+All Debian-derived Linux distros provide `apt`:
+```bash
+$ sudo apt install libgit2-dev cmake pkg-config
+```
+
+### Mac
+On OS X, after installing [Homebrew](http://brew.sh/), you can get the required packages with:
 ```bash
 $ brew install cmake pkg-config
 ```
 
 Please follow the above in case installation of the gem fails with `ERROR: CMake is required to build Rugged.`.
+
+### Options
 
 If you want to build Rugged with HTTPS and SSH support, check out the list of optional [libgit2 dependencies](https://github.com/libgit2/libgit2#optional-dependencies).
 
@@ -32,6 +44,7 @@ If you're using bundler and want to bundle `libgit2` with Rugged, you can use th
 gem 'rugged', git: 'git://github.com/libgit2/rugged.git', submodules: true
 ```
 
+## Usage
 To load Rugged, you'll usually want to add something like this:
 
 ```ruby
