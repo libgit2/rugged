@@ -26,6 +26,10 @@ All Debian-derived Linux distros provide `apt`:
 $ sudo apt install libgit2-dev cmake pkg-config
 ```
 
+Note that you only need `libgit2-dev` if you want to build with the system
+libgit2 rather than the vendored version. In this case, note that the major and
+minor versions of libgit2 and rugged must match.
+
 ### Mac
 On OS X, after installing [Homebrew](http://brew.sh/), you can get the required packages with:
 ```bash
