@@ -42,10 +42,25 @@ Please follow the above in case installation of the gem fails with `ERROR: CMake
 
 If you want to build Rugged with HTTPS and SSH support, check out the list of optional [libgit2 dependencies](https://github.com/libgit2/libgit2#optional-dependencies).
 
+To install `rugged` with SSH support ensure you have the `LibSSH2` library present, then pass the required `CMAKE_FLAGS`:
+```bash
+CMAKE_FLAGS='-DUSE_SSH=ON' gem install rugged
+```
+
+Or pass the `--with-ssh` build option:
+```bash
+gem install rugged -- --with-ssh
+```
+
 If you're using bundler and want to bundle `libgit2` with Rugged, you can use the `:submodules` option:
 
 ```ruby
 gem 'rugged', git: 'git://github.com/libgit2/rugged.git', submodules: true
+```
+
+If you would like to bundle rugged with SSH support add the `--with-ssh` build option to the bundler config:
+```bash
+bundle config build.rugged --with-ssh
 ```
 
 ## Usage

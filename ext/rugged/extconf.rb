@@ -16,6 +16,7 @@ $CFLAGS << " -Wall -Wno-comment"
 cmake_flags = [ ENV["CMAKE_FLAGS"] ]
 cmake_flags << "-DREGEX_BACKEND=builtin"
 cmake_flags << "-DUSE_SHA1DC=ON" if with_config("sha1dc")
+cmake_flags << "-DUSE_SSH=ON"    if with_config("ssh")
 
 def sys(cmd)
   puts " -- #{cmd}"
