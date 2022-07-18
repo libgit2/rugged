@@ -722,6 +722,7 @@ static VALUE rb_git_remote_push(int argc, VALUE *argv, VALUE self)
 
 	Data_Get_Struct(self, git_remote, remote);
 
+	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &opts.callbacks, &payload);
 	rugged_remote_init_custom_headers(rb_options, &opts.custom_headers);
 	rugged_remote_init_proxy_options(rb_options, &opts.proxy_opts);
 	init_pb_parallelism(rb_options, &opts);
