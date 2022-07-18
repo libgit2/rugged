@@ -70,4 +70,4 @@ echo 'PasswordAuthentication yes' | sudo tee -a /etc/sshd_config
 eval $(ssh-agent)
 ssh-add $GITTEST_REMOTE_SSH_KEY
 
-bundle exec rake || exit $?
+bundle exec rake -- --with-ssh || exit $?
