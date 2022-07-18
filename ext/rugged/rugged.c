@@ -84,7 +84,10 @@ static VALUE rb_git_libgit2_version(VALUE self)
  */
 static VALUE rb_git_libgit2_prerelease(VALUE self)
 {
-	return rb_str_new_utf8(git_libgit2_prerelease());
+	const char *prerelease;
+
+	prerelease = git_libgit2_prerelease();
+	return rb_str_new_utf8(prerelease ? prerelease : "");
 }
 
 /*
