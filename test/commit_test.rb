@@ -490,6 +490,9 @@ class CommitToMboxTest < Rugged::TestCase
   def setup
     @repo = FixtureRepo.from_libgit2 "diff_format_email"
     @repo.config['core.abbrev'] = 7
+
+    prerelease = Rugged.libgit2_prerelease
+    @version_string = "#{Rugged.libgit2_version.join('.')}#{prerelease unless prerelease.empty?}"
   end
 
   def test_format_to_mbox
@@ -529,7 +532,7 @@ index 94aaae8..af8f41d 100644
 +_file1.txt_
  file1.txt
 --
-libgit2 #{Rugged.libgit2_version.join('.')}#{Rugged.libgit2_prerelease ? "-" : ""}#{Rugged.libgit2_prerelease}
+libgit2 #{@version_string}
 
 EOS
   end
@@ -572,7 +575,7 @@ index 0000000..9435022
 +file3
 +file3
 --
-libgit2 #{Rugged.libgit2_version.join('.')}#{Rugged.libgit2_prerelease ? "-" : ""}#{Rugged.libgit2_prerelease}
+libgit2 #{@version_string}
 
 EOS
 
@@ -611,7 +614,7 @@ index 9435022..9a2d780 100644
  file3
  file3
 --
-libgit2 #{Rugged.libgit2_version.join('.')}#{Rugged.libgit2_prerelease ? "-" : ""}#{Rugged.libgit2_prerelease}
+libgit2 #{@version_string}
 
 EOS
 
@@ -655,7 +658,7 @@ index 94aaae8..af8f41d 100644
 +_file1.txt_
  file1.txt
 --
-libgit2 #{Rugged.libgit2_version.join('.')}#{Rugged.libgit2_prerelease ? "-" : ""}#{Rugged.libgit2_prerelease}
+libgit2 #{@version_string}
 
 EOS
   end
@@ -694,7 +697,7 @@ index 94aaae8..af8f41d 100644
 +_file1.txt_
  file1.txt
 --
-libgit2 #{Rugged.libgit2_version.join('.')}#{Rugged.libgit2_prerelease ? "-" : ""}#{Rugged.libgit2_prerelease}
+libgit2 #{@version_string}
 
 EOS
   end
