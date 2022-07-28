@@ -2738,7 +2738,7 @@ static VALUE rb_git_repo_cherrypick_commit(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq: repo.diff_from_buffer(buffer) -> Rugged::Diff object
- *  
+ *
  *  Where +buffer+ is a +String+.
  *  Returns A Rugged::Diff object
  */
@@ -2764,6 +2764,7 @@ void Init_rugged_repo(void)
 	id_call = rb_intern("call");
 
 	rb_cRuggedRepo = rb_define_class_under(rb_mRugged, "Repository", rb_cObject);
+	rb_undef_alloc_func(rb_cRuggedRepo);
 
 	rb_define_singleton_method(rb_cRuggedRepo, "new", rb_git_repo_new, -1);
 	rb_define_singleton_method(rb_cRuggedRepo, "bare", rb_git_repo_open_bare, -1);
@@ -2817,7 +2818,7 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "apply", rb_git_repo_apply, -1);
 
 	rb_define_method(rb_cRuggedRepo, "revert_commit", rb_git_repo_revert_commit, -1);
-	
+
 	rb_define_method(rb_cRuggedRepo, "diff_from_buffer", rb_git_diff_from_buffer, 1);
 
 	rb_define_method(rb_cRuggedRepo, "path_ignored?", rb_git_repo_is_path_ignored, 1);
@@ -2841,6 +2842,8 @@ void Init_rugged_repo(void)
 	rb_define_method(rb_cRuggedRepo, "fetch_attributes", rb_git_repo_attributes, -1);
 
 	rb_cRuggedOdbObject = rb_define_class_under(rb_mRugged, "OdbObject", rb_cObject);
+	rb_undef_alloc_func(rb_cRuggedOdbObject);
+
 	rb_define_method(rb_cRuggedOdbObject, "data",  rb_git_odbobj_data,  0);
 	rb_define_method(rb_cRuggedOdbObject, "len",  rb_git_odbobj_size,  0);
 	rb_define_method(rb_cRuggedOdbObject, "type",  rb_git_odbobj_type,  0);

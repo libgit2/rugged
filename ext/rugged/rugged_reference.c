@@ -368,6 +368,7 @@ static VALUE rb_git_ref_is_tag(VALUE self)
 void Init_rugged_reference(void)
 {
 	rb_cRuggedReference = rb_define_class_under(rb_mRugged, "Reference", rb_cObject);
+	rb_undef_alloc_func(rb_cRuggedReference);
 
 	rb_define_singleton_method(rb_cRuggedReference, "valid_name?", rb_git_ref_valid_name, 1);
 

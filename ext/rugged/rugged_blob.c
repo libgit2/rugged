@@ -694,6 +694,7 @@ void Init_rugged_blob(void)
 	id_read = rb_intern("read");
 
 	rb_cRuggedBlob = rb_define_class_under(rb_mRugged, "Blob", rb_cRuggedObject);
+	rb_undef_alloc_func(rb_cRuggedBlob);
 
 	rb_define_method(rb_cRuggedBlob, "size", rb_git_blob_rawsize, 0);
 	rb_define_method(rb_cRuggedBlob, "content", rb_git_blob_content_GET, -1);
@@ -712,6 +713,8 @@ void Init_rugged_blob(void)
 	rb_define_singleton_method(rb_cRuggedBlob, "merge_files", rb_git_blob_merge_files, -1);
 
 	rb_cRuggedBlobSig = rb_define_class_under(rb_cRuggedBlob, "HashSignature", rb_cObject);
+	rb_undef_alloc_func(rb_cRuggedBlobSig);
+
 	rb_define_singleton_method(rb_cRuggedBlobSig, "new", rb_git_blob_sig_new, -1);
 	rb_define_singleton_method(rb_cRuggedBlobSig, "compare", rb_git_blob_sig_compare, 2);
 }

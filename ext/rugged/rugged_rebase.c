@@ -389,6 +389,7 @@ static VALUE rebase_operation_type(git_rebase_operation *operation)
 void Init_rugged_rebase(void)
 {
 	rb_cRuggedRebase = rb_define_class_under(rb_mRugged, "Rebase", rb_cObject);
+	rb_undef_alloc_func(rb_cRuggedRebase);
 
 	rb_define_singleton_method(rb_cRuggedRebase, "new", rb_git_rebase_new, -1);
 	rb_define_method(rb_cRuggedRebase, "next",  rb_git_rebase_next,  0);
