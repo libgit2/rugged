@@ -640,6 +640,7 @@ static VALUE rb_git_diff_sorted_icase_p(VALUE self)
 void Init_rugged_diff(void)
 {
 	rb_cRuggedDiff = rb_define_class_under(rb_mRugged, "Diff", rb_cObject);
+	rb_undef_alloc_func(rb_cRuggedDiff);
 
 	rb_define_method(rb_cRuggedDiff, "patch", rb_git_diff_patch, -1);
 	rb_define_method(rb_cRuggedDiff, "write_patch", rb_git_diff_write_patch, -1);
