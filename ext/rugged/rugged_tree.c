@@ -899,6 +899,8 @@ void Init_rugged_tree(void)
 	 * Tree
 	 */
 	rb_cRuggedTree = rb_define_class_under(rb_mRugged, "Tree", rb_cRuggedObject);
+	rb_undef_alloc_func(rb_cRuggedTree);
+
 	rb_define_method(rb_cRuggedTree, "count", rb_git_tree_entrycount, 0);
 	rb_define_method(rb_cRuggedTree, "count_recursive", rb_git_tree_entrycount_recursive, -1);
 	rb_define_method(rb_cRuggedTree, "length", rb_git_tree_entrycount, 0);
@@ -917,6 +919,8 @@ void Init_rugged_tree(void)
 	rb_define_private_method(rb_singleton_class(rb_cRuggedTree), "diff_tree_to_tree", rb_git_diff_tree_to_tree, 4);
 
 	rb_cRuggedTreeBuilder = rb_define_class_under(rb_cRuggedTree, "Builder", rb_cObject);
+	rb_undef_alloc_func(rb_cRuggedTreeBuilder);
+
 	rb_define_singleton_method(rb_cRuggedTreeBuilder, "new", rb_git_treebuilder_new, -1);
 	rb_define_method(rb_cRuggedTreeBuilder, "clear", rb_git_treebuilder_clear, 0);
 	rb_define_method(rb_cRuggedTreeBuilder, "[]", rb_git_treebuilder_get, 1);

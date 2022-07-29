@@ -383,6 +383,7 @@ static VALUE rb_git_diff_patch_header(VALUE self)
 void Init_rugged_patch(void)
 {
 	rb_cRuggedPatch = rb_define_class_under(rb_mRugged, "Patch", rb_cObject);
+	rb_undef_alloc_func(rb_cRuggedPatch);
 
 	rb_define_singleton_method(rb_cRuggedPatch, "from_strings", rb_git_patch_from_strings, -1);
 

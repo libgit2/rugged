@@ -481,6 +481,8 @@ static VALUE rb_git_walker_each_oid(int argc, VALUE *argv, VALUE self)
 void Init_rugged_revwalk(void)
 {
 	rb_cRuggedWalker = rb_define_class_under(rb_mRugged, "Walker", rb_cObject);
+	rb_undef_alloc_func(rb_cRuggedWalker);
+
 	rb_define_singleton_method(rb_cRuggedWalker, "new", rb_git_walker_new, 1);
 	rb_define_singleton_method(rb_cRuggedWalker, "walk", rb_git_walk, -1);
 
