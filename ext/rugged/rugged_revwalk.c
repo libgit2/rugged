@@ -11,6 +11,8 @@ extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedObject;
 VALUE rb_cRuggedWalker;
 
+extern const rb_data_type_t rugged_object_type;
+
 static void rb_git_walk__free(git_revwalk *walk)
 {
 	git_revwalk_free(walk);
@@ -43,7 +45,7 @@ static void push_commit_1(git_revwalk *walk, VALUE rb_commit, int hide)
 {
 	if (rb_obj_is_kind_of(rb_commit, rb_cRuggedObject)) {
 		git_object *object;
-		Data_Get_Struct(rb_commit, git_object, object);
+		TypedData_Get_Struct(rb_commit, git_object, &rugged_object_type, object);
 
 		push_commit_oid(walk, git_object_id(object), hide);
 		return;

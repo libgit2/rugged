@@ -167,6 +167,17 @@ class WalkerTest < Rugged::TestCase
 
     assert_equal 1, amount
   end
+
+  def test_push_hide_commit
+    @walker.push(@repo.lookup("9fd738e8f7967c078dceed8190330fc8648ee56a"))
+    @walker.hide(@repo.lookup("5b5b025afb0b4c913b4c338a42934a3863bf3644"))
+
+    amount = @walker.count do |commit|
+      commit.oid == "9fd738e8f7967c078dceed8190330fc8648ee56a"
+    end
+
+    assert_equal 1, amount
+  end
 end
 
 # testrepo (the non-bare repo) is the one with non-linear history,
