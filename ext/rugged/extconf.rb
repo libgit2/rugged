@@ -71,12 +71,12 @@ if arg_config("--use-system-libraries", !!ENV['RUGGED_USE_SYSTEM_LIBRARIES'])
   major = minor = nil
 
   File.readlines(File.join(LIBGIT2_DIR, "include", "git2", "version.h")).each do |line|
-    if !major && (matches = line.match(/^#define LIBGIT2_VER_MAJOR ([0-9]+)$/))
+    if !major && (matches = line.match(/^#define LIBGIT2_VER_MAJOR\s+([0-9]+)$/))
       major = matches[1]
       next
     end
 
-    if !minor && (matches = line.match(/^#define LIBGIT2_VER_MINOR ([0-9]+)$/))
+    if !minor && (matches = line.match(/^#define LIBGIT2_VER_MINOR\s+([0-9]+)$/))
       minor = matches[1]
       next
     end
