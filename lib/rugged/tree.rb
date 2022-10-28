@@ -87,7 +87,7 @@ module Rugged
     # :deltas_are_icase ::
     #   If true, filename comparisons will be made with case-insensitivity.
     #
-    # :include_untracked_content ::
+    # :show_untracked_content ::
     #   if true, untracked content will be contained in the the diff patch text.
     #
     # :skip_binary_check ::
