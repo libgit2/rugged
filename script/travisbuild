@@ -34,6 +34,11 @@ while read algorithm key comment; do
     echo "[localhost]:2222 $algorithm $key" >>"${HOME}/.ssh/known_hosts"
 done <"${SSHD_DIR}/id_rsa.pub"
 
+# Append the github.com keys for the tests that don't override checks. Some
+# older libssh2 versions don't like it unless we have ssh-rsa in here. This also
+# tests that the automatic selection off of known_hosts is working.
+ssh-keyscan -t ssh-rsa github.com >>"${HOME}/.ssh/known_hosts"
+
 # Get the fingerprint for localhost and remove the colons so we can
 # parse it as a hex number. Older versions have a different output
 # format.
