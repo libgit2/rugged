@@ -492,6 +492,7 @@ class CommitToMboxTest < Rugged::TestCase
     @repo.config['core.abbrev'] = 7
 
     prerelease = Rugged.libgit2_prerelease
+    prerelease = "-#{prerelease}" unless prerelease.empty?
     @version_string = "#{Rugged.libgit2_version.join('.')}#{prerelease unless prerelease.empty?}"
   end
 

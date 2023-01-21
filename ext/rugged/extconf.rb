@@ -116,7 +116,7 @@ else
         $LDFLAGS << " " + "-L#{Dir.pwd}/deps/winhttp"
         $LIBS << " -lwinhttp -lcrypt32 -lrpcrt4 -lole32 -lz -lssh2"
       else
-        pcfile = File.join(LIBGIT2_DIR, "build", "libgit2.pc")
+        pcfile = File.join(LIBGIT2_DIR, "build", "git2.pc")
         $LDFLAGS << " " + `pkg-config --libs --static #{pcfile}`.strip
       end
     end
