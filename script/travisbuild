@@ -15,7 +15,10 @@ HostKey ${SSHD_DIR}/id_rsa
 PidFile ${SSHD_DIR}/pid
 AuthorizedKeysFile ${HOME}/.ssh/authorized_keys
 LogLevel DEBUG
+# For now let's accept ssh-rsa so the rest of the setup works
 RSAAuthentication yes
+HostKeyAlgorithms ssh-rsa
+PubkeyAcceptedAlgorithms ssh-rsa
 PasswordAuthentication yes
 PubkeyAuthentication yes
 ChallengeResponseAuthentication no
