@@ -377,6 +377,15 @@ index 0000000..fa49b07
 +new file
     PATCH
   end
+
+  def test_diff_options_not_changing
+    oid = "5b5b025afb0b4c913b4c338a42934a3863bf3644"
+    obj = @repo.lookup(oid)
+
+    options = {}
+
+    assert_equal obj.diff(options).patch, obj.diff(options).patch
+  end
 end
 
 class CommitWriteTest < Rugged::TestCase
