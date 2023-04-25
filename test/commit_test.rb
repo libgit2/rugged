@@ -362,6 +362,21 @@ SIGNEDDATA
     commit = Rugged::Commit.lookup(@repo, commit_id)
     assert_equal "This is the commit message", commit.summary
   end
+
+  def test_diff
+    oid = "5b5b025afb0b4c913b4c338a42934a3863bf3644"
+    obj = @repo.lookup(oid)
+
+    assert_equal <<-PATCH, obj.diff.patch
+diff --git b/new.txt a/new.txt
+new file mode 100644
+index 0000000..fa49b07
+--- /dev/null
++++ a/new.txt
+@@ -0,0 +1 @@
++new file
+    PATCH
+  end
 end
 
 class CommitWriteTest < Rugged::TestCase
