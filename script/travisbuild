@@ -72,9 +72,9 @@ cat "${SSHD_DIR}/log"
 
 ssh-keyscan -v -p 2222 127.0.0.1
 
-export GITTEST_REMOTE_GIT_RO_URL="git://localhost:9419/testrepo.git"
-export GITTEST_REMOTE_GIT_URL="git://localhost/test.git"
-export GITTEST_REMOTE_SSH_URL="ssh://localhost:2222/$HOME/_temp/test.git"
+export GITTEST_REMOTE_GIT_RO_URL="git://127.0.0.1:9419/testrepo.git"
+export GITTEST_REMOTE_GIT_URL="git://127.0.0.1/test.git"
+export GITTEST_REMOTE_SSH_URL="ssh://127.0.0.1:2222/$HOME/_temp/test.git"
 export GITTEST_REMOTE_SSH_USER=$USER
 export GITTEST_REMOTE_SSH_KEY="$HOME/.ssh/id_rsa"
 export GITTEST_REMOTE_SSH_PUBKEY="$HOME/.ssh/id_rsa.pub"
