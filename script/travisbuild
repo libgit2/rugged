@@ -29,14 +29,6 @@ EOF
 ssh-keygen -t rsa -f "${SSHD_DIR}/id_rsa" -N "" -q
 /usr/sbin/sshd -f "${SSHD_DIR}/sshd_config" -E "${SSHD_DIR}/log"
 
-# Look at the log for debugging
-sleep 5
-echo "cat'ing the sshd log"
-cat "${SSHD_DIR}/log"
-
-ssh-keyscan -v -p 2222 localhost || true
-
-
 # Set up keys
 mkdir "${HOME}/.ssh"
 ssh-keygen -t rsa -f "${HOME}/.ssh/id_rsa" -N "" -q
@@ -72,6 +64,13 @@ git daemon --listen=localhost --port=9419 --export-all --base-path=$HOME/_temp_r
 
 # On Actions we start with 777 which means sshd won't let us in
 chmod 750 $HOME
+
+# Look at the log for debugging, waiting a longer time
+sleep 10
+echo "cat'ing the sshd log"
+cat "${SSHD_DIR}/log"
+
+ssh-keyscan -v -p 2222 127.0.0.1
 
 export GITTEST_REMOTE_GIT_RO_URL="git://localhost:9419/testrepo.git"
 export GITTEST_REMOTE_GIT_URL="git://localhost/test.git"
