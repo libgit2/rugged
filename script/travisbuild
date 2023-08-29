@@ -34,7 +34,7 @@ sleep 5
 echo "cat'ing the sshd log"
 cat "${SSHD_DIR}/log"
 
-ssh-keyscan -v -p 2222 localhost
+ssh-keyscan -v -p 2222 localhost || true
 
 
 # Set up keys
