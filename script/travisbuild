@@ -34,7 +34,7 @@ mkdir "${HOME}/.ssh"
 ssh-keygen -t rsa -f "${HOME}/.ssh/id_rsa" -N "" -q
 cat "${HOME}/.ssh/id_rsa.pub" >>"${HOME}/.ssh/authorized_keys"
 while read algorithm key comment; do
-    echo "[localhost]:2222 $algorithm $key" >>"${HOME}/.ssh/known_hosts"
+    echo "[127.0.0.1]:2222 $algorithm $key" >>"${HOME}/.ssh/known_hosts"
 done <"${SSHD_DIR}/id_rsa.pub"
 
 # Append the github.com keys for the tests that don't override checks. Some
@@ -46,9 +46,9 @@ ssh-keyscan -t ssh-rsa github.com >>"${HOME}/.ssh/known_hosts"
 # parse it as a hex number. Older versions have a different output
 # format.
 if [[ $(ssh -V 2>&1) == OpenSSH_6* ]]; then
-    SSH_FINGERPRINT=$(ssh-keygen -F '[localhost]:2222' -f "${HOME}/.ssh/known_hosts" -l | tail -n 1 | cut -d ' ' -f 2 | tr -d ':')
+    SSH_FINGERPRINT=$(ssh-keygen -F '[127.0.0.1]:2222' -f "${HOME}/.ssh/known_hosts" -l | tail -n 1 | cut -d ' ' -f 2 | tr -d ':')
 else
-    SSH_FINGERPRINT=$(ssh-keygen -E md5 -F '[localhost]:2222' -f "${HOME}/.ssh/known_hosts" -l | tail -n 1 | cut -d ' ' -f 3 | cut -d : -f2- | tr -d :)
+    SSH_FINGERPRINT=$(ssh-keygen -E md5 -F '[127.0.0.1]:2222' -f "${HOME}/.ssh/known_hosts" -l | tail -n 1 | cut -d ' ' -f 3 | cut -d : -f2- | tr -d :)
 fi
 
 # Create a test repo which we can use for the online tests
