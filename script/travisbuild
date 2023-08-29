@@ -29,6 +29,11 @@ EOF
 ssh-keygen -t rsa -f "${SSHD_DIR}/id_rsa" -N "" -q
 /usr/sbin/sshd -f "${SSHD_DIR}/sshd_config" -E "${SSHD_DIR}/log"
 
+# Look at the log for debugging
+sleep 5
+echo "cat'ing the sshd log"
+cat "${SSHD_DIR}/log"
+
 # Set up keys
 mkdir "${HOME}/.ssh"
 ssh-keygen -t rsa -f "${HOME}/.ssh/id_rsa" -N "" -q
