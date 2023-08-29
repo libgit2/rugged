@@ -9,7 +9,7 @@ SSHD_DIR=`mktemp -d ${TMPDIR}/sshd.XXXXXXXX`
 
 cat >"${SSHD_DIR}/sshd_config" <<-EOF
 Port 2222
-ListenAddress 0.0.0.0
+ListenAddress 127.0.0.1
 Protocol 2
 HostKey ${SSHD_DIR}/id_rsa
 PidFile ${SSHD_DIR}/pid
@@ -34,7 +34,8 @@ sleep 5
 echo "cat'ing the sshd log"
 cat "${SSHD_DIR}/log"
 
-ssh-keyscan -p 2222 localhost
+ssh-keyscan -v -p 2222 localhost
+
 
 # Set up keys
 mkdir "${HOME}/.ssh"
