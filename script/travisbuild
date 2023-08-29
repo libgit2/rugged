@@ -34,7 +34,7 @@ sleep 5
 echo "cat'ing the sshd log"
 cat "${SSHD_DIR}/log"
 
-ssh-keyscan localhost -p 2222
+ssh-keyscan -p 2222 localhost
 
 # Set up keys
 mkdir "${HOME}/.ssh"
