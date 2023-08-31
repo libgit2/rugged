@@ -29,7 +29,7 @@ end
 
 class OnlineSshPushTest < Rugged::OnlineTestCase
   def setup
-    skip unless Rugged.features.include?(:ssh) && git_creds?
+    skip unless Rugged.features.include?(:ssh) && ssh_creds?
 
     @repo = FixtureRepo.from_libgit2("push_src")
     @remote = @repo.remotes.create("test", ENV['GITTEST_REMOTE_SSH_URL'])
