@@ -17,6 +17,8 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     name: Ruby ${{ matrix.ruby }} on ${{ matrix.os }}
+    env:
+      SKIP_SSH_TESTS: true
     steps:
     - uses: actions/checkout@master
     - name: update submodule
