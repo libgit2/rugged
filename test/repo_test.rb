@@ -580,6 +580,8 @@ class RepositoryCloneTest < Rugged::TestCase
 
     repo = Rugged::Repository.clone_at(@source_path, @tmppath, {
       update_tips: lambda { |refname, a, b|
+        # The library seems to be sending us no-op updates
+        next if a == b
         calls += 1
         updated_tips[refname] = [a, b]
       }
