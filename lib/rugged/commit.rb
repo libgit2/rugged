@@ -34,7 +34,7 @@ module Rugged
       # then diff against the prior commit
       if args.empty? || args.first.is_a?(Hash)
         other = parents.first
-        opts[:reverse] = !opts[:reverse]
+        opts = opts.merge(:reverse => !opts[:reverse])
       end
       self.tree.diff(other, opts)
     end
