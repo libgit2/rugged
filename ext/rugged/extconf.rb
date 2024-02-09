@@ -70,7 +70,10 @@ if arg_config("--use-system-libraries", !!ENV['RUGGED_USE_SYSTEM_LIBRARIES'])
 
   major = minor = nil
 
-  File.readlines(File.join(LIBGIT2_DIR, "include", "git2", "version.h")).each do |line|
+  git2_include_dir = Dir.glob("#{RbConfig::CONFIG["includedir"]}/**/git2").first ||
+    File.join(LIBGIT2_DIR, "include", "git2")
+
+  File.readlines(File.join(git2_include_dir, "version.h")).each do |line|
     if !major && (matches = line.match(/^#define LIBGIT2_VER_MAJOR\s+([0-9]+)$/))
       major = matches[1]
       next
