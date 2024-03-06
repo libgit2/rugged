@@ -1029,6 +1029,8 @@ void Init_rugged_index(void)
 	 * Index
 	 */
 	rb_cRuggedIndex = rb_define_class_under(rb_mRugged, "Index", rb_cObject);
+	rb_undef_alloc_func(rb_cRuggedIndex);
+
 	rb_define_singleton_method(rb_cRuggedIndex, "new", rb_git_index_new, -1);
 
 	rb_define_method(rb_cRuggedIndex, "count", rb_git_index_count, 0);

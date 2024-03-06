@@ -869,6 +869,7 @@ static VALUE rb_git_commit_create_with_signature(int argc, VALUE *argv, VALUE se
 void Init_rugged_commit(void)
 {
 	rb_cRuggedCommit = rb_define_class_under(rb_mRugged, "Commit", rb_cRuggedObject);
+	rb_undef_alloc_func(rb_cRuggedCommit);
 
 	rb_define_singleton_method(rb_cRuggedCommit, "create", rb_git_commit_create, 2);
 	rb_define_singleton_method(rb_cRuggedCommit, "create_to_s", rb_git_commit_create_to_s, 2);

@@ -743,6 +743,7 @@ static VALUE rb_git_remote_push(int argc, VALUE *argv, VALUE self)
 void Init_rugged_remote(void)
 {
 	rb_cRuggedRemote = rb_define_class_under(rb_mRugged, "Remote", rb_cObject);
+	rb_undef_alloc_func(rb_cRuggedRemote);
 
 	rb_define_method(rb_cRuggedRemote, "name", rb_git_remote_name, 0);
 	rb_define_method(rb_cRuggedRemote, "url", rb_git_remote_url, 0);

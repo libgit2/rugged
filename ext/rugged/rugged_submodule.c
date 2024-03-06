@@ -792,6 +792,7 @@ void Init_rugged_submodule(void)
 	id_update_none  = rb_intern("none");
 
 	rb_cRuggedSubmodule = rb_define_class_under(rb_mRugged, "Submodule", rb_cObject);
+	rb_undef_alloc_func(rb_cRuggedSubmodule);
 
 	rb_define_method(rb_cRuggedSubmodule, "finalize_add", rb_git_submodule_finalize_add, 0);
 
