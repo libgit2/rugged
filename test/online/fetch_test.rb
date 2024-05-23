@@ -79,6 +79,16 @@ class OnlineFetchTest < Rugged::OnlineTestCase
     assert_equal "Exception from callback", exception.message
   end
 
+  def test_fetch_over_https_shallow
+    skip unless Rugged.features.include?(:https)
+
+    @repo.remotes.create("origin", "https://github.com/libgit2/TestGitRepository.git")
+
+    @repo.fetch("origin", :depth => 1)
+
+    assert @repo.shallow?
+  end
+
   def test_fetch_over_ssh_with_credentials
     skip unless Rugged.features.include?(:ssh) && ssh_creds?
 

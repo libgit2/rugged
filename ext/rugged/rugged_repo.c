@@ -529,8 +529,7 @@ static void parse_clone_options(git_clone_options *ret, VALUE rb_options, struct
 	}
 
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &ret->fetch_opts.callbacks, remote_payload);
-	rugged_remote_init_custom_headers(rb_options, &ret->fetch_opts.custom_headers);
-	rugged_remote_init_proxy_options(rb_options, &ret->fetch_opts.proxy_opts);
+	rugged_remote_init_fetch_options(rb_options, &ret->fetch_opts);
 }
 
 /*
