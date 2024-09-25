@@ -564,7 +564,7 @@ static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 		commit_data.message,
 		commit_data.tree,
 		commit_data.parent_count,
-		commit_data.parents);
+		(git_commit * const *) commit_data.parents);
 
 cleanup:
 	free_commit_options(&commit_data);
@@ -813,7 +813,7 @@ static VALUE rb_git_commit_create_to_s(VALUE self, VALUE rb_repo, VALUE rb_data)
 		commit_data.message,
 		commit_data.tree,
 		commit_data.parent_count,
-		commit_data.parents);
+		(git_commit * const *) commit_data.parents);
 
 cleanup:
 	free_commit_options(&commit_data);
