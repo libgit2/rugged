@@ -157,6 +157,21 @@ static int credentials_cb(
 	return payload->exception ? GIT_ERROR : GIT_OK;
 }
 
+void rugged_remote_init_fetch_options(VALUE rb_options, git_fetch_options *fetch_options)
+{
+	rugged_remote_init_custom_headers(rb_options, &fetch_options->custom_headers);
+	rugged_remote_init_proxy_options(rb_options, &fetch_options->proxy_opts);
+
+	if (!NIL_P(rb_options))
+	{
+		VALUE depth = rb_hash_aref(rb_options, CSTR2SYM("depth"));
+		if (!NIL_P(depth)) {
+			Check_Type(depth, T_FIXNUM);
+			fetch_options->depth = FIX2UINT(depth);
+		}
+	}
+}
+
 void rugged_remote_init_callbacks_and_payload_from_options(
 	VALUE rb_options,
 	git_remote_callbacks *callbacks,
@@ -628,8 +643,7 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 	Data_Get_Struct(self, git_remote, remote);
 
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &opts.callbacks, &payload);
-	rugged_remote_init_custom_headers(rb_options, &opts.custom_headers);
-	rugged_remote_init_proxy_options(rb_options, &opts.proxy_opts);
+	rugged_remote_init_fetch_options(rb_options, &opts);
 
 	if (!NIL_P(rb_options)) {
 		VALUE rb_prune_type;
