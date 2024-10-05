@@ -91,6 +91,11 @@ static VALUE rb_git_set_option(VALUE self, VALUE option, VALUE value)
 		git_libgit2_opts(GIT_OPT_ENABLE_FSYNC_GITDIR, fsync);
 	}
 
+	else if (strcmp(opt, "owner_validation") == 0) {
+		int validation = RTEST(value) ? 1 : 0;
+		git_libgit2_opts(GIT_OPT_SET_OWNER_VALIDATION, validation);
+	}
+
 	else {
 		rb_raise(rb_eArgError, "Unknown option specified");
 	}
@@ -133,6 +138,12 @@ static VALUE rb_git_get_option(VALUE self, VALUE option)
 
 	else if (strcmp(opt, "search_path_system") == 0) {
 		return get_search_path(GIT_CONFIG_LEVEL_SYSTEM);
+	}
+
+	else if (strcmp(opt, "owner_validation") == 0) {
+		int validation;
+		git_libgit2_opts(GIT_OPT_GET_OWNER_VALIDATION, &validation);
+		return validation ? Qtrue : Qfalse;
 	}
 
 	else {

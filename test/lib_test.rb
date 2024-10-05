@@ -37,6 +37,23 @@ class RuggedTest < Rugged::TestCase
     Rugged::Settings['fsync_gitdir'] = false
   end
 
+  def test_owner_validation
+    before = Rugged::Settings['owner_validation']
+
+    begin
+      Rugged::Settings['owner_validation'] = false
+      assert_equal(false, Rugged::Settings['owner_validation'])
+
+      Rugged::Settings['owner_validation'] = true
+      assert_equal(true, Rugged::Settings['owner_validation'])
+
+      Rugged::Settings['owner_validation'] = false
+      assert_equal(false, Rugged::Settings['owner_validation'])
+    ensure
+      Rugged::Settings['owner_validation'] = before
+    end
+  end
+
   def test_search_path
     paths = [['search_path_global', '/tmp/global'],
              ['search_path_xdg', '/tmp/xdg'],
