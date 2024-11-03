@@ -222,6 +222,17 @@ class IndexConflictsTest < Rugged::TestCase
     assert_equal 3, conflicts[1][:theirs][:stage]
   end
 
+  def test_conflict_paths_are_binary_encoded
+    conflicts = @repo.index.conflicts
+
+    assert_equal 2, conflicts.size
+    conflicts.each do |conflict|
+      conflict.each do |type, data|
+        assert_equal Encoding::BINARY, data[:path].encoding
+      end
+    end
+  end
+
   def test_conflict_get
     conflict = @repo.index.conflict_get("conflicts-one.txt")
 
