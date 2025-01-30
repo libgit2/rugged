@@ -585,6 +585,32 @@ repo.config['user.name'] = true
 repo.config.delete('user.name')
 ```
 
+#### Targeting a specific config file
+
+You can also target a specific config file to perform the same actions
+as above.
+
+```ruby
+# Target a specific git-config file
+config = Rugged::Config.new "absolute/path/to/file"
+
+# Read values from the above file
+repo.config['core.bare']
+```
+
+#### Working with multiple values
+
+Rugged also makes it easy to work with configurations that have multiple values
+for the same key (`multivar`s).
+
+```ruby
+# Read all values for the 'remote.origin.fetch' key
+repo.config.get_all('remote.origin.fetch')
+
+# Add a new value to the 'remote.origin.fetch' key
+repo.config.add('remote.origin.fetch', '+refs/pull/*:refs/prs/*')
+```
+
 ---
 
 ### General methods
