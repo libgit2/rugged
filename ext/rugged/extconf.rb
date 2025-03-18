@@ -18,7 +18,11 @@ cmake_flags << "-DBUILD_CLI=OFF"
 cmake_flags << "-DBUILD_TESTS=OFF"
 cmake_flags << "-DREGEX_BACKEND=builtin"
 cmake_flags << "-DUSE_SHA1DC=ON" if with_config("sha1dc")
-cmake_flags << "-DUSE_SSH=ON"    if with_config("ssh")
+if with_config("ssh")
+  cmake_flags << "-DUSE_SSH=ON"
+elsif with_config("ssh-exec")
+  cmake_flags << "-DUSE_SSH=exec"
+end
 
 def sys(cmd)
   puts " -- #{cmd}"

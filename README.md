@@ -18,7 +18,7 @@ Rugged is a self-contained gem. You can install it by running:
     $ gem install rugged
 
 ## Prerequisites
-You need to have CMake and `pkg-config` installed on your system to be able to build the included version of `libgit2`. 
+You need to have CMake and `pkg-config` installed on your system to be able to build the included version of `libgit2`.
 
 ### Debian, Including Ubuntu
 All Debian-derived Linux distros provide `apt`:
@@ -42,14 +42,25 @@ Please follow the above in case installation of the gem fails with `ERROR: CMake
 
 If you want to build Rugged with HTTPS and SSH support, check out the list of optional [libgit2 dependencies](https://github.com/libgit2/libgit2#optional-dependencies).
 
-To install `rugged` with SSH support ensure you have the `LibSSH2` library present, then pass the required `CMAKE_FLAGS`:
+For SSH suport you have 2 options: libssh2 (recommended) or OpenSSH command execution (handy
+when you want to configure SSH behavior through `.ssh/config`):
+
+1. To use `Libssh2`, ensure libssh2 library is present and either pass the required `CMAKE_FLAGS`:
 ```bash
 CMAKE_FLAGS='-DUSE_SSH=ON' gem install rugged
 ```
-
-Or pass the `--with-ssh` build option:
+or the `--with-ssh` build option:
 ```bash
 gem install rugged -- --with-ssh
+```
+2. To execute external OpenSSH commands instead of libssh2, either pass the required `CMAKE_FLAGS`:
+
+```bash
+CMAKE_FLAGS='-DUSE_SSH=exec' gem install rugged
+```
+or the `--with-ssh-exec` build option:
+```bash
+gem install rugged -- --with-ssh-exec
 ```
 
 If you're using bundler and want to bundle `libgit2` with Rugged, you can use the `:submodules` option:
@@ -58,7 +69,7 @@ If you're using bundler and want to bundle `libgit2` with Rugged, you can use th
 gem 'rugged', git: 'git://github.com/libgit2/rugged.git', submodules: true
 ```
 
-If you would like to bundle rugged with SSH support add the `--with-ssh` build option to the bundler config:
+If you would like to bundle rugged with SSH support add the `--with-ssh` or `--with-ssh-exec` build option to the bundler config:
 ```bash
 bundle config build.rugged --with-ssh
 ```
@@ -329,7 +340,7 @@ blob.content # => Gives you the content of the blob.
 
 There is currently no way to stream data from a blob, because `libgit2` itself does not (yet) support
 streaming blobs out of the git object database. While there are hooks and interfaces for supporting it,
-the default file system backend always loads the entire blob contents into memory. 
+the default file system backend always loads the entire blob contents into memory.
 
 If you need to access a Blob object through an IO-like API, you can wrap it with the `StringIO` class.
 Note that the only advantage here is a stream-compatible interface, the complete blob object will still
