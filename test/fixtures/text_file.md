@@ -8,7 +8,7 @@ portability of libgit2 with the beauty of the Ruby language.
 
 libgit2 is a pure C implementation of the Git core methods. It's designed to be
 fast and portable. For more information about libgit2,
-[check out libgit2's website](http://libgit2.github.com) or browse the
+[check out libgit2's website](https://libgit2.org/) or browse the
 [libgit2 organization](https://github.com/libgit2) on GitHub.
 
 ## Install
