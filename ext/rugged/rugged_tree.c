@@ -81,31 +81,40 @@ static VALUE rb_git_tree_entrycount(VALUE self)
 
 struct rugged_treecount_cb_payload
 {
-	int count;
-	int limit;
+	int entry_count;
+	int tree_count;
+	int entry_limit;
+	int tree_limit;
 };
 
 static int rugged__treecount_cb(const char *root, const git_tree_entry *entry, void *data)
 {
 	struct rugged_treecount_cb_payload *payload = data;
 
-	if (payload->limit >= 0 && payload->count >= payload->limit) {
+	if (payload->entry_limit >= 0 && payload->entry_count >= payload->entry_limit) {
+		return -1;
+	} else if (payload->tree_limit >= 0 && payload->tree_count >= payload->tree_limit) {
 		return -1;
 	} else if(git_tree_entry_type(entry) == GIT_OBJ_TREE) {
+		++(payload->tree_count);
 		return 0;
 	} else {
-		++(payload->count);
+		++(payload->entry_count);
 		return 1;
 	}
 }
 
 /*
  *  call-seq:
- *    tree.count_recursive(limit=nil) -> count
+ *    tree.count_recursive(entry_limit=nil, tree_limit=nil) -> count
  *
- *  `limit` - The maximum number of blobs to the count in the repository.
- *  Rugged will stop walking the tree after `limit` items to avoid long
+ *  `entry_limit` - The maximum number of blobs to the count in the repository.
+ *  Rugged will stop walking the trees after `entry_limit` items to avoid long
  *  execution times.
+ *
+ *  `tree_limit` - The maximum number of trees to look in. Rugged will stop
+ *  walking the trees after `tree_limit` items to avoid long execution times. If
+ *  it is unset but `entry_limit` is set, `tree_limit` is set to the same value.
  *
  *  Return the number of blobs (up to the limit) contained in the tree and
  *  all subtrees.
@@ -115,18 +124,29 @@ static VALUE rb_git_tree_entrycount_recursive(int argc, VALUE* argv, VALUE self)
 	git_tree *tree;
 	int error;
 	struct rugged_treecount_cb_payload payload;
-	VALUE rb_limit;
+	VALUE rb_entry_limit, rb_tree_limit;
 
 	TypedData_Get_Struct(self, git_tree, &rugged_object_type, tree);
 
-	rb_scan_args(argc, argv, "01", &rb_limit);
+	rb_scan_args(argc, argv, "02", &rb_entry_limit, &rb_tree_limit);
 
-	payload.limit = -1;
-	payload.count = 0;
+	payload.entry_limit = -1;
+	payload.tree_limit = -1;
+	payload.entry_count = 0;
+	payload.tree_count = 0;
 
-	if (!NIL_P(rb_limit)) {
-		Check_Type(rb_limit, T_FIXNUM);
-		payload.limit = FIX2INT(rb_limit);
+	if (!NIL_P(rb_entry_limit)) {
+		Check_Type(rb_entry_limit, T_FIXNUM);
+		payload.entry_limit = FIX2INT(rb_entry_limit);
+	}
+
+	if (!NIL_P(rb_tree_limit)) {
+		Check_Type(rb_tree_limit, T_FIXNUM);
+		payload.tree_limit = FIX2INT(rb_tree_limit);
+	}
+
+	if (payload.tree_limit < 0 && payload.entry_limit >= 0) {
+		payload.tree_limit = payload.entry_limit;
 	}
 
 
@@ -139,7 +159,7 @@ static VALUE rb_git_tree_entrycount_recursive(int argc, VALUE* argv, VALUE self)
 
 	rugged_exception_check(error);
 
-	return INT2FIX(payload.count);
+	return INT2FIX(payload.entry_count);
 }
 
 /*
