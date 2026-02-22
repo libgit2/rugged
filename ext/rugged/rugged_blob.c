@@ -639,6 +639,20 @@ done:
 	return rb_result;
 }
 
+static void rb_git_hashsig__free(void *data)
+{
+	git_hashsig *sig = (git_hashsig *) data;
+	git_hashsig_free(sig);
+}
+
+const rb_data_type_t rugged_hashsig_type = {
+	.wrap_struct_name = "Rugged::Blob::HashSignature",
+	.function = {
+		.dfree = rb_git_hashsig__free,
+	},
+	.flags = RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
 static VALUE rb_git_blob_sig_new(int argc, VALUE *argv, VALUE klass)
 {
 	int error, opts = 0;
@@ -665,7 +679,7 @@ static VALUE rb_git_blob_sig_new(int argc, VALUE *argv, VALUE klass)
 
 	rugged_exception_check(error);
 
-	return Data_Wrap_Struct(klass, NULL, &git_hashsig_free, sig);
+	return TypedData_Wrap_Struct(klass, &rugged_hashsig_type, sig);
 }
 
 static VALUE rb_git_blob_sig_compare(VALUE self, VALUE rb_sig_a, VALUE rb_sig_b)
@@ -679,8 +693,8 @@ static VALUE rb_git_blob_sig_compare(VALUE self, VALUE rb_sig_a, VALUE rb_sig_b)
 		rb_raise(rb_eTypeError, "Expected Rugged::Blob::HashSignature");
 	}
 
-	Data_Get_Struct(rb_sig_a, git_hashsig, sig_a);
-	Data_Get_Struct(rb_sig_b, git_hashsig, sig_b);
+	TypedData_Get_Struct(rb_sig_a, git_hashsig, &rugged_hashsig_type, sig_a);
+	TypedData_Get_Struct(rb_sig_b, git_hashsig, &rugged_hashsig_type, sig_b);
 
 	result = git_hashsig_compare(sig_a, sig_b);
 
