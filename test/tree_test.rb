@@ -48,6 +48,8 @@ class TreeTest < Rugged::TestCase
     assert_equal 6, @tree.count_recursive
     assert_equal 5, @tree.count_recursive(5)
     assert_equal 6, @tree.count_recursive(10)
+    assert_equal 2, @tree.count_recursive(10, 1)
+    assert_equal 4, @tree.count_recursive(10, 2)
     assert_raises(TypeError) do
       @tree.count_recursive("NaN")
     end
