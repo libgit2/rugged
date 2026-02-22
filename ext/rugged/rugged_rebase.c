@@ -44,14 +44,24 @@ static void parse_rebase_options(git_rebase_options *ret, VALUE rb_options)
 	rugged_parse_merge_options(&ret->merge_options, rb_options);
 }
 
-void rb_git_rebase__free(git_rebase *rebase)
+static void rb_git_rebase__free(void *data)
 {
+	git_rebase *rebase = (git_rebase *) data;
 	git_rebase_free(rebase);
 }
 
+const rb_data_type_t rugged_rebase_type = {
+	.wrap_struct_name = "Rugged::Rebase",
+	.function = {
+		.dfree = rb_git_rebase__free,
+	},
+	.flags = RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
+
 VALUE rugged_rebase_new(VALUE klass, VALUE owner, git_rebase *rebase)
 {
-	VALUE rb_rebase = Data_Wrap_Struct(klass, NULL, &rb_git_rebase__free, rebase);
+	VALUE rb_rebase = TypedData_Wrap_Struct(klass, &rugged_rebase_type, rebase);
 	rugged_set_owner(rb_rebase, owner);
 	return rb_rebase;
 }
@@ -211,7 +221,7 @@ static VALUE rb_git_rebase_next(VALUE self)
 	git_rebase_operation *operation;
 	VALUE hash, val;
 
-	Data_Get_Struct(self, git_rebase, rebase);
+	TypedData_Get_Struct(self, git_rebase, &rugged_rebase_type, rebase);
 	error = git_rebase_next(&operation, rebase);
 	if (error == GIT_ITEROVER)
 		return Qnil;
@@ -254,7 +264,7 @@ static VALUE rb_git_rebase_inmemory_index(VALUE self)
 	git_rebase *rebase;
 	git_index *index;
 
-	Data_Get_Struct(self, git_rebase, rebase);
+	TypedData_Get_Struct(self, git_rebase, &rugged_rebase_type, rebase);
 	rugged_exception_check(git_rebase_inmemory_index(&index, rebase));
 
 	return rugged_index_new(rb_cRuggedIndex, self, index);
@@ -281,7 +291,7 @@ static VALUE rb_git_rebase_commit(int argc, VALUE *argv, VALUE self)
 	const char *message = NULL;
 	VALUE rb_options, rb_author, rb_committer, rb_message;
 
-	Data_Get_Struct(self, git_rebase, rebase);
+	TypedData_Get_Struct(self, git_rebase, &rugged_rebase_type, rebase);
 	rb_scan_args(argc, argv, ":", &rb_options);
 
 	Check_Type(rb_options, T_HASH);
@@ -328,7 +338,7 @@ static VALUE rb_git_rebase_abort(VALUE self)
 {
 	git_rebase *rebase;
 
-	Data_Get_Struct(self, git_rebase, rebase);
+	TypedData_Get_Struct(self, git_rebase, &rugged_rebase_type, rebase);
 	rugged_exception_check(git_rebase_abort(rebase));
 
 	return Qnil;
@@ -347,7 +357,7 @@ static VALUE rb_git_rebase_finish(VALUE self, VALUE rb_sig)
 	git_signature *sig;
 	int error;
 
-	Data_Get_Struct(self, git_rebase, rebase);
+	TypedData_Get_Struct(self, git_rebase, &rugged_rebase_type, rebase);
 	sig = rugged_signature_get(rb_sig, NULL);
 	error = git_rebase_finish(rebase, sig);
 	git_signature_free(sig);
