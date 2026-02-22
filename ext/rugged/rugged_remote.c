@@ -245,16 +245,25 @@ static int parse_prune_type(VALUE rb_prune_type)
 	}
 }
 
-static void rb_git_remote__free(git_remote *remote)
+static void rb_git_remote__free(void *data)
 {
+	git_remote *remote = (git_remote *) data;
 	git_remote_free(remote);
 }
+
+const rb_data_type_t rugged_remote_type = {
+	.wrap_struct_name = "Rugged::Remote",
+	.function = {
+		.dfree = rb_git_remote__free,
+	},
+	.flags = RUBY_TYPED_FREE_IMMEDIATELY,
+};
 
 VALUE rugged_remote_new(VALUE owner, git_remote *remote)
 {
 	VALUE rb_remote;
 
-	rb_remote = Data_Wrap_Struct(rb_cRuggedRemote, NULL, &rb_git_remote__free, remote);
+	rb_remote = TypedData_Wrap_Struct(rb_cRuggedRemote, &rugged_remote_type, remote);
 	rugged_set_owner(rb_remote, owner);
 	return rb_remote;
 }
@@ -328,7 +337,7 @@ static VALUE rb_git_remote_ls(int argc, VALUE *argv, VALUE self)
 	size_t heads_len, i;
 
 	RETURN_ENUMERATOR(self, argc, argv);
-	Data_Get_Struct(self, git_remote, remote);
+	TypedData_Get_Struct(self, git_remote, &rugged_remote_type, remote);
 	rb_scan_args(argc, argv, ":", &rb_options);
 
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &callbacks, &payload);
@@ -367,7 +376,7 @@ static VALUE rb_git_remote_name(VALUE self)
 {
 	git_remote *remote;
 	const char * name;
-	Data_Get_Struct(self, git_remote, remote);
+	TypedData_Get_Struct(self, git_remote, &rugged_remote_type, remote);
 
 	name = git_remote_name(remote);
 
@@ -385,7 +394,7 @@ static VALUE rb_git_remote_name(VALUE self)
 static VALUE rb_git_remote_url(VALUE self)
 {
 	git_remote *remote;
-	Data_Get_Struct(self, git_remote, remote);
+	TypedData_Get_Struct(self, git_remote, &rugged_remote_type, remote);
 
 	return rb_str_new_utf8(git_remote_url(remote));
 }
@@ -404,7 +413,7 @@ static VALUE rb_git_remote_push_url(VALUE self)
 	git_remote *remote;
 	const char * push_url;
 
-	Data_Get_Struct(self, git_remote, remote);
+	TypedData_Get_Struct(self, git_remote, &rugged_remote_type, remote);
 
 	push_url = git_remote_pushurl(remote);
 	return push_url ? rb_str_new_utf8(push_url) : Qnil;
@@ -429,7 +438,7 @@ static VALUE rb_git_remote_set_push_url(VALUE self, VALUE rb_url)
 	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	Check_Type(rb_url, T_STRING);
-	Data_Get_Struct(self, git_remote, remote);
+	TypedData_Get_Struct(self, git_remote, &rugged_remote_type, remote);
 
 	rugged_exception_check(
 		git_remote_set_pushurl(repo, git_remote_name(remote), StringValueCStr(rb_url))
@@ -445,7 +454,7 @@ static VALUE rb_git_remote_refspecs(VALUE self, git_direction direction)
 	git_strarray refspecs;
 	VALUE rb_refspec_array;
 
-	Data_Get_Struct(self, git_remote, remote);
+	TypedData_Get_Struct(self, git_remote, &rugged_remote_type, remote);
 
 	if (direction == GIT_DIRECTION_FETCH)
 		error = git_remote_get_fetch_refspecs(&refspecs, remote);
@@ -524,7 +533,7 @@ static VALUE rb_git_remote_check_connection(int argc, VALUE *argv, VALUE self)
 	ID id_direction;
 	int error, direction;
 
-	Data_Get_Struct(self, git_remote, remote);
+	TypedData_Get_Struct(self, git_remote, &rugged_remote_type, remote);
 	rb_scan_args(argc, argv, "01:", &rb_direction, &rb_options);
 
 	Check_Type(rb_direction, T_SYMBOL);
@@ -627,7 +636,7 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 
 	rugged_rb_ary_to_strarray(rb_refspecs, &refspecs);
 
-	Data_Get_Struct(self, git_remote, remote);
+	TypedData_Get_Struct(self, git_remote, &rugged_remote_type, remote);
 
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &opts.callbacks, &payload);
 	rugged_remote_init_custom_headers(rb_options, &opts.custom_headers);
@@ -722,7 +731,7 @@ static VALUE rb_git_remote_push(int argc, VALUE *argv, VALUE self)
 
 	rugged_rb_ary_to_strarray(rb_refspecs, &refspecs);
 
-	Data_Get_Struct(self, git_remote, remote);
+	TypedData_Get_Struct(self, git_remote, &rugged_remote_type, remote);
 
 	rugged_remote_init_callbacks_and_payload_from_options(rb_options, &opts.callbacks, &payload);
 	rugged_remote_init_custom_headers(rb_options, &opts.custom_headers);
