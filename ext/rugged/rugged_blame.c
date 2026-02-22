@@ -84,6 +84,20 @@ static void rugged_parse_blame_options(git_blame_options *opts, git_repository *
 	}
 }
 
+static void rb_git_blame__free(void *data)
+{
+	git_blame *blame = (git_blame *) data;
+	git_blame_free(blame);
+}
+
+const rb_data_type_t rugged_blame_type = {
+	.wrap_struct_name = "Rugged::Blame",
+	.function = {
+		.dfree = rb_git_blame__free,
+	},
+	.flags = RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
 /*
  *  call-seq:
  *    Blame.new(repo, path, options = {}) -> blame
@@ -147,7 +161,7 @@ static VALUE rb_git_blame_new(int argc, VALUE *argv, VALUE klass)
 		&blame, repo, StringValueCStr(rb_path), &opts
 	));
 
-	return Data_Wrap_Struct(klass, NULL, &git_blame_free, blame);
+	return TypedData_Wrap_Struct(klass, &rugged_blame_type, blame);
 }
 
 /*
@@ -162,7 +176,7 @@ static VALUE rb_git_blame_for_line(VALUE self, VALUE rb_line_no)
 	git_blame *blame;
 	int line_no;
 
-	Data_Get_Struct(self, git_blame, blame);
+	TypedData_Get_Struct(self, git_blame, &rugged_blame_type, blame);
 	Check_Type(rb_line_no, T_FIXNUM);
 
 	line_no = NUM2INT(rb_line_no);
@@ -186,7 +200,7 @@ static VALUE rb_git_blame_for_line(VALUE self, VALUE rb_line_no)
 static VALUE rb_git_blame_count(VALUE self)
 {
 	git_blame *blame;
-	Data_Get_Struct(self, git_blame, blame);
+	TypedData_Get_Struct(self, git_blame, &rugged_blame_type, blame);
 	return UINT2NUM(git_blame_get_hunk_count(blame));
 }
 
@@ -212,7 +226,7 @@ static VALUE rb_git_blame_get_by_index(VALUE self, VALUE rb_index)
 	int index;
 	uint32_t blame_count;
 
-	Data_Get_Struct(self, git_blame, blame);
+	TypedData_Get_Struct(self, git_blame, &rugged_blame_type, blame);
 	Check_Type(rb_index, T_FIXNUM);
 
 	index = NUM2INT(rb_index);
@@ -251,7 +265,7 @@ static VALUE rb_git_blame_each(VALUE self)
 
 	RETURN_SIZED_ENUMERATOR(self, 0, 0, rugged_blame_enum_size);
 
-	Data_Get_Struct(self, git_blame, blame);
+	TypedData_Get_Struct(self, git_blame, &rugged_blame_type, blame);
 
 	blame_count = git_blame_get_hunk_count(blame);
 	for (i = 0; i < blame_count; ++i) {
