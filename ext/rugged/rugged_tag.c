@@ -16,6 +16,8 @@ VALUE rb_cRuggedTag;
 VALUE rb_cRuggedTagAnnotation;
 
 extern const rb_data_type_t rugged_object_type;
+extern const rb_data_type_t rugged_reference_type;
+extern const rb_data_type_t rugged_repository_type;
 
 /*
  *  call-seq:
@@ -160,8 +162,8 @@ static VALUE rb_git_tag_annotation(VALUE self)
 	VALUE rb_repo = rugged_owner(self);
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(self, git_reference, ref);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(self, git_reference, &rugged_reference_type, ref);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	error = git_reference_resolve(&resolved_ref, ref);
 	rugged_exception_check(error);
@@ -188,8 +190,8 @@ static VALUE rb_git_tag_target(VALUE self)
 	VALUE rb_repo = rugged_owner(self);
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(self, git_reference, ref);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(self, git_reference, &rugged_reference_type, ref);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	error = git_reference_resolve(&resolved_ref, ref);
 	rugged_exception_check(error);

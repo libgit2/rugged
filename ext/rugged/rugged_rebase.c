@@ -16,6 +16,8 @@ extern VALUE rb_cRuggedReference;
 VALUE rb_cRuggedRebase;
 
 extern const rb_data_type_t rugged_object_type;
+extern const rb_data_type_t rugged_reference_type;
+extern const rb_data_type_t rugged_repository_type;
 
 static VALUE rebase_operation_type(git_rebase_operation *operation);
 
@@ -42,14 +44,24 @@ static void parse_rebase_options(git_rebase_options *ret, VALUE rb_options)
 	rugged_parse_merge_options(&ret->merge_options, rb_options);
 }
 
-void rb_git_rebase__free(git_rebase *rebase)
+static void rb_git_rebase__free(void *data)
 {
+	git_rebase *rebase = (git_rebase *) data;
 	git_rebase_free(rebase);
 }
 
+const rb_data_type_t rugged_rebase_type = {
+	.wrap_struct_name = "Rugged::Rebase",
+	.function = {
+		.dfree = rb_git_rebase__free,
+	},
+	.flags = RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
+
 VALUE rugged_rebase_new(VALUE klass, VALUE owner, git_rebase *rebase)
 {
-	VALUE rb_rebase = Data_Wrap_Struct(klass, NULL, &rb_git_rebase__free, rebase);
+	VALUE rb_rebase = TypedData_Wrap_Struct(klass, &rugged_rebase_type, rebase);
 	rugged_set_owner(rb_rebase, owner);
 	return rb_rebase;
 }
@@ -66,7 +78,7 @@ static void get_annotated_commit(git_annotated_commit **annotated_commit, VALUE 
 	int error;
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	if (rb_obj_is_kind_of(rb_value, rb_cRuggedCommit)) {
 		const git_commit * commit;
@@ -79,7 +91,7 @@ static void get_annotated_commit(git_annotated_commit **annotated_commit, VALUE 
 	} else if (rb_obj_is_kind_of(rb_value, rb_cRuggedReference)) {
 		const git_reference * ref;
 
-		Data_Get_Struct(rb_value, git_reference, ref);
+		TypedData_Get_Struct(rb_value, git_reference, &rugged_reference_type, ref);
 
 		error = git_annotated_commit_from_ref(annotated_commit, repo, ref);
 	} else if (TYPE(rb_value) == T_STRING) {
@@ -152,7 +164,7 @@ static VALUE rb_git_rebase_new(int argc, VALUE* argv, VALUE klass)
 	git_rebase_options options = GIT_REBASE_OPTIONS_INIT;
 
 	rb_scan_args(argc, argv, "31:", &rb_repo, &rb_branch, &rb_upstream, &rb_onto, &rb_options);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	if ((exception = rugged_get_annotated_commit(&branch, rb_repo, rb_branch)))
 		goto cleanup;
@@ -209,7 +221,7 @@ static VALUE rb_git_rebase_next(VALUE self)
 	git_rebase_operation *operation;
 	VALUE hash, val;
 
-	Data_Get_Struct(self, git_rebase, rebase);
+	TypedData_Get_Struct(self, git_rebase, &rugged_rebase_type, rebase);
 	error = git_rebase_next(&operation, rebase);
 	if (error == GIT_ITEROVER)
 		return Qnil;
@@ -252,7 +264,7 @@ static VALUE rb_git_rebase_inmemory_index(VALUE self)
 	git_rebase *rebase;
 	git_index *index;
 
-	Data_Get_Struct(self, git_rebase, rebase);
+	TypedData_Get_Struct(self, git_rebase, &rugged_rebase_type, rebase);
 	rugged_exception_check(git_rebase_inmemory_index(&index, rebase));
 
 	return rugged_index_new(rb_cRuggedIndex, self, index);
@@ -279,7 +291,7 @@ static VALUE rb_git_rebase_commit(int argc, VALUE *argv, VALUE self)
 	const char *message = NULL;
 	VALUE rb_options, rb_author, rb_committer, rb_message;
 
-	Data_Get_Struct(self, git_rebase, rebase);
+	TypedData_Get_Struct(self, git_rebase, &rugged_rebase_type, rebase);
 	rb_scan_args(argc, argv, ":", &rb_options);
 
 	Check_Type(rb_options, T_HASH);
@@ -326,7 +338,7 @@ static VALUE rb_git_rebase_abort(VALUE self)
 {
 	git_rebase *rebase;
 
-	Data_Get_Struct(self, git_rebase, rebase);
+	TypedData_Get_Struct(self, git_rebase, &rugged_rebase_type, rebase);
 	rugged_exception_check(git_rebase_abort(rebase));
 
 	return Qnil;
@@ -345,7 +357,7 @@ static VALUE rb_git_rebase_finish(VALUE self, VALUE rb_sig)
 	git_signature *sig;
 	int error;
 
-	Data_Get_Struct(self, git_rebase, rebase);
+	TypedData_Get_Struct(self, git_rebase, &rugged_rebase_type, rebase);
 	sig = rugged_signature_get(rb_sig, NULL);
 	error = git_rebase_finish(rebase, sig);
 	git_signature_free(sig);

@@ -10,9 +10,23 @@
 extern VALUE rb_mRugged;
 VALUE rb_cRuggedDiff;
 
+static void rb_git_diff__free(void *data)
+{
+	git_diff *diff = (git_diff *) data;
+	git_diff_free(diff);
+}
+
+const rb_data_type_t rugged_diff_type = {
+	.wrap_struct_name = "Rugged::Diff",
+	.function = {
+		.dfree = rb_git_diff__free,
+	},
+	.flags = RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
 VALUE rugged_diff_new(VALUE klass, VALUE owner, git_diff *diff)
 {
-	VALUE rb_diff = Data_Wrap_Struct(klass, NULL, git_diff_free, diff);
+	VALUE rb_diff = TypedData_Wrap_Struct(klass, &rugged_diff_type, diff);
 	rugged_set_owner(rb_diff, owner);
 	return rb_diff;
 }
@@ -212,7 +226,7 @@ static VALUE rb_git_diff_patch(int argc, VALUE *argv, VALUE self)
 
 	rb_scan_args(argc, argv, "00:", &rb_opts);
 
-	Data_Get_Struct(self, git_diff, diff);
+	TypedData_Get_Struct(self, git_diff, &rugged_diff_type, diff);
 
 	if (!NIL_P(rb_opts)) {
 		if (rb_hash_aref(rb_opts, CSTR2SYM("compact")) == Qtrue)
@@ -256,7 +270,7 @@ static VALUE rb_git_diff_write_patch(int argc, VALUE *argv, VALUE self)
 	if (!rb_respond_to(rb_io, rb_intern("write")))
 		rb_raise(rb_eArgError, "Expected io to respond to \"write\"");
 
-	Data_Get_Struct(self, git_diff, diff);
+	TypedData_Get_Struct(self, git_diff, &rugged_diff_type, diff);
 
 	if (!NIL_P(rb_opts)) {
 		if (rb_hash_aref(rb_opts, CSTR2SYM("compact")) == Qtrue)
@@ -285,8 +299,8 @@ static VALUE rb_git_diff_merge(VALUE self, VALUE rb_other)
 	if (!rb_obj_is_kind_of(rb_other, rb_cRuggedDiff))
 		rb_raise(rb_eTypeError, "A Rugged::Diff instance is required");
 
-	Data_Get_Struct(self, git_diff, diff);
-	Data_Get_Struct(rb_other, git_diff, other);
+	TypedData_Get_Struct(self, git_diff, &rugged_diff_type, diff);
+	TypedData_Get_Struct(rb_other, git_diff, &rugged_diff_type, other);
 
 	error = git_diff_merge(diff, other);
 	rugged_exception_check(error);
@@ -358,7 +372,7 @@ static VALUE rb_git_diff_find_similar(int argc, VALUE *argv, VALUE self)
 	VALUE rb_options;
 	int error;
 
-	Data_Get_Struct(self, git_diff, diff);
+	TypedData_Get_Struct(self, git_diff, &rugged_diff_type, diff);
 
 	rb_scan_args(argc, argv, "00:", &rb_options);
 
@@ -448,7 +462,7 @@ static VALUE rb_git_diff_each_patch(VALUE self)
 	size_t d, delta_count;
 
 	RETURN_ENUMERATOR(self, 0, 0);
-	Data_Get_Struct(self, git_diff, diff);
+	TypedData_Get_Struct(self, git_diff, &rugged_diff_type, diff);
 
 	delta_count = git_diff_num_deltas(diff);
 	for (d = 0; d < delta_count; ++d) {
@@ -481,7 +495,7 @@ static VALUE rb_git_diff_each_delta(VALUE self)
 	size_t d, delta_count;
 
 	RETURN_ENUMERATOR(self, 0, 0);
-	Data_Get_Struct(self, git_diff, diff);
+	TypedData_Get_Struct(self, git_diff, &rugged_diff_type, diff);
 
 	delta_count = git_diff_num_deltas(diff);
 	for (d = 0; d < delta_count; ++d) {
@@ -516,7 +530,7 @@ static VALUE rb_git_diff_each_line(int argc, VALUE *argv, VALUE self)
 	int exception = 0, error;
 
 	RETURN_ENUMERATOR(self, argc, argv);
-	Data_Get_Struct(self, git_diff, diff);
+	TypedData_Get_Struct(self, git_diff, &rugged_diff_type, diff);
 
 	if (rb_scan_args(argc, argv, "01", &rb_format) == 1) {
 		Check_Type(rb_format, T_SYMBOL);
@@ -557,7 +571,7 @@ static VALUE rb_git_diff_size(VALUE self)
 {
 	git_diff *diff;
 
-	Data_Get_Struct(self, git_diff, diff);
+	TypedData_Get_Struct(self, git_diff, &rugged_diff_type, diff);
 
 	return INT2FIX(git_diff_num_deltas(diff));
 }
@@ -616,7 +630,7 @@ static VALUE rb_git_diff_stat(VALUE self)
 	git_diff *diff;
 	struct diff_stats stats = { 0, 0, 0 };
 
-	Data_Get_Struct(self, git_diff, diff);
+	TypedData_Get_Struct(self, git_diff, &rugged_diff_type, diff);
 
 	git_diff_foreach(
 		diff, diff_file_stats_cb, NULL, NULL, diff_line_stats_cb, &stats);
@@ -633,7 +647,7 @@ static VALUE rb_git_diff_stat(VALUE self)
 static VALUE rb_git_diff_sorted_icase_p(VALUE self)
 {
 	git_diff *diff;
-	Data_Get_Struct(self, git_diff, diff);
+	TypedData_Get_Struct(self, git_diff, &rugged_diff_type, diff);
 	return git_diff_is_sorted_icase(diff) ? Qtrue : Qfalse;
 }
 
