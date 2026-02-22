@@ -34,6 +34,7 @@ VALUE rb_cRuggedOdbObject;
 
 static ID id_call;
 
+extern const rb_data_type_t rugged_config_type;
 extern const rb_data_type_t rugged_diff_type;
 extern const rb_data_type_t rugged_index_type;
 const rb_data_type_t rugged_repository_type;
@@ -644,7 +645,7 @@ static VALUE rb_git_repo_clone_at(int argc, VALUE *argv, VALUE klass)
 		rb_raise(rb_eRuntimeError, \
 			"The given object is already owned by another repository"); \
 	TypedData_Get_Struct(self, git_repository, &rugged_repository_type, repo); \
-	Data_Get_Struct(rb_data, git_##_object, data); \
+	TypedData_Get_Struct(rb_data, git_##_object, &rugged_##_object##_type, data);			\
 	git_repository_set_##_object(repo, data); \
 	rb_old_data = rb_iv_get(self, "@" #_object); \
 	if (!NIL_P(rb_old_data)) rugged_set_owner(rb_old_data, Qnil); \
