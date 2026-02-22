@@ -13,6 +13,8 @@ extern VALUE rb_cRuggedObject;
 extern VALUE rb_cRuggedReference;
 VALUE rb_cRuggedBranch;
 
+extern const rb_data_type_t rugged_repository_type;
+
 static inline VALUE rugged_branch_new(VALUE owner, git_reference *ref)
 {
 	return rugged_ref_new(rb_cRuggedBranch, owner, ref);
@@ -58,7 +60,7 @@ static VALUE rb_git_branch__remote_name(VALUE rb_repo, const char *canonical_nam
 	int error;
 	VALUE result = Qnil;
 
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	if ((error = git_branch_remote_name(&remote_name, repo, canonical_name)) == GIT_OK)
 		result = rb_enc_str_new(remote_name.ptr, remote_name.size, rb_utf8_encoding());

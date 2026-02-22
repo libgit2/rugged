@@ -11,6 +11,7 @@ extern VALUE rb_cRuggedRepo;
 extern VALUE rb_cRuggedObject;
 
 extern const rb_data_type_t rugged_object_type;
+extern const rb_data_type_t rugged_repository_type;
 
 static VALUE rugged_git_note_message(const git_note *note)
 {
@@ -64,7 +65,7 @@ static VALUE rb_git_note_lookup(int argc, VALUE *argv, VALUE self)
 	TypedData_Get_Struct(self, git_object, &rugged_object_type, object);
 
 	owner = rugged_owner(self);
-	Data_Get_Struct(owner, git_repository, repo);
+	TypedData_Get_Struct(owner, git_repository, &rugged_repository_type, repo);
 
 	error = git_note_read(&note, repo, notes_ref, git_object_id(object));
 
@@ -129,7 +130,7 @@ static VALUE rb_git_note_create(VALUE self, VALUE rb_data)
 	TypedData_Get_Struct(self, git_object, &rugged_object_type, target);
 
 	owner = rugged_owner(self);
-	Data_Get_Struct(owner, git_repository, repo);
+	TypedData_Get_Struct(owner, git_repository, &rugged_repository_type, repo);
 
 	rb_ref = rb_hash_aref(rb_data, CSTR2SYM("ref"));
 
@@ -212,7 +213,7 @@ static VALUE rb_git_note_remove(int argc, VALUE *argv, VALUE self)
 	TypedData_Get_Struct(self, git_object, &rugged_object_type, target);
 
 	owner = rugged_owner(self);
-	Data_Get_Struct(owner, git_repository, repo);
+	TypedData_Get_Struct(owner, git_repository, &rugged_repository_type, repo);
 
 	rb_scan_args(argc, argv, "01", &rb_data);
 
@@ -259,7 +260,7 @@ static int cb_note__each(const git_oid *blob_id, const git_oid *annotated_object
 
 	git_repository *repo;
 
-	Data_Get_Struct(payload->rb_data, git_repository, repo);
+	TypedData_Get_Struct(payload->rb_data, git_repository, &rugged_repository_type, repo);
 
 	rugged_exception_check(
 		git_object_lookup(&annotated_object, repo, annotated_object_id, GIT_OBJ_ANY)
@@ -307,7 +308,7 @@ static VALUE rb_git_note_each(int argc, VALUE *argv, VALUE self)
 		notes_ref = StringValueCStr(rb_notes_ref);
 	}
 
-	Data_Get_Struct(self, git_repository, repo);
+	TypedData_Get_Struct(self, git_repository, &rugged_repository_type, repo);
 
 	error = git_note_foreach(repo, notes_ref, &cb_note__each, &payload);
 
@@ -334,7 +335,7 @@ static VALUE rb_git_note_default_ref_GET(VALUE self)
 	git_buf ref_name = { 0 };
 	VALUE rb_result;
 
-	Data_Get_Struct(self, git_repository, repo);
+	TypedData_Get_Struct(self, git_repository, &rugged_repository_type, repo);
 
 	rugged_exception_check(
 		git_note_default_ref(&ref_name, repo)

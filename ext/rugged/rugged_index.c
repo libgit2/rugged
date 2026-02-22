@@ -14,6 +14,7 @@ extern VALUE rb_cRuggedDiff;
 extern VALUE rb_cRuggedTree;
 
 extern const rb_data_type_t rugged_object_type;
+extern const rb_data_type_t rugged_repository_type;
 
 static void rb_git_indexentry_toC(git_index_entry *entry, VALUE rb_entry);
 static VALUE rb_git_indexentry_fromC(const git_index_entry *entry);
@@ -633,7 +634,7 @@ static VALUE rb_git_index_writetree(int argc, VALUE *argv, VALUE self)
 	if (rb_scan_args(argc, argv, "01", &rb_repo) == 1) {
 		git_repository *repo = NULL;
 		rugged_check_repo(rb_repo);
-		Data_Get_Struct(rb_repo, git_repository, repo);
+		TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 		error = git_index_write_tree_to(&tree_oid, index, repo);
 	}
 	else {
@@ -686,7 +687,7 @@ static VALUE rb_git_diff_tree_to_index(VALUE self, VALUE rb_other, VALUE rb_opti
 
 	Data_Get_Struct(self, git_index, index);
 	owner = rugged_owner(self);
-	Data_Get_Struct(owner, git_repository, repo);
+	TypedData_Get_Struct(owner, git_repository, &rugged_repository_type, repo);
 
 	// Need to flip the reverse option, so that the index is by default
 	// the "old file" side of the diff.
@@ -714,7 +715,7 @@ static VALUE rb_git_diff_index_to_workdir(VALUE self, VALUE rb_options)
 
 	Data_Get_Struct(self, git_index, index);
 	owner = rugged_owner(self);
-	Data_Get_Struct(owner, git_repository, repo);
+	TypedData_Get_Struct(owner, git_repository, &rugged_repository_type, repo);
 
 	error = git_diff_index_to_workdir(&diff, repo, index, &opts);
 
@@ -897,7 +898,7 @@ static VALUE rb_git_merge_file(int argc, VALUE *argv, VALUE self)
 	Data_Get_Struct(self, git_index, index);
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	error = git_index_conflict_get(&ancestor, &ours, &theirs, index, StringValueCStr(rb_path));
 	if (error == GIT_ENOTFOUND)

@@ -11,6 +11,8 @@ extern VALUE rb_mRugged;
 extern VALUE rb_cRuggedSubmodule;
 VALUE rb_cRuggedSubmoduleCollection;
 
+extern const rb_data_type_t rugged_repository_type;
+
 /*
  *  call-seq:
  *    SubmoduleCollection.new(repo) -> submodules
@@ -63,7 +65,7 @@ static VALUE rb_git_submodule_collection_aref(VALUE self, VALUE rb_name)
 	int error;
 
 	VALUE rb_repo = rugged_owner(self);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	Check_Type(rb_name, T_STRING);
 
@@ -89,7 +91,7 @@ static int cb_submodule__each(git_submodule *submodule, const char *name, void *
 	VALUE rb_repo;
 
 	rb_repo = payload->rb_data;
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	/* The submodule passed here has it's refcount decreased just after
 	 * the foreach finishes. The only way to increase that refcount is
@@ -128,7 +130,7 @@ static VALUE rb_git_submodule_collection_each(VALUE self)
 
 	RETURN_ENUMERATOR(self, 0, 0);
 	rb_repo = rugged_owner(self);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	payload.exception = 0;
 	payload.rb_data = rb_repo;
@@ -184,7 +186,7 @@ static VALUE rb_git_submodule_setup_add(int argc, VALUE *argv, VALUE self)
 	Check_Type(rb_path, T_STRING);
 
 	rb_repo = rugged_owner(self);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	if (!NIL_P(rb_options)) {
 		VALUE rb_val;
@@ -281,7 +283,7 @@ static VALUE rb_git_submodule_update(VALUE self, VALUE rb_name_or_submodule, VAL
 	VALUE rb_url, rb_fetch_recurse_submodules, rb_ignore_rule, rb_update_rule;
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	if (rb_obj_is_kind_of(rb_name_or_submodule, rb_cRuggedSubmodule))
 		rb_name_or_submodule = rb_funcall(rb_name_or_submodule, rb_intern("name"), 0);

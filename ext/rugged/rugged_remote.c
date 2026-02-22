@@ -12,6 +12,8 @@ extern VALUE rb_cRuggedRepo;
 extern VALUE rb_eRuggedError;
 VALUE rb_cRuggedRemote;
 
+extern const rb_data_type_t rugged_repository_type;
+
 static int progress_cb(const char *str, int len, void *data)
 {
 	struct rugged_remote_cb_payload *payload = data;
@@ -424,7 +426,7 @@ static VALUE rb_git_remote_set_push_url(VALUE self, VALUE rb_url)
 	git_repository *repo;
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	Check_Type(rb_url, T_STRING);
 	Data_Get_Struct(self, git_remote, remote);

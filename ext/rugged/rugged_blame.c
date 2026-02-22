@@ -10,6 +10,8 @@
 extern VALUE rb_mRugged;
 VALUE rb_cRuggedBlame;
 
+extern const rb_data_type_t rugged_repository_type;
+
 static VALUE rb_git_blame_hunk_fromC(const git_blame_hunk *hunk)
 {
 	VALUE rb_hunk;
@@ -135,7 +137,7 @@ static VALUE rb_git_blame_new(int argc, VALUE *argv, VALUE klass)
 	rb_scan_args(argc, argv, "20:", &rb_repo, &rb_path, &rb_options);
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	Check_Type(rb_path, T_STRING);
 

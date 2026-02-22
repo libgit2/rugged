@@ -18,6 +18,7 @@ VALUE rb_cRuggedBlob;
 VALUE rb_cRuggedBlobSig;
 
 extern const rb_data_type_t rugged_object_type;
+extern const rb_data_type_t rugged_repository_type;
 
 /*
  *  call-seq:
@@ -143,7 +144,7 @@ static VALUE rb_git_blob_from_buffer(VALUE self, VALUE rb_repo, VALUE rb_buffer)
 	Check_Type(rb_buffer, T_STRING);
 	rugged_check_repo(rb_repo);
 
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	error = git_blob_create_frombuffer(&oid, repo, RSTRING_PTR(rb_buffer), RSTRING_LEN(rb_buffer));
 	rugged_exception_check(error);
@@ -170,7 +171,7 @@ static VALUE rb_git_blob_from_workdir(VALUE self, VALUE rb_repo, VALUE rb_path)
 	FilePathValue(rb_path);
 	rugged_check_repo(rb_repo);
 
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	error = git_blob_create_fromworkdir(&oid, repo, StringValueCStr(rb_path));
 	rugged_exception_check(error);
@@ -198,7 +199,7 @@ static VALUE rb_git_blob_from_disk(VALUE self, VALUE rb_repo, VALUE rb_path)
 	FilePathValue(rb_path);
 	rugged_check_repo(rb_repo);
 
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	error = git_blob_create_fromdisk(&oid, repo, StringValueCStr(rb_path));
 	rugged_exception_check(error);
@@ -253,7 +254,7 @@ static VALUE rb_git_blob_from_io(int argc, VALUE *argv, VALUE klass)
 	rb_scan_args(argc, argv, "21", &rb_repo, &rb_io, &rb_hint_path);
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	if (!NIL_P(rb_hint_path)) {
 		FilePathValue(rb_hint_path);
@@ -507,7 +508,7 @@ static VALUE rb_git_blob_to_buffer(int argc, VALUE *argv, VALUE self)
 	rb_scan_args(argc, argv, "21", &rb_repo, &rb_sha1, &rb_max_bytes);
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	blob = (git_blob *)rugged_object_get(repo, rb_sha1, GIT_OBJ_BLOB);
 
@@ -607,7 +608,7 @@ static VALUE rb_git_blob_merge_files(int argc, VALUE *argv, VALUE klass)
 
 	if (!NIL_P(rb_repo)) {
 		rugged_check_repo(rb_repo);
-		Data_Get_Struct(rb_repo, git_repository, repo);
+		TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 	}
 
 	if (!NIL_P(rb_options))

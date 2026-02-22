@@ -16,6 +16,7 @@ extern VALUE rb_cRuggedReference;
 VALUE rb_cRuggedRebase;
 
 extern const rb_data_type_t rugged_object_type;
+extern const rb_data_type_t rugged_repository_type;
 
 static VALUE rebase_operation_type(git_rebase_operation *operation);
 
@@ -66,7 +67,7 @@ static void get_annotated_commit(git_annotated_commit **annotated_commit, VALUE 
 	int error;
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	if (rb_obj_is_kind_of(rb_value, rb_cRuggedCommit)) {
 		const git_commit * commit;
@@ -152,7 +153,7 @@ static VALUE rb_git_rebase_new(int argc, VALUE* argv, VALUE klass)
 	git_rebase_options options = GIT_REBASE_OPTIONS_INIT;
 
 	rb_scan_args(argc, argv, "31:", &rb_repo, &rb_branch, &rb_upstream, &rb_onto, &rb_options);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	if ((exception = rugged_get_annotated_commit(&branch, rb_repo, rb_branch)))
 		goto cleanup;

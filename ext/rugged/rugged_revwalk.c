@@ -12,6 +12,7 @@ extern VALUE rb_cRuggedObject;
 VALUE rb_cRuggedWalker;
 
 extern const rb_data_type_t rugged_object_type;
+extern const rb_data_type_t rugged_repository_type;
 
 static void rb_git_walk__free(git_revwalk *walk)
 {
@@ -90,7 +91,7 @@ static VALUE rb_git_walker_new(VALUE klass, VALUE rb_repo)
 	git_revwalk *walk;
 	int error;
 
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	error = git_revwalk_new(&walk, repo);
 	rugged_exception_check(error);
@@ -370,7 +371,7 @@ static VALUE rb_git_walk(int argc, VALUE *argv, VALUE self)
 	RETURN_ENUMERATOR(self, argc, argv);
 	rb_scan_args(argc, argv, "10:", &rb_repo, &rb_options);
 
-	Data_Get_Struct(rb_repo, git_repository, w.repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, w.repo);
 	rugged_exception_check(git_revwalk_new(&w.walk, w.repo));
 
 	w.rb_owner = rb_repo;

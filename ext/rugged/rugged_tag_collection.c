@@ -13,6 +13,8 @@ extern VALUE rb_cRuggedTag;
 
 VALUE rb_cRuggedTagCollection;
 
+extern const rb_data_type_t rugged_repository_type;
+
 /*
  *  call-seq:
  *    TagCollection.new(repo) -> refs
@@ -42,7 +44,7 @@ static VALUE rb_git_tag_collection_aref(VALUE self, VALUE rb_name)
 	VALUE rb_repo = rugged_owner(self);
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	Check_Type(rb_name, T_STRING);
 
@@ -76,7 +78,7 @@ static VALUE rb_git_tag_collection_delete(VALUE self, VALUE rb_name)
 	int error;
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	Check_Type(rb_name, T_STRING);
 
@@ -116,7 +118,7 @@ static VALUE rb_git_tag_collection_create(int argc, VALUE *argv, VALUE self)
 	rb_scan_args(argc, argv, "21:", &rb_name, &rb_target, &rb_force, &rb_annotation);
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	Check_Type(rb_name, T_STRING);
 
@@ -194,7 +196,7 @@ static VALUE rb_git_tag_collection_create_annotation(VALUE self, VALUE rb_name, 
 
 	VALUE rb_repo = rugged_owner(self);
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	Check_Type(rb_name, T_STRING);
 
@@ -245,7 +247,7 @@ static VALUE each_tag(int argc, VALUE *argv, VALUE self, int tag_names_only)
 	}
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	error = git_tag_list_match(&tags, pattern ? pattern : "", repo);
 	rugged_exception_check(error);

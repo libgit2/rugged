@@ -18,6 +18,8 @@ static ID id_ignore_none, id_ignore_untracked, id_ignore_dirty, id_ignore_all;
 
 static ID id_update_checkout, id_update_rebase, id_update_merge, id_update_none;
 
+extern const rb_data_type_t rugged_repository_type;
+
 void init_status_list(void)
 {
 	id_in_head            = CSTR2SYM("in_head");
@@ -153,7 +155,7 @@ static VALUE rb_git_submodule_status(VALUE self)
 	unsigned int flags;
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 	Data_Get_Struct(self, git_submodule, submodule);
 
 	rugged_exception_check(
@@ -224,7 +226,7 @@ static VALUE rb_git_submodule_status_in_workdir(VALUE self)
 	git_submodule *submodule; \
 	unsigned int flags; \
 	rugged_check_repo(rb_repo); \
-	Data_Get_Struct(rb_repo, git_repository, repo); \
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo); \
 	Data_Get_Struct(self, git_submodule, submodule); \
 	rugged_exception_check( \
 		git_submodule_status(&flags, repo, git_submodule_name(submodule), \
@@ -348,7 +350,7 @@ static VALUE rb_git_submodule_status_untracked_files_in_workdir(VALUE self)
 	git_submodule *submodule; \
 	unsigned int flags; \
 	rugged_check_repo(rb_repo); \
-	Data_Get_Struct(rb_repo, git_repository, repo); \
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo); \
 	Data_Get_Struct(self, git_submodule, submodule); \
 	rugged_exception_check( \
 		git_submodule_status(&flags, repo, git_submodule_name(submodule), \
