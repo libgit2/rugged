@@ -34,6 +34,7 @@ VALUE rb_cRuggedOdbObject;
 
 static ID id_call;
 
+extern const rb_data_type_t rugged_diff_type;
 extern const rb_data_type_t rugged_index_type;
 const rb_data_type_t rugged_repository_type;
 extern const rb_data_type_t rugged_object_type;
@@ -1053,7 +1054,7 @@ static VALUE rb_git_repo_apply(int argc, VALUE *argv, VALUE self)
 		rugged_parse_apply_options(&opts, &location, rb_options, &payload);
 	}
 
-	Data_Get_Struct(rb_diff, git_diff, diff);
+	TypedData_Get_Struct(rb_diff, git_diff, &rugged_diff_type, diff);
 
 	error = git_apply(repo, diff, location, &opts);
 
