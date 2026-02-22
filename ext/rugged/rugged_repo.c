@@ -34,8 +34,8 @@ VALUE rb_cRuggedOdbObject;
 
 static ID id_call;
 
+extern const rb_data_type_t rugged_index_type;
 const rb_data_type_t rugged_repository_type;
-
 extern const rb_data_type_t rugged_object_type;
 static const rb_data_type_t rugged_odb_object_type;
 
@@ -2432,7 +2432,7 @@ static VALUE rb_git_checkout_index(int argc, VALUE *argv, VALUE self)
 		rb_raise(rb_eTypeError, "Expected Rugged::Index");
 
 	TypedData_Get_Struct(self, git_repository, &rugged_repository_type, repo);
-	Data_Get_Struct(rb_index, git_index, index);
+	TypedData_Get_Struct(rb_index, git_index, &rugged_index_type, index);
 
 	rugged_parse_checkout_options(&opts, rb_options);
 

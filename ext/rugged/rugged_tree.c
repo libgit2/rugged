@@ -18,6 +18,7 @@ extern VALUE rb_cRuggedCommit;
 VALUE rb_cRuggedTree;
 VALUE rb_cRuggedTreeBuilder;
 
+extern const rb_data_type_t rugged_index_type;
 extern const rb_data_type_t rugged_object_type;
 extern const rb_data_type_t rugged_repository_type;
 
@@ -350,7 +351,7 @@ static VALUE rb_git_diff_tree_to_index(VALUE self, VALUE rb_repo, VALUE rb_self,
 	int error;
 
 	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
-	Data_Get_Struct(rb_other, git_index, index);
+	TypedData_Get_Struct(rb_other, git_index, &rugged_index_type, index);
 
 	rugged_parse_diff_options(&opts, rb_options);
 

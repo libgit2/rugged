@@ -23,14 +23,23 @@ static VALUE rb_git_indexentry_fromC(const git_index_entry *entry);
  * Index
  */
 
-static void rb_git_index__free(git_index *index)
+static void rb_git_index__free(void *data)
 {
+	git_index *index = (git_index *) data;
 	git_index_free(index);
 }
 
+const rb_data_type_t rugged_index_type = {
+	.wrap_struct_name = "Rugged::Index",
+	.function = {
+		.dfree = rb_git_index__free,
+	},
+	.flags = RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
 VALUE rugged_index_new(VALUE klass, VALUE owner, git_index *index)
 {
-	VALUE rb_index = Data_Wrap_Struct(klass, NULL, &rb_git_index__free, index);
+	VALUE rb_index = TypedData_Wrap_Struct(klass, &rugged_index_type, index);
 	rugged_set_owner(rb_index, owner);
 	return rb_index;
 }
@@ -73,7 +82,7 @@ static VALUE rb_git_index_new(int argc, VALUE *argv, VALUE klass)
 static VALUE rb_git_index_clear(VALUE self)
 {
 	git_index *index;
-	Data_Get_Struct(self, git_index, index);
+	TypedData_Get_Struct(self, git_index, &rugged_index_type, index);
 	git_index_clear(index);
 	return Qnil;
 }
@@ -90,7 +99,7 @@ static VALUE rb_git_index_read(VALUE self)
 	git_index *index;
 	int error;
 
-	Data_Get_Struct(self, git_index, index);
+	TypedData_Get_Struct(self, git_index, &rugged_index_type, index);
 
 	error = git_index_read(index, 0);
 	rugged_exception_check(error);
@@ -109,7 +118,7 @@ static VALUE rb_git_index_write(VALUE self)
 	git_index *index;
 	int error;
 
-	Data_Get_Struct(self, git_index, index);
+	TypedData_Get_Struct(self, git_index, &rugged_index_type, index);
 
 	error = git_index_write(index);
 	rugged_exception_check(error);
@@ -126,7 +135,7 @@ static VALUE rb_git_index_write(VALUE self)
 static VALUE rb_git_index_count(VALUE self)
 {
 	git_index *index;
-	Data_Get_Struct(self, git_index, index);
+	TypedData_Get_Struct(self, git_index, &rugged_index_type, index);
 	return INT2FIX(git_index_entrycount(index));
 }
 
@@ -149,7 +158,7 @@ static VALUE rb_git_index_get(int argc, VALUE *argv, VALUE self)
 
 	VALUE rb_entry, rb_stage;
 
-	Data_Get_Struct(self, git_index, index);
+	TypedData_Get_Struct(self, git_index, &rugged_index_type, index);
 
 	rb_scan_args(argc, argv, "11", &rb_entry, &rb_stage);
 
@@ -194,7 +203,7 @@ static VALUE rb_git_index_each(VALUE self)
 	unsigned int i, count;
 
 	RETURN_ENUMERATOR(self, 0, 0);
-	Data_Get_Struct(self, git_index, index);
+	TypedData_Get_Struct(self, git_index, &rugged_index_type, index);
 
 	count = (unsigned int)git_index_entrycount(index);
 	for (i = 0; i < count; ++i) {
@@ -220,7 +229,7 @@ static VALUE rb_git_index_remove(int argc, VALUE *argv, VALUE self)
 
 	VALUE rb_entry, rb_stage;
 
-	Data_Get_Struct(self, git_index, index);
+	TypedData_Get_Struct(self, git_index, &rugged_index_type, index);
 
 	if (rb_scan_args(argc, argv, "11", &rb_entry, &rb_stage) > 1) {
 		Check_Type(rb_stage, T_FIXNUM);
@@ -249,7 +258,7 @@ static VALUE rb_git_index_remove_directory(int argc, VALUE *argv, VALUE self)
 
 	VALUE rb_dir, rb_stage;
 
-	Data_Get_Struct(self, git_index, index);
+	TypedData_Get_Struct(self, git_index, &rugged_index_type, index);
 
 	if (rb_scan_args(argc, argv, "11", &rb_dir, &rb_stage) > 1) {
 		Check_Type(rb_stage, T_FIXNUM);
@@ -293,7 +302,7 @@ static VALUE rb_git_index_add(VALUE self, VALUE rb_entry)
 	git_index *index;
 	int error = 0;
 
-	Data_Get_Struct(self, git_index, index);
+	TypedData_Get_Struct(self, git_index, &rugged_index_type, index);
 
 	if (TYPE(rb_entry) == T_HASH) {
 		git_index_entry entry;
@@ -379,7 +388,7 @@ static VALUE rb_git_index_add_all(int argc, VALUE *argv, VALUE self)
 	int error, exception = 0;
 	unsigned int flags = GIT_INDEX_ADD_DEFAULT;
 
-	Data_Get_Struct(self, git_index, index);
+	TypedData_Get_Struct(self, git_index, &rugged_index_type, index);
 
 	if (rb_scan_args(argc, argv, "02", &rb_pathspecs, &rb_options) > 1) {
 		Check_Type(rb_options, T_HASH);
@@ -440,7 +449,7 @@ static VALUE rb_git_index_update_all(int argc, VALUE *argv, VALUE self)
 	git_strarray pathspecs;
 	int error, exception = 0;
 
-	Data_Get_Struct(self, git_index, index);
+	TypedData_Get_Struct(self, git_index, &rugged_index_type, index);
 
 	rb_scan_args(argc, argv, "01", &rb_pathspecs);
 
@@ -483,7 +492,7 @@ static VALUE rb_git_index_remove_all(int argc, VALUE *argv, VALUE self)
 	git_strarray pathspecs;
 	int error, exception = 0;
 
-	Data_Get_Struct(self, git_index, index);
+	TypedData_Get_Struct(self, git_index, &rugged_index_type, index);
 
 	rb_scan_args(argc, argv, "01", &rb_pathspecs);
 
@@ -629,7 +638,7 @@ static VALUE rb_git_index_writetree(int argc, VALUE *argv, VALUE self)
 	int error;
 	VALUE rb_repo;
 
-	Data_Get_Struct(self, git_index, index);
+	TypedData_Get_Struct(self, git_index, &rugged_index_type, index);
 
 	if (rb_scan_args(argc, argv, "01", &rb_repo) == 1) {
 		git_repository *repo = NULL;
@@ -660,7 +669,7 @@ static VALUE rb_git_index_readtree(VALUE self, VALUE rb_tree)
 	git_tree *tree;
 	int error;
 
-	Data_Get_Struct(self, git_index, index);
+	TypedData_Get_Struct(self, git_index, &rugged_index_type, index);
 	TypedData_Get_Struct(rb_tree, git_tree, &rugged_object_type, tree);
 
 	if (!rb_obj_is_kind_of(rb_tree, rb_cRuggedTree)) {
@@ -685,7 +694,7 @@ static VALUE rb_git_diff_tree_to_index(VALUE self, VALUE rb_other, VALUE rb_opti
 
 	rugged_parse_diff_options(&opts, rb_options);
 
-	Data_Get_Struct(self, git_index, index);
+	TypedData_Get_Struct(self, git_index, &rugged_index_type, index);
 	owner = rugged_owner(self);
 	TypedData_Get_Struct(owner, git_repository, &rugged_repository_type, repo);
 
@@ -713,7 +722,7 @@ static VALUE rb_git_diff_index_to_workdir(VALUE self, VALUE rb_options)
 
 	rugged_parse_diff_options(&opts, rb_options);
 
-	Data_Get_Struct(self, git_index, index);
+	TypedData_Get_Struct(self, git_index, &rugged_index_type, index);
 	owner = rugged_owner(self);
 	TypedData_Get_Struct(owner, git_repository, &rugged_repository_type, repo);
 
@@ -734,7 +743,7 @@ static VALUE rb_git_diff_index_to_workdir(VALUE self, VALUE rb_options)
 static VALUE rb_git_index_conflicts_p(VALUE self)
 {
 	git_index *index;
-	Data_Get_Struct(self, git_index, index);
+	TypedData_Get_Struct(self, git_index, &rugged_index_type, index);
 	return git_index_has_conflicts(index) ? Qtrue : Qfalse;
 }
 
@@ -771,7 +780,7 @@ static VALUE rb_git_conflict_add(VALUE self, VALUE rb_conflict)
 	if (!NIL_P(rb_theirs))
 		rb_git_indexentry_toC(&theirs, rb_theirs);
 
-	Data_Get_Struct(self, git_index, index);
+	TypedData_Get_Struct(self, git_index, &rugged_index_type, index);
 
 	error = git_index_conflict_add(index,
 		NIL_P(rb_ancestor) ? NULL : &ancestor,
@@ -795,7 +804,7 @@ static VALUE rb_git_conflict_remove(VALUE self, VALUE rb_path)
 
 	Check_Type(rb_path, T_STRING);
 
-	Data_Get_Struct(self, git_index, index);
+	TypedData_Get_Struct(self, git_index, &rugged_index_type, index);
 
 	error = git_index_conflict_remove(index, StringValueCStr(rb_path));
 	rugged_exception_check(error);
@@ -824,7 +833,7 @@ static VALUE rb_git_conflict_get(VALUE self, VALUE rb_path)
 
 	Check_Type(rb_path, T_STRING);
 
-	Data_Get_Struct(self, git_index, index);
+	TypedData_Get_Struct(self, git_index, &rugged_index_type, index);
 
 	error = git_index_conflict_get(&ancestor, &ours, &theirs, index, StringValueCStr(rb_path));
 	if (error == GIT_ENOTFOUND)
@@ -895,7 +904,7 @@ static VALUE rb_git_merge_file(int argc, VALUE *argv, VALUE self)
 
 	Check_Type(rb_path, T_STRING);
 
-	Data_Get_Struct(self, git_index, index);
+	TypedData_Get_Struct(self, git_index, &rugged_index_type, index);
 
 	rugged_check_repo(rb_repo);
 	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
@@ -931,7 +940,7 @@ static VALUE rb_git_conflict_cleanup(VALUE self)
 {
 	git_index *index;
 
-	Data_Get_Struct(self, git_index, index);
+	TypedData_Get_Struct(self, git_index, &rugged_index_type, index);
 	git_index_conflict_cleanup(index);
 
 	return Qnil;
@@ -957,7 +966,7 @@ static VALUE rb_git_index_conflicts(VALUE self)
 	const git_index_entry *ancestor, *ours, *theirs;
 	int error;
 
-	Data_Get_Struct(self, git_index, index);
+	TypedData_Get_Struct(self, git_index, &rugged_index_type, index);
 
 	error = git_index_conflict_iterator_new(&iter, index);
 	rugged_exception_check(error);
