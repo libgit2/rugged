@@ -69,9 +69,23 @@ VALUE rb_git_patch_from_strings(int argc, VALUE *argv, VALUE self)
 	return rugged_patch_new(self, patch);
 }
 
+static void rb_git_patch__free(void *data)
+{
+	git_patch *patch = (git_patch *) data;
+	git_patch_free(patch);
+}
+
+const rb_data_type_t rugged_patch_type = {
+	.wrap_struct_name = "Rugged::Patch",
+	.function = {
+		.dfree = rb_git_patch__free,
+	},
+	.flags = RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
 VALUE rugged_patch_new(VALUE owner, git_patch *patch)
 {
-	VALUE rb_patch = Data_Wrap_Struct(rb_cRuggedPatch, NULL, &git_patch_free, patch);
+	VALUE rb_patch = TypedData_Wrap_Struct(rb_cRuggedPatch, &rugged_patch_type, patch);
 	rugged_set_owner(rb_patch, owner);
 	return rb_patch;
 }
@@ -94,7 +108,7 @@ static VALUE rb_git_diff_patch_each_hunk(VALUE self)
 	size_t hunks_count, h;
 
 	RETURN_ENUMERATOR(self, 0, 0);
-	Data_Get_Struct(self, git_patch, patch);
+	TypedData_Get_Struct(self, git_patch, &rugged_patch_type, patch);
 
 	hunks_count = git_patch_num_hunks(patch);
 	for (h = 0; h < hunks_count; ++h) {
@@ -117,7 +131,7 @@ static VALUE rb_git_diff_patch_each_hunk(VALUE self)
 static VALUE rb_git_diff_patch_hunk_count(VALUE self)
 {
 	git_patch *patch;
-	Data_Get_Struct(self, git_patch, patch);
+	TypedData_Get_Struct(self, git_patch, &rugged_patch_type, patch);
 
 	return INT2FIX(git_patch_num_hunks(patch));
 }
@@ -131,7 +145,7 @@ static VALUE rb_git_diff_patch_hunk_count(VALUE self)
 static VALUE rb_git_diff_patch_delta(VALUE self)
 {
 	git_patch *patch;
-	Data_Get_Struct(self, git_patch, patch);
+	TypedData_Get_Struct(self, git_patch, &rugged_patch_type, patch);
 
 	return rugged_diff_delta_new(rugged_owner(self), git_patch_get_delta(patch));
 }
@@ -146,7 +160,7 @@ static VALUE rb_git_diff_patch_stat(VALUE self)
 {
 	git_patch *patch;
 	size_t additions, deletions;
-	Data_Get_Struct(self, git_patch, patch);
+	TypedData_Get_Struct(self, git_patch, &rugged_patch_type, patch);
 
 	git_patch_line_stats(NULL, &additions, &deletions, patch);
 
@@ -191,7 +205,7 @@ static VALUE rb_git_diff_patch_lines(int argc, VALUE *argv, VALUE self)
 	size_t lines = 0;
 	int options = 0;
 	VALUE rb_options;
-	Data_Get_Struct(self, git_patch, patch);
+	TypedData_Get_Struct(self, git_patch, &rugged_patch_type, patch);
 
 	rb_scan_args(argc, argv, "0:", &rb_options);
 	if (!NIL_P(rb_options)) {
@@ -282,7 +296,7 @@ static VALUE rb_git_diff_patch_bytesize(int argc, VALUE *argv, VALUE self)
 	size_t bytesize;
 	VALUE rb_options;
 	int include_context, include_hunk_headers, include_file_headers;
-	Data_Get_Struct(self, git_patch, patch);
+	TypedData_Get_Struct(self, git_patch, &rugged_patch_type, patch);
 
 	include_context = include_hunk_headers = include_file_headers = 1;
 
@@ -352,7 +366,7 @@ static VALUE rb_git_diff_patch_to_s(VALUE self)
 {
 	git_patch *patch;
 	VALUE rb_buffer = rb_ary_new();
-	Data_Get_Struct(self, git_patch, patch);
+	TypedData_Get_Struct(self, git_patch, &rugged_patch_type, patch);
 
 	rugged_exception_check(git_patch_print(patch, patch_print_cb, (void*)rb_buffer));
 
@@ -370,7 +384,7 @@ static VALUE rb_git_diff_patch_header(VALUE self)
 	git_patch *patch;
 	int error = 0;
 	VALUE rb_buffer = rb_ary_new();
-	Data_Get_Struct(self, git_patch, patch);
+	TypedData_Get_Struct(self, git_patch, &rugged_patch_type, patch);
 
 	error = git_patch_print(patch, patch_print_header_cb, (void*)rb_buffer);
 	if (error && error != GIT_ITEROVER)

@@ -13,6 +13,8 @@ extern VALUE rb_cRuggedBranch;
 
 VALUE rb_cRuggedBranchCollection;
 
+extern const rb_data_type_t rugged_repository_type;
+
 static inline VALUE rugged_branch_new(VALUE owner, git_reference *ref)
 {
 	return rugged_ref_new(rb_cRuggedBranch, owner, ref);
@@ -119,7 +121,7 @@ static VALUE rb_git_branch_collection_create(int argc, VALUE *argv, VALUE self)
 	rb_scan_args(argc, argv, "20:", &rb_name, &rb_target, &rb_options);
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	Check_Type(rb_name, T_STRING);
 	Check_Type(rb_target, T_STRING);
@@ -164,7 +166,7 @@ static VALUE rb_git_branch_collection_aref(VALUE self, VALUE rb_name) {
 	int error;
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	Check_Type(rb_name, T_STRING);
 
@@ -193,7 +195,7 @@ static VALUE each_branch(int argc, VALUE *argv, VALUE self, int branch_names_onl
 	if (!NIL_P(rb_filter))
 		filter = parse_branch_type(rb_filter);
 
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	error = git_branch_iterator_new(&iter, repo, filter);
 	rugged_exception_check(error);
@@ -273,7 +275,7 @@ static VALUE rb_git_branch_collection_delete(VALUE self, VALUE rb_name_or_branch
 	int error;
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	error = rugged_branch_lookup(&branch, repo, rb_name_or_branch);
 	rugged_exception_check(error);
@@ -320,7 +322,7 @@ static VALUE rb_git_branch_collection_move(int argc, VALUE *argv, VALUE self)
 	Check_Type(rb_new_branch_name, T_STRING);
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	error = rugged_branch_lookup(&old_branch, repo, rb_name_or_branch);
 	rugged_exception_check(error);
@@ -353,7 +355,7 @@ static VALUE rb_git_branch_collection_exist_p(VALUE self, VALUE rb_name)
 	int error;
 
 	Check_Type(rb_name, T_STRING);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	error = rugged_branch_lookup(&branch, repo, rb_name);
 	git_reference_free(branch);

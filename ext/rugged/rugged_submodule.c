@@ -18,6 +18,9 @@ static ID id_ignore_none, id_ignore_untracked, id_ignore_dirty, id_ignore_all;
 
 static ID id_update_checkout, id_update_rebase, id_update_merge, id_update_none;
 
+extern const rb_data_type_t rugged_repository_type;
+extern const rb_data_type_t rugged_submodule_type;
+
 void init_status_list(void)
 {
 	id_in_head            = CSTR2SYM("in_head");
@@ -153,8 +156,8 @@ static VALUE rb_git_submodule_status(VALUE self)
 	unsigned int flags;
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
-	Data_Get_Struct(self, git_submodule, submodule);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
+	TypedData_Get_Struct(self, git_submodule, &rugged_submodule_type, submodule);
 
 	rugged_exception_check(
 		git_submodule_status(&flags, repo, git_submodule_name(submodule),
@@ -168,7 +171,7 @@ static VALUE rb_git_submodule_status(VALUE self)
 #define RB_GIT_SUBMODULE_LOCATION_FLAG_CHECK(flag) \
 	git_submodule *submodule; \
 	unsigned int flags; \
-	Data_Get_Struct(self, git_submodule, submodule); \
+	TypedData_Get_Struct(self, git_submodule, &rugged_submodule_type, submodule); \
 	rugged_exception_check( \
 		git_submodule_location(&flags, submodule) \
 	); \
@@ -224,8 +227,8 @@ static VALUE rb_git_submodule_status_in_workdir(VALUE self)
 	git_submodule *submodule; \
 	unsigned int flags; \
 	rugged_check_repo(rb_repo); \
-	Data_Get_Struct(rb_repo, git_repository, repo); \
-	Data_Get_Struct(self, git_submodule, submodule); \
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo); \
+	TypedData_Get_Struct(self, git_submodule, &rugged_submodule_type, submodule); \
 	rugged_exception_check( \
 		git_submodule_status(&flags, repo, git_submodule_name(submodule), \
 			GIT_SUBMODULE_IGNORE_UNSPECIFIED) \
@@ -348,8 +351,8 @@ static VALUE rb_git_submodule_status_untracked_files_in_workdir(VALUE self)
 	git_submodule *submodule; \
 	unsigned int flags; \
 	rugged_check_repo(rb_repo); \
-	Data_Get_Struct(rb_repo, git_repository, repo); \
-	Data_Get_Struct(self, git_submodule, submodule); \
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo); \
+	TypedData_Get_Struct(self, git_submodule, &rugged_submodule_type, submodule); \
 	rugged_exception_check( \
 		git_submodule_status(&flags, repo, git_submodule_name(submodule), \
 			GIT_SUBMODULE_IGNORE_UNSPECIFIED) \
@@ -401,7 +404,7 @@ static VALUE rb_git_submodule_add_to_index(int argc, VALUE *argv, VALUE self)
 	VALUE rb_options;
 	int write_index = 1;
 
-	Data_Get_Struct(self, git_submodule, submodule);
+	TypedData_Get_Struct(self, git_submodule, &rugged_submodule_type, submodule);
 
 	rb_scan_args(argc, argv, ":", &rb_options);
 
@@ -431,7 +434,7 @@ static VALUE rb_git_submodule_add_to_index(int argc, VALUE *argv, VALUE self)
 static VALUE rb_git_submodule_reload(VALUE self)
 {
 	git_submodule *submodule;
-	Data_Get_Struct(self, git_submodule, submodule);
+	TypedData_Get_Struct(self, git_submodule, &rugged_submodule_type, submodule);
 
 	rugged_exception_check(
 		git_submodule_reload(submodule, 1)
@@ -454,7 +457,7 @@ static VALUE rb_git_submodule_reload(VALUE self)
 static VALUE rb_git_submodule_sync(VALUE self)
 {
 	git_submodule *submodule;
-	Data_Get_Struct(self, git_submodule, submodule);
+	TypedData_Get_Struct(self, git_submodule, &rugged_submodule_type, submodule);
 
 	rugged_exception_check(
 		git_submodule_sync(submodule)
@@ -485,7 +488,7 @@ static VALUE rb_git_submodule_init(int argc, VALUE *argv, VALUE self)
 	VALUE rb_options;
 	int overwrite = 0;
 
-	Data_Get_Struct(self, git_submodule, submodule);
+	TypedData_Get_Struct(self, git_submodule, &rugged_submodule_type, submodule);
 
 	rb_scan_args(argc, argv, ":", &rb_options);
 
@@ -514,7 +517,7 @@ static VALUE rb_git_submodule_name(VALUE self)
 	git_submodule *submodule;
 	const char *name;
 
-	Data_Get_Struct(self, git_submodule, submodule);
+	TypedData_Get_Struct(self, git_submodule, &rugged_submodule_type, submodule);
 
 	name = git_submodule_name(submodule);
 
@@ -533,7 +536,7 @@ static VALUE rb_git_submodule_url(VALUE self)
 	git_submodule *submodule;
 	const char *url;
 
-	Data_Get_Struct(self, git_submodule, submodule);
+	TypedData_Get_Struct(self, git_submodule, &rugged_submodule_type, submodule);
 
 	url = git_submodule_url(submodule);
 
@@ -554,7 +557,7 @@ static VALUE rb_git_submodule_path(VALUE self)
 	git_submodule *submodule;
 	const char *path;
 
-	Data_Get_Struct(self, git_submodule, submodule);
+	TypedData_Get_Struct(self, git_submodule, &rugged_submodule_type, submodule);
 
 	path = git_submodule_path(submodule);
 
@@ -564,7 +567,7 @@ static VALUE rb_git_submodule_path(VALUE self)
 #define RB_GIT_OID_GETTER(_klass, _attribute) \
 	git_##_klass *object; \
 	const git_oid * oid; \
-	Data_Get_Struct(self, git_##_klass, object); \
+	TypedData_Get_Struct(self, git_##_klass, &rugged_##_klass##_type, object);	\
 	oid = git_##_klass##_##_attribute(object); \
 	return oid ? rugged_create_oid(oid) : Qnil; \
 
@@ -625,7 +628,7 @@ static VALUE rb_git_submodule_wd_id(VALUE self)
 static VALUE rb_git_submodule_fetch_recurse_submodules(VALUE self)
 {
 	git_submodule *submodule;
-	Data_Get_Struct(self, git_submodule, submodule);
+	TypedData_Get_Struct(self, git_submodule, &rugged_submodule_type, submodule);
 
 	return git_submodule_fetch_recurse_submodules(submodule) ? Qtrue : Qfalse;
 }
@@ -676,7 +679,7 @@ static VALUE rb_git_submodule_ignore_rule(VALUE self)
 	git_submodule *submodule;
 	git_submodule_ignore_t ignore;
 
-	Data_Get_Struct(self, git_submodule, submodule);
+	TypedData_Get_Struct(self, git_submodule, &rugged_submodule_type, submodule);
 	ignore = git_submodule_ignore(submodule);
 
 	return rb_git_subm_ignore_rule_fromC(ignore);
@@ -723,7 +726,7 @@ static VALUE rb_git_submodule_update_rule(VALUE self)
 	git_submodule *submodule;
 	git_submodule_update_t update;
 
-	Data_Get_Struct(self, git_submodule, submodule);
+	TypedData_Get_Struct(self, git_submodule, &rugged_submodule_type, submodule);
 	update = git_submodule_update_strategy(submodule);
 
 	return rb_git_subm_update_rule_fromC(update);
@@ -744,7 +747,7 @@ static VALUE rb_git_submodule_repository(VALUE self)
 	git_submodule *submodule;
 	git_repository *repo;
 
-	Data_Get_Struct(self, git_submodule, submodule);
+	TypedData_Get_Struct(self, git_submodule, &rugged_submodule_type, submodule);
 
 	rugged_exception_check(
 		git_submodule_open(&repo, submodule)
@@ -769,7 +772,7 @@ static VALUE rb_git_submodule_repository(VALUE self)
 static VALUE rb_git_submodule_finalize_add(VALUE self)
 {
 	git_submodule *submodule;
-	Data_Get_Struct(self, git_submodule, submodule);
+	TypedData_Get_Struct(self, git_submodule, &rugged_submodule_type, submodule);
 
 	rugged_exception_check(
 		git_submodule_add_finalize(submodule)

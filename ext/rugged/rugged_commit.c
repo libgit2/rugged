@@ -16,6 +16,7 @@ extern VALUE rb_cRuggedSignature;
 VALUE rb_cRuggedCommit;
 
 extern const rb_data_type_t rugged_object_type;
+extern const rb_data_type_t rugged_repository_type;
 
 /*
  *  call-seq:
@@ -357,7 +358,7 @@ static VALUE rb_git_commit_amend(VALUE self, VALUE rb_data)
 	TypedData_Get_Struct(self, git_commit, &rugged_object_type, commit_to_amend);
 
 	owner = rugged_owner(self);
-	Data_Get_Struct(owner, git_repository, repo);
+	TypedData_Get_Struct(owner, git_repository, &rugged_repository_type, repo);
 
 	rb_ref = rb_hash_aref(rb_data, CSTR2SYM("update_ref"));
 	if (!NIL_P(rb_ref)) {
@@ -549,7 +550,7 @@ static VALUE rb_git_commit_create(VALUE self, VALUE rb_repo, VALUE rb_data)
 	Check_Type(rb_data, T_HASH);
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	if ((error = parse_commit_options(&commit_data, repo, rb_data)) < 0)
 		goto cleanup;
@@ -614,7 +615,7 @@ static VALUE rb_git_commit_to_mbox(int argc, VALUE *argv, VALUE self)
 	rb_scan_args(argc, argv, ":", &rb_options);
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	TypedData_Get_Struct(self, git_commit, &rugged_object_type, commit);
 
@@ -735,7 +736,7 @@ static VALUE rb_git_commit_extract_signature(int argc, VALUE *argv, VALUE self)
 	rb_scan_args(argc, argv, "21", &rb_repo, &rb_commit, &rb_field);
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	error = git_oid_fromstr(&commit_id, StringValueCStr(rb_commit));
 	rugged_exception_check(error);
@@ -799,7 +800,7 @@ static VALUE rb_git_commit_create_to_s(VALUE self, VALUE rb_repo, VALUE rb_data)
 	Check_Type(rb_data, T_HASH);
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	if ((error = parse_commit_options(&commit_data, repo, rb_data)) < 0)
 		goto cleanup;
@@ -850,7 +851,7 @@ static VALUE rb_git_commit_create_with_signature(int argc, VALUE *argv, VALUE se
 	rb_scan_args(argc, argv, "31", &rb_repo, &rb_content, &rb_signature, &rb_field);
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	Check_Type(rb_content, T_STRING);
 	Check_Type(rb_signature, T_STRING);

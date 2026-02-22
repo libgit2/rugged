@@ -13,6 +13,8 @@ extern VALUE rb_cRuggedReference;
 
 VALUE rb_cRuggedReferenceCollection;
 
+extern const rb_data_type_t rugged_repository_type;
+
 /*
  *  call-seq:
  *    ReferenceCollection.new(repo) -> refs
@@ -56,7 +58,7 @@ static VALUE rb_git_reference_collection_create(int argc, VALUE *argv, VALUE sel
 	rb_scan_args(argc, argv, "20:", &rb_name, &rb_target, &rb_options);
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 	Check_Type(rb_name, T_STRING);
 	Check_Type(rb_target, T_STRING);
 
@@ -95,7 +97,7 @@ static VALUE rb_git_reference_collection_aref(VALUE self, VALUE rb_name) {
 	git_reference *ref;
 	int error;
 
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	error = git_reference_lookup(&ref, repo, StringValueCStr(rb_name));
 
@@ -119,7 +121,7 @@ static VALUE rb_git_reference_collection__each(int argc, VALUE *argv, VALUE self
 
 	rugged_check_repo(rb_repo);
 
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	if (!NIL_P(rb_glob)) {
 		Check_Type(rb_glob, T_STRING);
@@ -210,7 +212,7 @@ static VALUE rb_git_reference_collection_exist_p(VALUE self, VALUE rb_name_or_re
 	if (TYPE(rb_name_or_ref) != T_STRING)
 		rb_raise(rb_eTypeError, "Expecting a String or Rugged::Reference instance");
 
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	error = git_reference_lookup(&ref, repo, StringValueCStr(rb_name_or_ref));
 	git_reference_free(ref);
@@ -265,7 +267,7 @@ static VALUE rb_git_reference_collection_rename(int argc, VALUE *argv, VALUE sel
 		rb_raise(rb_eTypeError, "Expecting a String or Rugged::Reference instance");
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	if (!NIL_P(rb_options)) {
 		VALUE rb_val = rb_hash_aref(rb_options, CSTR2SYM("message"));
@@ -337,7 +339,7 @@ static VALUE rb_git_reference_collection_update(int argc, VALUE *argv, VALUE sel
 	}
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	error = git_reference_lookup(&ref, repo, StringValueCStr(rb_name_or_ref));
 	rugged_exception_check(error);
@@ -388,7 +390,7 @@ static VALUE rb_git_reference_collection_delete(VALUE self, VALUE rb_name_or_ref
 		rb_raise(rb_eTypeError, "Expecting a String or Rugged::Reference instance");
 
 	rugged_check_repo(rb_repo);
-	Data_Get_Struct(rb_repo, git_repository, repo);
+	TypedData_Get_Struct(rb_repo, git_repository, &rugged_repository_type, repo);
 
 	error = git_reference_lookup(&ref, repo, StringValueCStr(rb_name_or_ref));
 	rugged_exception_check(error);
