@@ -26,19 +26,28 @@ static VALUE rb_git_submodule_collection_initialize(VALUE self, VALUE rb_repo)
 	return self;
 }
 
-static void rb_git_submodule__free(git_submodule *submodule)
+static void rb_git_submodule__free(void *data)
 {
+	git_submodule *submodule = (git_submodule *) data;
 	git_submodule_free(submodule);
 }
+
+const rb_data_type_t rugged_submodule_type = {
+	.wrap_struct_name = "Rugged::Submodule",
+	.function = {
+		.dfree = rb_git_submodule__free,
+	},
+	.flags = RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
 
 VALUE rugged_submodule_new(VALUE owner, git_submodule *submodule)
 {
 	VALUE rb_submodule;
 
-	rb_submodule = Data_Wrap_Struct(
+	rb_submodule = TypedData_Wrap_Struct(
 			rb_cRuggedSubmodule,
-			NULL,
-			&rb_git_submodule__free,
+			&rugged_submodule_type,
 			submodule);
 	rugged_set_owner(rb_submodule, owner);
 
