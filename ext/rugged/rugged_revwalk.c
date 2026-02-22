@@ -14,14 +14,23 @@ VALUE rb_cRuggedWalker;
 extern const rb_data_type_t rugged_object_type;
 extern const rb_data_type_t rugged_repository_type;
 
-static void rb_git_walk__free(git_revwalk *walk)
+static void rb_git_walk__free(void *data)
 {
+	git_revwalk *walk = (git_revwalk *) data;
 	git_revwalk_free(walk);
 }
 
+const rb_data_type_t rugged_walk_type = {
+	.wrap_struct_name = "Rugged::Walker",
+	.function = {
+		.dfree = rb_git_walk__free,
+	},
+	.flags = RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
 VALUE rugged_walker_new(VALUE klass, VALUE owner, git_revwalk *walk)
 {
-	VALUE rb_walk = Data_Wrap_Struct(klass, NULL, &rb_git_walk__free, walk);
+	VALUE rb_walk = TypedData_Wrap_Struct(klass, &rugged_walk_type, walk);
 	rugged_set_owner(rb_walk, owner);
 	return rb_walk;
 }
@@ -118,7 +127,7 @@ static VALUE rb_git_walker_new(VALUE klass, VALUE rb_repo)
 static VALUE rb_git_walker_push(VALUE self, VALUE rb_commit)
 {
 	git_revwalk *walk;
-	Data_Get_Struct(self, git_revwalk, walk);
+	TypedData_Get_Struct(self, git_revwalk, &rugged_walk_type, walk);
 	push_commit(walk, rb_commit, 0);
 	return Qnil;
 }
@@ -126,7 +135,7 @@ static VALUE rb_git_walker_push(VALUE self, VALUE rb_commit)
 static VALUE rb_git_walker_push_range(VALUE self, VALUE range)
 {
 	git_revwalk *walk;
-	Data_Get_Struct(self, git_revwalk, walk);
+	TypedData_Get_Struct(self, git_revwalk, &rugged_walk_type, walk);
 	rugged_exception_check(git_revwalk_push_range(walk, StringValueCStr(range)));
 	return Qnil;
 }
@@ -141,7 +150,7 @@ static VALUE rb_git_walker_push_range(VALUE self, VALUE range)
 static VALUE rb_git_walker_hide(VALUE self, VALUE rb_commit)
 {
 	git_revwalk *walk;
-	Data_Get_Struct(self, git_revwalk, walk);
+	TypedData_Get_Struct(self, git_revwalk, &rugged_walk_type, walk);
 	push_commit(walk, rb_commit, 1);
 	return Qnil;
 }
@@ -157,7 +166,7 @@ static VALUE rb_git_walker_hide(VALUE self, VALUE rb_commit)
 static VALUE rb_git_walker_sorting(VALUE self, VALUE ruby_sort_mode)
 {
 	git_revwalk *walk;
-	Data_Get_Struct(self, git_revwalk, walk);
+	TypedData_Get_Struct(self, git_revwalk, &rugged_walk_type, walk);
 	git_revwalk_sorting(walk, FIX2INT(ruby_sort_mode));
 	return Qnil;
 }
@@ -171,7 +180,7 @@ static VALUE rb_git_walker_sorting(VALUE self, VALUE ruby_sort_mode)
 static VALUE rb_git_walker_simplify_first_parent(VALUE self)
 {
 	git_revwalk *walk;
-	Data_Get_Struct(self, git_revwalk, walk);
+	TypedData_Get_Struct(self, git_revwalk, &rugged_walk_type, walk);
 	git_revwalk_simplify_first_parent(walk);
 	return Qnil;
 }
@@ -193,7 +202,7 @@ static VALUE rb_git_walker_count(int argc, VALUE *argv, VALUE self)
 	if (argc > 0 || rb_block_given_p())
 		return rb_call_super(argc, argv);
 
-	Data_Get_Struct(self, git_revwalk, walk);
+	TypedData_Get_Struct(self, git_revwalk, &rugged_walk_type, walk);
 
 	while (((error = git_revwalk_next(&commit_oid, walk)) == 0) && ++count != UINT64_MAX);
 
@@ -213,7 +222,7 @@ static VALUE rb_git_walker_count(int argc, VALUE *argv, VALUE self)
 static VALUE rb_git_walker_reset(VALUE self)
 {
 	git_revwalk *walk;
-	Data_Get_Struct(self, git_revwalk, walk);
+	TypedData_Get_Struct(self, git_revwalk, &rugged_walk_type, walk);
 	git_revwalk_reset(walk);
 	return Qnil;
 }
@@ -403,7 +412,7 @@ static VALUE rb_git_walk_with_opts(int argc, VALUE *argv, VALUE self, int oid_on
 	RETURN_ENUMERATOR(self, argc, argv);
 	rb_scan_args(argc, argv, "01", &rb_options);
 
-	Data_Get_Struct(self, git_revwalk, w.walk);
+	TypedData_Get_Struct(self, git_revwalk, &rugged_walk_type, w.walk);
 	w.repo = git_revwalk_repository(w.walk);
 
 	w.rb_owner = rugged_owner(self);
