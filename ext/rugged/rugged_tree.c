@@ -710,10 +710,20 @@ static VALUE rb_git_tree_update(VALUE self, VALUE rb_updates)
 	return rugged_create_oid(&id);
 }
 
-static void rb_git_treebuilder_free(git_treebuilder *bld)
+static void rb_git_treebuilder__free(void *data)
 {
+	git_treebuilder *bld = (git_treebuilder *) data;
 	git_treebuilder_free(bld);
 }
+
+const rb_data_type_t rugged_treebuilder_type = {
+	.wrap_struct_name = "Rugged::Tree::Builder",
+	.function = {
+		.dfree = rb_git_treebuilder__free,
+	},
+	.flags = RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
 
 /*
  *  call-seq:
@@ -747,7 +757,7 @@ static VALUE rb_git_treebuilder_new(int argc, VALUE *argv, VALUE klass)
 	error = git_treebuilder_new(&builder, repo, tree);
 	rugged_exception_check(error);
 
-	rb_builder = Data_Wrap_Struct(klass, NULL, &rb_git_treebuilder_free, builder);
+	rb_builder = TypedData_Wrap_Struct(klass, &rugged_treebuilder_type, builder);
 	rugged_set_owner(rb_builder, rb_repo);
 
 	return rb_builder;
@@ -762,7 +772,7 @@ static VALUE rb_git_treebuilder_new(int argc, VALUE *argv, VALUE klass)
 static VALUE rb_git_treebuilder_clear(VALUE self)
 {
 	git_treebuilder *builder;
-	Data_Get_Struct(self, git_treebuilder, builder);
+	TypedData_Get_Struct(self, git_treebuilder, &rugged_treebuilder_type, builder);
 	git_treebuilder_clear(builder);
 	return Qnil;
 }
@@ -776,7 +786,7 @@ static VALUE rb_git_treebuilder_clear(VALUE self)
 static VALUE rb_git_treebuilder_get(VALUE self, VALUE path)
 {
 	git_treebuilder *builder;
-	Data_Get_Struct(self, git_treebuilder, builder);
+	TypedData_Get_Struct(self, git_treebuilder, &rugged_treebuilder_type, builder);
 
 	Check_Type(path, T_STRING);
 
@@ -797,7 +807,7 @@ static VALUE rb_git_treebuilder_insert(VALUE self, VALUE rb_entry)
 	git_oid oid;
 	int error;
 
-	Data_Get_Struct(self, git_treebuilder, builder);
+	TypedData_Get_Struct(self, git_treebuilder, &rugged_treebuilder_type, builder);
 	Check_Type(rb_entry, T_HASH);
 
 	rb_path = rb_hash_aref(rb_entry, CSTR2SYM("name"));
@@ -834,7 +844,7 @@ static VALUE rb_git_treebuilder_remove(VALUE self, VALUE path)
 	git_treebuilder *builder;
 	int error;
 
-	Data_Get_Struct(self, git_treebuilder, builder);
+	TypedData_Get_Struct(self, git_treebuilder, &rugged_treebuilder_type, builder);
 	Check_Type(path, T_STRING);
 
 	error = git_treebuilder_remove(builder, StringValueCStr(path));
@@ -862,7 +872,7 @@ static VALUE rb_git_treebuilder_write(VALUE self)
 	git_oid written_id;
 	int error;
 
-	Data_Get_Struct(self, git_treebuilder, builder);
+	TypedData_Get_Struct(self, git_treebuilder, &rugged_treebuilder_type, builder);
 
 	error = git_treebuilder_write(&written_id, builder);
 	rugged_exception_check(error);
@@ -889,7 +899,7 @@ static VALUE rb_git_treebuilder_filter(VALUE self)
 	git_treebuilder *builder;
 
 	rb_need_block();
-	Data_Get_Struct(self, git_treebuilder, builder);
+	TypedData_Get_Struct(self, git_treebuilder, &rugged_treebuilder_type, builder);
 
 	git_treebuilder_filter(builder, &treebuilder_cb, (void *)rb_block_proc());
 	return Qnil;
