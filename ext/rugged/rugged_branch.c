@@ -13,6 +13,7 @@ extern VALUE rb_cRuggedObject;
 extern VALUE rb_cRuggedReference;
 VALUE rb_cRuggedBranch;
 
+extern const rb_data_type_t rugged_reference_type;
 extern const rb_data_type_t rugged_repository_type;
 
 static inline VALUE rugged_branch_new(VALUE owner, git_reference *ref)
@@ -29,7 +30,7 @@ static inline VALUE rugged_branch_new(VALUE owner, git_reference *ref)
 static VALUE rb_git_branch_head_p(VALUE self)
 {
 	git_reference *branch;
-	Data_Get_Struct(self, git_reference, branch);
+	TypedData_Get_Struct(self, git_reference, &rugged_reference_type, branch);
 	return git_branch_is_head(branch) ? Qtrue : Qfalse;
 }
 
@@ -46,7 +47,7 @@ static VALUE rb_git_branch_name(VALUE self)
 {
 	git_reference *branch;
 	const char *branch_name;
-	Data_Get_Struct(self, git_reference, branch);
+	TypedData_Get_Struct(self, git_reference, &rugged_reference_type, branch);
 
 	rugged_exception_check(git_branch_name(&branch_name, branch));
 
@@ -88,7 +89,7 @@ static VALUE rb_git_branch_remote_name(VALUE self)
 	git_reference *branch, *remote_ref;
 	int error = 0;
 
-	Data_Get_Struct(self, git_reference, branch);
+	TypedData_Get_Struct(self, git_reference, &rugged_reference_type, branch);
 
 	if (git_reference_is_remote(branch)) {
 		remote_ref = branch;
@@ -118,7 +119,7 @@ static VALUE rb_git_branch_upstream(VALUE self)
 	git_reference *branch, *upstream_branch;
 	int error;
 
-	Data_Get_Struct(self, git_reference, branch);
+	TypedData_Get_Struct(self, git_reference, &rugged_reference_type, branch);
 
 	if (git_reference_is_remote(branch))
 		return Qnil;
@@ -147,12 +148,12 @@ static VALUE rb_git_branch_set_upstream(VALUE self, VALUE rb_branch)
 	git_reference *branch, *target_branch;
 	const char *target_branch_name;
 
-	Data_Get_Struct(self, git_reference, branch);
+	TypedData_Get_Struct(self, git_reference, &rugged_reference_type, branch);
 	if (!NIL_P(rb_branch)) {
 		if (!rb_obj_is_kind_of(rb_branch, rb_cRuggedReference))
 			rb_raise(rb_eTypeError, "Expecting a Rugged::Reference instance");
 
-		Data_Get_Struct(rb_branch, git_reference, target_branch);
+		TypedData_Get_Struct(rb_branch, git_reference, &rugged_reference_type, target_branch);
 
 		rugged_exception_check(
 			git_branch_name(&target_branch_name, target_branch)

@@ -16,6 +16,7 @@ extern VALUE rb_cRuggedReference;
 VALUE rb_cRuggedRebase;
 
 extern const rb_data_type_t rugged_object_type;
+extern const rb_data_type_t rugged_reference_type;
 extern const rb_data_type_t rugged_repository_type;
 
 static VALUE rebase_operation_type(git_rebase_operation *operation);
@@ -80,7 +81,7 @@ static void get_annotated_commit(git_annotated_commit **annotated_commit, VALUE 
 	} else if (rb_obj_is_kind_of(rb_value, rb_cRuggedReference)) {
 		const git_reference * ref;
 
-		Data_Get_Struct(rb_value, git_reference, ref);
+		TypedData_Get_Struct(rb_value, git_reference, &rugged_reference_type, ref);
 
 		error = git_annotated_commit_from_ref(annotated_commit, repo, ref);
 	} else if (TYPE(rb_value) == T_STRING) {

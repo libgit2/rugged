@@ -12,14 +12,23 @@ extern VALUE rb_cRuggedRepo;
 
 VALUE rb_cRuggedReference;
 
-void rb_git_ref__free(git_reference *ref)
+void rb_git_ref__free(void *data)
 {
+	git_reference *ref = (git_reference *) data;
 	git_reference_free(ref);
 }
 
+const rb_data_type_t rugged_reference_type = {
+	.wrap_struct_name = "Rugged::Reference",
+	.function = {
+		.dfree = rb_git_ref__free,
+	},
+	.flags = RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
 VALUE rugged_ref_new(VALUE klass, VALUE owner, git_reference *ref)
 {
-	VALUE rb_ref = Data_Wrap_Struct(klass, NULL, &rb_git_ref__free, ref);
+	VALUE rb_ref = TypedData_Wrap_Struct(klass, &rugged_reference_type, ref);
 	rugged_set_owner(rb_ref, owner);
 	return rb_ref;
 }
@@ -73,7 +82,7 @@ static VALUE rb_git_ref_peel(VALUE self)
 	char oid[GIT_OID_HEXSZ + 1];
 	int error;
 
-	Data_Get_Struct(self, git_reference, ref);
+	TypedData_Get_Struct(self, git_reference, &rugged_reference_type, ref);
 
 	error = git_reference_peel(&object, ref, GIT_OBJ_ANY);
 	if (error == GIT_ENOTFOUND)
@@ -114,7 +123,7 @@ static VALUE rb_git_ref_target(VALUE self)
 {
 	git_reference *ref;
 
-	Data_Get_Struct(self, git_reference, ref);
+	TypedData_Get_Struct(self, git_reference, &rugged_reference_type, ref);
 
 	if (git_reference_type(ref) == GIT_REF_OID) {
 		git_object *target;
@@ -155,7 +164,7 @@ static VALUE rb_git_ref_target(VALUE self)
 static VALUE rb_git_ref_target_id(VALUE self)
 {
 	git_reference *ref;
-	Data_Get_Struct(self, git_reference, ref);
+	TypedData_Get_Struct(self, git_reference, &rugged_reference_type, ref);
 
 	if (git_reference_type(ref) == GIT_REF_OID) {
 		return rugged_create_oid(git_reference_target(ref));
@@ -173,7 +182,7 @@ static VALUE rb_git_ref_target_id(VALUE self)
 static VALUE rb_git_ref_type(VALUE self)
 {
 	git_reference *ref;
-	Data_Get_Struct(self, git_reference, ref);
+	TypedData_Get_Struct(self, git_reference, &rugged_reference_type, ref);
 
 	switch (git_reference_type(ref)) {
 		case GIT_REF_OID:
@@ -201,7 +210,7 @@ static VALUE rb_git_ref_type(VALUE self)
 static VALUE rb_git_ref_name(VALUE self)
 {
 	git_reference *ref;
-	Data_Get_Struct(self, git_reference, ref);
+	TypedData_Get_Struct(self, git_reference, &rugged_reference_type, ref);
 	return rb_str_new_utf8(git_reference_name(ref));
 }
 
@@ -224,7 +233,7 @@ static VALUE rb_git_ref_resolve(VALUE self)
 	git_reference *resolved;
 	int error;
 
-	Data_Get_Struct(self, git_reference, ref);
+	TypedData_Get_Struct(self, git_reference, &rugged_reference_type, ref);
 
 	error = git_reference_resolve(&resolved, ref);
 	rugged_exception_check(error);
@@ -290,7 +299,7 @@ static VALUE rb_git_reflog(VALUE self)
 	VALUE rb_log;
 	size_t i, ref_count;
 
-	Data_Get_Struct(self, git_reference, ref);
+	TypedData_Get_Struct(self, git_reference, &rugged_reference_type, ref);
 
 	error = git_reflog_read(&reflog, git_reference_owner(ref), git_reference_name(ref));
 	rugged_exception_check(error);
@@ -320,7 +329,7 @@ static VALUE rb_git_has_reflog(VALUE self)
 	git_reference *ref;
 	git_repository *repo;
 
-	Data_Get_Struct(self, git_reference, ref);
+	TypedData_Get_Struct(self, git_reference, &rugged_reference_type, ref);
 	repo = git_reference_owner(ref);
 
 	return git_reference_has_log(repo, git_reference_name(ref)) ? Qtrue : Qfalse;
@@ -335,7 +344,7 @@ static VALUE rb_git_has_reflog(VALUE self)
 static VALUE rb_git_ref_is_branch(VALUE self)
 {
 	git_reference *ref;
-	Data_Get_Struct(self, git_reference, ref);
+	TypedData_Get_Struct(self, git_reference, &rugged_reference_type, ref);
 	return git_reference_is_branch(ref) ? Qtrue : Qfalse;
 }
 
@@ -348,7 +357,7 @@ static VALUE rb_git_ref_is_branch(VALUE self)
 static VALUE rb_git_ref_is_remote(VALUE self)
 {
 	git_reference *ref;
-	Data_Get_Struct(self, git_reference, ref);
+	TypedData_Get_Struct(self, git_reference, &rugged_reference_type, ref);
 	return git_reference_is_remote(ref) ? Qtrue : Qfalse;
 }
 
@@ -361,7 +370,7 @@ static VALUE rb_git_ref_is_remote(VALUE self)
 static VALUE rb_git_ref_is_tag(VALUE self)
 {
 	git_reference *ref;
-	Data_Get_Struct(self, git_reference, ref);
+	TypedData_Get_Struct(self, git_reference, &rugged_reference_type, ref);
 	return git_reference_is_tag(ref) ? Qtrue : Qfalse;
 }
 
