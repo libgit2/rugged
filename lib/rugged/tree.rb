@@ -164,6 +164,11 @@ module Rugged
       Tree.diff(repo, self, other, options)
     end
 
+    def lookup(entry_id)
+      entry = get_entry(entry_id)
+      owner.lookup(entry[:oid]) if entry
+    end
+
     def inspect
       data = "#<Rugged::Tree:#{object_id} {oid: #{oid}}>\n"
       self.each { |e| data << "  <\"#{e[:name]}\" #{e[:oid]}>\n" }

@@ -50,6 +50,14 @@ module Rugged
         status == :typechange
       end
 
+      def old_blob
+        owner.owner.lookup(old_file[:oid]) unless added?
+      end
+
+      def new_blob
+        owner.owner.lookup(new_file[:oid]) unless deleted?
+      end
+
       def inspect
         "#<#{self.class.name}:#{object_id} {old_file: #{old_file.inspect}, new_file: #{new_file.inspect}, similarity: #{similarity.inspect}, status: #{status.inspect}>"
       end
