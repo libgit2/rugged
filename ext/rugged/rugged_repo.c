@@ -2378,7 +2378,7 @@ static VALUE rb_git_checkout_tree(int argc, VALUE *argv, VALUE self)
 	rugged_parse_checkout_options(&opts, rb_options);
 
 	error = git_checkout_tree(repo, treeish, &opts);
-	git_strarray_dispose(	xfree(opts.paths.strings);opts.paths);
+git_strarray_dispose(&opts.paths);
 
 	if ((payload = opts.notify_payload) != NULL) {
 		exception = payload->exception;
@@ -2426,7 +2426,7 @@ static VALUE rb_git_checkout_index(int argc, VALUE *argv, VALUE self)
 	rugged_parse_checkout_options(&opts, rb_options);
 
 	error = git_checkout_index(repo, index, &opts);
-	git_strarray_dispose(	xfree(opts.paths.strings);opts.paths);
+git_strarray_dispose(&opts.paths);
 
 	if ((payload = opts.notify_payload) != NULL) {
 		exception = payload->exception;
@@ -2469,7 +2469,7 @@ static VALUE rb_git_checkout_head(int argc, VALUE *argv, VALUE self)
 	rugged_parse_checkout_options(&opts, rb_options);
 
 	error = git_checkout_head(repo, &opts);
-	git_strarray_dispose(	xfree(opts.paths.strings);opts.paths);
+git_strarray_dispose(&opts.paths);
 
 	if ((payload = opts.notify_payload) != NULL) {
 		exception = payload->exception;
