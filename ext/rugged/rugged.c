@@ -438,7 +438,8 @@ void rugged_rb_ary_to_strarray(VALUE rb_array, git_strarray *str_array)
 	if (TYPE(rb_array) == T_STRING) {
 		const char *s = StringValueCStr(rb_array);
 		str_array->count = 1;
-		str_array->strings = xmalloc(sizeof(char *));
+		/* use malloc so git_strarray_dispose/free can clean up */
+		str_array->strings = malloc(sizeof(char *));
 		/* duplicate the string so it can be freed later */
 		str_array->strings[0] = strdup(s);
 		return;
@@ -450,7 +451,8 @@ void rugged_rb_ary_to_strarray(VALUE rb_array, git_strarray *str_array)
 		Check_Type(rb_ary_entry(rb_array, i), T_STRING);
 
 	str_array->count = RARRAY_LEN(rb_array);
-	str_array->strings = xmalloc(str_array->count * sizeof(char *));
+	/* allocate with malloc rather than xmalloc to allow free() to work */
+	str_array->strings = malloc(str_array->count * sizeof(char *));
 
 	for (i = 0; i < RARRAY_LEN(rb_array); ++i) {
 		VALUE rb_string = rb_ary_entry(rb_array, i);

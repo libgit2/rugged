@@ -359,9 +359,6 @@ static VALUE rb_git_diff_tree_to_index(VALUE self, VALUE rb_repo, VALUE rb_self,
 
 	error = git_diff_tree_to_index(&diff, repo, tree, index, &opts);
 
-git_strarray_dispose(&opts.pathspec);
-	rugged_exception_check(error);
-
 	return rugged_diff_new(rb_cRuggedDiff, rb_repo, diff);
 }
 
@@ -400,7 +397,6 @@ static VALUE rb_git_diff_tree_to_tree(VALUE self, VALUE rb_repo, VALUE rb_tree, 
 	    TypedData_Get_Struct(rb_other_tree, git_tree, &rugged_object_type, other_tree);
 
 	rugged_parse_diff_options(&opts, rb_options);
-
 	args.repo = repo;
 	args.tree = tree;
 	args.other_tree = other_tree;
@@ -442,9 +438,6 @@ static VALUE rb_git_tree_diff_workdir(int argc, VALUE *argv, VALUE self)
 	Data_Get_Struct(owner, git_repository, repo);
 
 	error = git_diff_tree_to_workdir(&diff, repo, tree, &opts);
-
-git_strarray_dispose(&opts.pathspec);
-	rugged_exception_check(error);
 
 	return rugged_diff_new(rb_cRuggedDiff, owner, diff);
 }
