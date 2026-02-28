@@ -354,7 +354,7 @@ static VALUE rb_git_remote_ls(int argc, VALUE *argv, VALUE self)
 	cleanup:
 
 	git_remote_disconnect(remote);
-	xfree(custom_headers.strings);
+	rugged_strarray_dispose(&custom_headers);
 
 	if (payload.exception)
 		rb_jump_tag(payload.exception);
@@ -527,7 +527,7 @@ static VALUE rb_git_remote_check_connection(int argc, VALUE *argv, VALUE self)
 	git_remote *remote;
 	git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
 	git_proxy_options proxy_options = GIT_PROXY_OPTIONS_INIT;
-	git_strarray custom_headers = {0};
+	git_strarray custom_headers = { NULL, 0 };
 	struct rugged_remote_cb_payload payload = { Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, Qnil, 0 };
 	VALUE rb_direction, rb_options;
 	ID id_direction;
@@ -552,7 +552,7 @@ static VALUE rb_git_remote_check_connection(int argc, VALUE *argv, VALUE self)
 	error = git_remote_connect(remote, direction, &callbacks, &proxy_options, &custom_headers);
 	git_remote_disconnect(remote);
 
-	xfree(custom_headers.strings);
+	rugged_strarray_dispose(&custom_headers);
 
 	if (payload.exception)
 		rb_jump_tag(payload.exception);
@@ -655,8 +655,8 @@ static VALUE rb_git_remote_fetch(int argc, VALUE *argv, VALUE self)
 
 	error = git_remote_fetch(remote, &refspecs, &opts, log_message);
 
-	xfree(refspecs.strings);
-	xfree(opts.custom_headers.strings);
+	rugged_strarray_dispose(&refspecs);
+	rugged_strarray_dispose(&opts.custom_headers);
 
 	if (payload.exception)
 		rb_jump_tag(payload.exception);
@@ -740,8 +740,8 @@ static VALUE rb_git_remote_push(int argc, VALUE *argv, VALUE self)
 
 	error = git_remote_push(remote, &refspecs, &opts);
 
-	xfree(refspecs.strings);
-	xfree(opts.custom_headers.strings);
+	rugged_strarray_dispose(&refspecs);
+	rugged_strarray_dispose(&opts.custom_headers);
 
 	if (payload.exception)
 		rb_jump_tag(payload.exception);
