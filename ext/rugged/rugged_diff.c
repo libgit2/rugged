@@ -138,19 +138,12 @@ void rugged_parse_diff_options(git_diff_options *opts, VALUE rb_options)
 
 		rb_value = rb_hash_aref(rb_options, CSTR2SYM("paths"));
 		if (!NIL_P(rb_value)) {
-			int i;
+			/*
+			 * rugged_rb_ary_to_strarray allows single values and we
+			 * want to be more specific here
+			 */
 			Check_Type(rb_value, T_ARRAY);
-
-			for (i = 0; i < RARRAY_LEN(rb_value); ++i)
-				Check_Type(rb_ary_entry(rb_value, i), T_STRING);
-
-			opts->pathspec.count = RARRAY_LEN(rb_value);
-			opts->pathspec.strings = xmalloc(opts->pathspec.count * sizeof(char *));
-
-			for (i = 0; i < RARRAY_LEN(rb_value); ++i) {
-				VALUE rb_path = rb_ary_entry(rb_value, i);
-				opts->pathspec.strings[i] = StringValueCStr(rb_path);
-			}
+			rugged_rb_ary_to_strarray(rb_value, &opts->pathspec);
 		}
 
 		rb_value = rb_hash_aref(rb_options, CSTR2SYM("context_lines"));

@@ -408,7 +408,7 @@ static VALUE rb_git_index_add_all(int argc, VALUE *argv, VALUE self)
 	error = git_index_add_all(index, &pathspecs, flags,
 		rb_block_given_p() ? rugged__index_matched_path_cb : NULL, &exception);
 
-	xfree(pathspecs.strings);
+	rugged_strarray_dispose(&pathspecs);
 
 	if (exception)
 		rb_jump_tag(exception);
@@ -458,7 +458,7 @@ static VALUE rb_git_index_update_all(int argc, VALUE *argv, VALUE self)
 	error = git_index_update_all(index, &pathspecs,
 		rb_block_given_p() ? rugged__index_matched_path_cb : NULL, &exception);
 
-	xfree(pathspecs.strings);
+	rugged_strarray_dispose(&pathspecs);
 
 	if (exception)
 		rb_jump_tag(exception);
@@ -504,7 +504,7 @@ static VALUE rb_git_index_remove_all(int argc, VALUE *argv, VALUE self)
 	error = git_index_remove_all(index, &pathspecs,
 		rb_block_given_p() ? rugged__index_matched_path_cb : NULL, &exception);
 
-	xfree(pathspecs.strings);
+	rugged_strarray_dispose(&pathspecs);
 
 	if (exception)
 		rb_jump_tag(exception);
@@ -705,7 +705,7 @@ static VALUE rb_git_diff_tree_to_index(VALUE self, VALUE rb_other, VALUE rb_opti
 	TypedData_Get_Struct(rb_other, git_tree, &rugged_object_type, other_tree);
 	error = git_diff_tree_to_index(&diff, repo, other_tree, index, &opts);
 
-	xfree(opts.pathspec.strings);
+	rugged_strarray_dispose(&opts.pathspec);
 	rugged_exception_check(error);
 
 	return rugged_diff_new(rb_cRuggedDiff, owner, diff);
@@ -728,7 +728,7 @@ static VALUE rb_git_diff_index_to_workdir(VALUE self, VALUE rb_options)
 
 	error = git_diff_index_to_workdir(&diff, repo, index, &opts);
 
-	xfree(opts.pathspec.strings);
+	rugged_strarray_dispose(&opts.pathspec);
 	rugged_exception_check(error);
 
 	return rugged_diff_new(rb_cRuggedDiff, owner, diff);
