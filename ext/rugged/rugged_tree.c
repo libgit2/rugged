@@ -489,6 +489,12 @@ void rugged_parse_merge_options(git_merge_options *opts, VALUE rb_options)
 			opts->target_limit = FIX2UINT(rb_value);
 		}
 
+		rb_value = rb_hash_aref(rb_options, CSTR2SYM("recursion_limit"));
+		if (!NIL_P(rb_value)) {
+			Check_Type(rb_value, T_FIXNUM);
+			opts->recursion_limit = FIX2UINT(rb_value);
+		}
+
 		rb_value = rb_hash_aref(rb_options, CSTR2SYM("favor"));
 		if (!NIL_P(rb_value)) {
 			ID id_favor;
