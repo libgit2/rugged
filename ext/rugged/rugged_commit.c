@@ -650,7 +650,7 @@ static VALUE rb_git_commit_to_mbox(int argc, VALUE *argv, VALUE self)
 
 	cleanup:
 
-	xfree(opts.pathspec.strings);
+	git_strarray_dispose(&opts.pathspec);
 	git_buf_dispose(&email_patch);
 	rugged_exception_check(error);
 

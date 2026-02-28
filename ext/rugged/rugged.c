@@ -436,9 +436,11 @@ void rugged_rb_ary_to_strarray(VALUE rb_array, git_strarray *str_array)
 		return;
 
 	if (TYPE(rb_array) == T_STRING) {
+		const char *s = StringValueCStr(rb_array);
 		str_array->count = 1;
 		str_array->strings = xmalloc(sizeof(char *));
-		str_array->strings[0] = StringValueCStr(rb_array);
+		/* duplicate the string so it can be freed later */
+		str_array->strings[0] = strdup(s);
 		return;
 	}
 
@@ -452,7 +454,9 @@ void rugged_rb_ary_to_strarray(VALUE rb_array, git_strarray *str_array)
 
 	for (i = 0; i < RARRAY_LEN(rb_array); ++i) {
 		VALUE rb_string = rb_ary_entry(rb_array, i);
-		str_array->strings[i] = StringValueCStr(rb_string);
+		const char *s = StringValueCStr(rb_string);
+		/* copy so the array owns its contents */
+		str_array->strings[i] = strdup(s);
 	}
 }
 

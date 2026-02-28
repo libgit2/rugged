@@ -27,6 +27,17 @@
 #include <git2/odb_backend.h>
 #include <git2/sys/path.h>
 
+/*
+ * Older libgit2 versions may not provide git_strarray_dispose.  The
+ * semantics we require are identical to git_strarray_free, so fall back
+ * if necessary.  Using the git allocator keeps us in sync with the
+ * library and avoids mixing with Ruby's xfree unless we explicitly
+ * allocate via the Ruby allocator.
+ */
+#ifndef git_strarray_dispose
+#define git_strarray_dispose git_strarray_free
+#endif
+
 #define rb_str_new_utf8(str) rb_enc_str_new(str, strlen(str), rb_utf8_encoding())
 #define CSTR2SYM(s) (ID2SYM(rb_intern((s))))
 

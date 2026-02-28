@@ -359,7 +359,7 @@ static VALUE rb_git_diff_tree_to_index(VALUE self, VALUE rb_repo, VALUE rb_self,
 
 	error = git_diff_tree_to_index(&diff, repo, tree, index, &opts);
 
-	xfree(opts.pathspec.strings);
+	git_strarray_dispose(	xfree(opts.pathspec.strings);opts.pathspec);
 	rugged_exception_check(error);
 
 	return rugged_diff_new(rb_cRuggedDiff, rb_repo, diff);
@@ -408,7 +408,7 @@ static VALUE rb_git_diff_tree_to_tree(VALUE self, VALUE rb_repo, VALUE rb_tree, 
 
 	diff = rb_thread_call_without_gvl(rb_git_diff_tree_to_tree_nogvl, &args, RUBY_UBF_PROCESS, NULL);
 
-	xfree(opts.pathspec.strings);
+	git_strarray_dispose(	xfree(opts.pathspec.strings);opts.pathspec);
 	rugged_exception_check(args.error);
 
 	return rugged_diff_new(rb_cRuggedDiff, rb_repo, diff);
@@ -443,7 +443,7 @@ static VALUE rb_git_tree_diff_workdir(int argc, VALUE *argv, VALUE self)
 
 	error = git_diff_tree_to_workdir(&diff, repo, tree, &opts);
 
-	xfree(opts.pathspec.strings);
+	git_strarray_dispose(	xfree(opts.pathspec.strings);opts.pathspec);
 	rugged_exception_check(error);
 
 	return rugged_diff_new(rb_cRuggedDiff, owner, diff);
