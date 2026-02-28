@@ -70,13 +70,13 @@ class RepoDiffTest < Rugged::TestCase
     patch1  = Rugged::Patch.from_strings("deleted\n", "added\n", old_path: "old", new_path: "new").to_s
     diff1   = repo.diff_from_buffer(patch1)
     assert_equal diff1.patch, patch1
-    
+
     diff2   = repo.diff("605812a", "370fe9ec22", :context_lines => 1, :interhunk_lines => 1)
     patch2  = diff2.patch
     diff3   = repo.diff_from_buffer(patch2)
     assert_equal diff3.patch, patch2
   end
-  
+
   def test_with_oid_string
     repo = FixtureRepo.from_libgit2("attr")
     diff = repo.diff("605812a", "370fe9ec22", :context_lines => 1, :interhunk_lines => 1)
@@ -708,6 +708,25 @@ EOS
     assert_equal "M\treadme.txt\n", diff.patch(:compact => true)
   end
 
+  # ensure pathspec memory handling cannot regress; runs the diff call many
+  # times with GC activity in between.  if the underlying C helper mismanages
+  # the string array (double free / wrong allocator) this will crash without
+  # requiring external tools such as valgrind.
+  def test_pathspec_memory_safety
+    repo = FixtureRepo.from_libgit2("diff")
+    a = repo.lookup("d70d245ed97ed2aa596dd1af6536e4bfdb047b69")
+    b = repo.lookup("7a9e0b02e63179929fed24f0a3e0f19168114d10")
+
+    5_000.times do |i|
+      patterns = (i % 2 == 0) ? ["readme.txt"] : ["*.txt"]
+      diff = a.tree.diff(b.tree, :paths => patterns)
+      diff.patch  # exercise pathspec disposal
+      GC.start
+    end
+
+    assert true   # if we reach here without crash, we're good
+  end
+
   def test_options
     repo = FixtureRepo.from_libgit2("diff")
 
@@ -1083,12 +1102,12 @@ index 3e5bcba..546c735 100644
 -it a huge speed advantage on centralized systems that constantly have to
 +it an huge speed advantage on centralized systems that constantly have to
  communicate with a server somewhere.
- 
+
  Git was built to work on the Linux kernel, meaning that it has had to
 @@ -8,10 +8,6 @@ reducing the overhead of runtimes associated with higher-level
  languages. Speed and performance has been a primary design goal of the Git
  from the start.
- 
+
 -Let's see how common operations stack up against Subversion, a common
 -centralized version control system that is similar to CVS or
 -Perforce. Smaller is faster.
@@ -1099,7 +1118,7 @@ index 3e5bcba..546c735 100644
 @@ -32,6 +28,10 @@ Clearly, in many of these common version control operations, Git is one or
  two orders of magnitude faster than SVN, even under ideal conditions for
  SVN.
- 
+
 +Let's see how common operations stack up against Subversion, a common
 +centralized version control system that is similar to CVS or
 +Perforce. Smaller is faster.
@@ -1115,12 +1134,12 @@ index 7b808f7..29ab705 100644
 -The Git feature that really makes it stand apart from nearly every other SCM
 +The Git feature that r3ally mak3s it stand apart from n3arly 3v3ry other SCM
  out there is its branching model.
- 
+
  Git allows and encourages you to have multiple local branches that can be
 @@ -7,10 +7,6 @@ those lines of development takes seconds.
- 
+
  This means that you can do things like:
- 
+
 -Frictionless Context Switching. Create a branch to try out an idea, commit a
 -few times, switch back to where you branched from, apply a patch, switch
 -back to where you are experimenting, and merge it in.
@@ -1130,13 +1149,13 @@ index 7b808f7..29ab705 100644
  smaller ones for day to day work.
 @@ -24,12 +20,9 @@ not going to work, and just delete it - abandoning the work\xE2\x80\x94with nobody else
  ever seeing it (even if you've pushed other branches in the meantime).
- 
+
  Notably, when you push to a remote repository, you do not have to push all
 -of your branches. You can choose to share just one of your branches, a few
 -of them, or all of them. This tends to free people to try new ideas without
 -worrying about having to plan how and when they are going to merge it in or
  share it with others.
- 
+
  There are ways to accomplish some of this with other systems, but the work
  involved is much more difficult and error-prone. Git makes this process
  incredibly easy and it changes the way most developers work when they learn
