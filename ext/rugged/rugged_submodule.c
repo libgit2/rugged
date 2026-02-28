@@ -561,7 +561,7 @@ static VALUE rb_git_submodule_path(VALUE self)
 
 	path = git_submodule_path(submodule);
 
-	return rb_str_new_utf8(path);
+	return rb_str_new2(path);
 }
 
 #define RB_GIT_OID_GETTER(_klass, _attribute) \

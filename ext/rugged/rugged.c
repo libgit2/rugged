@@ -539,7 +539,7 @@ VALUE rb_merge_file_result_fromC(const git_merge_file_result *result)
 	VALUE rb_result = rb_hash_new();
 
 	rb_hash_aset(rb_result, CSTR2SYM("automergeable"), result->automergeable ? Qtrue : Qfalse);
-	rb_hash_aset(rb_result, CSTR2SYM("path"),          result->path ? rb_str_new_utf8(result->path) : Qnil);
+	rb_hash_aset(rb_result, CSTR2SYM("path"),          result->path ? rb_str_new2(result->path) : Qnil);
 	rb_hash_aset(rb_result, CSTR2SYM("filemode"),      INT2FIX(result->mode));
 	rb_hash_aset(rb_result, CSTR2SYM("data"),          rb_str_new(result->ptr, result->len));
 
