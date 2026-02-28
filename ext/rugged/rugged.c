@@ -448,12 +448,21 @@ void rugged_rb_ary_to_strarray(VALUE rb_array, git_strarray *str_array)
 		Check_Type(rb_ary_entry(rb_array, i), T_STRING);
 
 	str_array->count = RARRAY_LEN(rb_array);
-	str_array->strings = xmalloc(str_array->count * sizeof(char *));
+	str_array->strings = xcalloc(str_array->count, sizeof(char *));
 
 	for (i = 0; i < RARRAY_LEN(rb_array); ++i) {
 		VALUE rb_string = rb_ary_entry(rb_array, i);
 		str_array->strings[i] = StringValueCStr(rb_string);
 	}
+}
+
+void rugged_strarray_dispose(git_strarray *str_array)
+{
+	/* We only free this one pointer as the strings inside are owned by ruby */
+	xfree(str_array->strings);
+
+	str_array->strings = NULL;
+	str_array->count = 0;
 }
 
 void rugged_parse_merge_file_options(git_merge_file_options *opts, VALUE rb_options)

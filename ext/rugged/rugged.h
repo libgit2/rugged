@@ -101,7 +101,27 @@ const char * rugged_refname_from_string_or_ref(VALUE rb_name_or_ref);
 
 VALUE rugged_signature_from_buffer(const char *buffer, const char *encoding_name);
 
+/**
+ * Convert the given array of strings to a git_strarray referencing the ruby C strings
+ *
+ * The git_strarray must be allocated somewhere (typically it's in the stack)
+ * and this function will allocate an array of strings and set all the values to
+ * the ruby-owned C string pointer for the corresponding ruby string.
+ *
+ * The pointer in the strings field is owend by us, the memory it points to is
+ * owned by ruby.
+ */
 void rugged_rb_ary_to_strarray(VALUE rb_array, git_strarray *str_array);
+
+/**
+ * Free a git_strarray allocated by rugged_rb_ary_to_strarray
+ *
+ * This is different from git_strarray_dispose because we use pointers into the
+ * ruby C strings and don't own the strings. On top of that the allocators could
+ * be different (though we set it to be the same one at the moment).
+ */
+void rugged_strarray_dispose(git_strarray *str_array);
+
 VALUE rugged_strarray_to_rb_ary(git_strarray *str_array);
 
 #define CALLABLE_OR_RAISE(ret, name) \
