@@ -7,3 +7,7 @@ if RUBY_VERSION <= '2.7'
 end
 
 gemspec
+
+group :development, :test do
+  gem "base64"
+end
