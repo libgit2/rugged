@@ -250,6 +250,24 @@ module Rugged
       (blob.type == :blob) ? blob : nil
     end
 
+    # Get log at path for specified object
+    #
+    # obj      - Object in question
+    # path     - The String file path.
+    #
+    # Returns an Array of Rugged::Commit objects
+    def log_at(obj, path)
+      walker = Rugged::Walker.new(self)
+      walker.sorting(Rugged::SORT_DATE)
+      walker.push(obj.oid)
+      en = Enumerator.new do |y|
+        walker.each do |commit|
+          y << commit if commit.diff(paths: [path]).size > 0
+        end
+      end
+      return en
+    end
+
     def fetch(remote_or_url, *args, **kwargs)
       unless remote_or_url.kind_of? Remote
         remote_or_url = remotes[remote_or_url] || remotes.create_anonymous(remote_or_url)
