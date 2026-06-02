@@ -51,8 +51,6 @@ VALUE rb_mRugged;
 VALUE rb_eRuggedError;
 VALUE rb_eRuggedErrors[RUGGED_ERROR_COUNT];
 
-static VALUE rb_mShutdownHook;
-
 /*
  *  call-seq:
  *     Rugged.libgit2_version -> version
@@ -330,7 +328,7 @@ static VALUE rb_git_minimize_oid(int argc, VALUE *argv, VALUE self)
 	return INT2FIX(length);
 }
 
-static void cleanup_cb(void *unused)
+static void cleanup_cb(VALUE unused)
 {
 	(void)unused;
 	git_libgit2_shutdown();
@@ -687,6 +685,5 @@ void Init_rugged(void)
 
 	/* Hook a global object to cleanup the library
 	 * on shutdown */
-	rb_mShutdownHook = Data_Wrap_Struct(rb_cObject, NULL, &cleanup_cb, NULL);
-	rb_global_variable(&rb_mShutdownHook);
+	rb_set_end_proc(cleanup_cb,  /* unused */0);
 }
