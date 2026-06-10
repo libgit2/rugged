@@ -225,7 +225,9 @@ static void rugged_repo_new_with_backend(git_repository **repo, VALUE rb_path, V
 		rb_raise(rb_eRuggedError, "Backend must be an instance of Rugged::Backend");
 	}
 
-	Data_Get_Struct(rb_backend, rugged_backend, backend);
+	/* Backends are wrapped by external code with a type descriptor we don't
+	 * own, so we can't TypedData_Get_Struct against a known type. */
+	backend = (rugged_backend *)RTYPEDDATA_DATA(rb_backend);
 
 	error = git_odb_new(&odb);
 	if (error) goto cleanup;
