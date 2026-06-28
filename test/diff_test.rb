@@ -1145,9 +1145,7 @@ index 7b808f7..29ab705 100644
 \\ No newline at end of file
 EOS
 
-    expected.force_encoding('binary') if expected.respond_to?(:force_encoding)
-
-    assert_equal expected, diff.patch
+    assert_equal expected.b, diff.patch
   end
 
   def test_patch_compact
