@@ -336,6 +336,16 @@ static void cleanup_cb(void *unused)
 	git_libgit2_shutdown();
 }
 
+static const rb_data_type_t rugged_shutdown_hook_type = {
+	.wrap_struct_name = "Rugged::ShutdownHook",
+	.function = {
+		.dmark = NULL,
+		.dfree = cleanup_cb,
+		.dsize = NULL,
+	},
+	.flags = RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
 void rugged_exception_raise(void)
 {
 	VALUE err_klass, err_obj;
@@ -678,6 +688,7 @@ void Init_rugged(void)
 
 	/* Hook a global object to cleanup the library
 	 * on shutdown */
-	rb_mShutdownHook = Data_Wrap_Struct(rb_cObject, NULL, &cleanup_cb, NULL);
+	/* Non-NULL data so the GC actually invokes cleanup_cb on shutdown. */
+	rb_mShutdownHook = TypedData_Wrap_Struct(rb_cObject, &rugged_shutdown_hook_type, (void *)1);
 	rb_global_variable(&rb_mShutdownHook);
 }

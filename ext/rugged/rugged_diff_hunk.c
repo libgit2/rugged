@@ -10,6 +10,7 @@
 extern VALUE rb_cRuggedDiff;
 VALUE rb_cRuggedDiffHunk;
 
+extern const rb_data_type_t rugged_patch_type;
 
 VALUE rugged_diff_hunk_new(VALUE owner, size_t hunk_idx, const git_diff_hunk *hunk, size_t lines_in_hunk)
 {
@@ -44,7 +45,7 @@ static VALUE rb_git_diff_hunk_each_line(VALUE self)
 
 	RETURN_ENUMERATOR(self, 0, 0);
 
-	Data_Get_Struct(rugged_owner(self), git_patch, patch);
+	TypedData_Get_Struct(rugged_owner(self), git_patch, &rugged_patch_type, patch);
 
 	lines_count = FIX2INT(rb_iv_get(self, "@line_count"));
 	hunk_idx = FIX2INT(rb_iv_get(self, "@hunk_index"));

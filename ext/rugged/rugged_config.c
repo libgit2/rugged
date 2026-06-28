@@ -10,14 +10,23 @@
 extern VALUE rb_mRugged;
 VALUE rb_cRuggedConfig;
 
-void rb_git_config__free(git_config *config)
+void rb_git_config__free(void *data)
 {
+	git_config *config = (git_config *) data;
 	git_config_free(config);
 }
 
+const rb_data_type_t rugged_config_type = {
+	.wrap_struct_name = "Rugged::config",
+	.function = {
+		.dfree = rb_git_config__free,
+	},
+	.flags = RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
 VALUE rugged_config_new(VALUE klass, VALUE owner, git_config *cfg)
 {
-	VALUE rb_config = Data_Wrap_Struct(klass, NULL, &rb_git_config__free, cfg);
+	VALUE rb_config = TypedData_Wrap_Struct(klass, &rugged_config_type, cfg);
 	rugged_set_owner(rb_config, owner);
 	return rb_config;
 }
@@ -80,7 +89,7 @@ static VALUE rb_git_config_get(VALUE self, VALUE rb_key)
 	int error;
 	VALUE rb_result;
 
-	Data_Get_Struct(self, git_config, config);
+	TypedData_Get_Struct(self, git_config, &rugged_config_type, config);
 	Check_Type(rb_key, T_STRING);
 
 	error = git_config_get_string_buf(&buf, config, StringValueCStr(rb_key));
@@ -115,7 +124,7 @@ static VALUE rb_git_config_store(VALUE self, VALUE rb_key, VALUE rb_val)
 	const char *key;
 	int error;
 
-	Data_Get_Struct(self, git_config, config);
+	TypedData_Get_Struct(self, git_config, &rugged_config_type, config);
 	Check_Type(rb_key, T_STRING);
 
 	key = StringValueCStr(rb_key);
@@ -158,7 +167,7 @@ static VALUE rb_git_config_delete(VALUE self, VALUE rb_key)
 	git_config *config;
 	int error;
 
-	Data_Get_Struct(self, git_config, config);
+	TypedData_Get_Struct(self, git_config, &rugged_config_type, config);
 	Check_Type(rb_key, T_STRING);
 
 	error = git_config_delete_entry(config, StringValueCStr(rb_key));
@@ -220,7 +229,7 @@ static VALUE rb_git_config_each_key(VALUE self)
 	int error, exception;
 
 	RETURN_ENUMERATOR(self, 0, 0);
-	Data_Get_Struct(self, git_config, config);
+	TypedData_Get_Struct(self, git_config, &rugged_config_type, config);
 
 	error = git_config_foreach(config, &cb_config__each_key, &exception);
 	if (error == GIT_EUSER)
@@ -250,7 +259,7 @@ static VALUE rb_git_config_each_pair(VALUE self)
 	int error, exception;
 
 	RETURN_ENUMERATOR(self, 0, 0);
-	Data_Get_Struct(self, git_config, config);
+	TypedData_Get_Struct(self, git_config, &rugged_config_type, config);
 
 	error = git_config_foreach(config, &cb_config__each_pair, &exception);
 	if (error == GIT_EUSER)
@@ -276,7 +285,7 @@ static VALUE rb_git_config_to_hash(VALUE self)
 	int error;
 	VALUE hash;
 
-	Data_Get_Struct(self, git_config, config);
+	TypedData_Get_Struct(self, git_config, &rugged_config_type, config);
 	hash = rb_hash_new();
 
 	error = git_config_foreach(config, &cb_config__to_hash, (void *)hash);
@@ -317,7 +326,7 @@ static VALUE rb_git_config_snapshot(VALUE self)
 {
 	git_config *config, *snapshot;
 
-	Data_Get_Struct(self, git_config, config);
+	TypedData_Get_Struct(self, git_config, &rugged_config_type, config);
 
 	rugged_exception_check(
 		git_config_snapshot(&snapshot, config)
@@ -348,7 +357,7 @@ static VALUE rb_git_config_transaction(VALUE self)
 	VALUE rb_result;
 	int error = 0, exception = 0;
 
-	Data_Get_Struct(self, git_config, config);
+	TypedData_Get_Struct(self, git_config, &rugged_config_type, config);
 
 	git_config_lock(&tx, config);
 
@@ -392,7 +401,7 @@ static VALUE rb_git_config_get_all(VALUE self, VALUE key)
 	VALUE list;
 	int error;
 
-	Data_Get_Struct(self, git_config, config);
+	TypedData_Get_Struct(self, git_config, &rugged_config_type, config);
 
 	list = rb_ary_new();
 	error = git_config_get_multivar_foreach(
