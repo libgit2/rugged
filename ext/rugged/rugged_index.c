@@ -784,8 +784,8 @@ static VALUE rb_git_conflict_add(VALUE self, VALUE rb_conflict)
 
 	error = git_index_conflict_add(index,
 		NIL_P(rb_ancestor) ? NULL : &ancestor,
-		NIL_P(rb_theirs) ? NULL : &ours,
-		NIL_P(rb_ours) ? NULL : &theirs);
+		NIL_P(rb_ours) ? NULL : &ours,
+		NIL_P(rb_theirs) ? NULL : &theirs);
 	rugged_exception_check(error);
 
 	return Qnil;

@@ -259,6 +259,14 @@ class IndexConflictsTest < Rugged::TestCase
     @repo.index.conflict_add(conflict)
 
     assert_equal @repo.index.conflicts.size, 4
+
+    conflict[:ours] = nil
+    conflict[:theirs][:path] = "yet-another-conflict.txt"
+
+    @repo.index.conflict_add(conflict)
+
+    assert_equal @repo.index.conflicts.size, 5
+
   end
 
   def test_conflict_cleanup
