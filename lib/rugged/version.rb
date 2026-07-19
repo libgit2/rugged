@@ -4,5 +4,5 @@
 # For full terms see the included LICENSE file.
 
 module Rugged
-  Version = VERSION = '1.9.5'
+  Version = VERSION = '1.9.5.1'
 end
