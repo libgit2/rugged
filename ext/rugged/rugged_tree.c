@@ -32,7 +32,7 @@ static VALUE rb_git_treeentry_fromC(const git_tree_entry *entry)
 
 	rb_entry = rb_hash_new();
 
-	rb_hash_aset(rb_entry, CSTR2SYM("name"), rb_str_new_utf8(git_tree_entry_name(entry)));
+	rb_hash_aset(rb_entry, CSTR2SYM("name"), rb_str_new2(git_tree_entry_name(entry)));
 	rb_hash_aset(rb_entry, CSTR2SYM("oid"), rugged_create_oid(git_tree_entry_id(entry)));
 
 	rb_hash_aset(rb_entry, CSTR2SYM("filemode"), INT2FIX(git_tree_entry_filemode(entry)));
