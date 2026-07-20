@@ -4,6 +4,10 @@
 Rugged is a library for accessing [libgit2](https://github.com/libgit2/libgit2) in Ruby. It gives you the speed and
 portability of libgit2 with the beauty of the Ruby language.
 
+### Documentation
+
+Documentation can be found on [rubydoc.info](https://www.rubydoc.info/gems/rugged)
+
 ### libgit2
 
 libgit2 is a pure C implementation of the Git core methods. It's designed to be
