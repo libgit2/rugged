@@ -109,8 +109,8 @@ else
 
     Dir.chdir("build") do
       # On Windows, Ruby-DevKit is MSYS-based, so ensure to use MSYS Makefiles.
-      generator = "-G \"MSYS Makefiles\"" if Gem.win_platform?
-      run_cmake(5 * 60, ".. -DBUILD_TESTS=OFF -DUSE_THREADS=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS=-fPIC -DCMAKE_BUILD_TYPE=RelWithDebInfo #{cmake_flags.join(' ')} #{generator}")
+      generator = Gem.win_platform? ? "MSYS Makefiles" : "Unix Makefiles"
+      run_cmake(5 * 60, %[.. -DBUILD_TESTS=OFF -DUSE_THREADS=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS=-fPIC -DCMAKE_BUILD_TYPE=RelWithDebInfo #{cmake_flags.join(' ')} -G "#{generator}"])
       sys(MAKE)
 
       # "normal" libraries (and libgit2 builds) get all these when they build but we're doing it
