@@ -110,7 +110,7 @@ else
     Dir.chdir("build") do
       # On Windows, Ruby-DevKit is MSYS-based, so ensure to use MSYS Makefiles.
       generator = "-G \"MSYS Makefiles\"" if Gem.win_platform?
-      run_cmake(5 * 60, ".. -DBUILD_TESTS=OFF -DUSE_THREADS=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS=-fPIC -DCMAKE_BUILD_TYPE=RelWithDebInfo #{cmake_flags.join(' ')} #{generator}")
+      run_cmake(5 * 60, ".. -DBUILD_TESTS=OFF -DUSE_THREADS=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS=-fPIC -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_C_VISIBILITY_PRESET=hidden #{cmake_flags.join(' ')} #{generator}")
       sys(MAKE)
 
       # "normal" libraries (and libgit2 builds) get all these when they build but we're doing it
@@ -122,6 +122,10 @@ else
       else
         pcfile = File.join(LIBGIT2_DIR, "build", "libgit2.pc")
         $LDFLAGS << " " + `pkg-config --libs --static #{pcfile}`.strip
+        # Prevent statically-linked symbols (e.g. llhttp) from being exported
+        # into rugged.so, where they would collide with other gems bundling the
+        # same library (e.g. llhttp-ffi used by the http gem).
+        $LDFLAGS << " -Wl,--exclude-libs,ALL" if RbConfig::CONFIG['target_os'] =~ /linux/
       end
     end
   end
