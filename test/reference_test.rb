@@ -177,6 +177,74 @@ class ReferenceWriteTest < Rugged::TestCase
       "refs/heads/master", force: :force)
   end
 
+  def test_create_with_current_id_advances_ref_on_match
+    @repo.references.create("refs/heads/unit_test",
+      "36060c58702ed4c2a40832c51758d5344201d89a")
+
+    updated = @repo.references.create("refs/heads/unit_test",
+      "5b5b025afb0b4c913b4c338a42934a3863bf3644",
+      force: true,
+      current_id: "36060c58702ed4c2a40832c51758d5344201d89a")
+
+    assert_equal "5b5b025afb0b4c913b4c338a42934a3863bf3644", updated.target_id
+    assert_equal "5b5b025afb0b4c913b4c338a42934a3863bf3644",
+      @repo.references["refs/heads/unit_test"].target_id
+  end
+
+  def test_create_with_current_id_returns_nil_on_mismatch
+    @repo.references.create("refs/heads/unit_test",
+      "36060c58702ed4c2a40832c51758d5344201d89a")
+
+    result = @repo.references.create("refs/heads/unit_test",
+      "5b5b025afb0b4c913b4c338a42934a3863bf3644",
+      force: true,
+      current_id: "5b5b025afb0b4c913b4c338a42934a3863bf3644")
+
+    assert_nil result
+    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a",
+      @repo.references["refs/heads/unit_test"].target_id
+  end
+
+  def test_create_with_current_id_rejects_symbolic_target
+    assert_raises(ArgumentError) do
+      @repo.references.create("refs/heads/unit_test",
+        "refs/heads/master",
+        current_id: "36060c58702ed4c2a40832c51758d5344201d89a")
+    end
+  end
+
+  def test_create_rejects_malformed_current_id
+    assert_raises(ArgumentError) do
+      @repo.references.create("refs/heads/unit_test",
+        "5b5b025afb0b4c913b4c338a42934a3863bf3644",
+        current_id: "not-a-valid-oid")
+    end
+  end
+
+  def test_create_with_current_id_does_not_imply_force
+    @repo.references.create("refs/heads/unit_test",
+      "36060c58702ed4c2a40832c51758d5344201d89a")
+
+    assert_raises(Rugged::Error) do
+      @repo.references.create("refs/heads/unit_test",
+        "5b5b025afb0b4c913b4c338a42934a3863bf3644",
+        current_id: "36060c58702ed4c2a40832c51758d5344201d89a")
+    end
+
+    assert_equal "36060c58702ed4c2a40832c51758d5344201d89a",
+      @repo.references["refs/heads/unit_test"].target_id
+  end
+
+  def test_create_with_current_id_raises_when_ref_absent
+    assert_raises(Rugged::Error) do
+      @repo.references.create("refs/heads/does_not_exist",
+        "5b5b025afb0b4c913b4c338a42934a3863bf3644",
+        current_id: "36060c58702ed4c2a40832c51758d5344201d89a")
+    end
+
+    assert_nil @repo.references["refs/heads/does_not_exist"]
+  end
+
   def test_create_unicode_reference_nfc
     ref_name = "refs/heads/\xC3\x85\x73\x74\x72\xC3\xB6\x6D"
 

@@ -1,3 +1,14 @@
+*   Add `:current_id` to `Rugged::ReferenceCollection#create` for atomic
+    compare-and-swap reference updates.
+
+    When `:current_id` is given, the reference is only updated if it currently
+    points at that OID (wrapping libgit2's `git_reference_create_matching`).
+    On a mismatch the reference is left unchanged and `nil` is returned, letting
+    callers advance a ref atomically in-process instead of shelling out to
+    `git update-ref <ref> <new> <old>`.
+
+    *Jon Jagger*
+
 *   Add `Rugged::Repository#checkout_index`.
 
     This allows to perform checkout from a given GIT index.
