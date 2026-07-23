@@ -43,6 +43,14 @@ static VALUE rb_git_reference_collection_initialize(VALUE self, VALUE repo)
  *    Overwrites the reference with the given +name+, if it already exists,
  *    instead of raising an exception.
  *
+ *  :current_id ::
+ *    A SHA1 OID +String+ giving the value the reference is expected to hold.
+ *    The reference is only updated if it currently points at +:current_id+
+ *    (a compare-and-swap). If the reference exists but points somewhere else,
+ *    no change is made and +nil+ is returned; if the reference does not exist,
+ *    an exception is raised. Only valid when the target is a direct (OID)
+ *    reference; combining it with a symbolic target raises an +ArgumentError+.
+ *
  *  If a reference with the given +name+ already exists and +:force+ is not +true+,
  *  an exception will be raised.
  */
@@ -51,9 +59,9 @@ static VALUE rb_git_reference_collection_create(int argc, VALUE *argv, VALUE sel
 	VALUE rb_repo = rugged_owner(self), rb_name, rb_target, rb_options;
 	git_repository *repo;
 	git_reference *ref;
-	git_oid oid;
+	git_oid oid, current_oid;
 	char *log_message = NULL;
-	int error, force = 0;
+	int error, force = 0, has_current_id = 0;
 
 	rb_scan_args(argc, argv, "20:", &rb_name, &rb_target, &rb_options);
 
@@ -68,14 +76,34 @@ static VALUE rb_git_reference_collection_create(int argc, VALUE *argv, VALUE sel
 			log_message = StringValueCStr(rb_val);
 
 		force = RTEST(rb_hash_aref(rb_options, CSTR2SYM("force")));
+
+		rb_val = rb_hash_aref(rb_options, CSTR2SYM("current_id"));
+		if (!NIL_P(rb_val)) {
+			if (git_oid_fromstr(&current_oid, StringValueCStr(rb_val)) != GIT_OK)
+				rb_raise(rb_eArgError, "current_id is not a valid OID");
+			has_current_id = 1;
+		}
 	}
 
 	if (git_oid_fromstr(&oid, StringValueCStr(rb_target)) == GIT_OK) {
-		error = git_reference_create(
-			&ref, repo, StringValueCStr(rb_name), &oid, force, log_message);
+		if (has_current_id) {
+			error = git_reference_create_matching(
+				&ref, repo, StringValueCStr(rb_name), &oid, force, &current_oid, log_message);
+		} else {
+			error = git_reference_create(
+				&ref, repo, StringValueCStr(rb_name), &oid, force, log_message);
+		}
 	} else {
+		if (has_current_id)
+			rb_raise(rb_eArgError, "current_id can only be used with a direct (OID) reference");
+
 		error = git_reference_symbolic_create(
 			&ref, repo, StringValueCStr(rb_name), StringValueCStr(rb_target), force, log_message);
+	}
+
+	if (has_current_id && error == GIT_EMODIFIED) {
+		giterr_clear();
+		return Qnil;
 	}
 
 	rugged_exception_check(error);
