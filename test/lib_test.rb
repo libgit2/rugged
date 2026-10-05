@@ -54,6 +54,28 @@ class RuggedTest < Rugged::TestCase
     end
   end
 
+  def test_server_connect_timeout
+    before = Rugged::Settings['server_connect_timeout']
+
+    begin
+      Rugged::Settings['server_connect_timeout'] = 300_000
+      assert_equal 300_000, Rugged::Settings['server_connect_timeout']
+    ensure
+      Rugged::Settings['server_connect_timeout'] = before
+    end
+  end
+
+  def test_server_timeout
+    before = Rugged::Settings['server_timeout']
+
+    begin
+      Rugged::Settings['server_timeout'] = 300_000
+      assert_equal 300_000, Rugged::Settings['server_timeout']
+    ensure
+      Rugged::Settings['server_timeout'] = before
+    end
+  end
+
   def test_search_path
     paths = [['search_path_global', '/tmp/global'],
              ['search_path_xdg', '/tmp/xdg'],

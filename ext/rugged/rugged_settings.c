@@ -96,6 +96,20 @@ static VALUE rb_git_set_option(VALUE self, VALUE option, VALUE value)
 		git_libgit2_opts(GIT_OPT_SET_OWNER_VALIDATION, validation);
 	}
 
+	else if (strcmp(opt, "server_connect_timeout") == 0) {
+		int val;
+		Check_Type(value, T_FIXNUM);
+		val = NUM2INT(value);
+		git_libgit2_opts(GIT_OPT_SET_SERVER_CONNECT_TIMEOUT, val);
+	}
+
+	else if (strcmp(opt, "server_timeout") == 0) {
+		int val;
+		Check_Type(value, T_FIXNUM);
+		val = NUM2INT(value);
+		git_libgit2_opts(GIT_OPT_SET_SERVER_TIMEOUT, val);
+	}
+
 	else {
 		rb_raise(rb_eArgError, "Unknown option specified");
 	}
@@ -144,6 +158,18 @@ static VALUE rb_git_get_option(VALUE self, VALUE option)
 		int validation;
 		git_libgit2_opts(GIT_OPT_GET_OWNER_VALIDATION, &validation);
 		return validation ? Qtrue : Qfalse;
+	}
+
+	else if (strcmp(opt, "server_connect_timeout") == 0) {
+		int val;
+		git_libgit2_opts(GIT_OPT_GET_SERVER_CONNECT_TIMEOUT, &val);
+		return INT2NUM(val);
+	}
+
+	else if (strcmp(opt, "server_timeout") == 0) {
+		int val;
+		git_libgit2_opts(GIT_OPT_GET_SERVER_TIMEOUT, &val);
+		return INT2NUM(val);
 	}
 
 	else {
