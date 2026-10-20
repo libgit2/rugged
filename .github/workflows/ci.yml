@@ -55,7 +55,7 @@ jobs:
     - name: Install Linux packages
       run: |
         sudo apt update
-        sudo apt install -y cmake libssh2-1-dev openssh-client openssh-server
+        sudo apt install -y cmake libssh2-1-dev openssh-client openssh-server ruby-dev libgit2-dev pkg-config
     - name: Set up Ruby on Linux
       uses: ruby/setup-ruby@v1
       with:
