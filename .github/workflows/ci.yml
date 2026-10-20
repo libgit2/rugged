@@ -40,7 +40,11 @@ jobs:
       fail-fast: false
       matrix:
         ruby: [ '3.1', '3.2', '3.3', '3.4', '4.0' ]
-        os: [ ubuntu-22.04 ]
+        os: [ ubuntu-22.04, ubuntu-24.04, ubuntu-26.04 ]
+        exclude:
+          - ruby: '3.1'
+            os: ubuntu-26.04
+
     runs-on: ${{ matrix.os }}
 
     name: Ruby ${{ matrix.ruby }} on ${{ matrix.os }}
@@ -51,7 +55,8 @@ jobs:
     - name: Install Linux packages
       run: |
         sudo apt update
-        sudo apt install -y cmake libssh2-1-dev openssh-client openssh-server
+        sudo apt install -y libssh2-1-dev libgpg-error-dev openssh-client openssh-server
+        pkg-config --libs --static libcrypto | grep -q jitterentropy && sudo apt install -y libjitterentropy3-dev || true
     - name: Set up Ruby on Linux
       uses: ruby/setup-ruby@v1
       with:
